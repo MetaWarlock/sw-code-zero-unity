@@ -1,0 +1,292 @@
+E388  04        ???
+E389  F4        ???
+E38A  F4        ???
+E38B  F4        ???
+E38C  FC        ???
+E38D  F4        ???
+E38E  04        ???
+E38F  FC        ???
+E390  FC        ???
+E391  E4 04     CPX $04                      ;
+E393  E4 FC     CPX $FC                      ;
+E395  E4 F4     CPX $F4                      ;
+E397  EC 04 EC  CPX $EC04                    ;
+E39A  FC        ???
+E39B  EC F4 F4  CPX $F4F4                    ;
+E39E  04        ???
+E39F  F4        ???
+E3A0  FC        ???
+E3A1  F4        ???
+E3A2  F4        ???
+E3A3  FC        ???
+E3A4  FC        ???
+E3A5  F4        ???
+E3A6  EC F4 F4  CPX $F4F4                    ;
+E3A9  F4        ???
+E3AA  FC        ???
+E3AB  F4        ???
+E3AC  04        ???
+E3AD  F4        ???
+E3AE  0C        ???
+E3AF  F4        ???
+E3B0  14        ???
+E3B1  FC        ???
+E3B2  EC FC F4  CPX $F4FC                    ;
+E3B5  FC        ???
+E3B6  FC        ???
+E3B7  FC        ???
+E3B8  04        ???
+E3B9  FC        ???
+E3BA  0C        ???
+E3BB  04        ???
+E3BC  EC 04 F4  CPX $F404                    ;
+E3BF  04        ???
+E3C0  FC        ???
+E3C1  04        ???
+E3C2  04        ???
+E3C3  04        ???
+E3C4  0C        ???
+E3C5  E4 FD     CPX $FD                      ;
+E3C7  EC F4 EC  CPX $ECF4                    ;
+E3CA  FC        ???
+E3CB  EC 04 EC  CPX $EC04                    ;
+E3CE  FF        ???
+E3CF  F4        ???
+E3D0  FC        ???
+E3D1  F4        ???
+E3D2  04        ???
+E3D3  F5 EC     SBC $EC,X                    ;
+E3D5  F5 F4     SBC $F4,X                    ;
+E3D7  F5 FC     SBC $FC,X                    ;
+E3D9  F5 04     SBC $04,X                    ;
+E3DB  F5 0C     SBC $0C,X                    ;
+E3DD  F5 14     SBC $14,X                    ;
+E3DF  FD EC FD  SBC $FDEC,X                  ;
+E3E2  F4        ???
+E3E3  FD FC FD  SBC $FDFC,X                  ;
+E3E6  04        ???
+E3E7  FD 0C 05  SBC $050C,X                  ;
+E3EA  EC 05 F4  CPX $F405                    ;
+E3ED  05 FC     ORA $FC                      ;
+E3EF  05 04     ORA $04                      ;
+E3F1  05 0C     ORA $0C                      ;
+E3F3  E5 FD     SBC $FD                      ;
+E3F5  ED F4 ED  SBC $EDF4                    ;
+E3F8  FC        ???
+E3F9  ED 04 ED  SBC $ED04                    ;
+E3FC  FF        ???
+E3FD  F5 FC     SBC $FC,X                    ;
+E3FF  F5 04     SBC $04,X                    ;
+E401  00        BRK                          ;
+E402  F8        SED                          ;
+E403  00        BRK                          ;
+E404  00        BRK                          ;
+E405  F8        SED                          ;
+E406  F8        SED                          ;
+E407  F8        SED                          ;
+E408  00        BRK                          ;
+E409  00        BRK                          ;
+E40A  F0 F0     BEQ $E3FC                    ;
+E40C  F8        SED                          ;
+E40D  F0 00     BEQ $E40F                    ;
+E40F  F8        SED                          ;
+E410  F0 08     BEQ $E41A                    ;
+E412  F0 08     BEQ $E41C                    ;
+E414  F8        SED                          ;
+E415  08        PHP                          ;
+E416  00        BRK                          ;
+E417  F8        SED                          ;
+E418  E0 F8     CPX #$F8                     ;
+E41A  E8        INX                          ;
+E41B  00        BRK                          ;
+E41C  E0 00     CPX #$00                     ;
+E41E  E8        INX                          ;
+E41F  00        BRK                          ;
+E420  00        BRK                          ;
+E421  00        BRK                          ;
+E422  F8        SED                          ;
+E423  F8        SED                          ;
+E424  00        BRK                          ;
+E425  F8        SED                          ;
+E426  F8        SED                          ;
+E427  00        BRK                          ;
+E428  08        PHP                          ;
+E429  F0 00     BEQ $E42B                    ;
+E42B  F0 F8     BEQ $E425                    ;
+E42D  F8        SED                          ;
+E42E  08        PHP                          ;
+E42F  08        PHP                          ;
+E430  08        PHP                          ;
+E431  08        PHP                          ;
+E432  00        BRK                          ;
+E433  08        PHP                          ;
+E434  F8        SED                          ;
+E435  F8        SED                          ;
+E436  18        CLC                          ;
+E437  F8        SED                          ;
+E438  10 00     BPL $E43A                    ;
+E43A  18        CLC                          ;
+E43B  00        BRK                          ;
+E43C  10 F0     BPL $E42E                    ;
+E43E  FC        ???
+E43F  F8        SED                          ;
+E440  F4        ???
+E441  F8        SED                          ;
+E442  FC        ???
+E443  F8        SED                          ;
+E444  04        ???
+E445  00        BRK                          ;
+E446  F4        ???
+E447  00        BRK                          ;
+E448  FC        ???
+E449  00        BRK                          ;
+E44A  04        ???
+E44B  08        PHP                          ;
+E44C  F4        ???
+E44D  08        PHP                          ;
+E44E  FC        ???
+E44F  08        PHP                          ;
+E450  04        ???
+E451  F0 F4     BEQ $E447                    ;
+E453  F0 04     BEQ $E459                    ;
+E455  00        BRK                          ;
+E456  EC F8 EC  CPX $ECF8                    ;
+E459  08        PHP                          ;
+E45A  EC F0 FC  CPX $FCF0                    ;
+E45D  F8        SED                          ;
+E45E  04        ???
+E45F  F8        SED                          ;
+E460  FC        ???
+E461  F8        SED                          ;
+E462  F4        ???
+E463  00        BRK                          ;
+E464  04        ???
+E465  00        BRK                          ;
+E466  FC        ???
+E467  00        BRK                          ;
+E468  F4        ???
+E469  08        PHP                          ;
+E46A  04        ???
+E46B  08        PHP                          ;
+E46C  FC        ???
+E46D  08        PHP                          ;
+E46E  F4        ???
+E46F  F0 04     BEQ $E475                    ;
+E471  F0 F4     BEQ $E467                    ;
+E473  00        BRK                          ;
+E474  0C        ???
+E475  F8        SED                          ;
+E476  0C        ???
+E477  08        PHP                          ;
+E478  0C        ???
+E479  F8        SED                          ;
+E47A  F9 F8 01  SBC $01F8,Y                  ;
+E47D  00        BRK                          ;
+E47E  F8        SED                          ;
+E47F  00        BRK                          ;
+E480  00        BRK                          ;
+E481  F0 F9     BEQ $E47C                    ;
+E483  F0 01     BEQ $E486                    ;
+E485  F8        SED                          ;
+E486  FF        ???
+E487  F8        SED                          ;
+E488  F7        ???
+E489  00        BRK                          ;
+E48A  00        BRK                          ;
+E48B  00        BRK                          ;
+E48C  F8        SED                          ;
+E48D  F0 FF     BEQ $E48E                    ;
+E48F  F0 F7     BEQ $E488                    ;
+E491  F8        SED                          ;
+E492  F7        ???
+E493  F8        SED                          ;
+E494  FF        ???
+E495  00        BRK                          ;
+E496  F8        SED                          ;
+E497  00        BRK                          ;
+E498  00        BRK                          ;
+E499  F0 F7     BEQ $E492                    ;
+E49B  F0 FF     BEQ $E49C                    ;
+E49D  F8        SED                          ;
+E49E  01 F8     ORA ($F8,X)                  ;
+E4A0  F9 00 00  SBC $0000,Y                  ;
+E4A3  00        BRK                          ;
+E4A4  F8        SED                          ;
+E4A5  F0 01     BEQ $E4A8                    ;
+E4A7  F0 F9     BEQ $E4A2                    ;
+E4A9  E0 F0     CPX #$F0                     ;
+E4AB  E0 F8     CPX #$F8                     ;
+E4AD  E8        INX                          ;
+E4AE  F0 E8     BEQ $E498                    ;
+E4B0  F8        SED                          ;
+E4B1  F0 F0     BEQ $E4A3                    ;
+E4B3  F0 F8     BEQ $E4AD                    ;
+E4B5  F0 00     BEQ $E4B7                    ;
+E4B7  F8        SED                          ;
+E4B8  F8        SED                          ;
+E4B9  F8        SED                          ;
+E4BA  00        BRK                          ;
+E4BB  00        BRK                          ;
+E4BC  F8        SED                          ;
+E4BD  00        BRK                          ;
+E4BE  00        BRK                          ;
+E4BF  08        PHP                          ;
+E4C0  F8        SED                          ;
+E4C1  08        PHP                          ;
+E4C2  00        BRK                          ;
+E4C3  E0 08     CPX #$08                     ;
+E4C5  E0 00     CPX #$00                     ;
+E4C7  E8        INX                          ;
+E4C8  08        PHP                          ;
+E4C9  E8        INX                          ;
+E4CA  00        BRK                          ;
+E4CB  F0 08     BEQ $E4D5                    ;
+E4CD  F0 00     BEQ $E4CF                    ;
+E4CF  F0 F8     BEQ $E4C9                    ;
+E4D1  F8        SED                          ;
+E4D2  00        BRK                          ;
+E4D3  F8        SED                          ;
+E4D4  F8        SED                          ;
+E4D5  00        BRK                          ;
+E4D6  00        BRK                          ;
+E4D7  00        BRK                          ;
+E4D8  F8        SED                          ;
+E4D9  08        PHP                          ;
+E4DA  00        BRK                          ;
+E4DB  08        PHP                          ;
+E4DC  F8        SED                          ;
+E4DD  E8        INX                          ;
+E4DE  F0 E8     BEQ $E4C8                    ;
+E4E0  F8        SED                          ;
+E4E1  F0 F0     BEQ $E4D3                    ;
+E4E3  F0 F8     BEQ $E4DD                    ;
+E4E5  F8        SED                          ;
+E4E6  F0 F8     BEQ $E4E0                    ;
+E4E8  F8        SED                          ;
+E4E9  F8        SED                          ;
+E4EA  00        BRK                          ;
+E4EB  00        BRK                          ;
+E4EC  F8        SED                          ;
+E4ED  00        BRK                          ;
+E4EE  00        BRK                          ;
+E4EF  E8        INX                          ;
+E4F0  08        PHP                          ;
+E4F1  E8        INX                          ;
+E4F2  00        BRK                          ;
+E4F3  F0 08     BEQ $E4FD                    ;
+E4F5  F0 00     BEQ $E4F7                    ;
+E4F7  F8        SED                          ;
+E4F8  08        PHP                          ;
+E4F9  F8        SED                          ;
+E4FA  00        BRK                          ;
+E4FB  F8        SED                          ;
+E4FC  F8        SED                          ;
+E4FD  00        BRK                          ;
+E4FE  00        BRK                          ;
+E4FF  00        BRK                          ;
+E500  F8        SED                          ;
+E501  B8        CLV                          ;
+E502  FC        ???
+E503  C0 FC     CPY #$FC                     ;
+E505  C8        INY                          ;
+E506  FC        ???

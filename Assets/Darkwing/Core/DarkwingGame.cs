@@ -17,6 +17,14 @@ namespace Darkwing.Core
 
         public readonly byte[] Framebuffer = new byte[ScreenWidth * ScreenHeight]; // NES palette indices 0..63
         public long Frame;
+        public readonly PlayerCore Player;
+
+        public DarkwingGame() : this(EmptyTileMap.Instance) { }
+
+        public DarkwingGame(ITileMap tiles)
+        {
+            Player = new PlayerCore(tiles);
+        }
 
         /// <summary>Reset to power-on state (equivalent of RESET vector path).</summary>
         public void Reset()
@@ -27,10 +35,17 @@ namespace Darkwing.Core
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
-            // TODO(M3+): original main loop semantics (fixed bank frame driver):
-            // input edge handling, world script tick, object updates, camera, audio queue.
+            // TODO(M3+): world script tick, object updates, audio queue — see
+            // Research/DarkwingDuck/docs/*.md. Player physics is transcribed;
+            // world/object/audio systems land with the level-format work.
+            byte held = pad1.ToByte();
+            byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
+            Player.Step(held, pressed);
+            _prevHeld = held;
             Frame++;
         }
+
+        private byte _prevHeld;
 
         /// <summary>Serialize all future-affecting state. Version-tagged.</summary>
         public byte[] SaveState()
