@@ -52,6 +52,7 @@ namespace Darkwing.Core
 
         private ITileMap _tiles;
         public ITileMap TileMap { get => _tiles; set => _tiles = value; }
+        public ObjectSystem Objects;  // slot 0 shares the player's anim state (original RAM model)
         private readonly byte[] _probeX = new byte[64];  // $06 = last sampled X ($EB52 uses $06/$07)
         private readonly byte[] _probeY = new byte[64];
 
@@ -265,16 +266,40 @@ namespace Darkwing.Core
 
             // Damage from spike/contact probes is applied by the world (M4).
 
-            if ((pressed & 0x80) != 0) // A pressed → jump ($CBB7)
+            if ((pressed & 0x80) != 0) // A pressed → jump ($CBB7 → JMP $CD0E)
             {
                 YVelInt = 4; YVelFrac = 0xE5;
                 State = 1;
+                if (Objects != null)
+                {
+                    var sj = Objects.Slots[0];
+                    sj.AnimNumber = (byte)(((held & 0x08) != 0) ? 0x0D : 0x11); // jump / reach-up
+                    sj.AnimFrame = 0;
+                    sj.AnimTimer = 0;
+                }
+                VerticalPhysics(held, pressed); // impulse integrates in the same frame
                 AirborneControl(held);
                 return;
             }
 
             if ((held & 0x03) != 0) // Left/Right held → walk ($CBB7/$CC53)
             {
+                // Walk anim + footstep dust ($CC53/$CC84/$CCAA): anim 3, cycle 1-4,
+                // frame 0 with timer<4 = dust (velocity 0.28), fresh start dusts once.
+                var s0 = Objects != null ? Objects.Slots[0] : null;
+                bool fresh = s0 == null || s0.AnimNumber != 3;
+                if (fresh)
+                {
+                    if (s0 != null) { s0.AnimNumber = 3; s0.AnimFrame = 0; s0.AnimTimer = 0; }
+                }
+                else if (s0.AnimFrame == 0 && s0.AnimTimer == 0)
+                {
+                    s0.AnimFrame = 1; // $CC84 cycle wrap skips the dust frame
+                }
+                if (s0.AnimFrame == 0 && s0.AnimTimer < 4)
+                {
+                    XVelInt = 0; XVelFrac = 0x48; // footstep dust: 0.28 px/frame ($CCAA)
+                }
                 bool right = (held & 0x01) != 0;
                 FacingRight = right ? (byte)0x40 : (byte)0x00;
                 Flags = (byte)((Flags & ~0x40) | FacingRight);
@@ -353,7 +378,7 @@ namespace Darkwing.Core
                     int py = Y + 12;
                     py = py - (py & 0x0F) - 12;  // top of the 16px tile under the probe
                     Y = (ushort)(py & 0xFFFF);
-                    YVelInt = 0; YVelFrac = 0;
+                    CutVelocity(); // landing leaves the $F607 value (-0.33), capture-verified
                     LandedFlag = 1;
                     return true;
                 }
@@ -361,22 +386,20 @@ namespace Darkwing.Core
             }
             else
             {
-                // rising ($F3C4)
+                // rising ($F3C4): variable jump cut FIRST ($CD47), then integrate.
+                if (((held & 0x80) == 0) && YVelInt < 5)
+                {
+                    CutVelocity();
+                }
                 IntegrateY();
                 ApplyGravity();
                 byte ceil = ProbeCeiling();
                 if (ceil >= 3)
                 {
                     CutVelocity(); // head bonk: cancel ascent ($F607)
-                    // snap below ceiling
                     int py = Y - 12;
                     py = py + (0x0F - (py & 0x0F)) + 1 + 12;
                     Y = (ushort)(py & 0xFFFF);
-                }
-                // variable jump cut ($CD47): A released while vel < 5
-                if (((held & 0x80) == 0) && YVelInt < 5)
-                {
-                    CutVelocity();
                 }
                 return false;
             }
@@ -393,8 +416,8 @@ namespace Darkwing.Core
         // ---------- State 1: air ($CD0E path) ----------
         private void AirState(byte held, byte pressed)
         {
-            AirborneControl(held);
-            bool landed = VerticalPhysics(held, pressed);
+            bool landed = VerticalPhysics(held, pressed); // $CD0E: vertical first
+            AirborneControl(held);                        // then air steering ($CD18)
             if (landed)
             {
                 State = 0;

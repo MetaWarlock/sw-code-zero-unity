@@ -34,6 +34,7 @@ namespace Darkwing.Core
             Player = new PlayerCore(tiles);
             Ppu = new Ppu(data);
             Objects = new ObjectSystem(data);
+            Player.Objects = Objects;
             Hud = new HudComposer(Ppu);
             Oam = data != null
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
@@ -79,14 +80,14 @@ namespace Darkwing.Core
             Player.Step(held, pressed);
             if (Oam != null)
             {
-                // Slot 0 mirrors the player (state-driven anim mapping lands in M4;
-                // standing pose for the M3 fixture).
+                // Slot 0 mirrors the player position/facing; the anim state is
+                // player-state driven (walk/fire/... in PlayerCore) and advanced
+                // by the dispatcher each frame.
                 var s0 = Objects.Slots[0];
                 s0.Active = true;
-                s0.Flags = 0xD0;
+                s0.Flags = (byte)(0x90 | (Player.FacingRight != 0 ? 0x40 : 0) | 0x10);
                 s0.X = Player.X;
                 s0.Y = Player.Y;
-                s0.AnimNumber = 0x01;
                 Hud.Compose(3);
                 Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
                 Ppu.Render(Framebuffer);
