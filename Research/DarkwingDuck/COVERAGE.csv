@@ -50,3 +50,7 @@ hud,heart_energy,oam_entries_0_8,frame-exact,yes,yes,pass,HudComposer matches ca
 
 audio,integration,darkwing_game,event-wired,yes,yes,pass,AudioSequencer in Step pipeline; mission music from $DF04; SFX hooks 0x21/0x15/0x10; AudioOutFeed 48kHz; sequencer live in play mode (audio=True)
 audio,apu_wav,frame_counter,WAV-compare,pending,pending,pending,frame-counter scheduling approximation — verify against recorded WAV (M5 residual)
+
+enemies,dispatch,bank6_8000,port+integrated,yes,yes,partial-pass,47/47 behaviors + 7/7 bosses ported (agent, 4324 lines); probes: walker/pickup/gas/spike/hopper/boss-pop trajectories match docs; dispatcher live in Step
+enemies,spawner,placements_5arrays,cell-activation,yes,yes,pass,first enemy spawns on cell entry (walker @0x138); camera fixed to $DBCE delta model
+enemies,integration,game_loop,wired,yes,yes,pass,Bank6/ObjectTypeTable wired in launcher+scene; duplicate dispatch call removed
