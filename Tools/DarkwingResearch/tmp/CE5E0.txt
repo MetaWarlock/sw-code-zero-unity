@@ -1,0 +1,122 @@
+E5E0  00        BRK                          ;
+E5E1  00        BRK                          ;
+E5E2  00        BRK                          ;
+E5E3  00        BRK                          ;
+E5E4  00        BRK                          ;
+E5E5  00        BRK                          ;
+E5E6  00        BRK                          ;
+E5E7  00        BRK                          ;
+E5E8  00        BRK                          ;
+E5E9  00        BRK                          ;
+E5EA  01 01     ORA ($01,X)                  ;
+E5EC  02        ???
+E5ED  02        ???
+E5EE  03        ???
+E5EF  03        ???
+E5F0  04        ???
+E5F1  04        ???
+E5F2  05 05     ORA $05                      ;
+E5F4  06 04     ASL $04                      ;
+E5F6  06 00     ASL $00                      ;
+E5F8  06 00     ASL $00                      ;
+E5FA  06 01     ASL $01                      ;
+E5FC  06 01     ASL $01                      ;
+E5FE  06 02     ASL $02                      ;
+E600  06 02     ASL $02                      ;
+E602  06 03     ASL $03                      ;
+E604  06 03     ASL $03                      ;
+E606  06 04     ASL $04                      ;
+E608  06 04     ASL $04                      ;
+E60A  06 05     ASL $05                      ;
+E60C  06 05     ASL $05                      ;
+E60E  06 06     ASL $06                      ;
+E610  06 06     ASL $06                      ;
+E612  04        ???
+E613  0F        ???
+E614  05 0F     ORA $0F                      ;
+E616  06 0F     ASL $0F                      ;
+E618  07        ???
+E619  0F        ???
+E61A  08        PHP                          ;
+E61B  0F        ???
+E61C  09 0F     ORA #$0F                     ;
+E61E  0A        ASL A                        ;
+E61F  0F        ???
+E620  0B        ???
+E621  04        ???
+E622  0B        ???
+E623  04        ???
+E624  0B        ???
+E625  05 0B     ORA $0B                      ;
+E627  05 0B     ORA $0B                      ;
+E629  06 0B     ASL $0B                      ;
+E62B  06 0B     ASL $0B                      ;
+E62D  07        ???
+E62E  0B        ???
+E62F  07        ???
+E630  0B        ???
+E631  08        PHP                          ;
+E632  0B        ???
+E633  08        PHP                          ;
+E634  0B        ???
+E635  09 0B     ORA #$0B                     ;
+E637  09 0B     ORA #$0B                     ;
+E639  0A        ASL A                        ;
+E63A  0B        ???
+E63B  0A        ASL A                        ;
+E63C  A5 FC     LDA $FC                      ;
+E63E  38        SEC                          ;
+E63F  E5 28     SBC $28                      ;
+E641  10 05     BPL $E648                    ;
+E643  49 FF     EOR #$FF                     ;
+E645  18        CLC                          ;
+E646  69 01     ADC #$01                     ;
+E648  85 05     STA $05                      ;
+E64A  A5 2F     LDA $2F                      ;
+E64C  29 02     AND #$02                     ;
+E64E  D0 0D     BNE $E65D                    ;
+E650  A5 28     LDA $28                      ;
+E652  29 01     AND #$01                     ;
+E654  18        CLC                          ;
+E655  65 05     ADC $05                      ;
+E657  4A        LSR A                        ;
+E658  85 05     STA $05                      ;
+E65A  D0 10     BNE $E66C                    ;
+E65C  60        RTS                          ;
+E65D  A5 28     LDA $28                      ;
+E65F  49 FF     EOR #$FF                     ;
+E661  29 01     AND #$01                     ;
+E663  18        CLC                          ;
+E664  65 05     ADC $05                      ;
+E666  4A        LSR A                        ;
+E667  85 05     STA $05                      ;
+E669  D0 01     BNE $E66C                    ;
+E66B  60        RTS                          ;
+E66C  A5 05     LDA $05                      ;
+E66E  85 1F     STA $1F                      ;
+E670  A5 2F     LDA $2F                      ;
+E672  C5 20     CMP $20                      ;
+E674  85 20     STA $20                      ;
+E676  F0 20     BEQ $E698                    ;
+E678  29 02     AND #$02                     ;
+E67A  AA        TAX                          ;
+E67B  A5 25     LDA $25                      ;
+E67D  48        PHA                          ;
+E67E  29 80     AND #$80                     ;
+E680  85 06     STA $06                      ;
+E682  68        PLA                          ;
+E683  18        CLC                          ;
+E684  7D B6 E7  ADC $E7B6,X                  ;
+E687  85 25     STA $25                      ;
+E689  29 80     AND #$80                     ;
+E68B  C5 06     CMP $06                      ;
+E68D  F0 01     BEQ $E690                    ;
+E68F  E8        INX                          ;
+E690  A5 23     LDA $23                      ;
+E692  18        CLC                          ;
+E693  7D BA E7  ADC $E7BA,X                  ;
+E696  85 23     STA $23                      ;
+E698  A0 00     LDY #$00                     ;
+E69A  84 06     STY $06                      ;
+E69C  A5 25     LDA $25                      ;
+E69E  48        PHA                          ;
