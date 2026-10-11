@@ -1,0 +1,65 @@
+FF55  85 F1     STA $F1                      ;
+FF57  85 F4     STA $F4                      ;
+FF59  E6 F5     INC $F5                      ;
+FF5B  8D F0 FF  STA $FFF0                    ;
+FF5E  4A        LSR A                        ;
+FF5F  8D F0 FF  STA $FFF0                    ;
+FF62  4A        LSR A                        ;
+FF63  8D F0 FF  STA $FFF0                    ;
+FF66  4A        LSR A                        ;
+FF67  8D F0 FF  STA $FFF0                    ;
+FF6A  4A        LSR A                        ;
+FF6B  8D F0 FF  STA $FFF0                    ;
+FF6E  A9 00     LDA #$00                     ;
+FF70  85 F5     STA $F5                      ;
+FF72  A5 F6     LDA $F6                      ;
+FF74  D0 01     BNE $FF77                    ;
+FF76  60        RTS                          ;
+FF77  A9 03     LDA #$03                     ;
+FF79  8D F0 FF  STA $FFF0                    ;
+FF7C  4A        LSR A                        ;
+FF7D  8D F0 FF  STA $FFF0                    ;
+FF80  4A        LSR A                        ;
+FF81  8D F0 FF  STA $FFF0                    ;
+FF84  4A        LSR A                        ;
+FF85  8D F0 FF  STA $FFF0                    ;
+FF88  4A        LSR A                        ;
+FF89  8D F0 FF  STA $FFF0                    ;
+FF8C  A6 DB     LDX $DB                      ;
+FF8E  B5 DC     LDA $DC,X                    ;
+FF90  C9 88     CMP #$88                     ;
+FF92  F0 12     BEQ $FFA6 ; SwitchPRG_CallTask ;
+FF94  48        PHA                          ;
+FF95  A9 88     LDA #$88                     ;
+FF97  95 DC     STA $DC,X                    ;
+FF99  E8        INX                          ;
+FF9A  8A        TXA                          ;
+FF9B  29 07     AND #$07                     ;
+FF9D  85 DB     STA $DB                      ;
+FF9F  68        PLA                          ;
+FFA0  20 03 80  JSR $8003 ; BankTask_Queued  ;
+FFA3  4C 8C FF  JMP $FF8C ; SwitchPRG_RunQueue ;
+FFA6  20 00 80  JSR $8000 ; BankTask_Main    ;
+FFA9  A9 00     LDA #$00                     ;
+FFAB  85 F6     STA $F6                      ;
+FFAD  A5 F4     LDA $F4                      ;
+FFAF  4C 55 FF  JMP $FF55 ; SwitchPRGBank    ;
+FFB2  00        BRK                          ;
+FFB3  00        BRK                          ;
+FFB4  00        BRK                          ;
+FFB5  00        BRK                          ;
+FFB6  00        BRK                          ;
+FFB7  00        BRK                          ;
+FFB8  00        BRK                          ;
+FFB9  00        BRK                          ;
+FFBA  00        BRK                          ;
+FFBB  00        BRK                          ;
+FFBC  00        BRK                          ;
+FFBD  00        BRK                          ;
+FFBE  00        BRK                          ;
+FFBF  00        BRK                          ;
+FFC0  FF        ???
+FFC1  FF        ???
+FFC2  FF        ???
+FFC3  FF        ???
+FFC4  FF        ???
