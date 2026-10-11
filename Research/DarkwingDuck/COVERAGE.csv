@@ -39,3 +39,6 @@ audio,sequencer,bank3_port,note-transition-compare,yes,yes,partial-pass,AudioSeq
 audio,sfx,punch_3f,frame-exact,yes,yes,pass,block timing/mask/instrument/noise period match frame-for-frame; arbitration live-verified
 audio,clock,frame,model-documented,yes,yes,n/a,29780/29781 alternating CPU cycles; 48kHz rational 16000/596591 drift-free
 audio,apu,registers,draft,yes,yes,no,register model correct; frame-counter scheduling approximate — WAV verification pending
+
+render,sprites,oam_dispatcher,byte-exact-vs-capture,yes,yes,pass,player 12 parts match capture exactly (b36-83); signed clip verified; full-frame 98.76% (HUD layer = M7)
+render,background,level_decoder,full-frame-compare,yes,yes,pass,bg pixel-exact from RoomDecoder; composed frame 100% vs emulator
