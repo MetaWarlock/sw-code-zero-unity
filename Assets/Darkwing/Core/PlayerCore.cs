@@ -62,22 +62,21 @@ namespace Darkwing.Core
         /// <summary>Integrate X by the signed 8.8 velocity ($F4FD add / $F51B subtract).</summary>
         private void IntegrateX(int sign)
         {
-            int v = (XVelInt << 8) | XVelFrac;
-            int acc = (XFrac << 16) | X; // not 6502-exact; use 16.8 add
-            int dx = sign * v;
-            acc += dx;
-            X = (ushort)(acc & 0xFFFF);
-            XFrac = (byte)((acc >> 16) & 0xFF);
+            int v = (XVelInt << 8) | XVelFrac;          // 1/256 px units
+            int acc = (X << 8) | XFrac;                 // position as 16.8
+            acc += sign * v;
+            X = (ushort)((acc >> 8) & 0xFFFF);
+            XFrac = (byte)(acc & 0xFF);
         }
 
         /// <summary>Integrate Y by the up-positive velocity: Y -= v ($F5A4 semantics).</summary>
         private void IntegrateY()
         {
-            int v = (YVelInt << 8) | YVelFrac;   // signed 8.8, up-positive
-            int acc = (YFrac << 16) | Y;
-            acc -= v;                             // original subtracts velocity
-            Y = (ushort)(acc & 0xFFFF);
-            YFrac = (byte)((acc >> 16) & 0xFF);
+            int v = (YVelInt << 8) | YVelFrac;          // signed 8.8, up-positive
+            int acc = (Y << 8) | YFrac;
+            acc -= v;                                   // original subtracts velocity
+            Y = (ushort)((acc >> 8) & 0xFFFF);
+            YFrac = (byte)(acc & 0xFF);
         }
 
         /// <summary>Gravity $F5DA: velocity -= $99/256 (0.25), signed; clamp fall to 8.00.</summary>
