@@ -1,0 +1,165 @@
+{
+ "note": "Text streams: tile-id bytes, $FE=line break, $FF=end; player $AA00 bank2; tables $ABAA/$ABBD; 3 lines/page PPU addrs $AAD7/$AADA",
+ "streams": [
+  {
+   "id": 0,
+   "cpu": "0xabd0",
+   "bytes": "eaeedadce4deeb02e3dadce402dae7ddfee1e2ec02e1dee7dce1e6dee702daebdefedbe5e8dce4e2e7e002ede1defedce8e7ecedebeedcede2e8e702e8dffeede1de02e7def002dbebe2dde0defafef2e8eef9dd02dbdeededdeeb02ecede8e9fee1e2e602dbdedfe8ebde02ece8e6dee8e7defee0deedec02e1eeebedfa02dde802f2e8eefef0dae7ed02ede802e0e802ede1deebdefcff"
+  },
+  {
+   "id": 1,
+   "cpu": "0xac68",
+   "bytes": "f0e8e5dfddeedce402dae7ddfee1e2ec02e1dee7dce1e6dee702daebdefeebdae6e9dae0e2e7e002ede1ebe8eee0e1feede1de02dcdee7eddeeb02e8df02ede1defedce2edf2fa02dbeeed02dbdefedcdaebdedfeee5f702f0e8e5dfddeedce4fee0e8deec02dbdeebecdeebe4fef0e1dee702ede1de02e6e8e8e7fedce8e6deec02e8eeedf602dde802f2e8eefef0dae7ed02ede802e0e802ede1deebdefcff"
+  },
+  {
+   "id": 2,
+   "cpu": "0xad08",
+   "bytes": "e202e3eeeced02e0e8ed02dae7feecf6e8f6ecf602dcdae5e502dfebe8e6feede1de02ecdef0deebecfafee5e2eaeee2dddaede8eb02e2ec02e8e7feede1de02e5e8e8ecdefa02dde802f2e8eefef0dae7ed02ede802e0e802ede1deebdefcff"
+  },
+  {
+   "id": 3,
+   "cpu": "0xad68",
+   "bytes": "e6e8e5e2daebedf202e2ecfedddeefdee5e8e9e2e7e002dafee6e8e7ecedebe8eeec02e7def0fee6dadce1e2e7de02e2e702ede1defeede8f0deebfafa02dde802f2e8eefef0dae7ed02ede802e0e802ede1deebdefcff"
+  },
+  {
+   "id": 4,
+   "cpu": "0xadbf",
+   "bytes": "ece8e6deede1e2e7e002ecedebdae7e0defee2ec02e0e8e2e7e002e8e702e2e702ede1defef0e8e8ddecf602e2ed02e6daf202dbdefeede1de02f0e8ebe402e8dffedbeeece1ebe8e8edf6e0e802dce1dedce4fee2ed02e8eeed02dddaebe4f0e2e7e0fafedde802f2e8ee02f0e2ece102ede802e0e8feede1deebdefcff"
+  },
+  {
+   "id": 5,
+   "cpu": "0xae3d",
+   "bytes": "e6dee0daefe8e5ed02dae7dd02e1e2ecfee1dee7dce1e6dee702daebdefeebe8dbdbe2e7e002ede1defef0daebdee1e8eeecdeec02dae5e8e7e0feede1de02f0e1daebdff6fef2e8ee02dbdeededdeeb02e6e8efdefeeaeee2dce4e5f202dbdedfe8ebde02dae5e5feede1de02e0e8e8ddec02daebdefee0e8e7defa02dde802f2e8ee02f0dae7edfeede802e0e802ede1deebdefcff"
+  },
+  {
+   "id": 6,
+   "cpu": "0xaed3",
+   "bytes": "f0def9efde02dfe2e7dae5e5f2fee5e8dcdaeddedd02ede1defee1e2dddee8eeed02e8df02eceddedee5fedbdedae4fa02e1de02e2ec02e8e7fedff6e8f6f0f6e5f9ec02dfe5e8daede2e7e0fedfe8ebedebdeececf6fe020202020202020202e5deedf9ec02e0deedfe020202020202020202dddae7e0deebe8eeecfaff"
+  },
+  {
+   "id": 7,
+   "cpu": "0xaf51",
+   "bytes": "020202f0e1deebde02ece1e8eee5ddfe020202f0de02e0e802e7e8f0f7ddf0fcff"
+  },
+  {
+   "id": 8,
+   "cpu": "0xaf72",
+   "bytes": "020202f2deec02da02dbeeedede8e7fe020202e7e80202db02dbeeedede8e7ff"
+  },
+  {
+   "id": 9,
+   "cpu": "0xaf92",
+   "bytes": "e3e8db02f0dee5e502dde8e7def702dddaebe4f0e2e7e0f6fee8e7dcde02dae0dae2e702f2e8eef9efde02dfebdededd02ede1defedce2edf202dfebe8e602dff6e8f6f0f6e5f9ec02e0ebe2e902e8dffeeddeebebe8ebf602f2e8ee02e1daefde02dedaebe7dedd02ede1defee0ebdaede2edeeddde02e8df02ede1de02dee7ede2ebde02dce2edf2fef8dfe8ebdeefdeebfafafaff"
+  },
+  {
+   "id": 10,
+   "cpu": "0xb028",
+   "bytes": "e8e7dcde02dae0dae2e702f0de02e7dededd02f2e8eeebfee1dee5e9f702dddaebe4f0e2e7e0f6feda02e6f2eceddeebe2e8eeec02dcebe2e6de02f0daefde02e1daecfeecf0dee9ed02e8efdeeb02ede1de02dce2edf2f6fef0de02dbdee5e2deefde02ede1deecde02dcebe2e6deec02daebdefeede1de02f0e8ebe402e8df02ede1daed02ecdedcebdeedfedcebe2e6e2e7dae502e8ebe0dae7e2f3daede2e8e7f7fedff6e8f6f0f6e5fa02f2e8ee02e6eeeced02e9eeed02dae7fedee7dd02ede802ede1dee2eb02dfe2dee7dde2ece102e9e5dae7ecf6ff"
+  },
+  {
+   "id": 11,
+   "cpu": "0xb102",
+   "bytes": "ece8ebebf202ede802e2e7eddeebebeee9edfef2e8eeeb02e6e2ecece2e8e7f7fedbeeed02f0de02e7dededd02f2e8eeeb02e1dee5e9f6feda02e0ebe8eee902e8df02dbeeebe0e5daebecfee1daefde02dbebe8e4dee702e2e7ede8feede1de02dce2edf2f9ec02efdaeee5edfedae7dd02eddae4dee702dae5e502ede1de02efdae5eedadbe5defee2eddee6ecf6fee8eeeb02e2e7dfe8ebe6daede2e8e702e2e7dde2dcdaeddeecfeede1daed02ede1de02dbeeebe0e5daebec02ddebe8e9e9deddfeece8e6de02e8df02ede1de02e5e8e8edfeddeeebe2e7e002ede1dee2eb02e0deeddaf0daf2f6ff"
+  },
+  {
+   "id": 12,
+   "cpu": "0xb1ed",
+   "bytes": "ece8ebebf202ede802dbe8ede1deeb02f2e8eefedddaebe4f0e2e7e0f7dbeeed02f0de02e1daefdefedfe8eee7dd02ede1de02e5e8dcdaede2e8e702e8dffeede1de02dbeeebe0e5daebf9ec02e1e2dddee8eeedfafee8eeeb02e2e7dfe8ebe6dae7edec02ecdaf2feede1daed02e2ed02e2ec02dfe2e5e5dedd02f0e2ede1feede1de02ecede8e5dee702e2eddee6ecf6fedbe5e8dce402ede1de02dcdae9eceee5deec02f0e2ede1fef2e8eeeb02dcdae9de02dae7dd02e0e8ecdae5f2e702f0e2e5e5fee1dee5e902f2e8ee02dce8e5e5dedced02ede1de02e2eddee6ecf6fef0daeddce102f2e8eeeb02eceddee9fedae7dd02e0e8e8dd02e5eedce4faff"
+  },
+  {
+   "id": 13,
+   "cpu": "0xb2ed",
+   "bytes": "e5daeee7dce1e9dadd02f0e2e5e502dbebe2dedf02f2e8eefef0e2ede102ede1de02dddeeddae2e5ec02e8df02f2e8eeebfee6e2ecece2e8e7ecf6feebdee6dee6dbdeeb02ede802dce8e5e5dedced02dae5e502e8dffeede1de02ecede8e5dee702dde2dae6e8e7ddecfedae7dd02e0e8e5dd02dbdaebecfafee0e8e8dd02e5eedce4f702dddaebe4f0e2e7e0f6ff"
+  },
+  {
+   "id": 14,
+   "cpu": "0xb37c",
+   "bytes": "e200dae600ede1de00eddeebebe8ebfeede1daed00dfe5dae9ec00e2e700ede1de00e7e2e0e1edfaff"
+  },
+  {
+   "id": 15,
+   "cpu": "0xb3a5",
+   "bytes": "e200dae600ede1de00f0e2e7e0dedd00ecdce8eeebe0defeede1daed00e9dedce4ec00daed00f2e8eeebfee7e2e0e1ede6daebdeecfaff"
+  },
+  {
+   "id": 16,
+   "cpu": "0xb3dc",
+   "bytes": "02e8e4faff"
+  },
+  {
+   "id": 17,
+   "cpu": "0xb3e1",
+   "bytes": "f2e8eef8efde82dfe8e2e5dedd82e6f282e9e5dae7ecfeede1e2ec82ede2e6de82dddaebe4f0e2e7e0f9fedbeeed82ede1de82e7def1ed82ede2e6de82f0de82e6dedeedf6fee282ece1dae5e582dbde82efe2dcede8ebe2e8eeecf9f9f9ff"
+  },
+  {
+   "id": 18,
+   "cpu": "0xb440",
+   "bytes": "dbe5daeced02e8e9dee702ede1de02dce8e7eddae2e7deebecfedae7dd02dce8e5e5dedced02daec02e6dae7f202e8dffeede1de02e2eddee6ec02daec02f2e8ee02dcdae7fedbdedfe8ebde02ede2e6de02ebeee7ec02e8eeedf6fee0e8e8dd02e5eedce4f7dddaebe4f0e2e7e0faff"
+  },
+  {
+   "id": 19,
+   "cpu": "0xeaab",
+   "bytes": ""
+  },
+  {
+   "id": 20,
+   "cpu": "0xeeac",
+   "bytes": ""
+  },
+  {
+   "id": 21,
+   "cpu": "0xdaad",
+   "bytes": ""
+  },
+  {
+   "id": 22,
+   "cpu": "0xdcad",
+   "bytes": ""
+  },
+  {
+   "id": 23,
+   "cpu": "0xe4ad",
+   "bytes": ""
+  },
+  {
+   "id": 24,
+   "cpu": "0xdeae",
+   "bytes": ""
+  },
+  {
+   "id": 25,
+   "cpu": "0xebae",
+   "bytes": ""
+  },
+  {
+   "id": 26,
+   "cpu": "0x2af",
+   "bytes": ""
+  },
+  {
+   "id": 27,
+   "cpu": "0xe3af",
+   "bytes": ""
+  },
+  {
+   "id": 28,
+   "cpu": "0xdaaf",
+   "bytes": ""
+  },
+  {
+   "id": 29,
+   "cpu": "0xdcb0",
+   "bytes": ""
+  },
+  {
+   "id": 30,
+   "cpu": "0xe4b1",
+   "bytes": ""
+  },
+  {
+   "id": 31,
+   "cpu": "0x2b1",
+   "bytes": ""
+  }
+ ]
+}
