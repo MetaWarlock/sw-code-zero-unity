@@ -21,6 +21,7 @@ namespace Darkwing.Core
         public readonly Ppu Ppu;
         public readonly ObjectSystem Objects;
         public readonly OamDispatcher Oam;
+        public readonly HudComposer Hud;
         private readonly GameData _data;
 
         public DarkwingGame() : this(null) { }
@@ -33,6 +34,7 @@ namespace Darkwing.Core
             Player = new PlayerCore(tiles);
             Ppu = new Ppu(data);
             Objects = new ObjectSystem(data);
+            Hud = new HudComposer(Ppu);
             Oam = data != null
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
                 : null;
@@ -85,6 +87,7 @@ namespace Darkwing.Core
                 s0.X = Player.X;
                 s0.Y = Player.Y;
                 s0.AnimNumber = 0x01;
+                Hud.Compose(3);
                 Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
                 Ppu.Render(Framebuffer);
             }

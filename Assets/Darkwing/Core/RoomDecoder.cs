@@ -87,9 +87,8 @@ namespace Darkwing.Core
                         int r = mr * 2 + qr, c = mc * 2 + qc;
                         _metaGrid[r * 16 + c] = (byte)mid;
                         _typeBytes[mid] = _levelSets[setBase + 2048 + mid];
-                        types16x16[r * 16 + c] = (byte)(qr != 0
-                            ? (_typeBytes[mid] >> 4)
-                            : (_typeBytes[mid] & 0x0F));
+                        // 0x3EE0 byte = (collision_type << 4) | bg_palette (level_format.md §5)
+                        types16x16[r * 16 + c] = (byte)(_typeBytes[mid] >> 4);
                         // metatile tile arrays: TL,TR,BL,BR = setBase+1024 quadrants
                         tiles32x32[r * 2 * 32 + c * 2] = _levelSets[setBase + 1024 + mid];
                         tiles32x32[r * 2 * 32 + c * 2 + 1] = _levelSets[setBase + 1024 + 256 + mid];
