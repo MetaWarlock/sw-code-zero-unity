@@ -86,12 +86,14 @@ namespace Darkwing.Core
         {
             foreach (var o in level.Objects)
             {
-                // World position: screenX = 256px page, localX = pixel within page.
+                // Verified activation rule (level_format.md §7): spawn when the
+                // object's cell column == scroll column ($FD) and its grid row == $FB.
+                int cellX = o.ScreenX, rowY = o.ScreenY;
+                int scrollCol = (scrollX >> 8) & 0xFFFF; // $FD = cell column
+                int scrollRow = scrollY >> 8;
+                if (cellX != scrollCol || rowY != scrollRow) continue;
                 ushort wx = (ushort)((o.ScreenX << 8) | o.X);
                 ushort wy = (ushort)((o.ScreenY << 8) | o.Y);
-                int dx = (short)(wx - scrollX);
-                int dy = (short)(wy - scrollY);
-                if (dx < -16 || dx > 256 + 16 || dy < -16 || dy > 256 + 16) continue;
                 if (IsSpawned(o.Index)) continue;
                 int slot = FindFreeSlot();
                 if (slot < 0) return; // pool exhausted ($8132 RTS)
