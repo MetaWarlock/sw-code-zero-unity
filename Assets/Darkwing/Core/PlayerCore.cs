@@ -502,6 +502,23 @@ namespace Darkwing.Core
             }
         }
 
+        // ---------- Energy HUD drain ($CB0E-$CB3B / state 7 $D3D9-$D407) ----------
+        public byte EnergyColRight = 0x79; // $05E6 (tile code $70-$79 = 9..0)
+        public byte EnergyColLeft = 0x79;  // $05E4
+
+        /// <summary>Per-frame energy drain; both columns empty → death ($64 → $D41B).</summary>
+        public void DrainEnergy()
+        {
+            if (EnergyColRight > 0x70) EnergyColRight--;
+            else if (EnergyColLeft > 0x70)
+            {
+                EnergyColLeft--;
+                EnergyColRight = 0x79; // refill right column from left ($CB22)
+            }
+            if (EnergyColLeft == 0x70 && EnergyColRight == 0x70)
+                DeathFlag = 1; // → death sequence (world handles state change)
+        }
+
         // ---------- Gas gun (doc §7, $CF3A/$CE39) ----------
         public byte ActiveGasEnergyHi;  // $05BE
         public byte ActiveGasEnergyLo;  // $05C0
