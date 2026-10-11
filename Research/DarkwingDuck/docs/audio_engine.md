@@ -276,3 +276,101 @@ envelope phases; (c) mix 4 channels, apply frame tempo accumulator; (d) write WA
 truth for validation exists: `reference/det_a/audio.wav` (boot) and per-frame APU write logs
 from `probe_audio_m1`/`probe_audio_sfx`. Simplest robust alternative: offlineMesen WAV dump
 per song (queue task id, run N frames) — no engine code needed.
+
+## 11. Porting status (2026-10-11) — bank-3 driver transcribed to C#
+
+**Deliverables**: `Assets/Darkwing/Audio/AudioSequencer.cs` (the transcription; engine-free,
+drives `Apu.Write` in the original order, `Tick()` = one driver tick per game frame,
+`RenderFrame()` = tick + 29780/29781 alternating CPU cycles sampled at 48 kHz through a fixed
+rational resampler 16000/596591 — drift-free; `SaveState`/`LoadState` schema-tagged).
+Test harness: `Tools/DarkwingResearch/AudioPortRender.cs` (editor `run_script`: renders song 1
+600 frames → `Research/DarkwingDuck/audio_port_song1.wav` + per-frame state CSV),
+`Tools/DarkwingResearch/AudioPortSfxCompare.cs` (SFX state dump), and
+`Tools/DarkwingResearch/compare_audio_port.py` (structural comparison vs the Mesen probes).
+
+### 11.1 Verification results
+
+Music (song 1, port from song start vs original captured mid-song from `m1_gameplay.mss`,
+compared as per-channel (note-interval, APU-period) transitions — the APU period derived from
+the stored $0720/$0724 through the $8849 octave fold):
+
+- **100% of port note transitions occur in the original's capture**: pulse1 51/51,
+  pulse2 59/59, triangle 34/34.
+- Longest contiguous identical (interval, period) runs: pulse1 12, pulse2 17, triangle 18
+  transitions (e.g. pulse1: (13,$213)(7,$169)(13,$113)(7,$134)(13,$169)(7,$190)… — rhythm and
+  pitch identical). The residual differences cluster at the capture-window edges (the probe
+  starts mid-phrase; the port starts at the song loop point).
+- The tempo mechanics match exactly: default $0199 at music start, song 1's cmd $05 → $0133,
+  $C8 += $33/frame with $C7 toggling 1↔2 (probe-observed values reproduced).
+
+SFX (punch $3F, port from fresh state vs `probe_audio_sfx` whose game re-fires it while B is
+held): block parse, D3/D4/D5 block timing (len $05, speed $56, D5 = (D3·D4)>>8+1), channel
+mask $08 (noise), instrument $29, volume $0F → control $3F, noise period $400E = $84
+(= (note-1)^$0F | instr[7]), envelope timer sequence $F0/$90/$6D/$4A/$27, and the stop
+semantics ($FF block → $81C8 full reset) all match the original frame-for-frame.
+Arbitration verified live: SFX steal sets $CF, music parsing continues on stolen channels
+(stream pointers advance, registers muted via the $88A0 skip), seamless hand-back.
+WAV: `audio_port_song1.wav` (48 kHz mono, 479,210 samples = exactly 600 × 798.68) vs the
+Mesen capture — per-frame RMS envelope correlation 0.44 at best frame offset −87; the gap is
+expected (different mixers/gain, stereo→mono, mid-song capture start), the note structure
+above is the meaningful check.
+
+### 11.2 Corrections to the static analysis above (found while porting)
+
+1. **§5 "Channel init block" for music is wrong.** Music streams are pure event streams from
+   byte 0 — song 1's pulse1 starts with cmd $05 (tempo $0133), which is where the observed
+   tempo comes from. The init-flag block parser ($830A) belongs to the SFX tick-block format
+   only (entered from $82DE when $C0 bit0 is set).
+2. **§6 SFX tick-block flag bits are bit0/bit1/bit2, not bit6/5/4.** The parser tests bit7
+   via ASL (chain/stop), then LSRs $C4 testing **bit0 = loop point** (2 big-endian bytes →
+   new $D1:$D0), **bit1 = $D4** (speed), **bit2 = $D2** (pitch offset). Verified against the
+   punch SFX stream `05 | 02 56 05 08 | 05 28 0F | 0C` → D4=$56, len=$05, mask=$08 (noise),
+   init: instrument $29 (handler $866F, param+1), volume $0F ($865A), note $0C.
+3. **Music channel pointers live at $0750/$0754 + c** and music start/clear/silence loops use
+   raw X (3..0) against those group-B addresses; the field layout is per-FIELD 4-byte arrays
+   ($0700+field+X, group B = same offsets with X|=$28), not per-channel interleaved.
+4. **$C0 bit0 (halt) is cleared at the end of every tick** by the `LSR $C0 / ASL $C0` pair at
+   $80AC-$80AE (ASL shifts in 0 — bit0 does not survive). $82CB and the $80FE task bracket
+   set it mid-tick only; probes show $C0 = 0 at every frame end. Bit1 = music pause.
+5. **Note-event bit layout (resolves open question §9.1)**: with carry-in 1 from the routing
+   CMP, the four ROLs at $83DB compute `(b >> 5) & 7` — bits 7-5 pick the multiplier row
+   (index-1 into $8915 = 2·2ⁿ when $0730 bit5/4 set, $891C = 3·2ⁿ otherwise, ×1.5 when
+   $0730 bit3, index −1 reads $8914 = $60); bits 4-0 are the duration code whose value-1 is
+   ALSO the pitch index ($8923[flags&$0F] + code−1 + $CB + $0734,X; noise: (code−1)^$0F).
+   $0738 (the multiplier) is a hold counter in tempo ticks; $0740 (unit×hold >> 8, min 1) is
+   the APU gate.
+6. **Period table $8959 is little-endian words** (lo at $8959+2i → $0720, hi at $8959+2i+1 →
+   $0724; resolves half of open question §9.2). The $8849 fold: find the largest Y with
+   hi ≥ $8953[Y]; N = Y+hi; shift the 16-bit pair [((N&7)+7) : lo] right by 7−(N>>3); the
+   final $4003 value = pair>>8 (dedup'd), $4002 = pair&$FF. Entry 61 (pitch 60) → $06A etc.
+7. **Command table $84A6 has 25 entries ($00-$18)** — cmd $18 = the duty handler $86AD
+   (shared with the SFX init block). Table base = the JSR $8023 push quirk (return−1), entries
+   (lo,hi) at base+2k+1/base+2k+2. Same quirk fixes the $81B4 task table: $F5→$822D (fade
+   down), $F6→$8234 (fade set), $F7→$824A (D8 = −$C3) — the §3 table had these shifted.
+8. **Volume clamp mechanism** ($87A1): BIT $C4 with $C4 = $10 (always — $8797 reloads it even
+   after the gate path) tests the control byte's $30 sentinel bit4; a borrowed subtraction
+   clears it → volume clamps to control & $F0. Confirmed against the probe: no control write
+   ever exceeds the stream's volume nibble.
+9. **Song unused channels**: song 1's "noise" pointer $918A points at a `$17` (stream end)
+   byte — the channel self-terminates on tick 1 (the doc's "noise ptr 0" was the
+   post-termination value).
+10. **$85AE envelope restart**: music triangle → phase 2 with timer 1; SFX triangle → phase 2
+    with timer = (D3 × control)>>8 + 1; others → phase 0, timer 0. The $8702 sustain zeroes
+    the timer for channel index 1 every tick (triangle = linear-counter "volume" $FF/0).
+
+### 11.3 Deviations / open items in the port
+
+- The $803A fixed-bank read path (pointer hi ≥ $C0) is implemented as a logical bank-7 read;
+  the original's MMC1 window dance is not reproduced (path is dead for all game audio data).
+- Reads through a cleared stream pointer (address < $8000) return 0; the original would read
+  mirrored RAM. Not reachable with valid streams.
+- SFX block loop-point `b1 == D6` handling reproduces the D6 collapse; the `b2 == 0`
+  fall-through (whose PLP would pop a return address in the original) is implemented as the
+  D6-restore path — unreachable with valid ROM data (loop-pointer hi bytes are $80-$BF).
+- Queue plumbing ($DA/$DB/$DC-$E3, Audio_Enqueue $F84E) is replaced by synchronous
+  `Task(id)` calls; the fields are kept in SaveState for completeness.
+- Open: the probe's re-triggered punch SFX shows group-A flags bit3 clear where the port
+  (fresh trigger) has it set — bit3 only gates GateCheck's decay-accumulator reset, which is
+  unreachable in the noise path, so the audio is identical; exact trigger-history cause not
+  chased. SFX-vs-SFX priority equal-replace and the D6 loop-counter semantics beyond the
+  punch SFX remain exercised only by construction.
