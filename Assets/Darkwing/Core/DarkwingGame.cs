@@ -18,12 +18,25 @@ namespace Darkwing.Core
         public readonly byte[] Framebuffer = new byte[ScreenWidth * ScreenHeight]; // NES palette indices 0..63
         public long Frame;
         public readonly PlayerCore Player;
+        public readonly Ppu Ppu;
+        private readonly GameData _data;
 
-        public DarkwingGame() : this(EmptyTileMap.Instance) { }
+        public DarkwingGame() : this(null) { }
 
-        public DarkwingGame(ITileMap tiles)
+        public DarkwingGame(GameData data) : this(data, EmptyTileMap.Instance) { }
+
+        public DarkwingGame(GameData data, ITileMap tiles)
         {
+            _data = data;
             Player = new PlayerCore(tiles);
+            Ppu = new Ppu(data);
+        }
+
+        /// <summary>Load a room's nametable directly (test fixture path; the level
+        /// loader normally streams it via the VRAM queue).</summary>
+        public void LoadNametableRoom(byte[] nametableTilesAndAttrs)
+        {
+            System.Array.Copy(nametableTilesAndAttrs, Ppu.NametableRam, nametableTilesAndAttrs.Length);
         }
 
         /// <summary>Reset to power-on state (equivalent of RESET vector path).</summary>
@@ -42,6 +55,7 @@ namespace Darkwing.Core
             byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
             Player.Step(held, pressed);
             _prevHeld = held;
+            if (_data != null) Ppu.Render(Framebuffer);
             Frame++;
         }
 
