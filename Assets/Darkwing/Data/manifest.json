@@ -35,6 +35,14 @@
     "world_bank7.bytes": {
       "bytes": 16384,
       "source": "PRG bank 7 raw (fixed bank: world descriptor tables $DF50+, engine glue data)"
+    },
+    "map_nametable.bytes": {
+      "bytes": 1024,
+      "source": "city-map screen nametable captured from live VRAM (probe_map frame 30; static bg = ui_map stream 1 + dialog text)"
+    },
+    "map_palette.bin": {
+      "bytes": 32,
+      "source": "captured map-screen palette"
     }
   },
   "notes": [
