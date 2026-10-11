@@ -483,3 +483,55 @@ player touches. Values are compared against absolute deltas, i.e. full hitbox = 
 - [Darkwing Duck Wiki — NES game (boss/stage assignments)](https://darkwingduck.fandom.com/wiki/Darkwing_Duck_(NES_game))
 - [StrategyWiki — Darkwing Duck stage guide](https://strategywiki.org/wiki/Darkwing_Duck)
 - [The Cutting Room Floor — Darkwing Duck prototype](https://tcrf.net/Proto:Darkwing_Duck_(NES))
+
+---
+
+## 8. Porting status (C#, Assets/Darkwing/Core) — updated 2026-10-11
+
+Bank 6 (ids $00-$46) and bank 1 (ids $47-$7F) are ported to C# in
+`Assets/Darkwing/Core/EnemyBehaviors.cs` (both the enemy behaviors and the
+`BossBehaviors` class), dispatched from `EnemyDispatcher.cs`
+(the $8000 loop + the full per-slot post-processing $8032-$816C, including
+$FAAE/$FB08 projectile overlap, the $80A0 damage table, $80F2 death pops,
+$81C0 special deaths, and the $813B/$816F contact/bounce pass with the
+$FBE9/$FC09 hitbox tables transcribed from §5.4).
+
+- **Behaviors ported: 47/47 table entries (55 unique routines)** — projectile
+  weapons 1-4 ($82F0/$8385/$841C/$85BC), death pop $86A2 + debris $8715/$8B80,
+  bounce $87E2, lingering gas/bonus pickups $8837 (+ the $8857 grant table),
+  pickups $8A1A/$8A22 (+ the $8A39 grant table), 8-dir mover $8BDA, walker
+  family $8C34/$8DAF/$8EA3/$906A/$90D3/$9265/$92E6(+states $9418)/$9424/$950B/
+  $954B/$95B8/$98EE/$9ABE/$9A03/$9BC9/$9C8A/$9F4C/$9FCB/$A00A/$A09C/$A164/$A28F/
+  $A41E/$A53E/$A631/$A6B4/$A7D9/$A8BB/$A9BF/$AA82/$AAD1/$ABBE/$AC2C/$AD5B/$ADF2/
+  $AEBC/$B007/$B1D3/$B2FC/$B483/$B570, friendly pop $8812, Quackerjack core
+  bank-6 copy $965D, grab-carry $9822, no-ops $82EF.
+- **Bosses ported: 7/7** — Quackerjack ($50/$51/$52), Wolfduck ($53/$54/$55),
+  Liquidator ($57/$58/$59), Moliarty ($4A/$4C/$4D/$4E), Bushroot ($49/$4B/$63),
+  Megavolt ($5A/$5B/$5C), Steelbeak ($62/$5F/$60/$61/$64), plus doors $70-$7D
+  ($96C9 with the $970C/$971A/$9728 script tables), defeat pop $4F ($B3F8),
+  $B315 defeat sweep, $B39E/$B36A damage/flash (global $EE = 16 HP, $ED
+  invuln), $B4BA projectile conversion, and the minor boss children
+  ($48/$56/$65/$66/$67/$68/$69/$6A-$6F/$7E/$7F).
+- **RNG**: the $E4-$E7 counter model lives on `EnemyBehaviors`
+  (`RngE4-RngE7` + per-site step helpers for the $8D2A/$94FA/$9648/$A153/
+  $ADCA/$8715/$9959/$A7AB/$9447/$AF74 sites); serialized through
+  `DarkwingGame.SaveState` (schema version 2, which also captures all slot
+  fields and boss globals).
+- **Spawner**: `ObjectSystem.SpawnFromPlacements` loads Flags/Behavior/
+  AnimNumber/BehaviorParam/Health from the bank-4 type tables via
+  `EnemyBehaviors.LoadTypeTable` (fed from `Assets/Darkwing/Data/
+  object_types.bytes`, verified byte-identical to prg.bin bank4 $8AB3/$8C57).
+- **Fidelity notes**: positions/velocities use the validated 16.8 model
+  (same as PlayerCore); the fixed-bank $F5xx "low byte in $F0-$FF" correction
+  is subsumed by the 16-bit accumulator. RNG call sites use carry-in 0 where
+  the 6502 carry could not be statically proven. Behavior $03's stuck-bolt
+  player-pull branch ($8542) and the $8A8A HUD-cascade entry are simplified
+  (documented inline).
+- **Verification**: `AgentScripts/EnemyProbe.cs`
+  (`unity command run_script --file AgentScripts/EnemyProbe.cs --entry
+  EnemyProbe.Run`) — 120-frame trajectories: type 0 walker walks 1 px/f with
+  the $16/$3C/$32 timer cadence and anim $43 wind-up + turn; type 16 pickup
+  idles; behavior 1 gas cloud travels 4 px/f and dies at the $8363 screen
+  edge; type 15 ceiling spike patrols 1 px/f and flips every $18 frames;
+  type 9 hopper idles on its 1E-frame RNG delay; boss $4F defeat pop rises
+  3.27 px/f. Compile clean (unity recompile_status: completed).

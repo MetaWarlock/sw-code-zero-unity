@@ -50,6 +50,14 @@ namespace Darkwing.Core
         public byte FacingRight = 1;    // $0400 bit6
         public byte Flags = 0xD0;       // $0400 (active|facing)
 
+        // --- RAM-equivalent state used by the enemy/boss port (addresses in comments) ---
+        public byte AreaId;             // $31 (world/area index)
+        public byte PendingWeaponIcon;  // $05BA HUD icon code from weapon pickups
+        public byte PendingScreenEffect;// $1A screen-effect trigger ($8A/$8B/$88/$FF)
+        public byte PendingSpawnType;   // $042E boss drop request (Bushroot vines $52)
+        public byte PendingMissionFlag; // $66 door mission flag ($FF/$F0)
+        public byte BonusDigits;        // $05C4-$05CC pickup cascade (mod-10 accumulator)
+
         private ITileMap _tiles;
         public ITileMap TileMap { get => _tiles; set => _tiles = value; }
         public ObjectSystem Objects;  // slot 0 shares the player's anim state (original RAM model)
@@ -163,20 +171,27 @@ namespace Darkwing.Core
         /// </summary>
         public void UpdateCamera(bool movedLeft, bool movedRight)
         {
+            // $DA70/$DBCE/$DC19: the scroll delta = the player's move delta clamped
+            // to [1,6] px/frame ($DBDF clamp), applied when the player is past the
+            // dead-zone edge; the cell index rides the scroll high byte.
+            int delta = (short)(X - PrevX);
+            if (delta == 0) return;
+            int amt = delta < 0 ? -delta : delta;
+            if (amt > 6) amt = 6;
+            if (amt < 1) amt = 1;
             int screenX = (short)(X - ScrollX);
-            if (movedLeft && screenX >= 0x88)
+            if (movedRight && screenX >= 0x89)
             {
-                ScrollX--;                                   // chase left
-                screenX = (short)(X - ScrollX);
-                if (screenX >= 0x88) { }                     // keep chasing next frames
+                ScrollX = (ushort)(ScrollX + amt);
             }
-            else if (movedRight && screenX >= 0x89)
+            else if (movedLeft && screenX >= 0x88)
             {
-                ScrollX++;                                   // chase right
-                screenX = (short)(X - ScrollX);
+                // chase left ($DC19 mirror): the window mirrors at the left edge
+                ScrollX = (ushort)(ScrollX - amt);
             }
-            // push-to-dead-zone after scroll (original pushes to 16px from edge)
-            if (screenX < 0x10) { ScrollX = (ushort)(X - 0x10); }
+            // push-to-dead-zone after scroll ($DABD/$DAEE: 16px inside the edge)
+            screenX = (short)(X - ScrollX);
+            if (screenX < 0x10) ScrollX = (ushort)(X - 0x10);
         }
 
         // ---------- Main state dispatch ($CB41) ----------
@@ -612,6 +627,75 @@ namespace Darkwing.Core
                 CutVelocity();
             }
         }
+
+        // ---------- Enemy/pickup meter hooks (fixed-bank $890B/$8982/$88FF sites) ----------
+
+        /// <summary>$890B add/subtract the saved gas meter ($60/$61, codes $70-$7A = 0-10).
+        /// A with bit7 set subtracts (~A & $7F) units; otherwise adds A units.</summary>
+        public void AddSavedMeter(byte a)
+        {
+            if ((a & 0x80) != 0)
+            {
+                int amount = (~a) & 0x7F;
+                int v = (GasEnergyHi - 0x70) * 10 + (GasEnergyLo - 0x70) - amount;
+                if (v < 0) v = 0;
+                GasEnergyHi = (byte)(0x70 + v / 10);
+                GasEnergyLo = (byte)(0x70 + v % 10);
+                return;
+            }
+            if (GasEnergyLo == 0) { GasEnergyHi = 0x70; GasEnergyLo = 0x70; }
+            int val = (GasEnergyHi - 0x70) * 10 + (GasEnergyLo - 0x70) + a;
+            if (val > 99) val = 99;
+            GasEnergyHi = (byte)(0x70 + val / 10);
+            GasEnergyLo = (byte)(0x70 + val % 10);
+        }
+
+        /// <summary>$8982 add/subtract the active gas meter ($05BE/$05C0).</summary>
+        public void DrainActiveMeter(byte a) => AddActiveMeterRaw(a, ActiveGasEnergyHi, ActiveGasEnergyLo,
+            (hi, lo) => { ActiveGasEnergyHi = hi; ActiveGasEnergyLo = lo; });
+
+        private static void AddActiveMeterRaw(byte a, byte hi, byte lo, System.Action<byte, byte> set)
+        {
+            int v;
+            if ((a & 0x80) != 0)
+            {
+                v = (hi - 0x70) * 10 + (lo - 0x70) - ((~a) & 0x7F);
+            }
+            else
+            {
+                if (lo == 0) { hi = 0x70; lo = 0x70; }
+                v = (hi - 0x70) * 10 + (lo - 0x70) + a;
+            }
+            if (v < 0) v = 0;
+            if (v > 99) v = 99;
+            set((byte)(0x70 + v / 10), (byte)(0x70 + v % 10));
+        }
+
+        /// <summary>Add plain units to the active meter (bonus pickups via $8957).</summary>
+        public void AddActiveGasUnits(int units) => AddActiveMeterRaw((byte)units, ActiveGasEnergyHi, ActiveGasEnergyLo,
+            (hi, lo) => { ActiveGasEnergyHi = hi; ActiveGasEnergyLo = lo; });
+
+        /// <summary>$8A7D cascade: add 1/5 to the bonus BCD digits ($05C4-$05CC).</summary>
+        public void AddEnergyDigit(int n) => BonusDigits = (byte)((BonusDigits + n) % 100);
+
+        /// <summary>$8AF4 add to the HUD energy column ($05E6, codes $70-$79).</summary>
+        public void AddHudEnergy(int n)
+        {
+            int v = (EnergyColRight - 0x70) + n;
+            if (v > 9) { v -= 10; if (EnergyColLeft < 0x79) EnergyColLeft++; EnergyColRight = (byte)(0x70 + v); }
+            else EnergyColRight = (byte)(0x70 + v);
+        }
+
+        /// <summary>$FA78 player SetAnim: slot-0 anim + frame/timer reset.</summary>
+        public void SetAnimPlayer(byte anim)
+        {
+            if (Objects == null) return;
+            var s0 = Objects.Slots[0];
+            s0.AnimNumber = anim;
+            s0.AnimFrame = 0;
+            s0.AnimTimer = 0;
+        }
+
         private void ForcedHopState()
         {
             IntegrateY();

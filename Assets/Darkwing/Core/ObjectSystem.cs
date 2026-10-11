@@ -7,7 +7,8 @@ namespace Darkwing.Core
     /// with a 16px window; persistent anim ids $13,$14,$17,$18,$19,$29 exempt),
     /// and the placement spawner (bank 4 $8090: 5 parallel arrays, activates into
     /// free slots 15..4 when the object's screen scrolls into view).
-    /// Behavior execution itself is delegated to IObjectBehavior implementations (M6).
+    /// Behavior execution is delegated to EnemyBehaviors (bank 6) / BossBehaviors
+    /// (bank 1) through EnemyDispatcher.
     /// </summary>
     public sealed class ObjectSystem
     {
@@ -16,14 +17,27 @@ namespace Darkwing.Core
         public sealed class Slot
         {
             public bool Active;          // $04D0 bit7
-            public byte Flags;           // $0400
+            public byte Flags;           // $0400 (bit7 on-screen, bit6 h-flip, bit4 overlap ref, bit3 compose off, bit2 pass-through)
             public byte AnimNumber;      // $0420
             public byte AnimTimer;       // $0430
             public byte AnimFrame;       // $0410
+            public byte YFrac;           // $0460 Y subpixel accumulator
+            public byte XFrac;           // $0470 X subpixel accumulator
+            public byte T480;            // $0480 behavior-local timer
+            public byte T490;            // $0490 behavior-local timer/counter
+            public byte T4A0;            // $04A0 behavior-local counter (often HP latch)
+            public byte T4B0;            // $04B0 behavior-local counter/phase
+            public byte T4AE;            // $04AE hop counter (Bushroot) / lit-post index (Moliarty)
+            public byte T4AC;            // $04AC (Moliarty scratch)
+            public byte T4AF;            // $04AF live-child counter (Wolfduck/Bushroot)
+            public byte T4BC;            // $04BC flamethrower round-robin period
+            public byte T4BD;            // $04BD Moliarty post index
             public byte StateLow;        // $04D0 low bits
             public byte Behavior;        // $04E0
             public ushort X;             // $04F0/$0500 absolute
             public ushort Y;             // $0510/$0520 absolute
+            public byte XVelFrac;        // $0530
+            public byte XVelInt;         // $0540
             public sbyte YVelInt;        // $0560 (up-positive)
             public byte YVelFrac;        // $0550
             public byte Direction;       // $0580
@@ -38,6 +52,7 @@ namespace Darkwing.Core
         public readonly Slot[] Slots = new Slot[SlotCount];
         private readonly GameData _data;
         private byte _parity; // $95
+        private readonly byte[] _spawnedMask = new byte[32]; // $0340 already-spawned bitmask
 
         public ObjectSystem(GameData data)
         {
@@ -81,10 +96,27 @@ namespace Darkwing.Core
             }
         }
 
+        /// <summary>$FC29 mark a placement index in the $0340 bitmask.</summary>
+        public void MarkSpawned(byte placementIndex)
+        {
+            _spawnedMask[placementIndex >> 3] |= (byte)(1 << (placementIndex & 7));
+        }
+
+        public bool IsPlacementSpawned(byte placementIndex)
+        {
+            return (_spawnedMask[placementIndex >> 3] & (1 << (placementIndex & 7))) != 0;
+        }
+
+        /// <summary>Raw $0340-mask read (behavior 29's $0301-class checks use indexes).</summary>
+        public byte SpawnedBitmask(int cell) => _spawnedMask[cell & 31];
+
         /// <summary>
         /// Spawn objects whose placement record scrolled into view ($8090).
         /// placement arrays come from GameData.Levels[level].Objects (5-byte records:
-        /// screenX, localX, screenY, localY, type).
+        /// screenX, localX, screenY, localY, type). Spawned objects load
+        /// Flags/Behavior/AnimNumber/BehaviorParam/Health from the bank-4 type
+        /// tables ($8AB3 = [flags, behavior, anim, param] × 105, $8C57 = HP × 105)
+        /// via EnemyBehaviors.TryGetType.
         /// </summary>
         public void SpawnFromPlacements(GameData.LevelDef level, ushort scrollX, ushort scrollY)
         {
@@ -106,8 +138,23 @@ namespace Darkwing.Core
                 s.X = wx;
                 s.Y = wy;
                 s.PlacementIndex = (byte)o.Index;
-                s.Behavior = (byte)o.Type; // type→behavior mapping lands with M6 catalog
-                s.Health = 1;
+                if (EnemyBehaviors.TryGetType(o.Type, out byte flags, out byte behavior,
+                                              out byte anim, out byte param, out byte hp))
+                {
+                    s.Flags = flags;             // $0400 ← $8AB3+0
+                    s.Behavior = behavior;       // $04E0 ← $8AB3+1
+                    s.AnimNumber = anim;         // $0420 ← $8AB3+2
+                    s.BehaviorParam = param;     // $0570 ← $8AB3+3
+                    s.Health = hp;               // $05A0 ← $8C57+type
+                }
+                else
+                {
+                    s.Behavior = (byte)o.Type; // fallback when no table is loaded
+                    s.Health = 1;
+                }
+                s.StateLow = 0;
+                s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;
+                s.AnimFrame = 0; s.AnimTimer = 0;
             }
         }
 

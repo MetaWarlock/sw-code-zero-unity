@@ -46,6 +46,28 @@ namespace Darkwing.Core
         public byte[] Bank5 { get => _bank5; set { _bank5 = value; if (Oam != null) Oam.SetBank5(value); } }
         private byte[] _bank5;
 
+        /// <summary>
+        /// Bank-6 enemy dispatcher (plus bank-1 boss routing inside it). Setting
+        /// Bank6 constructs it; set ObjectTypeTable to load the bank-4 spawn tables.
+        /// </summary>
+        public EnemyDispatcher Enemies { get; private set; }
+        public byte[] Bank6
+        {
+            get => _bank6;
+            set
+            {
+                _bank6 = value;
+                Enemies = value != null ? new EnemyDispatcher(value, Objects, Player) : null;
+            }
+        }
+        private byte[] _bank6;
+
+        /// <summary>Bank-4 object type tables (object_types.bytes: 105×4 + 105 HP).</summary>
+        public byte[] ObjectTypeTable
+        {
+            set => EnemyBehaviors.LoadTypeTable(value);
+        }
+
         /// <summary>Ported bank-3 audio driver; null until Bank3 is set.</summary>
         public Darkwing.Audio.AudioSequencer Audio { get; private set; }
         public byte[] Bank3
@@ -64,6 +86,9 @@ namespace Darkwing.Core
 
         /// <summary>Late-bound bank 7 (world/music data) for the sequencer.</summary>
         public byte[] Bank7 { get => _bank7; set { _bank7 = value; } }
+
+        /// <summary>The loaded mission's placement data (spawner source).</summary>
+        public GameData.LevelDef CurrentLevel { get; set; }
 
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
         public const int SfxJump = 0x21;
@@ -123,6 +148,14 @@ namespace Darkwing.Core
                 s0.X = Player.X;
                 s0.Y = Player.Y;
                 Hud.Compose(3);
+                // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
+                if (CurrentLevel != null)
+                {
+                    // Spawner ($8090); culling happens per-slot in OamDispatcher
+                    // ($802F semantics: ±16 screens, onscreen bit at high==0).
+                    Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX, (ushort)(Player.ScrollYRow << 8));
+                }
+                Enemies?.RunFrame();
                 Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
                 Ppu.Render(Framebuffer);
             }
@@ -134,8 +167,28 @@ namespace Darkwing.Core
         {
             using var ms = new System.IO.MemoryStream();
             using var w = new System.IO.BinaryWriter(ms);
-            w.Write((int)1); // schema version
+            w.Write((int)2); // schema version
             w.Write(Frame);
+            w.Write(Player.HitLadder);
+            w.Write(Player.InvulnFrames);
+            w.Write(Player.GasEnergyHi);
+            w.Write(Player.GasEnergyLo);
+            w.Write(Player.ActiveGasEnergyHi);
+            w.Write(Player.ActiveGasEnergyLo);
+            w.Write(Player.WeaponActive);
+            w.Write(Player.WeaponSelected);
+            foreach (var s in Objects.Slots)
+            {
+                w.Write(s.Active);
+                w.Write(s.Flags); w.Write(s.AnimNumber); w.Write(s.AnimFrame); w.Write(s.AnimTimer);
+                w.Write(s.StateLow); w.Write(s.Behavior); w.Write(s.BehaviorParam);
+                w.Write(s.HitFlash); w.Write(s.Health); w.Write(s.Direction); w.Write(s.PlacementIndex);
+                w.Write(s.X); w.Write(s.Y);
+                w.Write(s.XFrac); w.Write(s.YFrac);
+                w.Write(s.XVelInt); w.Write(s.XVelFrac);
+                w.Write((byte)s.YVelInt); w.Write(s.YVelFrac);
+            }
+            Enemies?.SaveState(w);
             return ms.ToArray();
         }
 
@@ -144,8 +197,28 @@ namespace Darkwing.Core
             using var ms = new System.IO.MemoryStream(data);
             using var r = new System.IO.BinaryReader(ms);
             int version = r.ReadInt32();
-            if (version != 1) throw new System.InvalidOperationException($"State schema {version} unsupported");
+            if (version != 2) throw new System.InvalidOperationException($"State schema {version} unsupported");
             Frame = r.ReadInt64();
+            Player.HitLadder = r.ReadByte();
+            Player.InvulnFrames = r.ReadByte();
+            Player.GasEnergyHi = r.ReadByte();
+            Player.GasEnergyLo = r.ReadByte();
+            Player.ActiveGasEnergyHi = r.ReadByte();
+            Player.ActiveGasEnergyLo = r.ReadByte();
+            Player.WeaponActive = r.ReadByte();
+            Player.WeaponSelected = r.ReadByte();
+            foreach (var s in Objects.Slots)
+            {
+                s.Active = r.ReadBoolean();
+                s.Flags = r.ReadByte(); s.AnimNumber = r.ReadByte(); s.AnimFrame = r.ReadByte(); s.AnimTimer = r.ReadByte();
+                s.StateLow = r.ReadByte(); s.Behavior = r.ReadByte(); s.BehaviorParam = r.ReadByte();
+                s.HitFlash = r.ReadByte(); s.Health = r.ReadByte(); s.Direction = r.ReadByte(); s.PlacementIndex = r.ReadByte();
+                s.X = r.ReadUInt16(); s.Y = r.ReadUInt16();
+                s.XFrac = r.ReadByte(); s.YFrac = r.ReadByte();
+                s.XVelInt = r.ReadByte(); s.XVelFrac = r.ReadByte();
+                s.YVelInt = (sbyte)r.ReadByte(); s.YVelFrac = r.ReadByte();
+            }
+            Enemies?.LoadState(r);
         }
     }
 }

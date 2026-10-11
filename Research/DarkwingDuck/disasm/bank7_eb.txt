@@ -1,0 +1,1151 @@
+EB00  85 01     STA $01                      ;
+EB02  60        RTS                          ;
+EB03  80        ???
+EB04  40        RTI                          ;
+EB05  20 10 08  JSR $0810                    ;
+EB08  04        ???
+EB09  02        ???
+EB0A  01 00     ORA ($00,X)                  ;
+EB0C  02        ???
+EB0D  08        PHP                          ;
+EB0E  0A        ASL A                        ;
+EB0F  00        BRK                          ;
+EB10  01 00     ORA ($00,X)                  ;
+EB12  01 F0     ORA ($F0,X)                  ;
+EB14  F0 0F     BEQ $EB25                    ;
+EB16  0F        ???
+EB17  00        BRK                          ;
+EB18  80        ???
+EB19  00        BRK                          ;
+EB1A  80        ???
+EB1B  00        BRK                          ;
+EB1C  80        ???
+EB1D  00        BRK                          ;
+EB1E  80        ???
+EB1F  20 20 21  JSR $2120                    ;
+EB22  21 22     AND ($22,X)                  ;
+EB24  22        ???
+EB25  23        ???
+EB26  23        ???
+EB27  A2 00     LDX #$00                     ;
+EB29  86 00     STX $00                      ;
+EB2B  B1 32     LDA ($32),Y                  ;
+EB2D  0A        ASL A                        ;
+EB2E  26 00     ROL $00                      ;
+EB30  0A        ASL A                        ;
+EB31  26 00     ROL $00                      ;
+EB33  0A        ASL A                        ;
+EB34  26 00     ROL $00                      ;
+EB36  0A        ASL A                        ;
+EB37  26 00     ROL $00                      ;
+EB39  0A        ASL A                        ;
+EB3A  26 00     ROL $00                      ;
+EB3C  0A        ASL A                        ;
+EB3D  26 00     ROL $00                      ;
+EB3F  85 26     STA $26                      ;
+EB41  A5 00     LDA $00                      ;
+EB43  85 27     STA $27                      ;
+EB45  A5 26     LDA $26                      ;
+EB47  69 C0     ADC #$C0                     ;
+EB49  85 26     STA $26                      ;
+EB4B  A5 27     LDA $27                      ;
+EB4D  69 7F     ADC #$7F                     ;
+EB4F  85 27     STA $27                      ;
+EB51  60        RTS                          ;
+EB52  A5 50     LDA $50                      ;
+EB54  C9 0C     CMP #$0C                     ;
+EB56  F0 08     BEQ $EB60                    ;
+EB58  BD 00 04  LDA $0400,X                  ;
+EB5B  29 DF     AND #$DF                     ;
+EB5D  9D 00 04  STA $0400,X                  ;
+EB60  A9 00     LDA #$00                     ;
+EB62  85 10     STA $10                      ;
+EB64  A4 40     LDY $40                      ;
+EB66  20 E8 EB  JSR $EBE8                    ;
+EB69  A4 41     LDY $41                      ;
+EB6B  99 42 00  STA $0042,Y                  ;
+EB6E  C5 10     CMP $10                      ;
+EB70  90 28     BCC $EB9A                    ;
+EB72  85 10     STA $10                      ;
+EB74  E0 00     CPX #$00                     ;
+EB76  D0 08     BNE $EB80                    ;
+EB78  A5 04     LDA $04                      ;
+EB7A  85 4C     STA $4C                      ;
+EB7C  A5 05     LDA $05                      ;
+EB7E  85 4B     STA $4B                      ;
+EB80  A5 03     LDA $03                      ;
+EB82  38        SEC                          ;
+EB83  E5 FD     SBC $FD                      ;
+EB85  18        CLC                          ;
+EB86  65 22     ADC $22                      ;
+EB88  85 4A     STA $4A                      ;
+EB8A  A5 08     LDA $08                      ;
+EB8C  38        SEC                          ;
+EB8D  E5 FB     SBC $FB                      ;
+EB8F  90 09     BCC $EB9A                    ;
+EB91  F0 07     BEQ $EB9A                    ;
+EB93  A5 4A     LDA $4A                      ;
+EB95  18        CLC                          ;
+EB96  65 2E     ADC $2E                      ;
+EB98  85 4A     STA $4A                      ;
+EB9A  E0 01     CPX #$01                     ;
+EB9C  90 06     BCC $EBA4                    ;
+EB9E  A5 10     LDA $10                      ;
+EBA0  C9 02     CMP #$02                     ;
+EBA2  B0 06     BCS $EBAA                    ;
+EBA4  E6 40     INC $40                      ;
+EBA6  C6 41     DEC $41                      ;
+EBA8  10 BA     BPL $EB64                    ;
+EBAA  E0 01     CPX #$01                     ;
+EBAC  B0 0F     BCS $EBBD                    ;
+EBAE  A5 10     LDA $10                      ;
+EBB0  C9 05     CMP #$05                     ;
+EBB2  F0 14     BEQ $EBC8                    ;
+EBB4  C9 06     CMP #$06                     ;
+EBB6  F0 2B     BEQ $EBE3                    ;
+EBB8  C9 07     CMP #$07                     ;
+EBBA  F0 1F     BEQ $EBDB                    ;
+EBBC  60        RTS                          ;
+EBBD  A5 10     LDA $10                      ;
+EBBF  C9 06     CMP #$06                     ;
+EBC1  F0 20     BEQ $EBE3                    ;
+EBC3  C9 07     CMP #$07                     ;
+EBC5  F0 14     BEQ $EBDB                    ;
+EBC7  60        RTS                          ;
+EBC8  BD 00 05  LDA $0500,X                  ;
+EBCB  38        SEC                          ;
+EBCC  E5 FD     SBC $FD                      ;
+EBCE  18        CLC                          ;
+EBCF  65 22     ADC $22                      ;
+EBD1  A8        TAY                          ;
+EBD2  B1 34     LDA ($34),Y                  ;
+EBD4  29 1F     AND #$1F                     ;
+EBD6  85 5B     STA $5B                      ;
+EBD8  85 6D     STA $6D                      ;
+EBDA  60        RTS                          ;
+EBDB  BD 00 04  LDA $0400,X                  ;
+EBDE  09 20     ORA #$20                     ;
+EBE0  9D 00 04  STA $0400,X                  ;
+EBE3  A9 00     LDA #$00                     ;
+EBE5  85 10     STA $10                      ;
+EBE7  60        RTS                          ;
+EBE8  A9 00     LDA #$00                     ;
+EBEA  85 02     STA $02                      ;
+EBEC  B9 19 ED  LDA $ED19,Y                  ;
+EBEF  10 02     BPL $EBF3                    ;
+EBF1  C6 02     DEC $02                      ;
+EBF3  BD F0 04  LDA $04F0,X                  ;
+EBF6  18        CLC                          ;
+EBF7  79 19 ED  ADC $ED19,Y                  ;
+EBFA  85 06     STA $06                      ;
+EBFC  BD 00 05  LDA $0500,X                  ;
+EBFF  65 02     ADC $02                      ;
+EC01  85 03     STA $03                      ;
+EC03  30 48     BMI $EC4D                    ;
+EC05  A5 06     LDA $06                      ;
+EC07  4A        LSR A                        ;
+EC08  4A        LSR A                        ;
+EC09  4A        LSR A                        ;
+EC0A  4A        LSR A                        ;
+EC0B  48        PHA                          ;
+EC0C  29 01     AND #$01                     ;
+EC0E  85 04     STA $04                      ;
+EC10  68        PLA                          ;
+EC11  4A        LSR A                        ;
+EC12  29 07     AND #$07                     ;
+EC14  85 05     STA $05                      ;
+EC16  BD 20 05  LDA $0520,X                  ;
+EC19  85 08     STA $08                      ;
+EC1B  B9 AD EC  LDA $ECAD,Y                  ;
+EC1E  30 16     BMI $EC36                    ;
+EC20  BD 10 05  LDA $0510,X                  ;
+EC23  18        CLC                          ;
+EC24  79 AD EC  ADC $ECAD,Y                  ;
+EC27  B0 04     BCS $EC2D                    ;
+EC29  C9 F0     CMP #$F0                     ;
+EC2B  90 04     BCC $EC31                    ;
+EC2D  69 0F     ADC #$0F                     ;
+EC2F  E6 08     INC $08                      ;
+EC31  85 07     STA $07                      ;
+EC33  4C 4D EC  JMP $EC4D                    ;
+EC36  B9 AD EC  LDA $ECAD,Y                  ;
+EC39  49 FF     EOR #$FF                     ;
+EC3B  85 09     STA $09                      ;
+EC3D  E6 09     INC $09                      ;
+EC3F  BD 10 05  LDA $0510,X                  ;
+EC42  38        SEC                          ;
+EC43  E5 09     SBC $09                      ;
+EC45  B0 04     BCS $EC4B                    ;
+EC47  E9 0F     SBC #$0F                     ;
+EC49  C6 08     DEC $08                      ;
+EC4B  85 07     STA $07                      ;
+EC4D  A5 07     LDA $07                      ;
+EC4F  38        SEC                          ;
+EC50  E5 FA     SBC $FA                      ;
+EC52  A5 08     LDA $08                      ;
+EC54  E5 FB     SBC $FB                      ;
+EC56  F0 15     BEQ $EC6D                    ;
+EC58  B0 08     BCS $EC62                    ;
+EC5A  E0 02     CPX #$02                     ;
+EC5C  B0 04     BCS $EC62                    ;
+EC5E  C0 06     CPY #$06                     ;
+EC60  90 03     BCC $EC65                    ;
+EC62  A9 00     LDA #$00                     ;
+EC64  60        RTS                          ;
+EC65  A5 FA     LDA $FA                      ;
+EC67  85 07     STA $07                      ;
+EC69  A5 FB     LDA $FB                      ;
+EC6B  85 08     STA $08                      ;
+EC6D  A5 03     LDA $03                      ;
+EC6F  29 01     AND #$01                     ;
+EC71  A8        TAY                          ;
+EC72  A5 07     LDA $07                      ;
+EC74  4A        LSR A                        ;
+EC75  4A        LSR A                        ;
+EC76  48        PHA                          ;
+EC77  29 38     AND #$38                     ;
+EC79  19 A7 EC  ORA $ECA7,Y                  ;
+EC7C  05 05     ORA $05                      ;
+EC7E  85 05     STA $05                      ;
+EC80  0A        ASL A                        ;
+EC81  85 02     STA $02                      ;
+EC83  68        PLA                          ;
+EC84  4A        LSR A                        ;
+EC85  29 02     AND #$02                     ;
+EC87  05 04     ORA $04                      ;
+EC89  85 04     STA $04                      ;
+EC8B  29 01     AND #$01                     ;
+EC8D  18        CLC                          ;
+EC8E  65 02     ADC $02                      ;
+EC90  A8        TAY                          ;
+EC91  B9 00 06  LDA $0600,Y                  ;
+EC94  85 02     STA $02                      ;
+EC96  A4 04     LDY $04                      ;
+EC98  B9 A9 EC  LDA $ECA9,Y                  ;
+EC9B  F0 03     BEQ $ECA0                    ;
+EC9D  25 02     AND $02                      ;
+EC9F  60        RTS                          ;
+ECA0  A5 02     LDA $02                      ;
+ECA2  4A        LSR A                        ;
+ECA3  4A        LSR A                        ;
+ECA4  4A        LSR A                        ;
+ECA5  4A        LSR A                        ;
+ECA6  60        RTS                          ;
+ECA7  00        BRK                          ;
+ECA8  40        RTI                          ;
+ECA9  0F        ???
+ECAA  0F        ???
+ECAB  00        BRK                          ;
+ECAC  00        BRK                          ;
+ECAD  F5 00     SBC $00,X                    ;
+ECAF  0B        ???
+ECB0  F5 00     SBC $00,X                    ;
+ECB2  0B        ???
+ECB3  0C        ???
+ECB4  0C        ???
+ECB5  0C        ???
+ECB6  F4        ???
+ECB7  F4        ???
+ECB8  F4        ???
+ECB9  FF        ???
+ECBA  01 01     ORA ($01,X)                  ;
+ECBC  FF        ???
+ECBD  01 01     ORA ($01,X)                  ;
+ECBF  02        ???
+ECC0  02        ???
+ECC1  02        ???
+ECC2  FE FE FE  INC $FEFE,X                  ;
+ECC5  FF        ???
+ECC6  00        BRK                          ;
+ECC7  01 FF     ORA ($FF,X)                  ;
+ECC9  00        BRK                          ;
+ECCA  01 02     ORA ($02,X)                  ;
+ECCC  02        ???
+ECCD  02        ???
+ECCE  FE FE FE  INC $FEFE,X                  ;
+ECD1  F9 07 F9  SBC $F907,Y                  ;
+ECD4  07        ???
+ECD5  08        PHP                          ;
+ECD6  08        PHP                          ;
+ECD7  F8        SED                          ;
+ECD8  F8        SED                          ;
+ECD9  FC        ???
+ECDA  04        ???
+ECDB  FC        ???
+ECDC  04        ???
+ECDD  02        ???
+ECDE  02        ???
+ECDF  FE FE FD  INC $FDFE,X                  ;
+ECE2  00        BRK                          ;
+ECE3  03        ???
+ECE4  FD 00 03  SBC $0300,X                  ;
+ECE7  EC EC EC  CPX $ECEC                    ;
+ECEA  FD FD FD  SBC $FDFD,X                  ;
+ECED  10 10     BPL $ECFF                    ;
+ECEF  F0 F0     BEQ $ECE1                    ;
+ECF1  FD 00 03  SBC $0300,X                  ;
+ECF4  FD 00 03  SBC $0300,X                  ;
+ECF7  04        ???
+ECF8  04        ???
+ECF9  04        ???
+ECFA  FC        ???
+ECFB  FC        ???
+ECFC  FC        ???
+ECFD  F1 00     SBC ($00),Y                  ;
+ECFF  0F        ???
+ED00  F1 00     SBC ($00),Y                  ;
+ED02  0F        ???
+ED03  10 10     BPL $ED15                    ;
+ED05  10 F0     BPL $ECF7                    ;
+ED07  F0 F0     BEQ $ECF9                    ;
+ED09  F9 00 07  SBC $0700,Y                  ;
+ED0C  F9 00 07  SBC $0700,Y                  ;
+ED0F  08        PHP                          ;
+ED10  08        PHP                          ;
+ED11  08        PHP                          ;
+ED12  F8        SED                          ;
+ED13  F8        SED                          ;
+ED14  F8        SED                          ;
+ED15  08        PHP                          ;
+ED16  08        PHP                          ;
+ED17  FC        ???
+ED18  FC        ???
+ED19  0C        ???
+ED1A  0C        ???
+ED1B  0C        ???
+ED1C  F4        ???
+ED1D  F4        ???
+ED1E  F4        ???
+ED1F  F5 00     SBC $00,X                    ;
+ED21  0B        ???
+ED22  F5 00     SBC $00,X                    ;
+ED24  0B        ???
+ED25  02        ???
+ED26  02        ???
+ED27  02        ???
+ED28  FE FE FE  INC $FEFE,X                  ;
+ED2B  FF        ???
+ED2C  01 01     ORA ($01,X)                  ;
+ED2E  FF        ???
+ED2F  01 01     ORA ($01,X)                  ;
+ED31  0C        ???
+ED32  0C        ???
+ED33  0C        ???
+ED34  F4        ???
+ED35  F4        ???
+ED36  F4        ???
+ED37  FF        ???
+ED38  00        BRK                          ;
+ED39  01 FF     ORA ($FF,X)                  ;
+ED3B  00        BRK                          ;
+ED3C  01 09     ORA ($09,X)                  ;
+ED3E  09 F7     ORA #$F7                     ;
+ED40  F7        ???
+ED41  F8        SED                          ;
+ED42  08        PHP                          ;
+ED43  F8        SED                          ;
+ED44  08        PHP                          ;
+ED45  14        ???
+ED46  14        ???
+ED47  EC EC FF  CPX $FFEC                    ;
+ED4A  01 FF     ORA ($FF,X)                  ;
+ED4C  01 04     ORA ($04,X)                  ;
+ED4E  04        ???
+ED4F  04        ???
+ED50  FC        ???
+ED51  FC        ???
+ED52  FC        ???
+ED53  FF        ???
+ED54  00        BRK                          ;
+ED55  01 FF     ORA ($FF,X)                  ;
+ED57  00        BRK                          ;
+ED58  01 FD     ORA ($FD,X)                  ;
+ED5A  03        ???
+ED5B  FD 03 0C  SBC $0C03,X                  ;
+ED5E  0C        ???
+ED5F  0C        ???
+ED60  F4        ???
+ED61  F4        ???
+ED62  F4        ???
+ED63  F5 00     SBC $00,X                    ;
+ED65  0B        ???
+ED66  F5 00     SBC $00,X                    ;
+ED68  0B        ???
+ED69  10 10     BPL $ED7B                    ;
+ED6B  10 F0     BPL $ED5D                    ;
+ED6D  F0 F0     BEQ $ED5F                    ;
+ED6F  F1 00     SBC ($00),Y                  ;
+ED71  0F        ???
+ED72  F1 00     SBC ($00),Y                  ;
+ED74  0F        ???
+ED75  10 10     BPL $ED87                    ;
+ED77  10 F0     BPL $ED69                    ;
+ED79  F0 F0     BEQ $ED6B                    ;
+ED7B  F9 00 07  SBC $0700,Y                  ;
+ED7E  F9 00 07  SBC $0700,Y                  ;
+ED81  F9 07 FD  SBC $FD07,Y                  ;
+ED84  03        ???
+ED85  A5 06     LDA $06                      ;
+ED87  29 0F     AND #$0F                     ;
+ED89  85 06     STA $06                      ;
+ED8B  BD F0 04  LDA $04F0,X                  ;
+ED8E  38        SEC                          ;
+ED8F  E5 06     SBC $06                      ;
+ED91  9D F0 04  STA $04F0,X                  ;
+ED94  BD 00 05  LDA $0500,X                  ;
+ED97  E9 00     SBC #$00                     ;
+ED99  9D 00 05  STA $0500,X                  ;
+ED9C  60        RTS                          ;
+ED9D  A5 06     LDA $06                      ;
+ED9F  29 0F     AND #$0F                     ;
+EDA1  49 0F     EOR #$0F                     ;
+EDA3  38        SEC                          ;
+EDA4  7D F0 04  ADC $04F0,X                  ;
+EDA7  9D F0 04  STA $04F0,X                  ;
+EDAA  BD 00 05  LDA $0500,X                  ;
+EDAD  69 00     ADC #$00                     ;
+EDAF  9D 00 05  STA $0500,X                  ;
+EDB2  60        RTS                          ;
+EDB3  A5 07     LDA $07                      ;
+EDB5  29 0F     AND #$0F                     ;
+EDB7  49 0F     EOR #$0F                     ;
+EDB9  38        SEC                          ;
+EDBA  7D 10 05  ADC $0510,X                  ;
+EDBD  9D 10 05  STA $0510,X                  ;
+EDC0  C9 F0     CMP #$F0                     ;
+EDC2  90 0D     BCC $EDD1                    ;
+EDC4  69 0F     ADC #$0F                     ;
+EDC6  9D 10 05  STA $0510,X                  ;
+EDC9  BD 20 05  LDA $0520,X                  ;
+EDCC  69 00     ADC #$00                     ;
+EDCE  9D 20 05  STA $0520,X                  ;
+EDD1  60        RTS                          ;
+EDD2  A5 07     LDA $07                      ;
+EDD4  29 0F     AND #$0F                     ;
+EDD6  85 07     STA $07                      ;
+EDD8  BD 10 05  LDA $0510,X                  ;
+EDDB  38        SEC                          ;
+EDDC  E5 07     SBC $07                      ;
+EDDE  9D 10 05  STA $0510,X                  ;
+EDE1  B0 0D     BCS $EDF0                    ;
+EDE3  E9 0F     SBC #$0F                     ;
+EDE5  9D 10 05  STA $0510,X                  ;
+EDE8  BD 20 05  LDA $0520,X                  ;
+EDEB  E9 01     SBC #$01                     ;
+EDED  9D 20 05  STA $0520,X                  ;
+EDF0  60        RTS                          ;
+EDF1  A5 31     LDA $31                      ;
+EDF3  C9 08     CMP #$08                     ;
+EDF5  B0 1E     BCS $EE15                    ;
+EDF7  29 0F     AND #$0F                     ;
+EDF9  A8        TAY                          ;
+EDFA  B9 07 EE  LDA $EE07,Y                  ;
+EDFD  85 00     STA $00                      ;
+EDFF  B9 0E EE  LDA $EE0E,Y                  ;
+EE02  85 01     STA $01                      ;
+EE04  6C 00 00  JMP ($0000)                  ;
+EE07  15 2D     ORA $2D,X                    ;
+EE09  71 B8     ADC ($B8),Y                  ;
+EE0B  EA        NOP                          ;
+EE0C  5C        ???
+EE0D  76 EE     ROR $EE,X                    ;
+EE0F  EE EE EE  INC $EEEE                    ;
+EE12  EE EF EF  INC $EFEF                    ;
+EE15  A4 22     LDY $22                      ;
+EE17  B1 32     LDA ($32),Y                  ;
+EE19  C9 0F     CMP #$0F                     ;
+EE1B  90 43     BCC $EE60                    ;
+EE1D  C9 14     CMP #$14                     ;
+EE1F  F0 3F     BEQ $EE60                    ;
+EE21  A9 01     LDA #$01                     ;
+EE23  20 19 C3  JSR $C319                    ;
+EE26  A9 81     LDA #$81                     ;
+EE28  85 1A     STA $1A                      ;
+EE2A  4C 5C EE  JMP $EE5C                    ;
+EE2D  A4 22     LDY $22                      ;
+EE2F  B1 32     LDA ($32),Y                  ;
+EE31  C9 25     CMP #$25                     ;
+EE33  B0 08     BCS $EE3D                    ;
+EE35  A9 01     LDA #$01                     ;
+EE37  20 F9 C2  JSR $C2F9                    ;
+EE3A  4C 5C EE  JMP $EE5C                    ;
+EE3D  C9 27     CMP #$27                     ;
+EE3F  B0 0E     BCS $EE4F                    ;
+EE41  A5 FC     LDA $FC                      ;
+EE43  C9 E9     CMP #$E9                     ;
+EE45  B0 10     BCS $EE57                    ;
+EE47  A9 02     LDA #$02                     ;
+EE49  20 F9 C2  JSR $C2F9                    ;
+EE4C  4C 5C EE  JMP $EE5C                    ;
+EE4F  C9 28     CMP #$28                     ;
+EE51  90 EE     BCC $EE41                    ;
+EE53  C9 2A     CMP #$2A                     ;
+EE55  B0 0A     BCS $EE61                    ;
+EE57  A9 03     LDA #$03                     ;
+EE59  20 F9 C2  JSR $C2F9                    ;
+EE5C  A9 FF     LDA #$FF                     ;
+EE5E  85 18     STA $18                      ;
+EE60  60        RTS                          ;
+EE61  C9 34     CMP #$34                     ;
+EE63  F0 FB     BEQ $EE60                    ;
+EE65  A9 82     LDA #$82                     ;
+EE67  85 1A     STA $1A                      ;
+EE69  A9 02     LDA #$02                     ;
+EE6B  20 19 C3  JSR $C319                    ;
+EE6E  4C 5C EE  JMP $EE5C                    ;
+EE71  A4 22     LDY $22                      ;
+EE73  B1 32     LDA ($32),Y                  ;
+EE75  C9 43     CMP #$43                     ;
+EE77  F0 38     BEQ $EEB1                    ;
+EE79  C9 47     CMP #$47                     ;
+EE7B  D0 19     BNE $EE96                    ;
+EE7D  A5 FC     LDA $FC                      ;
+EE7F  D0 DF     BNE $EE60                    ;
+EE81  A9 15     LDA #$15                     ;
+EE83  85 70     STA $70                      ;
+EE85  A9 14     LDA #$14                     ;
+EE87  85 71     STA $71                      ;
+EE89  A9 11     LDA #$11                     ;
+EE8B  20 F9 C2  JSR $C2F9                    ;
+EE8E  A9 83     LDA #$83                     ;
+EE90  85 1A     STA $1A                      ;
+EE92  A9 03     LDA #$03                     ;
+EE94  D0 D5     BNE $EE6B                    ;
+EE96  C9 4B     CMP #$4B                     ;
+EE98  D0 C6     BNE $EE60                    ;
+EE9A  A5 FA     LDA $FA                      ;
+EE9C  C9 58     CMP #$58                     ;
+EE9E  90 C0     BCC $EE60                    ;
+EEA0  A9 05     LDA #$05                     ;
+EEA2  85 6D     STA $6D                      ;
+EEA4  A9 85     LDA #$85                     ;
+EEA6  85 1A     STA $1A                      ;
+EEA8  A9 04     LDA #$04                     ;
+EEAA  20 F9 C2  JSR $C2F9                    ;
+EEAD  A9 05     LDA #$05                     ;
+EEAF  D0 BA     BNE $EE6B                    ;
+EEB1  A5 FA     LDA $FA                      ;
+EEB3  C9 58     CMP #$58                     ;
+EEB5  B0 ED     BCS $EEA4                    ;
+EEB7  60        RTS                          ;
+EEB8  A4 22     LDY $22                      ;
+EEBA  B1 32     LDA ($32),Y                  ;
+EEBC  C9 69     CMP #$69                     ;
+EEBE  B0 08     BCS $EEC8                    ;
+EEC0  A9 05     LDA #$05                     ;
+EEC2  20 F9 C2  JSR $C2F9                    ;
+EEC5  4C 5C EE  JMP $EE5C                    ;
+EEC8  C9 6B     CMP #$6B                     ;
+EECA  B0 08     BCS $EED4                    ;
+EECC  A9 06     LDA #$06                     ;
+EECE  20 F9 C2  JSR $C2F9                    ;
+EED1  4C 5C EE  JMP $EE5C                    ;
+EED4  A5 FA     LDA $FA                      ;
+EED6  C9 58     CMP #$58                     ;
+EED8  90 DD     BCC $EEB7                    ;
+EEDA  A9 07     LDA #$07                     ;
+EEDC  85 6D     STA $6D                      ;
+EEDE  A9 02     LDA #$02                     ;
+EEE0  20 19 C3  JSR $C319                    ;
+EEE3  A9 82     LDA #$82                     ;
+EEE5  85 1A     STA $1A                      ;
+EEE7  4C 5C EE  JMP $EE5C                    ;
+EEEA  A4 22     LDY $22                      ;
+EEEC  B1 32     LDA ($32),Y                  ;
+EEEE  C9 88     CMP #$88                     ;
+EEF0  B0 04     BCS $EEF6                    ;
+EEF2  A9 07     LDA #$07                     ;
+EEF4  D0 D8     BNE $EECE                    ;
+EEF6  C9 8F     CMP #$8F                     ;
+EEF8  D0 21     BNE $EF1B                    ;
+EEFA  A5 FA     LDA $FA                      ;
+EEFC  C9 58     CMP #$58                     ;
+EEFE  90 1B     BCC $EF1B                    ;
+EF00  A9 80     LDA #$80                     ;
+EF02  85 1A     STA $1A                      ;
+EF04  A9 30     LDA #$30                     ;
+EF06  8D 0D 03  STA $030D                    ;
+EF09  A9 2C     LDA #$2C                     ;
+EF0B  8D 0E 03  STA $030E                    ;
+EF0E  A9 21     LDA #$21                     ;
+EF10  8D 0F 03  STA $030F                    ;
+EF13  A9 00     LDA #$00                     ;
+EF15  20 19 C3  JSR $C319                    ;
+EF18  4C 5C EE  JMP $EE5C                    ;
+EF1B  C9 93     CMP #$93                     ;
+EF1D  D0 14     BNE $EF33                    ;
+EF1F  A5 FC     LDA $FC                      ;
+EF21  D0 10     BNE $EF33                    ;
+EF23  A9 43     LDA #$43                     ;
+EF25  85 70     STA $70                      ;
+EF27  A9 42     LDA #$42                     ;
+EF29  85 71     STA $71                      ;
+EF2B  A9 87     LDA #$87                     ;
+EF2D  85 1A     STA $1A                      ;
+EF2F  A9 07     LDA #$07                     ;
+EF31  D0 E2     BNE $EF15                    ;
+EF33  C9 94     CMP #$94                     ;
+EF35  D0 08     BNE $EF3F                    ;
+EF37  A9 07     LDA #$07                     ;
+EF39  20 F9 C2  JSR $C2F9                    ;
+EF3C  4C 5C EE  JMP $EE5C                    ;
+EF3F  C9 8A     CMP #$8A                     ;
+EF41  D0 18     BNE $EF5B                    ;
+EF43  A5 FC     LDA $FC                      ;
+EF45  C9 9C     CMP #$9C                     ;
+EF47  D0 12     BNE $EF5B                    ;
+EF49  A9 30     LDA #$30                     ;
+EF4B  8D 0D 03  STA $030D                    ;
+EF4E  A9 2C     LDA #$2C                     ;
+EF50  8D 0E 03  STA $030E                    ;
+EF53  A9 21     LDA #$21                     ;
+EF55  8D 0F 03  STA $030F                    ;
+EF58  4C 5C EE  JMP $EE5C                    ;
+EF5B  60        RTS                          ;
+EF5C  A4 22     LDY $22                      ;
+EF5E  B1 32     LDA ($32),Y                  ;
+EF60  C9 A4     CMP #$A4                     ;
+EF62  D0 DB     BNE $EF3F                    ;
+EF64  A5 FA     LDA $FA                      ;
+EF66  C9 58     CMP #$58                     ;
+EF68  90 D5     BCC $EF3F                    ;
+EF6A  A9 88     LDA #$88                     ;
+EF6C  85 1A     STA $1A                      ;
+EF6E  A9 08     LDA #$08                     ;
+EF70  20 19 C3  JSR $C319                    ;
+EF73  4C 5C EE  JMP $EE5C                    ;
+EF76  A4 22     LDY $22                      ;
+EF78  B1 32     LDA ($32),Y                  ;
+EF7A  C9 05     CMP #$05                     ;
+EF7C  F0 26     BEQ $EFA4                    ;
+EF7E  C9 04     CMP #$04                     ;
+EF80  F0 29     BEQ $EFAB                    ;
+EF82  C9 0B     CMP #$0B                     ;
+EF84  B0 0D     BCS $EF93                    ;
+EF86  60        RTS                          ;
+EF87  A9 07     LDA #$07                     ;
+EF89  20 19 C3  JSR $C319                    ;
+EF8C  A9 87     LDA #$87                     ;
+EF8E  85 1A     STA $1A                      ;
+EF90  4C 5C EE  JMP $EE5C                    ;
+EF93  C9 98     CMP #$98                     ;
+EF95  F0 26     BEQ $EFBD                    ;
+EF97  A9 0D     LDA #$0D                     ;
+EF99  85 6D     STA $6D                      ;
+EF9B  A9 09     LDA #$09                     ;
+EF9D  20 19 C3  JSR $C319                    ;
+EFA0  A9 89     LDA #$89                     ;
+EFA2  D0 EA     BNE $EF8E                    ;
+EFA4  A5 FA     LDA $FA                      ;
+EFA6  C9 5A     CMP #$5A                     ;
+EFA8  B0 DD     BCS $EF87                    ;
+EFAA  60        RTS                          ;
+EFAB  A5 FC     LDA $FC                      ;
+EFAD  C9 A0     CMP #$A0                     ;
+EFAF  90 08     BCC $EFB9                    ;
+EFB1  A9 17     LDA #$17                     ;
+EFB3  20 F9 C2  JSR $C2F9                    ;
+EFB6  4C 5C EE  JMP $EE5C                    ;
+EFB9  A9 09     LDA #$09                     ;
+EFBB  D0 F6     BNE $EFB3                    ;
+EFBD  60        RTS                          ;
+EFBE  A5 3D     LDA $3D                      ;
+EFC0  10 45     BPL $F007                    ;
+EFC2  29 7F     AND #$7F                     ;
+EFC4  85 00     STA $00                      ;
+EFC6  A8        TAY                          ;
+EFC7  84 01     STY $01                      ;
+EFC9  A2 00     LDX #$00                     ;
+EFCB  A5 3E     LDA $3E                      ;
+EFCD  E6 3E     INC $3E                      ;
+EFCF  D9 4A F0  CMP $F04A,Y                  ;
+EFD2  D0 33     BNE $F007                    ;
+EFD4  A4 01     LDY $01                      ;
+EFD6  86 3E     STX $3E                      ;
+EFD8  A5 3F     LDA $3F                      ;
+EFDA  E6 3F     INC $3F                      ;
+EFDC  D9 49 F0  CMP $F049,Y                  ;
+EFDF  D0 02     BNE $EFE3                    ;
+EFE1  86 3F     STX $3F                      ;
+EFE3  18        CLC                          ;
+EFE4  69 02     ADC #$02                     ;
+EFE6  65 00     ADC $00                      ;
+EFE8  A8        TAY                          ;
+EFE9  BE 49 F0  LDX $F049,Y                  ;
+EFEC  BD 08 F0  LDA $F008,X                  ;
+EFEF  30 14     BMI $F005                    ;
+EFF1  A8        TAY                          ;
+EFF2  E8        INX                          ;
+EFF3  A9 03     LDA #$03                     ;
+EFF5  85 00     STA $00                      ;
+EFF7  BD 08 F0  LDA $F008,X                  ;
+EFFA  99 00 03  STA $0300,Y                  ;
+EFFD  E8        INX                          ;
+EFFE  C8        INY                          ;
+EFFF  C6 00     DEC $00                      ;
+F001  D0 F4     BNE $EFF7                    ;
+F003  F0 E7     BEQ $EFEC                    ;
+F005  85 18     STA $18                      ;
+F007  60        RTS                          ;
+F008  0D 16 11  ORA $1116                    ;
+F00B  01 FF     ORA ($FF,X)                  ;
+F00D  0D 05 11  ORA $1105                    ;
+F010  01 FF     ORA ($FF,X)                  ;
+F012  0D 0F 11  ORA $110F                    ;
+F015  01 FF     ORA ($FF,X)                  ;
+F017  0D 05 11  ORA $1105                    ;
+F01A  01 FF     ORA ($FF,X)                  ;
+F01C  0D 16 11  ORA $1116                    ;
+F01F  01 FF     ORA ($FF,X)                  ;
+F021  0D 26 11  ORA $1126                    ;
+F024  01 FF     ORA ($FF,X)                  ;
+F026  0D 0C 04  ORA $040C                    ;
+F029  01 FF     ORA ($FF,X)                  ;
+F02B  0D 04 0C  ORA $0C04                    ;
+F02E  01 FF     ORA ($FF,X)                  ;
+F030  05 1C     ORA $1C                      ;
+F032  02        ???
+F033  30 FF     BMI $F034                    ;
+F035  05 02     ORA $02                      ;
+F037  30 1C     BMI $F055                    ;
+F039  FF        ???
+F03A  05 30     ORA $30                      ;
+F03C  1C        ???
+F03D  02        ???
+F03E  FF        ???
+F03F  01 10     ORA ($10,X)                  ;
+F041  37        ???
+F042  21 FF     AND ($FF,X)                  ;
+F044  01 37     ORA ($37,X)                  ;
+F046  10 21     BPL $F069                    ;
+F048  FF        ???
+F049  05 08     ORA $08                      ;
+F04B  00        BRK                          ;
+F04C  05 0A     ORA $0A                      ;
+F04E  0F        ???
+F04F  14        ???
+F050  19 01 10  ORA $1001,Y                  ;
+F053  1E 23 02  ASL $0223,X                  ;
+F056  02        ???
+F057  28        PLP                          ;
+F058  2D 32 01  AND $0132                    ;
+F05B  06 37     ASL $37                      ;
+F05D  3C        ???
+F05E  FF        ???
+F05F  FF        ???
+F060  00        BRK                          ;
+F061  00        BRK                          ;
+F062  00        BRK                          ;
+F063  00        BRK                          ;
+F064  00        BRK                          ;
+F065  00        BRK                          ;
+F066  00        BRK                          ;
+F067  00        BRK                          ;
+F068  00        BRK                          ;
+F069  00        BRK                          ;
+F06A  00        BRK                          ;
+F06B  00        BRK                          ;
+F06C  00        BRK                          ;
+F06D  00        BRK                          ;
+F06E  00        BRK                          ;
+F06F  00        BRK                          ;
+F070  00        BRK                          ;
+F071  00        BRK                          ;
+F072  00        BRK                          ;
+F073  00        BRK                          ;
+F074  00        BRK                          ;
+F075  00        BRK                          ;
+F076  00        BRK                          ;
+F077  00        BRK                          ;
+F078  00        BRK                          ;
+F079  00        BRK                          ;
+F07A  00        BRK                          ;
+F07B  00        BRK                          ;
+F07C  00        BRK                          ;
+F07D  00        BRK                          ;
+F07E  00        BRK                          ;
+F07F  00        BRK                          ;
+F080  FF        ???
+F081  FF        ???
+F082  FF        ???
+F083  FF        ???
+F084  FF        ???
+F085  FF        ???
+F086  FF        ???
+F087  FF        ???
+F088  FF        ???
+F089  FF        ???
+F08A  FF        ???
+F08B  FF        ???
+F08C  FF        ???
+F08D  FF        ???
+F08E  FF        ???
+F08F  FF        ???
+F090  FF        ???
+F091  FF        ???
+F092  FF        ???
+F093  FF        ???
+F094  FF        ???
+F095  FF        ???
+F096  FF        ???
+F097  FF        ???
+F098  FF        ???
+F099  FF        ???
+F09A  FF        ???
+F09B  FF        ???
+F09C  FF        ???
+F09D  FF        ???
+F09E  FF        ???
+F09F  FF        ???
+F0A0  00        BRK                          ;
+F0A1  00        BRK                          ;
+F0A2  00        BRK                          ;
+F0A3  00        BRK                          ;
+F0A4  00        BRK                          ;
+F0A5  00        BRK                          ;
+F0A6  00        BRK                          ;
+F0A7  00        BRK                          ;
+F0A8  00        BRK                          ;
+F0A9  00        BRK                          ;
+F0AA  00        BRK                          ;
+F0AB  00        BRK                          ;
+F0AC  00        BRK                          ;
+F0AD  00        BRK                          ;
+F0AE  00        BRK                          ;
+F0AF  00        BRK                          ;
+F0B0  00        BRK                          ;
+F0B1  00        BRK                          ;
+F0B2  00        BRK                          ;
+F0B3  00        BRK                          ;
+F0B4  00        BRK                          ;
+F0B5  00        BRK                          ;
+F0B6  00        BRK                          ;
+F0B7  00        BRK                          ;
+F0B8  00        BRK                          ;
+F0B9  00        BRK                          ;
+F0BA  00        BRK                          ;
+F0BB  00        BRK                          ;
+F0BC  00        BRK                          ;
+F0BD  00        BRK                          ;
+F0BE  00        BRK                          ;
+F0BF  00        BRK                          ;
+F0C0  FF        ???
+F0C1  FF        ???
+F0C2  FF        ???
+F0C3  FF        ???
+F0C4  FF        ???
+F0C5  FF        ???
+F0C6  FF        ???
+F0C7  FF        ???
+F0C8  FF        ???
+F0C9  FF        ???
+F0CA  FF        ???
+F0CB  FF        ???
+F0CC  FF        ???
+F0CD  FF        ???
+F0CE  FF        ???
+F0CF  FF        ???
+F0D0  FF        ???
+F0D1  FF        ???
+F0D2  FF        ???
+F0D3  FF        ???
+F0D4  FF        ???
+F0D5  FF        ???
+F0D6  FF        ???
+F0D7  FF        ???
+F0D8  FF        ???
+F0D9  FF        ???
+F0DA  FF        ???
+F0DB  FF        ???
+F0DC  FF        ???
+F0DD  FF        ???
+F0DE  FF        ???
+F0DF  FF        ???
+F0E0  00        BRK                          ;
+F0E1  00        BRK                          ;
+F0E2  00        BRK                          ;
+F0E3  00        BRK                          ;
+F0E4  00        BRK                          ;
+F0E5  00        BRK                          ;
+F0E6  00        BRK                          ;
+F0E7  00        BRK                          ;
+F0E8  00        BRK                          ;
+F0E9  00        BRK                          ;
+F0EA  00        BRK                          ;
+F0EB  00        BRK                          ;
+F0EC  00        BRK                          ;
+F0ED  00        BRK                          ;
+F0EE  00        BRK                          ;
+F0EF  00        BRK                          ;
+F0F0  00        BRK                          ;
+F0F1  00        BRK                          ;
+F0F2  00        BRK                          ;
+F0F3  00        BRK                          ;
+F0F4  00        BRK                          ;
+F0F5  00        BRK                          ;
+F0F6  00        BRK                          ;
+F0F7  00        BRK                          ;
+F0F8  00        BRK                          ;
+F0F9  00        BRK                          ;
+F0FA  00        BRK                          ;
+F0FB  00        BRK                          ;
+F0FC  00        BRK                          ;
+F0FD  00        BRK                          ;
+F0FE  00        BRK                          ;
+F0FF  00        BRK                          ;
+F100  FF        ???
+F101  FF        ???
+F102  FF        ???
+F103  FF        ???
+F104  FF        ???
+F105  FF        ???
+F106  FF        ???
+F107  FF        ???
+F108  FF        ???
+F109  FF        ???
+F10A  FF        ???
+F10B  FF        ???
+F10C  FF        ???
+F10D  FF        ???
+F10E  FF        ???
+F10F  FF        ???
+F110  FF        ???
+F111  FF        ???
+F112  FF        ???
+F113  FF        ???
+F114  FF        ???
+F115  FF        ???
+F116  FF        ???
+F117  FF        ???
+F118  FF        ???
+F119  FF        ???
+F11A  FF        ???
+F11B  FF        ???
+F11C  FF        ???
+F11D  FF        ???
+F11E  FF        ???
+F11F  FF        ???
+F120  00        BRK                          ;
+F121  00        BRK                          ;
+F122  00        BRK                          ;
+F123  00        BRK                          ;
+F124  00        BRK                          ;
+F125  00        BRK                          ;
+F126  00        BRK                          ;
+F127  00        BRK                          ;
+F128  00        BRK                          ;
+F129  00        BRK                          ;
+F12A  00        BRK                          ;
+F12B  00        BRK                          ;
+F12C  00        BRK                          ;
+F12D  00        BRK                          ;
+F12E  00        BRK                          ;
+F12F  00        BRK                          ;
+F130  00        BRK                          ;
+F131  00        BRK                          ;
+F132  00        BRK                          ;
+F133  00        BRK                          ;
+F134  00        BRK                          ;
+F135  00        BRK                          ;
+F136  00        BRK                          ;
+F137  00        BRK                          ;
+F138  00        BRK                          ;
+F139  00        BRK                          ;
+F13A  00        BRK                          ;
+F13B  00        BRK                          ;
+F13C  00        BRK                          ;
+F13D  00        BRK                          ;
+F13E  00        BRK                          ;
+F13F  00        BRK                          ;
+F140  FF        ???
+F141  FF        ???
+F142  FF        ???
+F143  FF        ???
+F144  FF        ???
+F145  FF        ???
+F146  FF        ???
+F147  FF        ???
+F148  FF        ???
+F149  FF        ???
+F14A  FF        ???
+F14B  FF        ???
+F14C  FF        ???
+F14D  FF        ???
+F14E  FF        ???
+F14F  FF        ???
+F150  FF        ???
+F151  FF        ???
+F152  FF        ???
+F153  FF        ???
+F154  FF        ???
+F155  FF        ???
+F156  FF        ???
+F157  FF        ???
+F158  FF        ???
+F159  FF        ???
+F15A  FF        ???
+F15B  FF        ???
+F15C  FF        ???
+F15D  FF        ???
+F15E  FF        ???
+F15F  FF        ???
+F160  00        BRK                          ;
+F161  00        BRK                          ;
+F162  00        BRK                          ;
+F163  00        BRK                          ;
+F164  00        BRK                          ;
+F165  00        BRK                          ;
+F166  00        BRK                          ;
+F167  00        BRK                          ;
+F168  00        BRK                          ;
+F169  00        BRK                          ;
+F16A  00        BRK                          ;
+F16B  00        BRK                          ;
+F16C  00        BRK                          ;
+F16D  00        BRK                          ;
+F16E  00        BRK                          ;
+F16F  00        BRK                          ;
+F170  00        BRK                          ;
+F171  00        BRK                          ;
+F172  00        BRK                          ;
+F173  00        BRK                          ;
+F174  00        BRK                          ;
+F175  00        BRK                          ;
+F176  00        BRK                          ;
+F177  00        BRK                          ;
+F178  00        BRK                          ;
+F179  00        BRK                          ;
+F17A  00        BRK                          ;
+F17B  00        BRK                          ;
+F17C  00        BRK                          ;
+F17D  00        BRK                          ;
+F17E  00        BRK                          ;
+F17F  00        BRK                          ;
+F180  FF        ???
+F181  FF        ???
+F182  FF        ???
+F183  FF        ???
+F184  FF        ???
+F185  FF        ???
+F186  FF        ???
+F187  FF        ???
+F188  FF        ???
+F189  FF        ???
+F18A  FF        ???
+F18B  FF        ???
+F18C  FF        ???
+F18D  FF        ???
+F18E  FF        ???
+F18F  FF        ???
+F190  FF        ???
+F191  FF        ???
+F192  FF        ???
+F193  FF        ???
+F194  FF        ???
+F195  FF        ???
+F196  FF        ???
+F197  FF        ???
+F198  FF        ???
+F199  FF        ???
+F19A  FF        ???
+F19B  FF        ???
+F19C  FF        ???
+F19D  FF        ???
+F19E  FF        ???
+F19F  FF        ???
+F1A0  00        BRK                          ;
+F1A1  00        BRK                          ;
+F1A2  00        BRK                          ;
+F1A3  00        BRK                          ;
+F1A4  00        BRK                          ;
+F1A5  00        BRK                          ;
+F1A6  00        BRK                          ;
+F1A7  00        BRK                          ;
+F1A8  00        BRK                          ;
+F1A9  00        BRK                          ;
+F1AA  00        BRK                          ;
+F1AB  00        BRK                          ;
+F1AC  00        BRK                          ;
+F1AD  00        BRK                          ;
+F1AE  00        BRK                          ;
+F1AF  00        BRK                          ;
+F1B0  00        BRK                          ;
+F1B1  00        BRK                          ;
+F1B2  00        BRK                          ;
+F1B3  00        BRK                          ;
+F1B4  00        BRK                          ;
+F1B5  00        BRK                          ;
+F1B6  00        BRK                          ;
+F1B7  00        BRK                          ;
+F1B8  00        BRK                          ;
+F1B9  00        BRK                          ;
+F1BA  00        BRK                          ;
+F1BB  00        BRK                          ;
+F1BC  00        BRK                          ;
+F1BD  00        BRK                          ;
+F1BE  00        BRK                          ;
+F1BF  00        BRK                          ;
+F1C0  FF        ???
+F1C1  FF        ???
+F1C2  FF        ???
+F1C3  FF        ???
+F1C4  FF        ???
+F1C5  FF        ???
+F1C6  FF        ???
+F1C7  FF        ???
+F1C8  FF        ???
+F1C9  FF        ???
+F1CA  FF        ???
+F1CB  FF        ???
+F1CC  FF        ???
+F1CD  FF        ???
+F1CE  FF        ???
+F1CF  FF        ???
+F1D0  FF        ???
+F1D1  FF        ???
+F1D2  FF        ???
+F1D3  FF        ???
+F1D4  FF        ???
+F1D5  FF        ???
+F1D6  FF        ???
+F1D7  FF        ???
+F1D8  FF        ???
+F1D9  FF        ???
+F1DA  FF        ???
+F1DB  FF        ???
+F1DC  FF        ???
+F1DD  FF        ???
+F1DE  FF        ???
+F1DF  FF        ???
+F1E0  00        BRK                          ;
+F1E1  00        BRK                          ;
+F1E2  00        BRK                          ;
+F1E3  00        BRK                          ;
+F1E4  00        BRK                          ;
+F1E5  00        BRK                          ;
+F1E6  00        BRK                          ;
+F1E7  00        BRK                          ;
+F1E8  00        BRK                          ;
+F1E9  00        BRK                          ;
+F1EA  00        BRK                          ;
+F1EB  00        BRK                          ;
+F1EC  00        BRK                          ;
+F1ED  00        BRK                          ;
+F1EE  00        BRK                          ;
+F1EF  00        BRK                          ;
+F1F0  00        BRK                          ;
+F1F1  00        BRK                          ;
+F1F2  00        BRK                          ;
+F1F3  00        BRK                          ;
+F1F4  00        BRK                          ;
+F1F5  00        BRK                          ;
+F1F6  00        BRK                          ;
+F1F7  00        BRK                          ;
+F1F8  00        BRK                          ;
+F1F9  00        BRK                          ;
+F1FA  00        BRK                          ;
+F1FB  00        BRK                          ;
+F1FC  00        BRK                          ;
+F1FD  00        BRK                          ;
+F1FE  00        BRK                          ;
+F1FF  00        BRK                          ;
