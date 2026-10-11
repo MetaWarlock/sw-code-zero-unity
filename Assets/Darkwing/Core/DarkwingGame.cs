@@ -45,21 +45,29 @@ namespace Darkwing.Core
             Frame = 0;
         }
 
+        private byte _prevHeld;
+        public bool Paused; // Start toggles in gameplay ($CA33 flow: SFX $1C, freeze, status screen)
+
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
-            // TODO(M3+): world script tick, object updates, audio queue — see
-            // Research/DarkwingDuck/docs/*.md. Player physics is transcribed;
-            // world/object/audio systems land with the level-format work.
             byte held = pad1.ToByte();
             byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
-            Player.Step(held, pressed);
             _prevHeld = held;
+            if (Paused)
+            {
+                if ((pressed & 0x10) != 0) Paused = false; // Start resumes
+                return; // world frozen during pause
+            }
+            if ((pressed & 0x10) != 0 && Player.LevelActive >= 0)
+            {
+                Paused = true; // TODO(M7): SFX $1C + status screen via VRAM queue
+                return;
+            }
+            Player.Step(held, pressed);
             if (_data != null) Ppu.Render(Framebuffer);
             Frame++;
         }
-
-        private byte _prevHeld;
 
         /// <summary>Serialize all future-affecting state. Version-tagged.</summary>
         public byte[] SaveState()
