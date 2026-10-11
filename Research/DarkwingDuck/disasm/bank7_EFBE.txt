@@ -1,0 +1,306 @@
+EFBE  A5 3D     LDA $3D                      ;
+EFC0  10 45     BPL $F007                    ;
+EFC2  29 7F     AND #$7F                     ;
+EFC4  85 00     STA $00                      ;
+EFC6  A8        TAY                          ;
+EFC7  84 01     STY $01                      ;
+EFC9  A2 00     LDX #$00                     ;
+EFCB  A5 3E     LDA $3E                      ;
+EFCD  E6 3E     INC $3E                      ;
+EFCF  D9 4A F0  CMP $F04A,Y                  ;
+EFD2  D0 33     BNE $F007                    ;
+EFD4  A4 01     LDY $01                      ;
+EFD6  86 3E     STX $3E                      ;
+EFD8  A5 3F     LDA $3F                      ;
+EFDA  E6 3F     INC $3F                      ;
+EFDC  D9 49 F0  CMP $F049,Y                  ;
+EFDF  D0 02     BNE $EFE3                    ;
+EFE1  86 3F     STX $3F                      ;
+EFE3  18        CLC                          ;
+EFE4  69 02     ADC #$02                     ;
+EFE6  65 00     ADC $00                      ;
+EFE8  A8        TAY                          ;
+EFE9  BE 49 F0  LDX $F049,Y                  ;
+EFEC  BD 08 F0  LDA $F008,X                  ;
+EFEF  30 14     BMI $F005                    ;
+EFF1  A8        TAY                          ;
+EFF2  E8        INX                          ;
+EFF3  A9 03     LDA #$03                     ;
+EFF5  85 00     STA $00                      ;
+EFF7  BD 08 F0  LDA $F008,X                  ;
+EFFA  99 00 03  STA $0300,Y                  ;
+EFFD  E8        INX                          ;
+EFFE  C8        INY                          ;
+EFFF  C6 00     DEC $00                      ;
+F001  D0 F4     BNE $EFF7                    ;
+F003  F0 E7     BEQ $EFEC                    ;
+F005  85 18     STA $18                      ;
+F007  60        RTS                          ;
+F008  0D 16 11  ORA $1116                    ;
+F00B  01 FF     ORA ($FF,X)                  ;
+F00D  0D 05 11  ORA $1105                    ;
+F010  01 FF     ORA ($FF,X)                  ;
+F012  0D 0F 11  ORA $110F                    ;
+F015  01 FF     ORA ($FF,X)                  ;
+F017  0D 05 11  ORA $1105                    ;
+F01A  01 FF     ORA ($FF,X)                  ;
+F01C  0D 16 11  ORA $1116                    ;
+F01F  01 FF     ORA ($FF,X)                  ;
+F021  0D 26 11  ORA $1126                    ;
+F024  01 FF     ORA ($FF,X)                  ;
+F026  0D 0C 04  ORA $040C                    ;
+F029  01 FF     ORA ($FF,X)                  ;
+F02B  0D 04 0C  ORA $0C04                    ;
+F02E  01 FF     ORA ($FF,X)                  ;
+F030  05 1C     ORA $1C                      ;
+F032  02        ???
+F033  30 FF     BMI $F034                    ;
+F035  05 02     ORA $02                      ;
+F037  30 1C     BMI $F055                    ;
+F039  FF        ???
+F03A  05 30     ORA $30                      ;
+F03C  1C        ???
+F03D  02        ???
+F03E  FF        ???
+F03F  01 10     ORA ($10,X)                  ;
+F041  37        ???
+F042  21 FF     AND ($FF,X)                  ;
+F044  01 37     ORA ($37,X)                  ;
+F046  10 21     BPL $F069                    ;
+F048  FF        ???
+F049  05 08     ORA $08                      ;
+F04B  00        BRK                          ;
+F04C  05 0A     ORA $0A                      ;
+F04E  0F        ???
+F04F  14        ???
+F050  19 01 10  ORA $1001,Y                  ;
+F053  1E 23 02  ASL $0223,X                  ;
+F056  02        ???
+F057  28        PLP                          ;
+F058  2D 32 01  AND $0132                    ;
+F05B  06 37     ASL $37                      ;
+F05D  3C        ???
+F05E  FF        ???
+F05F  FF        ???
+F060  00        BRK                          ;
+F061  00        BRK                          ;
+F062  00        BRK                          ;
+F063  00        BRK                          ;
+F064  00        BRK                          ;
+F065  00        BRK                          ;
+F066  00        BRK                          ;
+F067  00        BRK                          ;
+F068  00        BRK                          ;
+F069  00        BRK                          ;
+F06A  00        BRK                          ;
+F06B  00        BRK                          ;
+F06C  00        BRK                          ;
+F06D  00        BRK                          ;
+F06E  00        BRK                          ;
+F06F  00        BRK                          ;
+F070  00        BRK                          ;
+F071  00        BRK                          ;
+F072  00        BRK                          ;
+F073  00        BRK                          ;
+F074  00        BRK                          ;
+F075  00        BRK                          ;
+F076  00        BRK                          ;
+F077  00        BRK                          ;
+F078  00        BRK                          ;
+F079  00        BRK                          ;
+F07A  00        BRK                          ;
+F07B  00        BRK                          ;
+F07C  00        BRK                          ;
+F07D  00        BRK                          ;
+F07E  00        BRK                          ;
+F07F  00        BRK                          ;
+F080  FF        ???
+F081  FF        ???
+F082  FF        ???
+F083  FF        ???
+F084  FF        ???
+F085  FF        ???
+F086  FF        ???
+F087  FF        ???
+F088  FF        ???
+F089  FF        ???
+F08A  FF        ???
+F08B  FF        ???
+F08C  FF        ???
+F08D  FF        ???
+F08E  FF        ???
+F08F  FF        ???
+F090  FF        ???
+F091  FF        ???
+F092  FF        ???
+F093  FF        ???
+F094  FF        ???
+F095  FF        ???
+F096  FF        ???
+F097  FF        ???
+F098  FF        ???
+F099  FF        ???
+F09A  FF        ???
+F09B  FF        ???
+F09C  FF        ???
+F09D  FF        ???
+F09E  FF        ???
+F09F  FF        ???
+F0A0  00        BRK                          ;
+F0A1  00        BRK                          ;
+F0A2  00        BRK                          ;
+F0A3  00        BRK                          ;
+F0A4  00        BRK                          ;
+F0A5  00        BRK                          ;
+F0A6  00        BRK                          ;
+F0A7  00        BRK                          ;
+F0A8  00        BRK                          ;
+F0A9  00        BRK                          ;
+F0AA  00        BRK                          ;
+F0AB  00        BRK                          ;
+F0AC  00        BRK                          ;
+F0AD  00        BRK                          ;
+F0AE  00        BRK                          ;
+F0AF  00        BRK                          ;
+F0B0  00        BRK                          ;
+F0B1  00        BRK                          ;
+F0B2  00        BRK                          ;
+F0B3  00        BRK                          ;
+F0B4  00        BRK                          ;
+F0B5  00        BRK                          ;
+F0B6  00        BRK                          ;
+F0B7  00        BRK                          ;
+F0B8  00        BRK                          ;
+F0B9  00        BRK                          ;
+F0BA  00        BRK                          ;
+F0BB  00        BRK                          ;
+F0BC  00        BRK                          ;
+F0BD  00        BRK                          ;
+F0BE  00        BRK                          ;
+F0BF  00        BRK                          ;
+F0C0  FF        ???
+F0C1  FF        ???
+F0C2  FF        ???
+F0C3  FF        ???
+F0C4  FF        ???
+F0C5  FF        ???
+F0C6  FF        ???
+F0C7  FF        ???
+F0C8  FF        ???
+F0C9  FF        ???
+F0CA  FF        ???
+F0CB  FF        ???
+F0CC  FF        ???
+F0CD  FF        ???
+F0CE  FF        ???
+F0CF  FF        ???
+F0D0  FF        ???
+F0D1  FF        ???
+F0D2  FF        ???
+F0D3  FF        ???
+F0D4  FF        ???
+F0D5  FF        ???
+F0D6  FF        ???
+F0D7  FF        ???
+F0D8  FF        ???
+F0D9  FF        ???
+F0DA  FF        ???
+F0DB  FF        ???
+F0DC  FF        ???
+F0DD  FF        ???
+F0DE  FF        ???
+F0DF  FF        ???
+F0E0  00        BRK                          ;
+F0E1  00        BRK                          ;
+F0E2  00        BRK                          ;
+F0E3  00        BRK                          ;
+F0E4  00        BRK                          ;
+F0E5  00        BRK                          ;
+F0E6  00        BRK                          ;
+F0E7  00        BRK                          ;
+F0E8  00        BRK                          ;
+F0E9  00        BRK                          ;
+F0EA  00        BRK                          ;
+F0EB  00        BRK                          ;
+F0EC  00        BRK                          ;
+F0ED  00        BRK                          ;
+F0EE  00        BRK                          ;
+F0EF  00        BRK                          ;
+F0F0  00        BRK                          ;
+F0F1  00        BRK                          ;
+F0F2  00        BRK                          ;
+F0F3  00        BRK                          ;
+F0F4  00        BRK                          ;
+F0F5  00        BRK                          ;
+F0F6  00        BRK                          ;
+F0F7  00        BRK                          ;
+F0F8  00        BRK                          ;
+F0F9  00        BRK                          ;
+F0FA  00        BRK                          ;
+F0FB  00        BRK                          ;
+F0FC  00        BRK                          ;
+F0FD  00        BRK                          ;
+F0FE  00        BRK                          ;
+F0FF  00        BRK                          ;
+F100  FF        ???
+F101  FF        ???
+F102  FF        ???
+F103  FF        ???
+F104  FF        ???
+F105  FF        ???
+F106  FF        ???
+F107  FF        ???
+F108  FF        ???
+F109  FF        ???
+F10A  FF        ???
+F10B  FF        ???
+F10C  FF        ???
+F10D  FF        ???
+F10E  FF        ???
+F10F  FF        ???
+F110  FF        ???
+F111  FF        ???
+F112  FF        ???
+F113  FF        ???
+F114  FF        ???
+F115  FF        ???
+F116  FF        ???
+F117  FF        ???
+F118  FF        ???
+F119  FF        ???
+F11A  FF        ???
+F11B  FF        ???
+F11C  FF        ???
+F11D  FF        ???
+F11E  FF        ???
+F11F  FF        ???
+F120  00        BRK                          ;
+F121  00        BRK                          ;
+F122  00        BRK                          ;
+F123  00        BRK                          ;
+F124  00        BRK                          ;
+F125  00        BRK                          ;
+F126  00        BRK                          ;
+F127  00        BRK                          ;
+F128  00        BRK                          ;
+F129  00        BRK                          ;
+F12A  00        BRK                          ;
+F12B  00        BRK                          ;
+F12C  00        BRK                          ;
+F12D  00        BRK                          ;
+F12E  00        BRK                          ;
+F12F  00        BRK                          ;
+F130  00        BRK                          ;
+F131  00        BRK                          ;
+F132  00        BRK                          ;
+F133  00        BRK                          ;
+F134  00        BRK                          ;
+F135  00        BRK                          ;
+F136  00        BRK                          ;
+F137  00        BRK                          ;
+F138  00        BRK                          ;
+F139  00        BRK                          ;
+F13A  00        BRK                          ;
+F13B  00        BRK                          ;
+F13C  00        BRK                          ;
+F13D  00        BRK                          ;

@@ -1,0 +1,29 @@
+F890  6C FA 60  JMP ($60FA)                  ;
+F893  9A        TXS                          ;
+F894  6B        ???
+F895  4C 4A 50  JMP $504A                    ;
+F898  6F        ???
+F899  61 A5     ADC ($A5,X)                  ;
+F89B  F1 48     SBC ($48),Y                  ;
+F89D  E6 9A     INC $9A                      ;
+F89F  20 1E C2  JSR $C21E ; AudioInit_or_Service ;
+F8A2  A9 05     LDA #$05                     ;
+F8A4  20 55 FF  JSR $FF55 ; SwitchPRGBank    ;
+F8A7  20 00 80  JSR $8000 ; BankTask_Main    ;
+F8AA  A9 00     LDA #$00                     ;
+F8AC  85 9A     STA $9A                      ;
+F8AE  20 06 FF  JSR $FF06 ; ProcessYield     ;
+F8B1  68        PLA                          ;
+F8B2  4C 55 FF  JMP $FF55 ; SwitchPRGBank    ;
+F8B5  A5 F1     LDA $F1                      ;
+F8B7  48        PHA                          ;
+F8B8  E6 9A     INC $9A                      ;
+F8BA  20 1E C2  JSR $C21E ; AudioInit_or_Service ;
+F8BD  A9 04     LDA #$04                     ;
+F8BF  20 55 FF  JSR $FF55 ; SwitchPRGBank    ;
+F8C2  20 00 98  JSR $9800                    ;
+F8C5  A9 00     LDA #$00                     ;
+F8C7  85 9A     STA $9A                      ;
+F8C9  20 06 FF  JSR $FF06 ; ProcessYield     ;
+F8CC  68        PLA                          ;
+F8CD  4C 55 FF  JMP $FF55 ; SwitchPRGBank    ;

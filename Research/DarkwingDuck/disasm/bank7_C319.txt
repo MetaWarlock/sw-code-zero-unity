@@ -1,0 +1,66 @@
+C319  0A        ASL A                        ;
+C31A  0A        ASL A                        ;
+C31B  0A        ASL A                        ;
+C31C  A8        TAY                          ;
+C31D  A2 00     LDX #$00                     ;
+C31F  BD FD C4  LDA $C4FD,X                  ;
+C322  9D 10 03  STA $0310,X                  ;
+C325  9D 30 03  STA $0330,X                  ;
+C328  E8        INX                          ;
+C329  E0 08     CPX #$08                     ;
+C32B  D0 F2     BNE $C31F                    ;
+C32D  B9 05 C5  LDA $C505,Y                  ;
+C330  9D 10 03  STA $0310,X                  ;
+C333  9D 30 03  STA $0330,X                  ;
+C336  C8        INY                          ;
+C337  E8        INX                          ;
+C338  E0 10     CPX #$10                     ;
+C33A  D0 F1     BNE $C32D                    ;
+C33C  A5 31     LDA $31                      ;
+C33E  C9 08     CMP #$08                     ;
+C340  F0 09     BEQ $C34B                    ;
+C342  C9 09     CMP #$09                     ;
+C344  F0 05     BEQ $C34B                    ;
+C346  C9 0B     CMP #$0B                     ;
+C348  F0 0A     BEQ $C354                    ;
+C34A  60        RTS                          ;
+C34B  A9 26     LDA #$26                     ;
+C34D  8D 10 03  STA $0310                    ;
+C350  8D 30 03  STA $0330                    ;
+C353  60        RTS                          ;
+C354  A9 11     LDA #$11                     ;
+C356  8D 10 03  STA $0310                    ;
+C359  8D 30 03  STA $0330                    ;
+C35C  60        RTS                          ;
+C35D  0F        ???
+C35E  20 27 17  JSR $1727                    ;
+C361  0F        ???
+C362  37        ???
+C363  07        ???
+C364  01 0F     ORA ($0F,X)                  ;
+C366  20 31 22  JSR $2231                    ;
+C369  0F        ???
+C36A  26 11     ROL $11                      ;
+C36C  01 0F     ORA ($0F,X)                  ;
+C36E  36 17     ROL $17,X                    ;
+C370  06 0F     ASL $0F                      ;
+C372  30 00     BMI $C374                    ;
+C374  06 0F     ASL $0F                      ;
+C376  21 1C     AND ($1C,X)                  ;
+C378  30 0F     BMI $C389                    ;
+C37A  3B        ???
+C37B  19 08 0F  ORA $0F08,Y                  ;
+C37E  36 17     ROL $17,X                    ;
+C380  06 0F     ASL $0F                      ;
+C382  30 00     BMI $C384                    ;
+C384  06 0F     ASL $0F                      ;
+C386  21 1C     AND ($1C,X)                  ;
+C388  30 0F     BMI $C399                    ;
+C38A  30 21     BMI $C3AD                    ;
+C38C  07        ???
+C38D  0F        ???
+C38E  36 17     ROL $17,X                    ;
+C390  06 0F     ASL $0F                      ;
+C392  30 00     BMI $C394                    ;
+C394  11 0F     ORA ($0F),Y                  ;
+C396  21 1C     AND ($1C,X)                  ;

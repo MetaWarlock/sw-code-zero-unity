@@ -1,0 +1,498 @@
+DD57  20 48 C2  JSR $C248                    ;
+DD5A  20 06 FF  JSR $FF06 ; ProcessYield     ;
+DD5D  A6 31     LDX $31                      ;
+DD5F  BD 50 DF  LDA $DF50,X                  ;
+DD62  85 32     STA $32                      ;
+DD64  BD 60 DF  LDA $DF60,X                  ;
+DD67  85 33     STA $33                      ;
+DD69  BD 70 DF  LDA $DF70,X                  ;
+DD6C  85 34     STA $34                      ;
+DD6E  BD 80 DF  LDA $DF80,X                  ;
+DD71  85 35     STA $35                      ;
+DD73  BD AA DE  LDA $DEAA,X                  ;
+DD76  85 36     STA $36                      ;
+DD78  BD B9 DE  LDA $DEB9,X                  ;
+DD7B  85 22     STA $22                      ;
+DD7D  85 23     STA $23                      ;
+DD7F  BD C8 DE  LDA $DEC8,X                  ;
+DD82  85 FB     STA $FB                      ;
+DD84  8D 20 05  STA $0520                    ;
+DD87  A9 00     LDA #$00                     ;
+DD89  85 FD     STA $FD                      ;
+DD8B  8D 00 05  STA $0500                    ;
+DD8E  BC D7 DE  LDY $DED7,X                  ;
+DD91  84 2C     STY $2C                      ;
+DD93  C8        INY                          ;
+DD94  84 2E     STY $2E                      ;
+DD96  BD E6 DE  LDA $DEE6,X                  ;
+DD99  85 1A     STA $1A                      ;
+DD9B  BD F5 DE  LDA $DEF5,X                  ;
+DD9E  85 1B     STA $1B                      ;
+DDA0  A5 D9     LDA $D9                      ;
+DDA2  C9 00     CMP #$00                     ;
+DDA4  F0 08     BEQ $DDAE                    ;
+DDA6  BD 13 DF  LDA $DF13,X                  ;
+DDA9  85 D9     STA $D9                      ;
+DDAB  20 4E F8  JSR $F84E                    ;
+DDAE  BD 41 DF  LDA $DF41,X                  ;
+DDB1  85 2D     STA $2D                      ;
+DDB3  BD 31 DF  LDA $DF31,X                  ;
+DDB6  85 3D     STA $3D                      ;
+DDB8  BD 04 DF  LDA $DF04,X                  ;
+DDBB  86 02     STX $02                      ;
+DDBD  20 F9 C2  JSR $C2F9                    ;
+DDC0  A6 02     LDX $02                      ;
+DDC2  BD 22 DF  LDA $DF22,X                  ;
+DDC5  20 19 C3  JSR $C319                    ;
+DDC8  20 24 DE  JSR $DE24                    ;
+DDCB  20 06 FF  JSR $FF06 ; ProcessYield     ;
+DDCE  A9 00     LDA #$00                     ;
+DDD0  85 3E     STA $3E                      ;
+DDD2  85 3F     STA $3F                      ;
+DDD4  A2 00     LDX #$00                     ;
+DDD6  8E E0 04  STX $04E0                    ;
+DDD9  A9 2C     LDA #$2C                     ;
+DDDB  9D F0 04  STA $04F0,X                  ;
+DDDE  20 78 FA  JSR $FA78                    ;
+DDE1  A9 06     LDA #$06                     ;
+DDE3  9D 10 05  STA $0510,X                  ;
+DDE6  A5 31     LDA $31                      ;
+DDE8  C9 07     CMP #$07                     ;
+DDEA  90 03     BCC $DDEF                    ;
+DDEC  4C 09 DE  JMP $DE09                    ;
+DDEF  A9 80     LDA #$80                     ;
+DDF1  9D D0 04  STA $04D0,X                  ;
+DDF4  A9 D0     LDA #$D0                     ;
+DDF6  9D 00 04  STA $0400,X                  ;
+DDF9  20 FC F5  JSR $F5FC                    ;
+DDFC  A9 09     LDA #$09                     ;
+DDFE  85 50     STA $50                      ;
+DE00  20 58 C1  JSR $C158                    ;
+DE03  20 06 FF  JSR $FF06 ; ProcessYield     ;
+DE06  4C 54 C2  JMP $C254                    ;
+DE09  A5 31     LDA $31                      ;
+DE0B  C9 08     CMP #$08                     ;
+DE0D  F0 07     BEQ $DE16                    ;
+DE0F  C9 0A     CMP #$0A                     ;
+DE11  F0 03     BEQ $DE16                    ;
+DE13  4C 00 DE  JMP $DE00                    ;
+DE16  A9 D8     LDA #$D8                     ;
+DE18  8D 00 04  STA $0400                    ;
+DE1B  20 58 C1  JSR $C158                    ;
+DE1E  20 06 FF  JSR $FF06 ; ProcessYield     ;
+DE21  4C 54 C2  JMP $C254                    ;
+DE24  20 4E C1  JSR $C14E                    ;
+DE27  20 35 C2  JSR $C235                    ;
+DE2A  A9 01     LDA #$01                     ;
+DE2C  85 52     STA $52                      ;
+DE2E  85 20     STA $20                      ;
+DE30  85 2B     STA $2B                      ;
+DE32  85 2F     STA $2F                      ;
+DE34  A9 04     LDA #$04                     ;
+DE36  85 21     STA $21                      ;
+DE38  A9 00     LDA #$00                     ;
+DE3A  85 FC     STA $FC                      ;
+DE3C  85 FA     STA $FA                      ;
+DE3E  85 28     STA $28                      ;
+DE40  85 29     STA $29                      ;
+DE42  85 70     STA $70                      ;
+DE44  85 71     STA $71                      ;
+DE46  85 5F     STA $5F                      ;
+DE48  85 56     STA $56                      ;
+DE4A  85 57     STA $57                      ;
+DE4C  85 64     STA $64                      ;
+DE4E  85 58     STA $58                      ;
+DE50  85 5A     STA $5A                      ;
+DE52  85 5C     STA $5C                      ;
+DE54  85 ED     STA $ED                      ;
+DE56  85 EE     STA $EE                      ;
+DE58  85 5E     STA $5E                      ;
+DE5A  85 50     STA $50                      ;
+DE5C  85 63     STA $63                      ;
+DE5E  85 65     STA $65                      ;
+DE60  85 9B     STA $9B                      ;
+DE62  85 3B     STA $3B                      ;
+DE64  85 9D     STA $9D                      ;
+DE66  85 F8     STA $F8                      ;
+DE68  85 9E     STA $9E                      ;
+DE6A  85 98     STA $98                      ;
+DE6C  A5 FD     LDA $FD                      ;
+DE6E  6A        ROR A                        ;
+DE6F  6A        ROR A                        ;
+DE70  29 80     AND #$80                     ;
+DE72  85 25     STA $25                      ;
+DE74  49 80     EOR #$80                     ;
+DE76  09 08     ORA #$08                     ;
+DE78  85 0F     STA $0F                      ;
+DE7A  A5 23     LDA $23                      ;
+DE7C  F0 08     BEQ $DE86                    ;
+DE7E  C6 23     DEC $23                      ;
+DE80  A5 0F     LDA $0F                      ;
+DE82  09 70     ORA #$70                     ;
+DE84  85 25     STA $25                      ;
+DE86  A9 01     LDA #$01                     ;
+DE88  85 05     STA $05                      ;
+DE8A  20 98 E6  JSR $E698                    ;
+DE8D  A5 25     LDA $25                      ;
+DE8F  C5 0F     CMP $0F                      ;
+DE91  D0 F3     BNE $DE86                    ;
+DE93  A5 31     LDA $31                      ;
+DE95  C9 07     CMP #$07                     ;
+DE97  B0 0C     BCS $DEA5                    ;
+DE99  A9 04     LDA #$04                     ;
+DE9B  20 55 FF  JSR $FF55 ; SwitchPRGBank    ;
+DE9E  20 40 80  JSR $8040                    ;
+DEA1  20 90 80  JSR $8090                    ;
+DEA4  60        RTS                          ;
+DEA5  A5 66     LDA $66                      ;
+DEA7  30 F0     BMI $DE99                    ;
+DEA9  60        RTS                          ;
+DEAA  00        BRK                          ;
+DEAB  01 02     ORA ($02,X)                  ;
+DEAD  03        ???
+DEAE  04        ???
+DEAF  05 06     ORA $06                      ;
+DEB1  01 04     ORA ($04,X)                  ;
+DEB3  04        ???
+DEB4  02        ???
+DEB5  04        ???
+DEB6  05 06     ORA $06                      ;
+DEB8  01 33     ORA ($33,X)                  ;
+DEBA  33        ???
+DEBB  00        BRK                          ;
+DEBC  6E 00 00  ROR $0000                    ;
+DEBF  00        BRK                          ;
+DEC0  00        BRK                          ;
+DEC1  02        ???
+DEC2  00        BRK                          ;
+DEC3  02        ???
+DEC4  00        BRK                          ;
+DEC5  00        BRK                          ;
+DEC6  00        BRK                          ;
+DEC7  00        BRK                          ;
+DEC8  03        ???
+DEC9  03        ???
+DECA  00        BRK                          ;
+DECB  0B        ???
+DECC  00        BRK                          ;
+DECD  00        BRK                          ;
+DECE  00        BRK                          ;
+DECF  00        BRK                          ;
+DED0  00        BRK                          ;
+DED1  00        BRK                          ;
+DED2  00        BRK                          ;
+DED3  00        BRK                          ;
+DED4  00        BRK                          ;
+DED5  00        BRK                          ;
+DED6  00        BRK                          ;
+DED7  10 10     BPL $DEE9                    ;
+DED9  10 09     BPL $DEE4                    ;
+DEDB  12        ???
+DEDC  12        ???
+DEDD  12        ???
+DEDE  00        BRK                          ;
+DEDF  03        ???
+DEE0  00        BRK                          ;
+DEE1  02        ???
+DEE2  00        BRK                          ;
+DEE3  00        BRK                          ;
+DEE4  00        BRK                          ;
+DEE5  00        BRK                          ;
+DEE6  8E 8E 8E  STX $8E8E                    ;
+DEE9  8E 8E 8E  STX $8E8E                    ;
+DEEC  8E 8E 9F  STX $9F8E                    ;
+DEEF  9F        ???
+DEF0  8F        ???
+DEF1  9F        ???
+DEF2  9F        ???
+DEF3  80        ???
+DEF4  8E 90 91  STX $9190                    ;
+DEF7  92        ???
+DEF8  93        ???
+DEF9  94 95     STY $95,X                    ;
+DEFB  96 98     STX $98,Y                    ;
+DEFD  98        TYA                          ;
+DEFE  98        TYA                          ;
+DEFF  9C        ???
+DF00  98        TYA                          ;
+DF01  9E        ???
+DF02  9D 98 00  STA $0098,X                  ;
+DF05  01 04     ORA ($04,X)                  ;
+DF07  05 07     ORA $07                      ;
+DF09  0C        ???
+DF0A  09 0F     ORA #$0F                     ;
+DF0C  10 10     BPL $DF1E                    ;
+DF0E  13        ???
+DF0F  14        ???
+DF10  18        CLC                          ;
+DF11  00        BRK                          ;
+DF12  19 04 05  ORA $0504,Y                  ;
+DF15  06 07     ASL $07                      ;
+DF17  08        PHP                          ;
+DF18  09 0A     ORA #$0A                     ;
+DF1A  F2        ???
+DF1B  03        ???
+DF1C  00        BRK                          ;
+DF1D  00        BRK                          ;
+DF1E  0E 00 00  ASL $0000                    ;
+DF21  00        BRK                          ;
+DF22  00        BRK                          ;
+DF23  03        ???
+DF24  01 04     ORA ($04,X)                  ;
+DF26  06 00     ASL $00                      ;
+DF28  01 0A     ORA ($0A,X)                  ;
+DF2A  00        BRK                          ;
+DF2B  00        BRK                          ;
+DF2C  00        BRK                          ;
+DF2D  00        BRK                          ;
+DF2E  00        BRK                          ;
+DF2F  00        BRK                          ;
+DF30  00        BRK                          ;
+DF31  80        ???
+DF32  00        BRK                          ;
+DF33  88        DEY                          ;
+DF34  00        BRK                          ;
+DF35  8C 00 00  STY $0000                    ;
+DF38  00        BRK                          ;
+DF39  00        BRK                          ;
+DF3A  00        BRK                          ;
+DF3B  00        BRK                          ;
+DF3C  00        BRK                          ;
+DF3D  00        BRK                          ;
+DF3E  00        BRK                          ;
+DF3F  00        BRK                          ;
+DF40  00        BRK                          ;
+DF41  00        BRK                          ;
+DF42  00        BRK                          ;
+DF43  03        ???
+DF44  00        BRK                          ;
+DF45  03        ???
+DF46  03        ???
+DF47  03        ???
+DF48  00        BRK                          ;
+DF49  00        BRK                          ;
+DF4A  00        BRK                          ;
+DF4B  00        BRK                          ;
+DF4C  00        BRK                          ;
+DF4D  01 00     ORA ($00,X)                  ;
+DF4F  01 90     ORA ($90,X)                  ;
+DF51  D4        ???
+DF52  18        CLC                          ;
+DF53  5C        ???
+DF54  D4        ???
+DF55  0D 46 7F  ORA $7F46                    ;
+DF58  80        ???
+DF59  83        ???
+DF5A  84 87     STY $87                      ;
+DF5C  88        DEY                          ;
+DF5D  8A        TXA                          ;
+DF5E  8A        TXA                          ;
+DF5F  87        ???
+DF60  DF        ???
+DF61  DF        ???
+DF62  E0 E0     CPX #$E0                     ;
+DF64  E0 E1     CPX #$E1                     ;
+DF66  E1 E1     SBC ($E1,X)                  ;
+DF68  E1 E1     SBC ($E1,X)                  ;
+DF6A  E1 E1     SBC ($E1,X)                  ;
+DF6C  E1 E1     SBC ($E1,X)                  ;
+DF6E  E1 E1     SBC ($E1,X)                  ;
+DF70  8C D0 14  STY $14D0                    ;
+DF73  58        CLI                          ;
+DF74  D0 09     BNE $DF7F                    ;
+DF76  42        ???
+DF77  7B        ???
+DF78  7C        ???
+DF79  7F        ???
+DF7A  80        ???
+DF7B  83        ???
+DF7C  84 86     STY $86                      ;
+DF7E  86 83     STX $83                      ;
+DF80  E1 E1     SBC ($E1,X)                  ;
+DF82  E2        ???
+DF83  E2        ???
+DF84  E2        ???
+DF85  E3        ???
+DF86  E3        ???
+DF87  E3        ???
+DF88  E3        ???
+DF89  E3        ???
+DF8A  E3        ???
+DF8B  E3        ???
+DF8C  E3        ???
+DF8D  E3        ???
+DF8E  E3        ???
+DF8F  E3        ???
+DF90  15 00     ORA $00,X                    ;
+DF92  16 00     ASL $00,X                    ;
+DF94  00        BRK                          ;
+DF95  00        BRK                          ;
+DF96  00        BRK                          ;
+DF97  00        BRK                          ;
+DF98  00        BRK                          ;
+DF99  00        BRK                          ;
+DF9A  00        BRK                          ;
+DF9B  00        BRK                          ;
+DF9C  00        BRK                          ;
+DF9D  00        BRK                          ;
+DF9E  00        BRK                          ;
+DF9F  00        BRK                          ;
+DFA0  00        BRK                          ;
+DFA1  00        BRK                          ;
+DFA2  00        BRK                          ;
+DFA3  00        BRK                          ;
+DFA4  00        BRK                          ;
+DFA5  00        BRK                          ;
+DFA6  08        PHP                          ;
+DFA7  09 0A     ORA #$0A                     ;
+DFA9  0B        ???
+DFAA  0C        ???
+DFAB  0D 0E 00  ORA $000E                    ;
+DFAE  00        BRK                          ;
+DFAF  00        BRK                          ;
+DFB0  14        ???
+DFB1  14        ???
+DFB2  00        BRK                          ;
+DFB3  00        BRK                          ;
+DFB4  00        BRK                          ;
+DFB5  00        BRK                          ;
+DFB6  00        BRK                          ;
+DFB7  07        ???
+DFB8  00        BRK                          ;
+DFB9  00        BRK                          ;
+DFBA  00        BRK                          ;
+DFBB  00        BRK                          ;
+DFBC  00        BRK                          ;
+DFBD  0F        ???
+DFBE  10 11     BPL $DFD1                    ;
+DFC0  12        ???
+DFC1  13        ???
+DFC2  00        BRK                          ;
+DFC3  01 02     ORA ($02,X)                  ;
+DFC5  03        ???
+DFC6  04        ???
+DFC7  05 06     ORA $06                      ;
+DFC9  00        BRK                          ;
+DFCA  00        BRK                          ;
+DFCB  00        BRK                          ;
+DFCC  00        BRK                          ;
+DFCD  00        BRK                          ;
+DFCE  00        BRK                          ;
+DFCF  00        BRK                          ;
+DFD0  00        BRK                          ;
+DFD1  00        BRK                          ;
+DFD2  00        BRK                          ;
+DFD3  00        BRK                          ;
+DFD4  15 00     ORA $00,X                    ;
+DFD6  16 00     ASL $00,X                    ;
+DFD8  00        BRK                          ;
+DFD9  00        BRK                          ;
+DFDA  00        BRK                          ;
+DFDB  00        BRK                          ;
+DFDC  00        BRK                          ;
+DFDD  00        BRK                          ;
+DFDE  00        BRK                          ;
+DFDF  00        BRK                          ;
+DFE0  00        BRK                          ;
+DFE1  00        BRK                          ;
+DFE2  00        BRK                          ;
+DFE3  00        BRK                          ;
+DFE4  00        BRK                          ;
+DFE5  00        BRK                          ;
+DFE6  00        BRK                          ;
+DFE7  00        BRK                          ;
+DFE8  00        BRK                          ;
+DFE9  27        ???
+DFEA  28        PLP                          ;
+DFEB  29 00     AND #$00                     ;
+DFED  00        BRK                          ;
+DFEE  00        BRK                          ;
+DFEF  00        BRK                          ;
+DFF0  00        BRK                          ;
+DFF1  00        BRK                          ;
+DFF2  00        BRK                          ;
+DFF3  34        ???
+DFF4  34        ???
+DFF5  34        ???
+DFF6  00        BRK                          ;
+DFF7  00        BRK                          ;
+DFF8  00        BRK                          ;
+DFF9  00        BRK                          ;
+DFFA  26 00     ROL $00                      ;
+DFFC  2A        ROL A                        ;
+DFFD  2B        ???
+DFFE  2C 2D 2E  BIT $2E2D                    ;
+E001  2F        ???
+E002  30 31     BMI $E035                    ;
+E004  32        ???
+E005  33        ???
+E006  00        BRK                          ;
+E007  21 22     AND ($22,X)                  ;
+E009  23        ???
+E00A  24 25     BIT $25                      ;
+E00C  00        BRK                          ;
+E00D  00        BRK                          ;
+E00E  00        BRK                          ;
+E00F  00        BRK                          ;
+E010  00        BRK                          ;
+E011  00        BRK                          ;
+E012  00        BRK                          ;
+E013  00        BRK                          ;
+E014  00        BRK                          ;
+E015  00        BRK                          ;
+E016  00        BRK                          ;
+E017  00        BRK                          ;
+E018  41 42     EOR ($42,X)                  ;
+E01A  43        ???
+E01B  00        BRK                          ;
+E01C  00        BRK                          ;
+E01D  00        BRK                          ;
+E01E  15 00     ORA $00,X                    ;
+E020  16 00     ASL $00,X                    ;
+E022  00        BRK                          ;
+E023  00        BRK                          ;
+E024  00        BRK                          ;
+E025  00        BRK                          ;
+E026  00        BRK                          ;
+E027  00        BRK                          ;
+E028  00        BRK                          ;
+E029  00        BRK                          ;
+E02A  00        BRK                          ;
+E02B  44        ???
+E02C  45 46     EOR $46                      ;
+E02E  00        BRK                          ;
+E02F  00        BRK                          ;
+E030  00        BRK                          ;
+E031  00        BRK                          ;
+E032  00        BRK                          ;
+E033  00        BRK                          ;
+E034  00        BRK                          ;
+E035  00        BRK                          ;
+E036  00        BRK                          ;
+E037  00        BRK                          ;
+E038  00        BRK                          ;
+E039  00        BRK                          ;
+E03A  00        BRK                          ;
+E03B  00        BRK                          ;
+E03C  47        ???
+E03D  48        PHA                          ;
+E03E  49 4A     EOR #$4A                     ;
+E040  4B        ???
+E041  00        BRK                          ;
+E042  00        BRK                          ;
+E043  00        BRK                          ;
+E044  00        BRK                          ;
+E045  00        BRK                          ;
+E046  00        BRK                          ;
+E047  00        BRK                          ;
+E048  00        BRK                          ;
+E049  56 00     LSR $00,X                    ;
+E04B  00        BRK                          ;
+E04C  00        BRK                          ;
+E04D  00        BRK                          ;
+E04E  00        BRK                          ;
+E04F  00        BRK                          ;
+E050  00        BRK                          ;
+E051  4C 4D 4E  JMP $4E4D                    ;
+E054  4F        ???
+E055  50 51     BVC $E0A8                    ;

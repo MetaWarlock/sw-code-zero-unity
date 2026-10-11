@@ -1,0 +1,421 @@
+9800  E6 95     INC $95                      ;
+9802  A5 95     LDA $95                      ;
+9804  4A        LSR A                        ;
+9805  B0 15     BCS $981C                    ;
+9807  A2 00     LDX #$00                     ;
+9809  86 96     STX $96                      ;
+980B  BD D0 04  LDA $04D0,X                  ;
+980E  10 03     BPL $9813                    ;
+9810  20 2F 98  JSR $982F                    ;
+9813  E6 96     INC $96                      ;
+9815  A6 96     LDX $96                      ;
+9817  E0 10     CPX #$10                     ;
+9819  D0 F0     BNE $980B                    ;
+981B  60        RTS                          ;
+981C  A2 0F     LDX #$0F                     ;
+981E  86 96     STX $96                      ;
+9820  BD D0 04  LDA $04D0,X                  ;
+9823  10 03     BPL $9828                    ;
+9825  20 2F 98  JSR $982F                    ;
+9828  C6 96     DEC $96                      ;
+982A  A6 96     LDX $96                      ;
+982C  10 F2     BPL $9820                    ;
+982E  60        RTS                          ;
+982F  BD 00 04  LDA $0400,X                  ;
+9832  29 10     AND #$10                     ;
+9834  D0 03     BNE $9839                    ;
+9836  4C C7 98  JMP $98C7                    ;
+9839  BD F0 04  LDA $04F0,X                  ;
+983C  38        SEC                          ;
+983D  E5 FC     SBC $FC                      ;
+983F  9D 50 04  STA $0450,X                  ;
+9842  BD 00 05  LDA $0500,X                  ;
+9845  E5 FD     SBC $FD                      ;
+9847  D0 4D     BNE $9896                    ;
+9849  BD 10 05  LDA $0510,X                  ;
+984C  38        SEC                          ;
+984D  E5 FA     SBC $FA                      ;
+984F  B0 03     BCS $9854                    ;
+9851  E9 0F     SBC #$0F                     ;
+9853  18        CLC                          ;
+9854  9D 40 04  STA $0440,X                  ;
+9857  BD 20 05  LDA $0520,X                  ;
+985A  E5 FB     SBC $FB                      ;
+985C  F0 75     BEQ $98D3                    ;
+985E  E0 01     CPX #$01                     ;
+9860  B0 18     BCS $987A                    ;
+9862  48        PHA                          ;
+9863  BD 00 04  LDA $0400,X                  ;
+9866  29 7F     AND #$7F                     ;
+9868  9D 00 04  STA $0400,X                  ;
+986B  68        PLA                          ;
+986C  C9 01     CMP #$01                     ;
+986E  D0 71     BNE $98E1                    ;
+9870  A9 00     LDA #$00                     ;
+9872  85 7C     STA $7C                      ;
+9874  A9 07     LDA #$07                     ;
+9876  85 50     STA $50                      ;
+9878  D0 00     BNE $987A                    ;
+987A  A9 00     LDA #$00                     ;
+987C  9D D0 04  STA $04D0,X                  ;
+987F  9D C0 04  STA $04C0,X                  ;
+9882  9D 70 05  STA $0570,X                  ;
+9885  A9 FF     LDA #$FF                     ;
+9887  9D 90 05  STA $0590,X                  ;
+988A  60        RTS                          ;
+988B  A9 00     LDA #$00                     ;
+988D  8D D0 04  STA $04D0                    ;
+9890  A9 FF     LDA #$FF                     ;
+9892  8D 90 05  STA $0590                    ;
+9895  60        RTS                          ;
+9896  BD 50 04  LDA $0450,X                  ;
+9899  B0 04     BCS $989F                    ;
+989B  49 FF     EOR #$FF                     ;
+989D  69 01     ADC #$01                     ;
+989F  C9 10     CMP #$10                     ;
+98A1  B0 D7     BCS $987A                    ;
+98A3  BD 20 04  LDA $0420,X                  ;
+98A6  C9 13     CMP #$13                     ;
+98A8  F0 D0     BEQ $987A                    ;
+98AA  C9 14     CMP #$14                     ;
+98AC  F0 CC     BEQ $987A                    ;
+98AE  C9 17     CMP #$17                     ;
+98B0  F0 C8     BEQ $987A                    ;
+98B2  C9 18     CMP #$18                     ;
+98B4  F0 C4     BEQ $987A                    ;
+98B6  C9 19     CMP #$19                     ;
+98B8  F0 C0     BEQ $987A                    ;
+98BA  C9 29     CMP #$29                     ;
+98BC  F0 BC     BEQ $987A                    ;
+98BE  BD 00 04  LDA $0400,X                  ;
+98C1  29 7F     AND #$7F                     ;
+98C3  9D 00 04  STA $0400,X                  ;
+98C6  60        RTS                          ;
+98C7  BD F0 04  LDA $04F0,X                  ;
+98CA  9D 50 04  STA $0450,X                  ;
+98CD  BD 10 05  LDA $0510,X                  ;
+98D0  9D 40 04  STA $0440,X                  ;
+98D3  BD 00 04  LDA $0400,X                  ;
+98D6  09 80     ORA #$80                     ;
+98D8  9D 00 04  STA $0400,X                  ;
+98DB  BD 20 04  LDA $0420,X                  ;
+98DE  D0 01     BNE $98E1                    ;
+98E0  60        RTS                          ;
+98E1  E0 00     CPX #$00                     ;
+98E3  D0 0D     BNE $98F2                    ;
+98E5  A5 7C     LDA $7C                      ;
+98E7  F0 09     BEQ $98F2                    ;
+98E9  C6 7C     DEC $7C                      ;
+98EB  A5 95     LDA $95                      ;
+98ED  29 04     AND #$04                     ;
+98EF  D0 01     BNE $98F2                    ;
+98F1  60        RTS                          ;
+98F2  A0 00     LDY #$00                     ;
+98F4  BD 00 04  LDA $0400,X                  ;
+98F7  29 40     AND #$40                     ;
+98F9  85 10     STA $10                      ;
+98FB  F0 01     BEQ $98FE                    ;
+98FD  C8        INY                          ;
+98FE  84 11     STY $11                      ;
+9900  BC 20 04  LDY $0420,X                  ;
+9903  B9 22 B2  LDA $B222,Y                  ;
+9906  85 00     STA $00                      ;
+9908  B9 92 B2  LDA $B292,Y                  ;
+990B  85 01     STA $01                      ;
+990D  BD 30 04  LDA $0430,X                  ;
+9910  30 24     BMI $9936                    ;
+9912  29 7F     AND #$7F                     ;
+9914  FE 30 04  INC $0430,X                  ;
+9917  A0 01     LDY #$01                     ;
+9919  D1 00     CMP ($00),Y                  ;
+991B  D0 19     BNE $9936                    ;
+991D  A9 00     LDA #$00                     ;
+991F  9D 30 04  STA $0430,X                  ;
+9922  88        DEY                          ;
+9923  B1 00     LDA ($00),Y                  ;
+9925  29 7F     AND #$7F                     ;
+9927  DD 10 04  CMP $0410,X                  ;
+992A  08        PHP                          ;
+992B  FE 10 04  INC $0410,X                  ;
+992E  28        PLP                          ;
+992F  D0 05     BNE $9936                    ;
+9931  A9 00     LDA #$00                     ;
+9933  9D 10 04  STA $0410,X                  ;
+9936  BD 00 04  LDA $0400,X                  ;
+9939  29 08     AND #$08                     ;
+993B  D0 05     BNE $9942                    ;
+993D  BD 00 04  LDA $0400,X                  ;
+9940  30 01     BMI $9943                    ;
+9942  60        RTS                          ;
+9943  BD 10 04  LDA $0410,X                  ;
+9946  29 7F     AND #$7F                     ;
+9948  18        CLC                          ;
+9949  69 02     ADC #$02                     ;
+994B  A8        TAY                          ;
+994C  B1 00     LDA ($00),Y                  ;
+994E  85 02     STA $02                      ;
+9950  D0 09     BNE $995B                    ;
+9952  9D D0 04  STA $04D0,X                  ;
+9955  A9 FF     LDA #$FF                     ;
+9957  9D 90 05  STA $0590,X                  ;
+995A  60        RTS                          ;
+995B  A0 00     LDY #$00                     ;
+995D  B1 00     LDA ($00),Y                  ;
+995F  10 00     BPL $9961                    ;
+9961  A4 02     LDY $02                      ;
+9963  B9 25 A3  LDA $A325,Y                  ;
+9966  85 02     STA $02                      ;
+9968  B9 C5 A3  LDA $A3C5,Y                  ;
+996B  85 03     STA $03                      ;
+996D  BD 50 04  LDA $0450,X                  ;
+9970  85 13     STA $13                      ;
+9972  BD 40 04  LDA $0440,X                  ;
+9975  85 12     STA $12                      ;
+9977  A0 00     LDY #$00                     ;
+9979  B1 02     LDA ($02),Y                  ;
+997B  85 04     STA $04                      ;
+997D  C8        INY                          ;
+997E  B1 02     LDA ($02),Y                  ;
+9980  18        CLC                          ;
+9981  65 11     ADC $11                      ;
+9983  48        PHA                          ;
+9984  BD 00 04  LDA $0400,X                  ;
+9987  29 20     AND #$20                     ;
+9989  85 11     STA $11                      ;
+998B  68        PLA                          ;
+998C  AA        TAX                          ;
+998D  BD 27 AF  LDA $AF27,X                  ;
+9990  38        SEC                          ;
+9991  E9 02     SBC #$02                     ;
+9993  85 05     STA $05                      ;
+9995  BD AF AF  LDA $AFAF,X                  ;
+9998  E9 00     SBC #$00                     ;
+999A  85 06     STA $06                      ;
+999C  A6 97     LDX $97                      ;
+999E  F0 40     BEQ $99E0                    ;
+99A0  C8        INY                          ;
+99A1  B1 02     LDA ($02),Y                  ;
+99A3  9D 01 02  STA $0201,X                  ;
+99A6  A5 12     LDA $12                      ;
+99A8  18        CLC                          ;
+99A9  71 05     ADC ($05),Y                  ;
+99AB  9D 00 02  STA $0200,X                  ;
+99AE  B1 05     LDA ($05),Y                  ;
+99B0  30 04     BMI $99B6                    ;
+99B2  90 04     BCC $99B8                    ;
+99B4  B0 2B     BCS $99E1                    ;
+99B6  90 29     BCC $99E1                    ;
+99B8  C8        INY                          ;
+99B9  B1 02     LDA ($02),Y                  ;
+99BB  45 10     EOR $10                      ;
+99BD  05 11     ORA $11                      ;
+99BF  9D 02 02  STA $0202,X                  ;
+99C2  A5 13     LDA $13                      ;
+99C4  18        CLC                          ;
+99C5  71 05     ADC ($05),Y                  ;
+99C7  9D 03 02  STA $0203,X                  ;
+99CA  B1 05     LDA ($05),Y                  ;
+99CC  30 04     BMI $99D2                    ;
+99CE  90 04     BCC $99D4                    ;
+99D0  B0 10     BCS $99E2                    ;
+99D2  90 0E     BCC $99E2                    ;
+99D4  E8        INX                          ;
+99D5  E8        INX                          ;
+99D6  E8        INX                          ;
+99D7  E8        INX                          ;
+99D8  86 97     STX $97                      ;
+99DA  F0 04     BEQ $99E0                    ;
+99DC  C6 04     DEC $04                      ;
+99DE  10 C0     BPL $99A0                    ;
+99E0  60        RTS                          ;
+99E1  C8        INY                          ;
+99E2  A9 F8     LDA #$F8                     ;
+99E4  9D 00 02  STA $0200,X                  ;
+99E7  D0 F3     BNE $99DC                    ;
+99E9  00        BRK                          ;
+99EA  00        BRK                          ;
+99EB  00        BRK                          ;
+99EC  00        BRK                          ;
+99ED  0B        ???
+99EE  00        BRK                          ;
+99EF  0C        ???
+99F0  01 0B     ORA ($0B,X)                  ;
+99F2  00        BRK                          ;
+99F3  01 00     ORA ($00,X)                  ;
+99F5  02        ???
+99F6  01 03     ORA ($03,X)                  ;
+99F8  00        BRK                          ;
+99F9  04        ???
+99FA  00        BRK                          ;
+99FB  05 01     ORA $01                      ;
+99FD  06 01     ASL $01                      ;
+99FF  07        ???
+9A00  01 08     ORA ($08,X)                  ;
+9A02  01 09     ORA ($09,X)                  ;
+9A04  01 0A     ORA ($0A,X)                  ;
+9A06  00        BRK                          ;
+9A07  0B        ???
+9A08  02        ???
+9A09  0C        ???
+9A0A  01 0B     ORA ($0B,X)                  ;
+9A0C  00        BRK                          ;
+9A0D  01 00     ORA ($00,X)                  ;
+9A0F  02        ???
+9A10  01 4C     ORA ($4C,X)                  ;
+9A12  00        BRK                          ;
+9A13  04        ???
+9A14  00        BRK                          ;
+9A15  05 01     ORA $01                      ;
+9A17  06 01     ASL $01                      ;
+9A19  0D 01 0E  ORA $0E01                    ;
+9A1C  01 0F     ORA ($0F,X)                  ;
+9A1E  01 10     ORA ($10,X)                  ;
+9A20  01 0A     ORA ($0A,X)                  ;
+9A22  04        ???
+9A23  0C        ???
+9A24  01 01     ORA ($01,X)                  ;
+9A26  00        BRK                          ;
+9A27  11 01     ORA ($01),Y                  ;
+9A29  12        ???
+9A2A  01 03     ORA ($03,X)                  ;
+9A2C  00        BRK                          ;
+9A2D  04        ???
+9A2E  00        BRK                          ;
+9A2F  13        ???
+9A30  00        BRK                          ;
+9A31  14        ???
+9A32  01 15     ORA ($15,X)                  ;
+9A34  01 16     ORA ($16,X)                  ;
+9A36  00        BRK                          ;
+9A37  17        ???
+9A38  01 0C     ORA ($0C,X)                  ;
+9A3A  06 0C     ASL $0C                      ;
+9A3C  01 01     ORA ($01,X)                  ;
+9A3E  00        BRK                          ;
+9A3F  18        CLC                          ;
+9A40  01 19     ORA ($19,X)                  ;
+9A42  01 03     ORA ($03,X)                  ;
+9A44  00        BRK                          ;
+9A45  04        ???
+9A46  00        BRK                          ;
+9A47  1A        ???
+9A48  00        BRK                          ;
+9A49  1B        ???
+9A4A  01 15     ORA ($15,X)                  ;
+9A4C  01 16     ORA ($16,X)                  ;
+9A4E  00        BRK                          ;
+9A4F  1C        ???
+9A50  01 1D     ORA ($1D,X)                  ;
+9A52  01 1E     ORA ($1E,X)                  ;
+9A54  01 0C     ORA ($0C,X)                  ;
+9A56  06 0C     ASL $0C                      ;
+9A58  01 01     ORA ($01,X)                  ;
+9A5A  00        BRK                          ;
+9A5B  1F        ???
+9A5C  01 12     ORA ($12,X)                  ;
+9A5E  01 03     ORA ($03,X)                  ;
+9A60  00        BRK                          ;
+9A61  04        ???
+9A62  00        BRK                          ;
+9A63  20 00 21  JSR $2100                    ;
+9A66  01 15     ORA ($15,X)                  ;
+9A68  01 16     ORA ($16,X)                  ;
+9A6A  00        BRK                          ;
+9A6B  22        ???
+9A6C  01 23     ORA ($23,X)                  ;
+9A6E  01 6D     ORA ($6D,X)                  ;
+9A70  01 0C     ORA ($0C,X)                  ;
+9A72  08        PHP                          ;
+9A73  30 01     BMI $9A76                    ;
+9A75  24 00     BIT $00                      ;
+9A77  25 00     AND $00                      ;
+9A79  26 00     ROL $00                      ;
+9A7B  27        ???
+9A7C  00        BRK                          ;
+9A7D  28        PLP                          ;
+9A7E  00        BRK                          ;
+9A7F  29 01     AND #$01                     ;
+9A81  2A        ROL A                        ;
+9A82  01 2B     ORA ($2B,X)                  ;
+9A84  01 2C     ORA ($2C,X)                  ;
+9A86  01 2D     ORA ($2D,X)                  ;
+9A88  01 2E     ORA ($2E,X)                  ;
+9A8A  01 2F     ORA ($2F,X)                  ;
+9A8C  01 0B     ORA ($0B,X)                  ;
+9A8E  08        PHP                          ;
+9A8F  30 01     BMI $9A92                    ;
+9A91  24 00     BIT $00                      ;
+9A93  25 00     AND $00                      ;
+9A95  26 00     ROL $00                      ;
+9A97  27        ???
+9A98  00        BRK                          ;
+9A99  28        PLP                          ;
+9A9A  00        BRK                          ;
+9A9B  29 01     AND #$01                     ;
+9A9D  31 01     AND ($01),Y                  ;
+9A9F  32        ???
+9AA0  01 2C     ORA ($2C,X)                  ;
+9AA2  01 2D     ORA ($2D,X)                  ;
+9AA4  01 33     ORA ($33,X)                  ;
+9AA6  01 0C     ORA ($0C,X)                  ;
+9AA8  0A        ASL A                        ;
+9AA9  0C        ???
+9AAA  01 0B     ORA ($0B,X)                  ;
+9AAC  00        BRK                          ;
+9AAD  6B        ???
+9AAE  00        BRK                          ;
+9AAF  01 00     ORA ($00,X)                  ;
+9AB1  02        ???
+9AB2  01 03     ORA ($03,X)                  ;
+9AB4  00        BRK                          ;
+9AB5  04        ???
+9AB6  00        BRK                          ;
+9AB7  05 01     ORA $01                      ;
+9AB9  06 01     ASL $01                      ;
+9ABB  34        ???
+9ABC  01 08     ORA ($08,X)                  ;
+9ABE  01 09     ORA ($09,X)                  ;
+9AC0  01 35     ORA ($35,X)                  ;
+9AC2  01 09     ORA ($09,X)                  ;
+9AC4  0C        ???
+9AC5  0C        ???
+9AC6  01 0B     ORA ($0B,X)                  ;
+9AC8  80        ???
+9AC9  01 00     ORA ($00,X)                  ;
+9ACB  37        ???
+9ACC  01 4C     ORA ($4C,X)                  ;
+9ACE  00        BRK                          ;
+9ACF  04        ???
+9AD0  00        BRK                          ;
+9AD1  39 01 3A  AND $3A01,Y                  ;
+9AD4  01 3B     ORA ($3B,X)                  ;
+9AD6  00        BRK                          ;
+9AD7  38        SEC                          ;
+9AD8  01 07     ORA ($07,X)                  ;
+9ADA  0E 0C C1  ASL $C10C                    ;
+9ADD  3C        ???
+9ADE  01 3D     ORA ($3D,X)                  ;
+9AE0  01 3E     ORA ($3E,X)                  ;
+9AE2  00        BRK                          ;
+9AE3  3F        ???
+9AE4  00        BRK                          ;
+9AE5  40        RTI                          ;
+9AE6  01 41     ORA ($41,X)                  ;
+9AE8  00        BRK                          ;
+9AE9  42        ???
+9AEA  00        BRK                          ;
+9AEB  09 12     ORA #$12                     ;
+9AED  0C        ???
+9AEE  01 0B     ORA ($0B,X)                  ;
+9AF0  80        ???
+9AF1  6B        ???
+9AF2  00        BRK                          ;
+9AF3  01 00     ORA ($00,X)                  ;
+9AF5  43        ???
+9AF6  01 4C     ORA ($4C,X)                  ;
+9AF8  00        BRK                          ;
+9AF9  04        ???
+9AFA  00        BRK                          ;
+9AFB  40        RTI                          ;
+9AFC  01 3A     ORA ($3A,X)                  ;
+9AFE  01 44     ORA ($44,X)                  ;

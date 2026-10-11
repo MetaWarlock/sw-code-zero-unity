@@ -1,0 +1,140 @@
+8F80  91 A2     STA ($A2),Y                  ;
+8F82  00        BRK                          ;
+8F83  86 7C     STX $7C                      ;
+8F85  BD D6 04  LDA $04D6,X                  ;
+8F88  9D 84 03  STA $0384,X                  ;
+8F8B  A9 00     LDA #$00                     ;
+8F8D  9D D6 04  STA $04D6,X                  ;
+8F90  E8        INX                          ;
+8F91  E0 0A     CPX #$0A                     ;
+8F93  D0 F0     BNE $8F85                    ;
+8F95  A5 F2     LDA $F2                      ;
+8F97  8D 8E 03  STA $038E                    ;
+8F9A  A2 0F     LDX #$0F                     ;
+8F9C  BD 10 03  LDA $0310,X                  ;
+8F9F  9D 8F 03  STA $038F,X                  ;
+8FA2  BD 3E 90  LDA $903E,X                  ;
+8FA5  9D 10 03  STA $0310,X                  ;
+8FA8  CA        DEX                          ;
+8FA9  10 F1     BPL $8F9C                    ;
+8FAB  86 18     STX $18                      ;
+8FAD  A9 9F     LDA #$9F                     ;
+8FAF  85 1A     STA $1A                      ;
+8FB1  A5 FE     LDA $FE                      ;
+8FB3  29 F7     AND #$F7                     ;
+8FB5  85 FE     STA $FE                      ;
+8FB7  A9 04     LDA #$04                     ;
+8FB9  85 97     STA $97                      ;
+8FBB  20 9A F8  JSR $F89A                    ;
+8FBE  20 E1 90  JSR $90E1                    ;
+8FC1  20 48 91  JSR $9148                    ;
+8FC4  A5 14     LDA $14                      ;
+8FC6  29 10     AND #$10                     ;
+8FC8  F0 ED     BEQ $8FB7                    ;
+8FCA  D0 01     BNE $8FCD                    ;
+8FCC  60        RTS                          ;
+8FCD  A2 05     LDX #$05                     ;
+8FCF  BD 60 03  LDA $0360,X                  ;
+8FD2  9D D0 04  STA $04D0,X                  ;
+8FD5  BD 66 03  LDA $0366,X                  ;
+8FD8  9D 00 04  STA $0400,X                  ;
+8FDB  BD 6C 03  LDA $036C,X                  ;
+8FDE  9D 20 04  STA $0420,X                  ;
+8FE1  BD 72 03  LDA $0372,X                  ;
+8FE4  9D 10 05  STA $0510,X                  ;
+8FE7  BD 78 03  LDA $0378,X                  ;
+8FEA  9D F0 04  STA $04F0,X                  ;
+8FED  BD 7E 03  LDA $037E,X                  ;
+8FF0  9D 10 04  STA $0410,X                  ;
+8FF3  A9 00     LDA #$00                     ;
+8FF5  9D 30 04  STA $0430,X                  ;
+8FF8  CA        DEX                          ;
+8FF9  10 D4     BPL $8FCF                    ;
+8FFB  A2 00     LDX #$00                     ;
+8FFD  BD 84 03  LDA $0384,X                  ;
+9000  9D D6 04  STA $04D6,X                  ;
+9003  E8        INX                          ;
+9004  E0 0A     CPX #$0A                     ;
+9006  D0 F5     BNE $8FFD                    ;
+9008  A2 0F     LDX #$0F                     ;
+900A  BD 8F 03  LDA $038F,X                  ;
+900D  9D 10 03  STA $0310,X                  ;
+9010  CA        DEX                          ;
+9011  10 F7     BPL $900A                    ;
+9013  86 18     STX $18                      ;
+9015  AD 8E 03  LDA $038E                    ;
+9018  09 80     ORA #$80                     ;
+901A  85 1A     STA $1A                      ;
+901C  A5 FE     LDA $FE                      ;
+901E  09 08     ORA #$08                     ;
+9020  85 FE     STA $FE                      ;
+9022  68        PLA                          ;
+9023  85 7C     STA $7C                      ;
+9025  60        RTS                          ;
+9026  80        ???
+9027  80        ???
+9028  80        ???
+9029  80        ???
+902A  80        ???
+902B  80        ???
+902C  36 2E     ROL $2E,X                    ;
+902E  31 00     AND ($00),Y                  ;
+9030  3F        ???
+9031  3F        ???
+9032  A0 38     LDY #$38                     ;
+9034  38        SEC                          ;
+9035  40        RTI                          ;
+9036  D8        CLD                          ;
+9037  28        PLP                          ;
+9038  5C        ???
+9039  68        PLA                          ;
+903A  68        PLA                          ;
+903B  6C 54 AC  JMP ($AC54)                  ;
+903E  0F        ???
+903F  0F        ???
+9040  30 27     BMI $9069                    ;
+9042  0F        ???
+9043  0F        ???
+9044  27        ???
+9045  13        ???
+9046  0F        ???
+9047  27        ???
+9048  30 13     BMI $905D                    ;
+904A  0F        ???
+904B  27        ???
+904C  30 21     BMI $906F                    ;
+904E  A5 54     LDA $54                      ;
+9050  C9 00     CMP #$00                     ;
+9052  F0 0D     BEQ $9061                    ;
+9054  C9 01     CMP #$01                     ;
+9056  F0 21     BEQ $9079                    ;
+9058  C9 02     CMP #$02                     ;
+905A  F0 3F     BEQ $909B                    ;
+905C  C9 03     CMP #$03                     ;
+905E  F0 5D     BEQ $90BD                    ;
+9060  60        RTS                          ;
+9061  A9 00     LDA #$00                     ;
+9063  8D D2 05  STA $05D2                    ;
+9066  8D D4 05  STA $05D4                    ;
+9069  8D D6 05  STA $05D6                    ;
+906C  8D D8 05  STA $05D8                    ;
+906F  8D DA 05  STA $05DA                    ;
+9072  8D DC 05  STA $05DC                    ;
+9075  8D DE 05  STA $05DE                    ;
+9078  60        RTS                          ;
+9079  A9 CD     LDA #$CD                     ;
+907B  8D D2 05  STA $05D2                    ;
+907E  A9 A0     LDA #$A0                     ;
+9080  8D D4 05  STA $05D4                    ;
+9083  A9 7B     LDA #$7B                     ;
+9085  8D D6 05  STA $05D6                    ;
+9088  A9 CE     LDA #$CE                     ;
+908A  8D D8 05  STA $05D8                    ;
+908D  A9 C9     LDA #$C9                     ;
+908F  8D DA 05  STA $05DA                    ;
+9092  A9 00     LDA #$00                     ;
+9094  8D DC 05  STA $05DC                    ;
+9097  8D DE 05  STA $05DE                    ;
+909A  60        RTS                          ;
+909B  A9 7B     LDA #$7B                     ;
+909D  8D D2 05  STA $05D2                    ;

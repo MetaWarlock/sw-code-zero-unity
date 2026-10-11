@@ -1,0 +1,146 @@
+A400  9E        ???
+A401  9E        ???
+A402  9E        ???
+A403  9E        ???
+A404  9E        ???
+A405  9E        ???
+A406  9F        ???
+A407  9F        ???
+A408  9F        ???
+A409  9F        ???
+A40A  9F        ???
+A40B  9F        ???
+A40C  9F        ???
+A40D  9F        ???
+A40E  9F        ???
+A40F  9F        ???
+A410  9F        ???
+A411  9F        ???
+A412  A0 A0     LDY #$A0                     ;
+A414  A0 A0     LDY #$A0                     ;
+A416  A0 A0     LDY #$A0                     ;
+A418  A0 A0     LDY #$A0                     ;
+A41A  A0 A0     LDY #$A0                     ;
+A41C  A0 A0     LDY #$A0                     ;
+A41E  A0 A1     LDY #$A1                     ;
+A420  A1 A1     LDA ($A1,X)                  ;
+A422  A1 A1     LDA ($A1,X)                  ;
+A424  A1 A1     LDA ($A1,X)                  ;
+A426  A1 A1     LDA ($A1,X)                  ;
+A428  A1 A1     LDA ($A1,X)                  ;
+A42A  A1 A1     LDA ($A1,X)                  ;
+A42C  A1 A1     LDA ($A1,X)                  ;
+A42E  A1 A1     LDA ($A1,X)                  ;
+A430  A1 A1     LDA ($A1,X)                  ;
+A432  A1 A1     LDA ($A1,X)                  ;
+A434  A1 A1     LDA ($A1,X)                  ;
+A436  A1 A2     LDA ($A2,X)                  ;
+A438  A2 A2     LDX #$A2                     ;
+A43A  A2 A2     LDX #$A2                     ;
+A43C  A2 A2     LDX #$A2                     ;
+A43E  A2 A2     LDX #$A2                     ;
+A440  A2 A2     LDX #$A2                     ;
+A442  A2 A2     LDX #$A2                     ;
+A444  A2 A2     LDX #$A2                     ;
+A446  A3        ???
+A447  A3        ???
+A448  A3        ???
+A449  A3        ???
+A44A  A3        ???
+A44B  A3        ???
+A44C  A3        ???
+A44D  A3        ???
+A44E  A3        ???
+A44F  A3        ???
+A450  A3        ???
+A451  A3        ???
+A452  A3        ???
+A453  A3        ???
+A454  A3        ???
+A455  A3        ???
+A456  A3        ???
+A457  A3        ???
+A458  A3        ???
+A459  A3        ???
+A45A  A3        ???
+A45B  A3        ???
+A45C  A3        ???
+A45D  A3        ???
+A45E  A3        ???
+A45F  A3        ???
+A460  A3        ???
+A461  05 A3     ORA $A3                      ;
+A463  A3        ???
+A464  A3        ???
+A465  F4        ???
+A466  FC        ???
+A467  FC        ???
+A468  00        BRK                          ;
+A469  EC FA F4  CPX $F4FA                    ;
+A46C  01 F4     ORA ($F4,X)                  ;
+A46E  F9 F4 F1  SBC $F1F4,Y                  ;
+A471  FC        ???
+A472  04        ???
+A473  FC        ???
+A474  FC        ???
+A475  FC        ???
+A476  F4        ???
+A477  04        ???
+A478  04        ???
+A479  04        ???
+A47A  FC        ???
+A47B  04        ???
+A47C  F4        ???
+A47D  F4        ???
+A47E  FC        ???
+A47F  FC        ???
+A480  F8        SED                          ;
+A481  EC FE F4  CPX $F4FE                    ;
+A484  F7        ???
+A485  F4        ???
+A486  FF        ???
+A487  F4        ???
+A488  07        ???
+A489  FC        ???
+A48A  F4        ???
+A48B  FC        ???
+A48C  FC        ???
+A48D  FC        ???
+A48E  04        ???
+A48F  04        ???
+A490  F4        ???
+A491  04        ???
+A492  FC        ???
+A493  04        ???
+A494  04        ???
+A495  F4        ???
+A496  FA        ???
+A497  FC        ???
+A498  FE EC F8  INC $F8EC,X                  ;
+A49B  F4        ???
+A49C  FF        ???
+A49D  F4        ???
+A49E  F7        ???
+A49F  F4        ???
+A4A0  EF        ???
+A4A1  FC        ???
+A4A2  02        ???
+A4A3  FC        ???
+A4A4  FA        ???
+A4A5  FC        ???
+A4A6  F2        ???
+A4A7  04        ???
+A4A8  02        ???
+A4A9  04        ???
+A4AA  FA        ???
+A4AB  04        ???
+A4AC  F2        ???
+A4AD  F4        ???
+A4AE  FE FC FA  INC $FAFC,X                  ;
+A4B1  EC 00 F4  CPX $F400                    ;
+A4B4  F9 F4 01  SBC $01F4,Y                  ;
+A4B7  F4        ???
+A4B8  09 FC     ORA #$FC                     ;
+A4BA  F6 FC     INC $FC,X                    ;
+A4BC  FE FC 06  INC $06FC,X                  ;
+A4BF  04        ???

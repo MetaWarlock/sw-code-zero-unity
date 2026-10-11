@@ -1,0 +1,70 @@
+A400  04        ???
+A401  00        BRK                          ;
+A402  F8        SED                          ;
+A403  00        BRK                          ;
+A404  00        BRK                          ;
+A405  F8        SED                          ;
+A406  F8        SED                          ;
+A407  F8        SED                          ;
+A408  00        BRK                          ;
+A409  00        BRK                          ;
+A40A  F0 F0     BEQ $A3FC                    ;
+A40C  F8        SED                          ;
+A40D  F0 00     BEQ $A40F                    ;
+A40F  F8        SED                          ;
+A410  F0 08     BEQ $A41A                    ;
+A412  F0 08     BEQ $A41C                    ;
+A414  F8        SED                          ;
+A415  08        PHP                          ;
+A416  00        BRK                          ;
+A417  F8        SED                          ;
+A418  E0 F8     CPX #$F8                     ;
+A41A  E8        INX                          ;
+A41B  00        BRK                          ;
+A41C  E0 00     CPX #$00                     ;
+A41E  E8        INX                          ;
+A41F  00        BRK                          ;
+A420  00        BRK                          ;
+A421  00        BRK                          ;
+A422  F8        SED                          ;
+A423  F8        SED                          ;
+A424  00        BRK                          ;
+A425  F8        SED                          ;
+A426  F8        SED                          ;
+A427  00        BRK                          ;
+A428  08        PHP                          ;
+A429  F0 00     BEQ $A42B                    ;
+A42B  F0 F8     BEQ $A425                    ;
+A42D  F8        SED                          ;
+A42E  08        PHP                          ;
+A42F  08        PHP                          ;
+A430  08        PHP                          ;
+A431  08        PHP                          ;
+A432  00        BRK                          ;
+A433  08        PHP                          ;
+A434  F8        SED                          ;
+A435  F8        SED                          ;
+A436  18        CLC                          ;
+A437  F8        SED                          ;
+A438  10 00     BPL $A43A                    ;
+A43A  18        CLC                          ;
+A43B  00        BRK                          ;
+A43C  10 F0     BPL $A42E                    ;
+A43E  FC        ???
+A43F  F8        SED                          ;
+A440  F4        ???
+A441  F8        SED                          ;
+A442  FC        ???
+A443  F8        SED                          ;
+A444  04        ???
+A445  00        BRK                          ;
+A446  F4        ???
+A447  00        BRK                          ;
+A448  FC        ???
+A449  00        BRK                          ;
+A44A  04        ???
+A44B  08        PHP                          ;
+A44C  F4        ???
+A44D  08        PHP                          ;
+A44E  FC        ???
+A44F  08        PHP                          ;

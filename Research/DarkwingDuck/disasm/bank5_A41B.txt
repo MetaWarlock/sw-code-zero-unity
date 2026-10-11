@@ -1,0 +1,208 @@
+A41B  00        BRK                          ;
+A41C  E0 00     CPX #$00                     ;
+A41E  E8        INX                          ;
+A41F  00        BRK                          ;
+A420  00        BRK                          ;
+A421  00        BRK                          ;
+A422  F8        SED                          ;
+A423  F8        SED                          ;
+A424  00        BRK                          ;
+A425  F8        SED                          ;
+A426  F8        SED                          ;
+A427  00        BRK                          ;
+A428  08        PHP                          ;
+A429  F0 00     BEQ $A42B                    ;
+A42B  F0 F8     BEQ $A425                    ;
+A42D  F8        SED                          ;
+A42E  08        PHP                          ;
+A42F  08        PHP                          ;
+A430  08        PHP                          ;
+A431  08        PHP                          ;
+A432  00        BRK                          ;
+A433  08        PHP                          ;
+A434  F8        SED                          ;
+A435  F8        SED                          ;
+A436  18        CLC                          ;
+A437  F8        SED                          ;
+A438  10 00     BPL $A43A                    ;
+A43A  18        CLC                          ;
+A43B  00        BRK                          ;
+A43C  10 F0     BPL $A42E                    ;
+A43E  FC        ???
+A43F  F8        SED                          ;
+A440  F4        ???
+A441  F8        SED                          ;
+A442  FC        ???
+A443  F8        SED                          ;
+A444  04        ???
+A445  00        BRK                          ;
+A446  F4        ???
+A447  00        BRK                          ;
+A448  FC        ???
+A449  00        BRK                          ;
+A44A  04        ???
+A44B  08        PHP                          ;
+A44C  F4        ???
+A44D  08        PHP                          ;
+A44E  FC        ???
+A44F  08        PHP                          ;
+A450  04        ???
+A451  F0 F4     BEQ $A447                    ;
+A453  F0 04     BEQ $A459                    ;
+A455  00        BRK                          ;
+A456  EC F8 EC  CPX $ECF8                    ;
+A459  08        PHP                          ;
+A45A  EC F0 FC  CPX $FCF0                    ;
+A45D  F8        SED                          ;
+A45E  04        ???
+A45F  F8        SED                          ;
+A460  FC        ???
+A461  F8        SED                          ;
+A462  F4        ???
+A463  00        BRK                          ;
+A464  04        ???
+A465  00        BRK                          ;
+A466  FC        ???
+A467  00        BRK                          ;
+A468  F4        ???
+A469  08        PHP                          ;
+A46A  04        ???
+A46B  08        PHP                          ;
+A46C  FC        ???
+A46D  08        PHP                          ;
+A46E  F4        ???
+A46F  F0 04     BEQ $A475                    ;
+A471  F0 F4     BEQ $A467                    ;
+A473  00        BRK                          ;
+A474  0C        ???
+A475  F8        SED                          ;
+A476  0C        ???
+A477  08        PHP                          ;
+A478  0C        ???
+A479  F8        SED                          ;
+A47A  F9 F8 01  SBC $01F8,Y                  ;
+A47D  00        BRK                          ;
+A47E  F8        SED                          ;
+A47F  00        BRK                          ;
+A480  00        BRK                          ;
+A481  F0 F9     BEQ $A47C                    ;
+A483  F0 01     BEQ $A486                    ;
+A485  F8        SED                          ;
+A486  FF        ???
+A487  F8        SED                          ;
+A488  F7        ???
+A489  00        BRK                          ;
+A48A  00        BRK                          ;
+A48B  00        BRK                          ;
+A48C  F8        SED                          ;
+A48D  F0 FF     BEQ $A48E                    ;
+A48F  F0 F7     BEQ $A488                    ;
+A491  F8        SED                          ;
+A492  F7        ???
+A493  F8        SED                          ;
+A494  FF        ???
+A495  00        BRK                          ;
+A496  F8        SED                          ;
+A497  00        BRK                          ;
+A498  00        BRK                          ;
+A499  F0 F7     BEQ $A492                    ;
+A49B  F0 FF     BEQ $A49C                    ;
+A49D  F8        SED                          ;
+A49E  01 F8     ORA ($F8,X)                  ;
+A4A0  F9 00 00  SBC $0000,Y                  ;
+A4A3  00        BRK                          ;
+A4A4  F8        SED                          ;
+A4A5  F0 01     BEQ $A4A8                    ;
+A4A7  F0 F9     BEQ $A4A2                    ;
+A4A9  E0 F0     CPX #$F0                     ;
+A4AB  E0 F8     CPX #$F8                     ;
+A4AD  E8        INX                          ;
+A4AE  F0 E8     BEQ $A498                    ;
+A4B0  F8        SED                          ;
+A4B1  F0 F0     BEQ $A4A3                    ;
+A4B3  F0 F8     BEQ $A4AD                    ;
+A4B5  F0 00     BEQ $A4B7                    ;
+A4B7  F8        SED                          ;
+A4B8  F8        SED                          ;
+A4B9  F8        SED                          ;
+A4BA  00        BRK                          ;
+A4BB  00        BRK                          ;
+A4BC  F8        SED                          ;
+A4BD  00        BRK                          ;
+A4BE  00        BRK                          ;
+A4BF  08        PHP                          ;
+A4C0  F8        SED                          ;
+A4C1  08        PHP                          ;
+A4C2  00        BRK                          ;
+A4C3  E0 08     CPX #$08                     ;
+A4C5  E0 00     CPX #$00                     ;
+A4C7  E8        INX                          ;
+A4C8  08        PHP                          ;
+A4C9  E8        INX                          ;
+A4CA  00        BRK                          ;
+A4CB  F0 08     BEQ $A4D5                    ;
+A4CD  F0 00     BEQ $A4CF                    ;
+A4CF  F0 F8     BEQ $A4C9                    ;
+A4D1  F8        SED                          ;
+A4D2  00        BRK                          ;
+A4D3  F8        SED                          ;
+A4D4  F8        SED                          ;
+A4D5  00        BRK                          ;
+A4D6  00        BRK                          ;
+A4D7  00        BRK                          ;
+A4D8  F8        SED                          ;
+A4D9  08        PHP                          ;
+A4DA  00        BRK                          ;
+A4DB  08        PHP                          ;
+A4DC  F8        SED                          ;
+A4DD  E8        INX                          ;
+A4DE  F0 E8     BEQ $A4C8                    ;
+A4E0  F8        SED                          ;
+A4E1  F0 F0     BEQ $A4D3                    ;
+A4E3  F0 F8     BEQ $A4DD                    ;
+A4E5  F8        SED                          ;
+A4E6  F0 F8     BEQ $A4E0                    ;
+A4E8  F8        SED                          ;
+A4E9  F8        SED                          ;
+A4EA  00        BRK                          ;
+A4EB  00        BRK                          ;
+A4EC  F8        SED                          ;
+A4ED  00        BRK                          ;
+A4EE  00        BRK                          ;
+A4EF  E8        INX                          ;
+A4F0  08        PHP                          ;
+A4F1  E8        INX                          ;
+A4F2  00        BRK                          ;
+A4F3  F0 08     BEQ $A4FD                    ;
+A4F5  F0 00     BEQ $A4F7                    ;
+A4F7  F8        SED                          ;
+A4F8  08        PHP                          ;
+A4F9  F8        SED                          ;
+A4FA  00        BRK                          ;
+A4FB  F8        SED                          ;
+A4FC  F8        SED                          ;
+A4FD  00        BRK                          ;
+A4FE  00        BRK                          ;
+A4FF  00        BRK                          ;
+A500  F8        SED                          ;
+A501  B8        CLV                          ;
+A502  FC        ???
+A503  C0 FC     CPY #$FC                     ;
+A505  C8        INY                          ;
+A506  FC        ???
+A507  D0 FC     BNE $A505                    ;
+A509  D8        CLD                          ;
+A50A  FC        ???
+A50B  E0 FC     CPX #$FC                     ;
+A50D  E8        INX                          ;
+A50E  FC        ???
+A50F  F0 FC     BEQ $A50D                    ;
+A511  F8        SED                          ;
+A512  F8        SED                          ;
+A513  F8        SED                          ;
+A514  00        BRK                          ;
+A515  00        BRK                          ;
+A516  F8        SED                          ;
+A517  00        BRK                          ;
+A518  00        BRK                          ;
+A519  D8        CLD                          ;

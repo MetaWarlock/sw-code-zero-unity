@@ -1,0 +1,201 @@
+8A70  E9 00     SBC #$00                     ;
+8A72  EA        NOP                          ;
+8A73  00        BRK                          ;
+8A74  EB        ???
+8A75  00        BRK                          ;
+8A76  E1 00     SBC ($00,X)                  ;
+8A78  EC 00 ED  CPX $ED00                    ;
+8A7B  00        BRK                          ;
+8A7C  EE 00 E5  INC $E500                    ;
+8A7F  00        BRK                          ;
+8A80  E6 00     INC $00                      ;
+8A82  E7        ???
+8A83  00        BRK                          ;
+8A84  E8        INX                          ;
+8A85  00        BRK                          ;
+8A86  FA        ???
+8A87  00        BRK                          ;
+8A88  FB        ???
+8A89  00        BRK                          ;
+8A8A  0E 72 DC  ASL $DC72                    ;
+8A8D  00        BRK                          ;
+8A8E  DD 00 E9  CMP $E900,X                  ;
+8A91  00        BRK                          ;
+8A92  EA        NOP                          ;
+8A93  00        BRK                          ;
+8A94  EF        ???
+8A95  00        BRK                          ;
+8A96  F0 00     BEQ $8A98                    ;
+8A98  EC 00 ED  CPX $ED00                    ;
+8A9B  00        BRK                          ;
+8A9C  EE 00 E5  INC $E500                    ;
+8A9F  00        BRK                          ;
+8AA0  E6 00     INC $00                      ;
+8AA2  E7        ???
+8AA3  00        BRK                          ;
+8AA4  E8        INX                          ;
+8AA5  00        BRK                          ;
+8AA6  FA        ???
+8AA7  00        BRK                          ;
+8AA8  FB        ???
+8AA9  00        BRK                          ;
+8AAA  03        ???
+8AAB  C4 F6     CPY $F6                      ;
+8AAD  03        ???
+8AAE  F6 43     INC $43,X                    ;
+8AB0  F7        ???
+8AB1  03        ???
+8AB2  F7        ???
+8AB3  43        ???
+8AB4  03        ???
+8AB5  C4 F8     CPY $F8                      ;
+8AB7  03        ???
+8AB8  F8        SED                          ;
+8AB9  43        ???
+8ABA  F9 03 F9  SBC $F903,Y                  ;
+8ABD  43        ???
+8ABE  01 C6     ORA ($C6,X)                  ;
+8AC0  FA        ???
+8AC1  00        BRK                          ;
+8AC2  FB        ???
+8AC3  00        BRK                          ;
+8AC4  0E C0 BA  ASL $BAC0                    ;
+8AC7  00        BRK                          ;
+8AC8  BB        ???
+8AC9  00        BRK                          ;
+8ACA  BC 00 00  LDY $0000,X                  ;
+8ACD  00        BRK                          ;
+8ACE  BD 00 BE  LDA $BE00,X                  ;
+8AD1  00        BRK                          ;
+8AD2  C0 01     CPY #$01                     ;
+8AD4  C1 01     CMP ($01,X)                  ;
+8AD6  C2        ???
+8AD7  01 B7     ORA ($B7,X)                  ;
+8AD9  03        ???
+8ADA  B8        CLV                          ;
+8ADB  00        BRK                          ;
+8ADC  B9 00 BF  LDA $BF00,Y                  ;
+8ADF  00        BRK                          ;
+8AE0  C3        ???
+8AE1  00        BRK                          ;
+8AE2  DB        ???
+8AE3  03        ???
+8AE4  0E C0 BA  ASL $BAC0                    ;
+8AE7  00        BRK                          ;
+8AE8  BB        ???
+8AE9  00        BRK                          ;
+8AEA  BC 00 00  LDY $0000,X                  ;
+8AED  00        BRK                          ;
+8AEE  BD 00 BE  LDA $BE00,X                  ;
+8AF1  00        BRK                          ;
+8AF2  C5 00     CMP $00                      ;
+8AF4  C6 00     DEC $00                      ;
+8AF6  C7        ???
+8AF7  01 C4     ORA ($C4,X)                  ;
+8AF9  03        ???
+8AFA  B8        CLV                          ;
+8AFB  00        BRK                          ;
+8AFC  B9 00 BF  LDA $BF00,Y                  ;
+8AFF  00        BRK                          ;
+8B00  C8        INY                          ;
+8B01  00        BRK                          ;
+8B02  DB        ???
+8B03  03        ???
+8B04  0E C0 BA  ASL $BAC0                    ;
+8B07  00        BRK                          ;
+8B08  BB        ???
+8B09  00        BRK                          ;
+8B0A  BC 00 00  LDY $0000,X                  ;
+8B0D  00        BRK                          ;
+8B0E  BD 00 BE  LDA $BE00,X                  ;
+8B11  00        BRK                          ;
+8B12  CA        DEX                          ;
+8B13  00        BRK                          ;
+8B14  CF        ???
+8B15  00        BRK                          ;
+8B16  D0 01     BNE $8B19                    ;
+8B18  C9 03     CMP #$03                     ;
+8B1A  B8        CLV                          ;
+8B1B  00        BRK                          ;
+8B1C  B9 00 BF  LDA $BF00,Y                  ;
+8B1F  00        BRK                          ;
+8B20  D1 00     CMP ($00),Y                  ;
+8B22  DB        ???
+8B23  03        ???
+8B24  0F        ???
+8B25  C0 D2     CPY #$D2                     ;
+8B27  00        BRK                          ;
+8B28  D7        ???
+8B29  00        BRK                          ;
+8B2A  D8        CLD                          ;
+8B2B  00        BRK                          ;
+8B2C  00        BRK                          ;
+8B2D  00        BRK                          ;
+8B2E  D9 00 DA  CMP $DA00,Y                  ;
+8B31  00        BRK                          ;
+8B32  C0 01     CPY #$01                     ;
+8B34  C1 01     CMP ($01,X)                  ;
+8B36  C2        ???
+8B37  01 00     ORA ($00,X)                  ;
+8B39  00        BRK                          ;
+8B3A  B8        CLV                          ;
+8B3B  00        BRK                          ;
+8B3C  B9 00 BF  LDA $BF00,Y                  ;
+8B3F  00        BRK                          ;
+8B40  C3        ???
+8B41  00        BRK                          ;
+8B42  DB        ???
+8B43  03        ???
+8B44  D6 03     DEC $03,X                    ;
+8B46  0E C0 D2  ASL $D2C0                    ;
+8B49  00        BRK                          ;
+8B4A  D3        ???
+8B4B  00        BRK                          ;
+8B4C  BC 00 D4  LDY $D400,X                  ;
+8B4F  00        BRK                          ;
+8B50  D5 00     CMP $00,X                    ;
+8B52  BE 00 C5  LDX $C500,Y                  ;
+8B55  00        BRK                          ;
+8B56  C6 00     DEC $00                      ;
+8B58  C7        ???
+8B59  01 00     ORA ($00,X)                  ;
+8B5B  00        BRK                          ;
+8B5C  B8        CLV                          ;
+8B5D  00        BRK                          ;
+8B5E  B9 00 BF  LDA $BF00,Y                  ;
+8B61  00        BRK                          ;
+8B62  C8        INY                          ;
+8B63  00        BRK                          ;
+8B64  DB        ???
+8B65  03        ???
+8B66  0F        ???
+8B67  C0 D2     CPY #$D2                     ;
+8B69  00        BRK                          ;
+8B6A  D3        ???
+8B6B  00        BRK                          ;
+8B6C  BC 00 D4  LDY $D400,X                  ;
+8B6F  00        BRK                          ;
+8B70  D5 00     CMP $00,X                    ;
+8B72  BE 00 CA  LDX $CA00,Y                  ;
+8B75  00        BRK                          ;
+8B76  CF        ???
+8B77  00        BRK                          ;
+8B78  D0 01     BNE $8B7B                    ;
+8B7A  00        BRK                          ;
+8B7B  00        BRK                          ;
+8B7C  B8        CLV                          ;
+8B7D  00        BRK                          ;
+8B7E  B9 00 BF  LDA $BF00,Y                  ;
+8B81  00        BRK                          ;
+8B82  D1 00     CMP ($00),Y                  ;
+8B84  DB        ???
+8B85  03        ???
+8B86  00        BRK                          ;
+8B87  BA        TSX                          ;
+8B88  B7        ???
+8B89  03        ???
+8B8A  00        BRK                          ;
+8B8B  BA        TSX                          ;
+8B8C  C4 03     CPY $03                      ;
+8B8E  00        BRK                          ;
+8B8F  BA        TSX                          ;
