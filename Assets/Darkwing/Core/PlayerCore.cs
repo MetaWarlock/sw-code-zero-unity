@@ -194,8 +194,63 @@ namespace Darkwing.Core
                 case 0x0B: case 0x10: AirborneFullState(held, pressed); break;
                 case 0x0C: HangState(held, pressed); break;
                 case 0x0A: ForcedHopState(); break;
+                case 0x07: DeathThroesState(); break;
+                case 0x08: DeathResolveState(); break;
                 default: break; // remaining states wired during M4/M7
             }
+        }
+
+        // ---------- State 7: death throes ($D353) ----------
+        // Launch up 2.0 px/frame for $0F frames, pause $3C (SFX $25 at $1E), then fall.
+        private byte _deathPhase; // 0 rise, 1 pause, 2 fall
+        private byte _deathTimer;
+
+        public void StartDeath()
+        {
+            State = 7;
+            _deathPhase = 0;
+            _deathTimer = 0x0F;
+            YVelInt = 2; YVelFrac = 0;
+            DeathFlag = 1;
+        }
+
+        private void DeathThroesState()
+        {
+            switch (_deathPhase)
+            {
+                case 0:
+                    IntegrateY();
+                    if (--_deathTimer == 0) { _deathPhase = 1; _deathTimer = 0x3C; }
+                    break;
+                case 1:
+                    if (--_deathTimer == 0) { _deathPhase = 2; _deathTimer = 0; }
+                    break;
+                case 2:
+                    IntegrateY();
+                    ApplyGravity();
+                    break;
+            }
+            if (_deathPhase == 2 && _deathTimer < 0xFF) _deathTimer++;
+            if (_deathPhase == 2 && _deathTimer >= 2) State = 8;
+        }
+
+        // ---------- State 8: death resolve ($D41B) ----------
+        private void DeathResolveState()
+        {
+            // Checkpoint respawn (doc §6): reload section at $6D, spawn pose at
+            // X=$30, Y=$06, state $12 walk-out. Game-over path ($64) is M7.
+            RespawnAtCheckpoint();
+        }
+
+        public void RespawnAtCheckpoint()
+        {
+            X = 0x30; XFrac = 0;
+            Y = 0x06; YFrac = 0;
+            YVelInt = 0; YVelFrac = 0;
+            Flags = 0xD0;
+            State = 0x12; // walk-out transition
+            DeathFlag = 0;
+            InvulnFrames = 0;
         }
 
         // ---------- State 0: ground ($CB8B) ----------
@@ -422,7 +477,70 @@ namespace Darkwing.Core
             if (StateTimer == 0) State = 0;
         }
 
-        // ---------- State 0A: forced hop ($D590) ----------
+        // ---------- Gas gun (doc §7, $CF3A/$CE39) ----------
+        public byte ActiveGasEnergyHi;  // $05BE
+        public byte ActiveGasEnergyLo;  // $05C0
+        public byte GasToggleFlag;      // $98
+        public int ProjectileCount;     // active projectile slots (set by world)
+
+        private static readonly byte[] WeaponMaxActive = { 3, 1, 2, 1 };       // $CFD3
+        private static readonly byte[] WeaponSlotPref = { 4, 2, 3, 2 };        // $CF29
+        private static readonly byte[] WeaponBehavior = { 1, 2, 3, 4 };        // $CF2E
+        private static readonly byte[] WeaponTemplate = { 0x13, 0x16, 0x14, 0x14 }; // $CF32
+        private static readonly byte[] WeaponSfx = { 0x11, 0x13, 0x11, 0x14 }; // $CF36
+
+        /// <summary>True when the current weapon may fire ($CF3A gate: max active).</summary>
+        public bool CanFire(int activeProjectiles) => activeProjectiles < WeaponMaxActive[WeaponActive & 3];
+
+        /// <summary>Fire request returns spawn parameters ($CE39); the world performs the spawn.</summary>
+        public bool TryGetFireSpawn(out FireSpawn spawn)
+        {
+            spawn = default;
+            if (!CanFire(ProjectileCount)) return false;
+            bool left = (DirBits & 2) != 0 || ((DirBits & 1) == 0 && FacingRight == 0);
+            int w = WeaponActive & 3;
+            int off = w is 0 or 1 ? 15 : 22;
+            spawn = new FireSpawn
+            {
+                OffsetX = left ? -off : off,
+                OffsetY = -3,
+                Behavior = WeaponBehavior[w],
+                Template = WeaponTemplate[w],
+                SfxId = WeaponSfx[w],
+                Direction = DirBits,
+            };
+            return true;
+        }
+
+        public struct FireSpawn
+        {
+            public int OffsetX, OffsetY, Behavior, Template, SfxId, Direction;
+        }
+
+        // ---------- Damage ($F9C2) ----------
+        /// <summary>
+        /// Fresh enemy/spike hit: 4-hit ladder hidden in the $05B2-$05B8 template.
+        /// hitFlash 1..4; the 4th hit is death.
+        /// </summary>
+        public byte HitLadder; // 0-3 survived hits
+
+        public void TakeHit()
+        {
+            if (InvulnFrames > 0 || State is 7 or 8) return;
+            HitLadder++;
+            InvulnFrames = 0x3C; // 60 frames
+            if (HitLadder >= 4)
+            {
+                StartDeath();
+            }
+            else
+            {
+                SavedState = State;
+                State = 6;
+                StateTimer = 0x0F;
+                CutVelocity();
+            }
+        }
         private void ForcedHopState()
         {
             IntegrateY();

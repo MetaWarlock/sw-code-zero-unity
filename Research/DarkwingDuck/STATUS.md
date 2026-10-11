@@ -1,38 +1,36 @@
 # STATUS — Darkwing Duck NES → Unity port
 
-Обновлён: 2026-10-11, этап M2 (реверс движка + скелет Unity).
+Обновлён: 2026-10-11 20:30, этап M3/M5 (интеграция).
 
-## Текущее состояние
+## Ключевые доказательства (веха)
 
-- [x] M0: воспроизводимость. Детерминизм доказан (с кадра 4 всё идентично; кадры 0–3 — мусор неинициализированной RAM). toolchain-lock.json, git-история.
-- [x] M1: извлечение подготовительных таблиц + runtime-семантика: MMC1-модель исправлена и подтверждена; CHR-привязка миссии 1 доказана рендером (bg=банк 16, спрайты=банк 14, PRG $8000=5, фикс. 7); палитры/OAM/VRAM захватываются покадрово.
-- [x] Инструменты: probe_run.py (захват MMC1/PPU/VRAM/RAM/OAM/ввод), disasm.py (6502+CDL), labels.json.
-- [x] M2 движок: планировщик процессов, NMI, ввод, банк-очередь, слоты объектов — задокументированы в FACTS.md. Игровой цикл $C9AC.
-- [x] M2 flow-агент: полный игровой поток, дескрипторы миров, прогресс ($38 tier / $69 битмаска), пауза/HUD → docs/game_flow.md.
-- [ ] M2 аудио-агент: в работе (docs/audio_engine.md).
-- [ ] M2 игрок-агент: в работе (docs/player_mechanics.md).
-- [x] Unity: Darkwing.Core (детерминированный Step, NTSC 60.0988 Гц аккумулятор), DarkwingLauncher, сцена DarkwingMain через Editor API, компиляция чистая (unity-pipeline, редактор пользователя 76852).
+- **100.0% пиксельного совпадения кадра** с эмулятором: сборка из VRAM+атрибутов+OAM+палитра+CHR (61440 px, reference/composed_f660.png). Конвейер презентации доказан.
+- Детерминизм (M0), MMC1-модель (исправлена: 4K CHR, PRG mode 3), CHR-привязки (bg=16+set? мap=26/31 — уточнено для экранов).
 
-## Следующий конкретный шаг
+## Реализовано в Unity (Assets/Darkwing)
 
-1. Собрать результаты игрок/аудио агентов → FACTS.md.
-2. Экспортер extracted/*.json → Assets/Darkwing/Data (данные с провенансом).
-3. M3: рендер фона миссии 1 из VRAM-верифицированных данных; сравнение с golden PNG.
+- Core: DarkwingGame (шаг NTSC 60.0988 Гц, snapshot), PlayerCore (состояния 0/1/2/3/6/0A/0B/0C, физика 16.8/8.8 байтовая, пробы, камера), Ppu (VRAM/палитра/OAM, порты, очередь $C119, рендер), SpriteComposer, BackgroundComposer, WorldState (прогресс $38/$69/$F8, дескрипторы), TileMap (интерфейс), DataLoader.
+- Audio: Apu (регистровая модель pulse×2/tri/noise, нелинейный микшер) — черновик, верификация по WAV в M5.
+- UnityApp: лончер (аккумулятор кадров, ввод→NES-кнопки, дамп фреймбуфера), сцена DarkwingMain (PixelPerfectCamera 256×240, PPU 16).
+- Данные: chr/levelsets/screens/levels/anims + bank3/bank7 (провенанс в manifest.json).
+- Тест-харнесс: compare_frames.py (побайтное сравнение PNG по палитре Mesen).
 
-## Актуальные команды
+## Реверс (агенты + моя работа)
 
-```powershell
-# Эмулятор-пробы
-python Tools/DarkwingResearch/probe_run.py --out Research/DarkwingDuck/reference/<name> --frames N --load-state <mss> --input "0:a@10-13" --screenshot-every 100
-# Дизасм
-python Tools/DarkwingResearch/disasm.py --bank 5 --cpu-base 0x8000 --start 0xOFF --length 0xLEN --out out.txt
-# Unity через живой редактор (проект открыт пользователем, PID 76852)
-unity command set_autotick --enable true --project-path "D:\Art\SW Code Zero Unity"
-unity command recompile --project-path "D:\Art\SW Code Zero Unity"; unity command recompile_status --project-path ...
-unity command run_script --file AgentScripts/X.cs --entry X.Main --project-path "D:\Art\SW Code Zero Unity"
-```
+- flow: полный игровой поток, дескрипторы миров, прогресс (docs/game_flow.md)
+- player: вся физика/оружие/урон (docs/player_mechanics.md)
+- audio: банк 3, формат секвенсора, каталог 16 песен + 47 SFX (docs/audio_engine.md)
+- я: рендер-конвейер (побайтно), текстовый движок $AA00 + шрифт (банк 26), UI-потоки карты, формат очереди VRAM, активатор объектов $8090
 
-## Правила
+## В работе (агенты)
 
-- ROM не менять. Golden-данные — только из оригинала. Сравнения с кадра ≥4.
-- Не запускать второй Editor: проект открыт пользователем; изменения сцены — через run_script.
+- Формат комнат уровней (упакованные данные, декодер) — блокирует M3-геометрию/M6.
+- Каталог врагов и боссов (банки 6/1) — блокирует M6.
+
+## Следующие шаги
+
+1. Подключить декодер уровней → Core TileMap → M3 золотые покадровые сравнения (игрок ходит по мосту).
+2. Транскрипция секвенсора банк 3 → C# (формат в docs/audio_engine.md, данные — audio_bank3.bytes).
+3. Враги/боссы → Core (после агента).
+4. M7: текстовый движок уже декодирован (32 потока извлечены); меню/HUD собрать из известных механизмов.
+5. M8: сборка, ACCEPTANCE_REPORT.
