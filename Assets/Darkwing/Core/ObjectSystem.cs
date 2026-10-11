@@ -29,6 +29,8 @@ namespace Darkwing.Core
             public byte Direction;       // $0580
             public byte Health;          // $05A0
             public byte PlacementIndex;  // $0590 (FF = none)
+            public byte ScreenX;         // $0450,X relative to scroll
+            public byte ScreenY;         // $0440,X relative to scroll
         }
 
         public readonly Slot[] Slots = new Slot[SlotCount];

@@ -14,7 +14,7 @@ namespace Darkwing.UnityApp
         public int PixelScale = 3;
 
         public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
-        public TextAsset Bank0Data, Bank1Data, Bank7Data;
+        public TextAsset Bank0Data, Bank1Data, Bank7Data, Bank5Data;
 
         private DarkwingGame _game;
         private Darkwing.Core.LevelTileMap _map;
@@ -44,10 +44,12 @@ namespace Darkwing.UnityApp
             var decoder = new Darkwing.Core.RoomDecoder(
                 Bank0Data.bytes, Bank1Data.bytes, Bank7Data.bytes, LevelSetsData.bytes);
             _game = new DarkwingGame(data);
+            _game.Bank5 = Bank5Data.bytes;
             _map = new Darkwing.Core.LevelTileMap(decoder, _game.Ppu);
             _game.Player.TileMap = _map;
             var world = decoder.GetWorld(0);
             _map.LoadRoom(world, 3, 0); // mission-1 start cell (row 3, col 0) = room 0x01
+            _game.Player.Y = 0x374;     // captured standing position on the bridge deck
             System.Array.Copy(Mission1Palette, _game.Ppu.PaletteRam, 32);
             _game.Ppu.Chr1Bank = 16;    // bg pattern table (verified for set 0)
             _game.Ppu.Chr0Bank = 14;    // sprite pattern table

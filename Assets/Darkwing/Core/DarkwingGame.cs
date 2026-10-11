@@ -19,6 +19,8 @@ namespace Darkwing.Core
         public long Frame;
         public readonly PlayerCore Player;
         public readonly Ppu Ppu;
+        public readonly ObjectSystem Objects;
+        public readonly OamDispatcher Oam;
         private readonly GameData _data;
 
         public DarkwingGame() : this(null) { }
@@ -30,7 +32,15 @@ namespace Darkwing.Core
             _data = data;
             Player = new PlayerCore(tiles);
             Ppu = new Ppu(data);
+            Objects = new ObjectSystem(data);
+            Oam = data != null
+                ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
+                : null;
         }
+
+        /// <summary>Raw PRG bank 5 (anim/frame/coord tables) for the OAM dispatcher.</summary>
+        public byte[] Bank5 { get => _bank5; set { _bank5 = value; if (Oam != null) Oam.SetBank5(value); } }
+        private byte[] _bank5;
 
         /// <summary>Load a room's nametable directly (test fixture path; the level
         /// loader normally streams it via the VRAM queue).</summary>
@@ -65,7 +75,19 @@ namespace Darkwing.Core
                 return;
             }
             Player.Step(held, pressed);
-            if (_data != null) Ppu.Render(Framebuffer);
+            if (Oam != null)
+            {
+                // Slot 0 mirrors the player (state-driven anim mapping lands in M4;
+                // standing pose for the M3 fixture).
+                var s0 = Objects.Slots[0];
+                s0.Active = true;
+                s0.Flags = 0xD0;
+                s0.X = Player.X;
+                s0.Y = Player.Y;
+                s0.AnimNumber = 0x01;
+                Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
+                Ppu.Render(Framebuffer);
+            }
             Frame++;
         }
 
