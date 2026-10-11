@@ -345,7 +345,9 @@ namespace Darkwing.Core
                 IntegrateY();               // down
                 ApplyGravity();
                 byte floor = ProbeFloor();
-                if (floor == 2 || floor == 3 || floor >= 8 || (floor == 1 && ((Y + 12) & 0x0F) >= 8))
+                bool slowFall = YVelInt >= -3; // vel >= $FD (-3) per $F4EC
+                bool oneWayLand = floor == 1 && slowFall && ((Y + 12) & 0x0F) >= 8;
+                if (floor == 2 || floor == 3 || floor >= 8 || oneWayLand)
                 {
                     // land ($F360): snap onto tile top ($EDB3)
                     int py = Y + 12;
