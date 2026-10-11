@@ -27,3 +27,10 @@ audio,engine,bank3_driver,disasm+probes,yes,no,no,docs/audio_engine.md: tick 1/f
 audio,catalog,songs_sfx,static+live,yes,no,no,16 music (13 null) + 47 SFX; 110 trigger sites
 unity,project,skeleton,compile+play,yes,partial,n/a,Darkwing.Core+UnityApp; scene renders mission-1 bg; PlayerCore compiles
 unity,renderer,background,pixel-compare,yes,partial,FAIL(11.7%),BackgroundComposer palette-slot mismatch vs nametable attrs — fix pending level format
+
+enemies,catalog,105_types,static_tables,yes,no,no,object_catalog.csv + bank4 $8AB3/$8C57 exported to object_types.bytes
+enemies,behaviors,bank6_dispatch,disasm,yes,no,no,docs/enemies_bosses.md §1: $8000 tables $825F/$82A7
+enemies,bosses,7_bosses,disasm,yes,no,no,docs/enemies_bosses.md §2: Quackerjack/Wolfduck/Liquidator/Moliarty/Bushroot/Megavolt/Steelbeak
+enemies,rng,4_counters,disasm,yes,no,no,$E4-$E7 counters, per-site formulas documented
+enemies,contact,hitboxes,tables,yes,no,no,§5.4 hitbox tables $FB39/$FB59/$FBE9/$FC09
+enemies,hp,semantics,verified,yes,no,no,$05A0: 128=gas-immune, 0=one-hit, 1-15 normal
