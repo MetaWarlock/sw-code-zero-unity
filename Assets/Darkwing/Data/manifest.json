@@ -1,0 +1,36 @@
+{
+  "exporter": "Tools/DarkwingResearch/export_unity.py v1",
+  "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "files": {
+    "chr_full.bytes": {
+      "bytes": 131072,
+      "source": "ROM 0x20010..0x4000F (32 CHR banks x 4KiB)"
+    },
+    "levelsets.bytes": {
+      "bytes": 16128,
+      "source": "per set: macro 0x36F0+set*0x4000 (1024), meta 0x3AF0+set*0x4000 (1024), attr +1024 (256)"
+    },
+    "screens.bytes": {
+      "bytes": 19200,
+      "source": "ROM 0x10 + screenId*0x40 (300 candidates x 64 macrotiles, 8x8)"
+    },
+    "levels.json": {
+      "source": "CadEditor-verified tables; layout offsets in records"
+    },
+    "levels.bytes": {
+      "bytes": 3388,
+      "source": "binary mirror of levels.json for engine loading"
+    },
+    "anims.json": {
+      "source": "PRG bank 5 pointer tables; 3 ram_dynamic frames excluded from static decode"
+    },
+    "anims.bytes": {
+      "bytes": 17362,
+      "source": "binary mirror of anims.json for engine loading"
+    }
+  },
+  "notes": [
+    "Metatile attribute: palette=raw&3, surface type=raw>>4 (0 bg,1 hook,2 platform,3 block,4 spikes,5 door \u2014 semantics from editor config, verify per-tile)",
+    "Level set index != mission order; mission descriptors live in PRG bank 7 ($DF50/$DF60 per flow research)"
+  ]
+}

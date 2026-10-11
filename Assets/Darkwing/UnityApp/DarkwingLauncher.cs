@@ -13,11 +13,20 @@ namespace Darkwing.UnityApp
         [Tooltip("Integer pixel scale for the 256x240 picture (0 = fit window).")]
         public int PixelScale = 3;
 
+        public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
+
         private DarkwingGame _game;
+        private BackgroundComposer _composer;
         private Texture2D _screen;
         private double _accumulator;
         private System.DateTime _last;
         private Color32[] _pixels = new Color32[DarkwingGame.ScreenWidth * DarkwingGame.ScreenHeight];
+        private static readonly byte[] Mission1Palette =
+        {
+            // Captured from original mission-1 gameplay (reference/probe_m1_enter palette_frames frame 700).
+            0x0F,0x20,0x27,0x17, 0x0F,0x37,0x07,0x01, 0x0F,0x20,0x31,0x22, 0x0F,0x0F,0x11,0x01,
+            0x0F,0x0F,0x30,0x27, 0x0F,0x0F,0x27,0x13, 0x0F,0x0F,0x27,0x15, 0x0F,0x0F,0x37,0x07,
+        };
 
         // 2C02 palette entry lookup is Presentation's job later; the Core
         // framebuffer stores NES indices and we convert with the fixed table.
@@ -28,8 +37,15 @@ namespace Darkwing.UnityApp
             Application.runInBackground = true;
             QualitySettings.vSyncCount = 0;
             Time.captureDeltaTime = 0; // we pace ourselves
+            var data = Darkwing.Core.DataLoader.Load(
+                ChrData.bytes, LevelSetsData.bytes, ScreensData.bytes,
+                LevelsData.bytes, AnimsData.bytes);
+            _composer = new BackgroundComposer(data);
             _game = new DarkwingGame();
             _game.Reset();
+            // M3 smoke test: compose mission-1 first screen at scroll 0.
+            var lv = data.Levels[0];
+            _composer.Compose(lv.TileSet, lv.FirstScreen, 0, 0, Mission1Palette, _game.Framebuffer);
             _screen = new Texture2D(DarkwingGame.ScreenWidth, DarkwingGame.ScreenHeight,
                 TextureFormat.RGBA32, false)
             {

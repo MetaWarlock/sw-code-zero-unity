@@ -1,0 +1,18 @@
+F4D7  85 40     STA $40                      ;
+F4D9  84 41     STY $41                      ;
+F4DB  20 A4 F5  JSR $F5A4                    ;
+F4DE  20 DA F5  JSR $F5DA                    ;
+F4E1  20 52 EB  JSR $EB52                    ;
+F4E4  A5 10     LDA $10                      ;
+F4E6  C9 01     CMP #$01                     ;
+F4E8  90 11     BCC $F4FB                    ;
+F4EA  D0 07     BNE $F4F3                    ;
+F4EC  BD 60 05  LDA $0560,X                  ;
+F4EF  C9 FC     CMP #$FC                     ;
+F4F1  B0 08     BCS $F4FB                    ;
+F4F3  20 D2 ED  JSR $EDD2                    ;
+F4F6  20 FC F5  JSR $F5FC                    ;
+F4F9  38        SEC                          ;
+F4FA  60        RTS                          ;
+F4FB  18        CLC                          ;
+F4FC  60        RTS                          ;
