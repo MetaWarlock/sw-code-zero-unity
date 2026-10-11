@@ -55,6 +55,10 @@
     "prg_bank1.bytes": {
       "bytes": 16384,
       "source": "PRG bank 1 raw (room blocks for set_bank>=6 / FOWL)"
+    },
+    "prg_bank5.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 5 raw (anim tables $B429/$B4F0, frame tables $9B0B/$9C45 + $9C0B/$9D45, coord pointers $AE53/$AF23)"
     }
   },
   "notes": [
