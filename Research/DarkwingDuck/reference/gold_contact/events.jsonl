@@ -1,0 +1,5 @@
+{"event":"loaded","rom":"D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes","sha1":"C7B81EE2FF158A58582BC1BF508FFB1213E7A53A","mesen_version":"2.1.1","console":"Nes","cpu":"Nes"}
+{"event":"state_loaded","file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\m1_standing.mss"}
+{"event":"lua_loaded","id":1,"file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\gold_contact\\capture.lua"}
+{"event":"lua_log","id":1,"file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\gold_contact\\capture.lua","error_count":0,"text":"Loading script...\nRegistered memory callback from $8000 to $FFFF\nRegistered memory callback from $2000 to $2007\nScript loaded successfully.\nruntime capture complete: 400 frames\n"}
+{"event":"summary","ok":true,"reason":"frame_limit","start_frame":3961,"final_frame":4361,"frames_executed":400,"stop_code":0}
