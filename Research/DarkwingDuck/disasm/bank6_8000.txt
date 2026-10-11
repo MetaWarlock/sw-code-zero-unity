@@ -1,0 +1,368 @@
+8000  A9 40     LDA #$40                     ;
+8002  85 99     STA $99                      ;
+8004  A2 01     LDX #$01                     ;
+8006  86 4D     STX $4D                      ;
+8008  BD D0 04  LDA $04D0,X                  ;
+800B  10 1A     BPL $8027                    ;
+800D  BC E0 04  LDY $04E0,X                  ;
+8010  C0 47     CPY #$47                     ;
+8012  B0 13     BCS $8027                    ;
+8014  B9 5F 82  LDA $825F,Y                  ;
+8017  85 00     STA $00                      ;
+8019  B9 A7 82  LDA $82A7,Y                  ;
+801C  85 01     STA $01                      ;
+801E  A9 80     LDA #$80                     ;
+8020  48        PHA                          ;
+8021  A9 26     LDA #$26                     ;
+8023  48        PHA                          ;
+8024  6C 00 00  JMP ($0000)                  ;
+8027  E6 4D     INC $4D                      ;
+8029  A6 4D     LDX $4D                      ;
+802B  E0 10     CPX #$10                     ;
+802D  D0 03     BNE $8032                    ;
+802F  4C BF 81  JMP $81BF                    ;
+8032  BD 70 05  LDA $0570,X                  ;
+8035  29 40     AND #$40                     ;
+8037  D0 03     BNE $803C                    ;
+8039  4C 3B 81  JMP $813B                    ;
+803C  BD C0 04  LDA $04C0,X                  ;
+803F  F0 1D     BEQ $805E                    ;
+8041  4A        LSR A                        ;
+8042  4A        LSR A                        ;
+8043  4A        LSR A                        ;
+8044  B0 0A     BCS $8050                    ;
+8046  BD 00 04  LDA $0400,X                  ;
+8049  09 08     ORA #$08                     ;
+804B  9D 00 04  STA $0400,X                  ;
+804E  D0 08     BNE $8058                    ;
+8050  BD 00 04  LDA $0400,X                  ;
+8053  29 F7     AND #$F7                     ;
+8055  9D 00 04  STA $0400,X                  ;
+8058  DE C0 04  DEC $04C0,X                  ;
+805B  4C 39 80  JMP $8039                    ;
+805E  BD 00 04  LDA $0400,X                  ;
+8061  29 F7     AND #$F7                     ;
+8063  9D 00 04  STA $0400,X                  ;
+8066  20 AE FA  JSR $FAAE                    ;
+8069  B0 CE     BCS $8039                    ;
+806B  BD E0 04  LDA $04E0,X                  ;
+806E  C9 34     CMP #$34                     ;
+8070  F0 07     BEQ $8079                    ;
+8072  C9 1E     CMP #$1E                     ;
+8074  F0 03     BEQ $8079                    ;
+8076  4C 8B 80  JMP $808B                    ;
+8079  A4 0F     LDY $0F                      ;
+807B  B9 10 05  LDA $0510,Y                  ;
+807E  DD 10 05  CMP $0510,X                  ;
+8081  B0 0D     BCS $8090                    ;
+8083  38        SEC                          ;
+8084  FD 10 05  SBC $0510,X                  ;
+8087  C9 FC     CMP #$FC                     ;
+8089  B0 05     BCS $8090                    ;
+808B  BD A0 05  LDA $05A0,X                  ;
+808E  10 06     BPL $8096                    ;
+8090  20 C0 81  JSR $81C0                    ;
+8093  4C 3B 81  JMP $813B                    ;
+8096  BD A0 05  LDA $05A0,X                  ;
+8099  F0 57     BEQ $80F2                    ;
+809B  A9 1D     LDA #$1D                     ;
+809D  20 50 F8  JSR $F850                    ;
+80A0  A4 0F     LDY $0F                      ;
+80A2  B9 20 04  LDA $0420,Y                  ;
+80A5  C9 13     CMP #$13                     ;
+80A7  F0 22     BEQ $80CB                    ;
+80A9  C9 14     CMP #$14                     ;
+80AB  F0 1E     BEQ $80CB                    ;
+80AD  C9 16     CMP #$16                     ;
+80AF  F0 1A     BEQ $80CB                    ;
+80B1  C9 19     CMP #$19                     ;
+80B3  F0 16     BEQ $80CB                    ;
+80B5  C9 1A     CMP #$1A                     ;
+80B7  F0 12     BEQ $80CB                    ;
+80B9  C9 18     CMP #$18                     ;
+80BB  F0 0B     BEQ $80C8                    ;
+80BD  C9 17     CMP #$17                     ;
+80BF  F0 04     BEQ $80C5                    ;
+80C1  C9 29     CMP #$29                     ;
+80C3  F0 00     BEQ $80C5                    ;
+80C5  DE A0 05  DEC $05A0,X                  ;
+80C8  DE A0 05  DEC $05A0,X                  ;
+80CB  DE A0 05  DEC $05A0,X                  ;
+80CE  BD A0 05  LDA $05A0,X                  ;
+80D1  30 1F     BMI $80F2                    ;
+80D3  A9 0F     LDA #$0F                     ;
+80D5  9D C0 04  STA $04C0,X                  ;
+80D8  A4 0F     LDY $0F                      ;
+80DA  B9 E0 04  LDA $04E0,Y                  ;
+80DD  C9 07     CMP #$07                     ;
+80DF  F0 5A     BEQ $813B                    ;
+80E1  B9 20 04  LDA $0420,Y                  ;
+80E4  C9 17     CMP #$17                     ;
+80E6  F0 53     BEQ $813B                    ;
+80E8  C9 18     CMP #$18                     ;
+80EA  F0 4F     BEQ $813B                    ;
+80EC  20 72 F8  JSR $F872                    ;
+80EF  4C 08 80  JMP $8008                    ;
+80F2  BD E0 04  LDA $04E0,X                  ;
+80F5  C9 05     CMP #$05                     ;
+80F7  F0 73     BEQ $816C                    ;
+80F9  A4 0F     LDY $0F                      ;
+80FB  B9 E0 04  LDA $04E0,Y                  ;
+80FE  C9 07     CMP #$07                     ;
+8100  F0 0E     BEQ $8110                    ;
+8102  B9 20 04  LDA $0420,Y                  ;
+8105  C9 17     CMP #$17                     ;
+8107  F0 07     BEQ $8110                    ;
+8109  C9 18     CMP #$18                     ;
+810B  F0 03     BEQ $8110                    ;
+810D  20 72 F8  JSR $F872                    ;
+8110  A9 80     LDA #$80                     ;
+8112  9D D0 04  STA $04D0,X                  ;
+8115  A9 00     LDA #$00                     ;
+8117  9D 70 05  STA $0570,X                  ;
+811A  9D 40 05  STA $0540,X                  ;
+811D  A9 FF     LDA #$FF                     ;
+811F  9D 90 05  STA $0590,X                  ;
+8122  A9 05     LDA #$05                     ;
+8124  9D E0 04  STA $04E0,X                  ;
+8127  A9 44     LDA #$44                     ;
+8129  9D 50 05  STA $0550,X                  ;
+812C  A9 03     LDA #$03                     ;
+812E  9D 60 05  STA $0560,X                  ;
+8131  A9 80     LDA #$80                     ;
+8133  9D 30 05  STA $0530,X                  ;
+8136  A9 1E     LDA #$1E                     ;
+8138  20 50 F8  JSR $F850                    ;
+813B  A5 7C     LDA $7C                      ;
+813D  D0 2D     BNE $816C                    ;
+813F  20 7B FB  JSR $FB7B                    ;
+8142  B0 28     BCS $816C                    ;
+8144  AD 20 04  LDA $0420                    ;
+8147  C9 04     CMP #$04                     ;
+8149  F0 24     BEQ $816F                    ;
+814B  C9 0D     CMP #$0D                     ;
+814D  F0 20     BEQ $816F                    ;
+814F  BD 20 04  LDA $0420,X                  ;
+8152  C9 3F     CMP #$3F                     ;
+8154  90 16     BCC $816C                    ;
+8156  A5 50     LDA $50                      ;
+8158  C9 07     CMP #$07                     ;
+815A  F0 10     BEQ $816C                    ;
+815C  C9 12     CMP #$12                     ;
+815E  F0 0C     BEQ $816C                    ;
+8160  A9 15     LDA #$15                     ;
+8162  20 50 F8  JSR $F850                    ;
+8165  A9 3C     LDA #$3C                     ;
+8167  85 7C     STA $7C                      ;
+8169  20 C2 F9  JSR $F9C2                    ;
+816C  4C 08 80  JMP $8008                    ;
+816F  BD 20 04  LDA $0420,X                  ;
+8172  C9 40     CMP #$40                     ;
+8174  F0 22     BEQ $8198                    ;
+8176  C9 4E     CMP #$4E                     ;
+8178  F0 16     BEQ $8190                    ;
+817A  C9 9F     CMP #$9F                     ;
+817C  F0 1A     BEQ $8198                    ;
+817E  C9 7D     CMP #$7D                     ;
+8180  F0 16     BEQ $8198                    ;
+8182  C9 62     CMP #$62                     ;
+8184  F0 12     BEQ $8198                    ;
+8186  C9 55     CMP #$55                     ;
+8188  F0 0E     BEQ $8198                    ;
+818A  C9 A6     CMP #$A6                     ;
+818C  F0 0A     BEQ $8198                    ;
+818E  D0 BF     BNE $814F                    ;
+8190  BD 80 05  LDA $0580,X                  ;
+8193  29 03     AND #$03                     ;
+8195  4C 9B 81  JMP $819B                    ;
+8198  BD 80 05  LDA $0580,X                  ;
+819B  C5 52     CMP $52                      ;
+819D  F0 B7     BEQ $8156                    ;
+819F  20 28 F9  JSR $F928                    ;
+81A2  C9 08     CMP #$08                     ;
+81A4  90 B0     BCC $8156                    ;
+81A6  A9 1A     LDA #$1A                     ;
+81A8  20 50 F8  JSR $F850                    ;
+81AB  BD E0 04  LDA $04E0,X                  ;
+81AE  C9 06     CMP #$06                     ;
+81B0  F0 0A     BEQ $81BC                    ;
+81B2  A9 80     LDA #$80                     ;
+81B4  9D D0 04  STA $04D0,X                  ;
+81B7  A9 06     LDA #$06                     ;
+81B9  9D E0 04  STA $04E0,X                  ;
+81BC  4C 08 80  JMP $8008                    ;
+81BF  60        RTS                          ;
+81C0  BD E0 04  LDA $04E0,X                  ;
+81C3  C9 0F     CMP #$0F                     ;
+81C5  F0 1F     BEQ $81E6                    ;
+81C7  C9 17     CMP #$17                     ;
+81C9  F0 1B     BEQ $81E6                    ;
+81CB  C9 1D     CMP #$1D                     ;
+81CD  F0 17     BEQ $81E6                    ;
+81CF  C9 2A     CMP #$2A                     ;
+81D1  F0 13     BEQ $81E6                    ;
+81D3  C9 34     CMP #$34                     ;
+81D5  F0 0F     BEQ $81E6                    ;
+81D7  C9 30     CMP #$30                     ;
+81D9  F0 0B     BEQ $81E6                    ;
+81DB  C9 32     CMP #$32                     ;
+81DD  F0 07     BEQ $81E6                    ;
+81DF  C9 42     CMP #$42                     ;
+81E1  F0 03     BEQ $81E6                    ;
+81E3  4C BF 81  JMP $81BF                    ;
+81E6  A4 0F     LDY $0F                      ;
+81E8  B9 E0 04  LDA $04E0,Y                  ;
+81EB  C9 1F     CMP #$1F                     ;
+81ED  F0 2D     BEQ $821C                    ;
+81EF  B9 20 04  LDA $0420,Y                  ;
+81F2  C9 14     CMP #$14                     ;
+81F4  F0 27     BEQ $821D                    ;
+81F6  C9 16     CMP #$16                     ;
+81F8  F0 23     BEQ $821D                    ;
+81FA  20 2E 82  JSR $822E                    ;
+81FD  A9 80     LDA #$80                     ;
+81FF  99 30 05  STA $0530,Y                  ;
+8202  99 50 05  STA $0550,Y                  ;
+8205  A9 03     LDA #$03                     ;
+8207  99 40 05  STA $0540,Y                  ;
+820A  99 60 05  STA $0560,Y                  ;
+820D  A9 1F     LDA #$1F                     ;
+820F  99 E0 04  STA $04E0,Y                  ;
+8212  A9 00     LDA #$00                     ;
+8214  99 70 05  STA $0570,Y                  ;
+8217  A9 1A     LDA #$1A                     ;
+8219  20 50 F8  JSR $F850                    ;
+821C  60        RTS                          ;
+821D  A9 00     LDA #$00                     ;
+821F  99 D0 04  STA $04D0,Y                  ;
+8222  99 00 04  STA $0400,Y                  ;
+8225  99 E0 04  STA $04E0,Y                  ;
+8228  A9 FF     LDA #$FF                     ;
+822A  99 90 05  STA $0590,Y                  ;
+822D  60        RTS                          ;
+822E  A4 0F     LDY $0F                      ;
+8230  B9 E0 04  LDA $04E0,Y                  ;
+8233  C9 1F     CMP #$1F                     ;
+8235  F0 E5     BEQ $821C                    ;
+8237  B9 80 05  LDA $0580,Y                  ;
+823A  C9 01     CMP #$01                     ;
+823C  F0 15     BEQ $8253                    ;
+823E  C9 02     CMP #$02                     ;
+8240  F0 17     BEQ $8259                    ;
+8242  C9 09     CMP #$09                     ;
+8244  F0 0D     BEQ $8253                    ;
+8246  C9 05     CMP #$05                     ;
+8248  F0 09     BEQ $8253                    ;
+824A  C9 0A     CMP #$0A                     ;
+824C  F0 0B     BEQ $8259                    ;
+824E  C9 06     CMP #$06                     ;
+8250  F0 07     BEQ $8259                    ;
+8252  60        RTS                          ;
+8253  A9 0A     LDA #$0A                     ;
+8255  99 80 05  STA $0580,Y                  ;
+8258  60        RTS                          ;
+8259  A9 09     LDA #$09                     ;
+825B  99 80 05  STA $0580,Y                  ;
+825E  60        RTS                          ;
+825F  EF        ???
+8260  F0 85     BEQ $81E7                    ;
+8262  1C        ???
+8263  BC A2 E2  LDY $E2A2,X                  ;
+8266  FF        ???
+8267  37        ???
+8268  1A        ???
+8269  80        ???
+826A  DA        ???
+826B  34        ???
+826C  34        ???
+826D  AF        ???
+826E  A3        ???
+826F  6A        ROR A                        ;
+8270  D3        ???
+8271  65 E6     ADC $E6                      ;
+8273  E6 1E     INC $1E                      ;
+8275  D3        ???
+8276  24 0B     BIT $0B                      ;
+8278  E6 4B     INC $4B                      ;
+827A  B8        CLV                          ;
+827B  E6 EE     INC $EE                      ;
+827D  BE 12 03  LDX $0312,Y                  ;
+8280  4C 4C C9  JMP $C94C                    ;
+8283  8A        TXA                          ;
+8284  B4 9C     LDY $9C,X                    ;
+8286  D9 BB 85  CMP $85BB,Y                  ;
+8289  BD BF 82  LDA $82BF,X                  ;
+828C  3E 0A BE  ROL $BE0A,X                  ;
+828F  5B        ???
+8290  3F        ???
+8291  07        ???
+8292  D1 F2     CMP ($F2),Y                  ;
+8294  2C 8F 5D  BIT $5D8F                    ;
+8297  1E 64 CB  ASL $CB64,X                  ;
+829A  31 BC     AND ($BC),Y                  ;
+829C  D3        ???
+829D  8F        ???
+829E  22        ???
+829F  FC        ???
+82A0  FC        ???
+82A1  83        ???
+82A2  70 EF     BVS $8293                    ;
+82A4  EF        ???
+82A5  22        ???
+82A6  EF        ???
+82A7  82        ???
+82A8  82        ???
+82A9  83        ???
+82AA  84 85     STY $85                      ;
+82AC  86 87     STX $87                      ;
+82AE  85 88     STA $88                      ;
+82B0  8A        TXA                          ;
+82B1  8B        ???
+82B2  8B        ???
+82B3  8C 8C 8D  STY $8D8C                    ;
+82B6  8E 90 90  STX $9090                    ;
+82B9  92        ???
+82BA  92        ???
+82BB  92        ???
+82BC  A4 90     LDY $90                      ;
+82BE  94 95     STY $95,X                    ;
+82C0  92        ???
+82C1  95 95     STA $95,X                    ;
+82C3  92        ???
+82C4  98        TYA                          ;
+82C5  9A        TXS                          ;
+82C6  88        DEY                          ;
+82C7  9A        TXS                          ;
+82C8  9F        ???
+82C9  9F        ???
+82CA  9B        ???
+82CB  9C        ???
+82CC  A6 A0     LDX $A0                      ;
+82CE  A7        ???
+82CF  A8        TAY                          ;
+82D0  9E        ???
+82D1  9D A9 AA  STA $AAA9,X                  ;
+82D4  A5 A0     LDA $A0                      ;
+82D6  AB        ???
+82D7  AD 88 B0  LDA $B088                    ;
+82DA  AA        TAX                          ;
+82DB  AD AC A2  LDA $A2AC                    ;
+82DE  96 A4     STX $A4,Y                    ;
+82E0  A1 9F     LDA ($9F,X)                  ;
+82E2  A6 AE     LDX $AE                      ;
+82E4  B1 A2     LDA ($A2),Y                  ;
+82E6  8A        TXA                          ;
+82E7  B2        ???
+82E8  B2        ???
+82E9  B4 B5     LDY $B5,X                    ;
+82EB  82        ???
+82EC  82        ???
+82ED  98        TYA                          ;
+82EE  82        ???
+82EF  60        RTS                          ;
+82F0  BD D0 04  LDA $04D0,X                  ;
+82F3  29 0F     AND #$0F                     ;
+82F5  D0 16     BNE $830D                    ;
+82F7  9D 30 05  STA $0530,X                  ;
+82FA  BD 20 04  LDA $0420,X                  ;
+82FD  C9 18     CMP #$18                     ;
