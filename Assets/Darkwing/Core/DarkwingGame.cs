@@ -35,6 +35,7 @@ namespace Darkwing.Core
             Ppu = new Ppu(data);
             Objects = new ObjectSystem(data);
             Player.Objects = Objects;
+            Player.Sfx = id => PlaySfx(id);
             Hud = new HudComposer(Ppu);
             Oam = data != null
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
@@ -44,6 +45,37 @@ namespace Darkwing.Core
         /// <summary>Raw PRG bank 5 (anim/frame/coord tables) for the OAM dispatcher.</summary>
         public byte[] Bank5 { get => _bank5; set { _bank5 = value; if (Oam != null) Oam.SetBank5(value); } }
         private byte[] _bank5;
+
+        /// <summary>Ported bank-3 audio driver; null until Bank3 is set.</summary>
+        public Darkwing.Audio.AudioSequencer Audio { get; private set; }
+        public byte[] Bank3
+        {
+            get => _bank3;
+            set
+            {
+                _bank3 = value;
+                Audio = value != null && value.Length > 0
+                    ? new Darkwing.Audio.AudioSequencer(value, _bank7)
+                    : null;
+            }
+        }
+        private byte[] _bank3;
+        private byte[] _bank7;
+
+        /// <summary>Late-bound bank 7 (world/music data) for the sequencer.</summary>
+        public byte[] Bank7 { get => _bank7; set { _bank7 = value; } }
+
+        /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
+        public const int SfxJump = 0x21;
+        public const int SfxLand = 0x10;
+        public const int SfxHurt = 0x15;
+        public const int SfxSelect = 0x1B;
+        public const int SfxPause = 0x1C;
+        public const int SfxDeath = 0x25;
+        public const int SfxTextBlip = 0x3F;
+
+        public void PlaySfx(int id) => Audio?.PlaySfx(id);
+        public void PlayMusic(int id) => Audio?.PlayMusic(id);
 
         /// <summary>Load a room's nametable directly (test fixture path; the level
         /// loader normally streams it via the VRAM queue).</summary>
@@ -78,6 +110,8 @@ namespace Darkwing.Core
                 return;
             }
             Player.Step(held, pressed);
+            // Audio advances via AudioSequencer.RenderFrame (Tick inside) once per
+            // presented frame — SFX/music events queue at trigger time.
             if (Oam != null)
             {
                 // Slot 0 mirrors the player position/facing; the anim state is

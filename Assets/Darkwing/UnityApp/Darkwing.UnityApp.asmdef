@@ -3,6 +3,7 @@
     "rootNamespace": "Darkwing.UnityApp",
     "references": [
         "Darkwing.Core",
+        "Darkwing.Audio",
         "Unity.InputSystem"
     ],
     "includePlatforms": [],

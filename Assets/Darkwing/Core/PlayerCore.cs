@@ -53,6 +53,7 @@ namespace Darkwing.Core
         private ITileMap _tiles;
         public ITileMap TileMap { get => _tiles; set => _tiles = value; }
         public ObjectSystem Objects;  // slot 0 shares the player's anim state (original RAM model)
+        public System.Action<int> Sfx; // wired to DarkwingGame.PlaySfx ($F84E/$F850 sites)
         private readonly byte[] _probeX = new byte[64];  // $06 = last sampled X ($EB52 uses $06/$07)
         private readonly byte[] _probeY = new byte[64];
 
@@ -270,6 +271,7 @@ namespace Darkwing.Core
             {
                 YVelInt = 4; YVelFrac = 0xE5;
                 State = 1;
+                Sfx?.Invoke(0x21); // jump ($F850 #$21)
                 if (Objects != null)
                 {
                     var sj = Objects.Slots[0];
@@ -365,6 +367,7 @@ namespace Darkwing.Core
         private bool VerticalPhysics(byte held, byte pressed)
         {
             bool falling = YVelInt < 0;
+            _wasAirborne = State is 1 or 0x0B or 0x10;
             if (falling)
             {
                 IntegrateY();               // down
@@ -380,6 +383,7 @@ namespace Darkwing.Core
                     Y = (ushort)(py & 0xFFFF);
                     CutVelocity(); // landing leaves the $F607 value (-0.33), capture-verified
                     LandedFlag = 1;
+                    if (_wasAirborne) Sfx?.Invoke(0x10); // landing SFX ($CE08: SFX $10)
                     return true;
                 }
                 return false;
@@ -588,12 +592,14 @@ namespace Darkwing.Core
         /// hitFlash 1..4; the 4th hit is death.
         /// </summary>
         public byte HitLadder; // 0-3 survived hits
+        private bool _wasAirborne;
 
         public void TakeHit()
         {
             if (InvulnFrames > 0 || State is 7 or 8) return;
             HitLadder++;
             InvulnFrames = 0x3C; // 60 frames
+            Sfx?.Invoke(0x15); // hurt ($CB9D: SFX $15)
             if (HitLadder >= 4)
             {
                 StartDeath();

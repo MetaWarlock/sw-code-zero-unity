@@ -300,6 +300,7 @@ MonoBehaviour:
   Bank1Data: {fileID: 4900000, guid: c89014e354edd4442bd467fa3db455b0, type: 3}
   Bank7Data: {fileID: 4900000, guid: 544c9c9f21c92704c9e6f77f0846871f, type: 3}
   Bank5Data: {fileID: 4900000, guid: bbe378033145aea479d6f5f778924d82, type: 3}
+  Bank3Data: {fileID: 4900000, guid: a70eaf87f4e7f874187d994c77e5744f, type: 3}
 --- !u!23 &1140797529
 MeshRenderer:
   m_ObjectHideFlags: 0

@@ -14,7 +14,7 @@ namespace Darkwing.UnityApp
         public int PixelScale = 3;
 
         public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
-        public TextAsset Bank0Data, Bank1Data, Bank7Data, Bank5Data;
+        public TextAsset Bank0Data, Bank1Data, Bank7Data, Bank5Data, Bank3Data;
 
         private DarkwingGame _game;
         private Darkwing.Core.LevelTileMap _map;
@@ -45,11 +45,15 @@ namespace Darkwing.UnityApp
                 Bank0Data.bytes, Bank1Data.bytes, Bank7Data.bytes, LevelSetsData.bytes);
             _game = new DarkwingGame(data);
             _game.Bank5 = Bank5Data.bytes;
+            if (Bank7Data != null) _game.Bank7 = Bank7Data.bytes;
+            if (Bank3Data != null) _game.Bank3 = Bank3Data.bytes;
+            _audioOut = gameObject.AddComponent<AudioOutFeed>();
             _map = new Darkwing.Core.LevelTileMap(decoder, _game.Ppu);
             _game.Player.TileMap = _map;
             var world = decoder.GetWorld(0);
             _map.LoadRoom(world, 3, 0); // mission-1 start cell (row 3, col 0) = room 0x01
             _game.Player.Y = 0x374;     // captured standing position on the bridge deck
+            _game.PlayMusic(world.Music); // mission music from the world descriptor ($DF04)
             System.Array.Copy(Mission1Palette, _game.Ppu.PaletteRam, 32);
             _game.Ppu.Chr1Bank = 16;    // bg pattern table (verified for set 0)
             _game.Ppu.Chr0Bank = 14;    // sprite pattern table
@@ -67,8 +71,11 @@ namespace Darkwing.UnityApp
             _last = System.DateTime.UtcNow;
         }
 
+        private AudioOutFeed _audioOut;
+
         private void Update()
         {
+            if (_audioOut != null && _game.Audio != null) _audioOut.Source = _game.Audio;
             var now = System.DateTime.UtcNow;
             _accumulator += (now - _last).TotalSeconds;
             _last = now;

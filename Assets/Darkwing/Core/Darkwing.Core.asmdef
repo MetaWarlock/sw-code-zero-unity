@@ -1,7 +1,9 @@
 {
     "name": "Darkwing.Core",
     "rootNamespace": "Darkwing.Core",
-    "references": [],
+    "references": [
+        "Darkwing.Audio"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
