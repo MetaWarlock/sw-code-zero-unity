@@ -27,6 +27,14 @@
     "anims.bytes": {
       "bytes": 17362,
       "source": "binary mirror of anims.json for engine loading"
+    },
+    "audio_bank3.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 3 raw (audio driver data: sound table $8A43, note/period tables, song+SFX streams)"
+    },
+    "world_bank7.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 7 raw (fixed bank: world descriptor tables $DF50+, engine glue data)"
     }
   },
   "notes": [

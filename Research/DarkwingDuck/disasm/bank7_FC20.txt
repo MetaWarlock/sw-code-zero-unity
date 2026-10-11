@@ -1,0 +1,50 @@
+FC20  16 10     ASL $10,X                    ;
+FC22  0A        ASL A                        ;
+FC23  0A        ASL A                        ;
+FC24  0A        ASL A                        ;
+FC25  0A        ASL A                        ;
+FC26  0A        ASL A                        ;
+FC27  0A        ASL A                        ;
+FC28  0A        ASL A                        ;
+FC29  BD 90 05  LDA $0590,X                  ;
+FC2C  48        PHA                          ;
+FC2D  29 07     AND #$07                     ;
+FC2F  A8        TAY                          ;
+FC30  B9 43 FC  LDA $FC43,Y                  ;
+FC33  85 10     STA $10                      ;
+FC35  68        PLA                          ;
+FC36  4A        LSR A                        ;
+FC37  4A        LSR A                        ;
+FC38  4A        LSR A                        ;
+FC39  A8        TAY                          ;
+FC3A  B9 40 03  LDA $0340,Y                  ;
+FC3D  05 10     ORA $10                      ;
+FC3F  99 40 03  STA $0340,Y                  ;
+FC42  60        RTS                          ;
+FC43  01 02     ORA ($02,X)                  ;
+FC45  04        ???
+FC46  08        PHP                          ;
+FC47  10 20     BPL $FC69                    ;
+FC49  40        RTI                          ;
+FC4A  80        ???
+FC4B  FF        ???
+FC4C  FF        ???
+FC4D  FF        ???
+FC4E  FF        ???
+FC4F  FF        ???
+FC50  FF        ???
+FC51  FF        ???
+FC52  FF        ???
+FC53  FF        ???
+FC54  FF        ???
+FC55  FF        ???
+FC56  FF        ???
+FC57  FF        ???
+FC58  FF        ???
+FC59  FF        ???
+FC5A  FF        ???
+FC5B  FF        ???
+FC5C  FF        ???
+FC5D  FF        ???
+FC5E  FF        ???
+FC5F  FF        ???

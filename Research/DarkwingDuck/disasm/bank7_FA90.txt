@@ -1,0 +1,257 @@
+FA90  80        ???
+FA91  99 D0 04  STA $04D0,Y                  ;
+FA94  A9 90     LDA #$90                     ;
+FA96  99 00 04  STA $0400,Y                  ;
+FA99  60        RTS                          ;
+FA9A  A9 00     LDA #$00                     ;
+FA9C  9D D0 04  STA $04D0,X                  ;
+FA9F  9D 00 04  STA $0400,X                  ;
+FAA2  9D C0 04  STA $04C0,X                  ;
+FAA5  9D E0 04  STA $04E0,X                  ;
+FAA8  A9 FF     LDA #$FF                     ;
+FAAA  9D 90 05  STA $0590,X                  ;
+FAAD  60        RTS                          ;
+FAAE  A9 04     LDA #$04                     ;
+FAB0  85 10     STA $10                      ;
+FAB2  A4 10     LDY $10                      ;
+FAB4  B9 D0 04  LDA $04D0,Y                  ;
+FAB7  10 45     BPL $FAFE                    ;
+FAB9  B9 00 04  LDA $0400,Y                  ;
+FABC  10 40     BPL $FAFE                    ;
+FABE  B9 E0 04  LDA $04E0,Y                  ;
+FAC1  C9 1F     CMP #$1F                     ;
+FAC3  F0 39     BEQ $FAFE                    ;
+FAC5  BD D0 04  LDA $04D0,X                  ;
+FAC8  F0 34     BEQ $FAFE                    ;
+FACA  BD E0 04  LDA $04E0,X                  ;
+FACD  F0 2F     BEQ $FAFE                    ;
+FACF  C9 01     CMP #$01                     ;
+FAD1  F0 2B     BEQ $FAFE                    ;
+FAD3  C9 02     CMP #$02                     ;
+FAD5  F0 27     BEQ $FAFE                    ;
+FAD7  C9 03     CMP #$03                     ;
+FAD9  F0 23     BEQ $FAFE                    ;
+FADB  C9 04     CMP #$04                     ;
+FADD  F0 1F     BEQ $FAFE                    ;
+FADF  BD 00 04  LDA $0400,X                  ;
+FAE2  10 1A     BPL $FAFE                    ;
+FAE4  29 04     AND #$04                     ;
+FAE6  D0 1F     BNE $FB07                    ;
+FAE8  B9 F0 04  LDA $04F0,Y                  ;
+FAEB  85 00     STA $00                      ;
+FAED  B9 00 05  LDA $0500,Y                  ;
+FAF0  85 01     STA $01                      ;
+FAF2  B9 10 05  LDA $0510,Y                  ;
+FAF5  85 02     STA $02                      ;
+FAF7  84 0F     STY $0F                      ;
+FAF9  20 08 FB  JSR $FB08                    ;
+FAFC  90 09     BCC $FB07                    ;
+FAFE  C6 10     DEC $10                      ;
+FB00  A5 10     LDA $10                      ;
+FB02  C9 01     CMP #$01                     ;
+FB04  D0 AC     BNE $FAB2                    ;
+FB06  38        SEC                          ;
+FB07  60        RTS                          ;
+FB08  38        SEC                          ;
+FB09  BD 70 05  LDA $0570,X                  ;
+FB0C  29 1F     AND #$1F                     ;
+FB0E  A8        TAY                          ;
+FB0F  A5 00     LDA $00                      ;
+FB11  38        SEC                          ;
+FB12  FD F0 04  SBC $04F0,X                  ;
+FB15  48        PHA                          ;
+FB16  A5 01     LDA $01                      ;
+FB18  FD 00 05  SBC $0500,X                  ;
+FB1B  68        PLA                          ;
+FB1C  B0 04     BCS $FB22                    ;
+FB1E  49 FF     EOR #$FF                     ;
+FB20  69 01     ADC #$01                     ;
+FB22  D9 59 FB  CMP $FB59,Y                  ;
+FB25  B0 11     BCS $FB38                    ;
+FB27  A5 02     LDA $02                      ;
+FB29  38        SEC                          ;
+FB2A  FD 10 05  SBC $0510,X                  ;
+FB2D  B0 04     BCS $FB33                    ;
+FB2F  49 FF     EOR #$FF                     ;
+FB31  69 01     ADC #$01                     ;
+FB33  D9 39 FB  CMP $FB39,Y                  ;
+FB36  90 00     BCC $FB38                    ;
+FB38  60        RTS                          ;
+FB39  0F        ???
+FB3A  0F        ???
+FB3B  0D 0F 07  ORA $070F                    ;
+FB3E  0B        ???
+FB3F  0F        ???
+FB40  13        ???
+FB41  07        ???
+FB42  0B        ???
+FB43  04        ???
+FB44  09 13     ORA #$13                     ;
+FB46  07        ???
+FB47  07        ???
+FB48  07        ???
+FB49  0B        ???
+FB4A  13        ???
+FB4B  13        ???
+FB4C  0D 0D 0F  ORA $0F0D                    ;
+FB4F  04        ???
+FB50  13        ???
+FB51  03        ???
+FB52  03        ???
+FB53  03        ???
+FB54  03        ???
+FB55  03        ???
+FB56  03        ???
+FB57  03        ???
+FB58  03        ???
+FB59  0E 0E 0A  ASL $0A0E                    ;
+FB5C  12        ???
+FB5D  0E 12 0E  ASL $0E12                    ;
+FB60  06 06     ASL $06                      ;
+FB62  0E 04 0E  ASL $0E04                    ;
+FB65  0E 0A 06  ASL $060A                    ;
+FB68  0A        ASL A                        ;
+FB69  0A        ASL A                        ;
+FB6A  12        ???
+FB6B  0A        ASL A                        ;
+FB6C  0C        ???
+FB6D  08        PHP                          ;
+FB6E  0C        ???
+FB6F  03        ???
+FB70  0A        ASL A                        ;
+FB71  02        ???
+FB72  02        ???
+FB73  02        ???
+FB74  02        ???
+FB75  02        ???
+FB76  02        ???
+FB77  02        ???
+FB78  02        ???
+FB79  38        SEC                          ;
+FB7A  60        RTS                          ;
+FB7B  A5 50     LDA $50                      ;
+FB7D  C9 07     CMP #$07                     ;
+FB7F  F0 F8     BEQ $FB79                    ;
+FB81  C9 0F     CMP #$0F                     ;
+FB83  F0 F4     BEQ $FB79                    ;
+FB85  AD 00 04  LDA $0400                    ;
+FB88  10 EF     BPL $FB79                    ;
+FB8A  BD D0 04  LDA $04D0,X                  ;
+FB8D  10 EA     BPL $FB79                    ;
+FB8F  BD 00 04  LDA $0400,X                  ;
+FB92  10 E5     BPL $FB79                    ;
+FB94  BD E0 04  LDA $04E0,X                  ;
+FB97  C9 07     CMP #$07                     ;
+FB99  F0 DE     BEQ $FB79                    ;
+FB9B  38        SEC                          ;
+FB9C  BD 70 05  LDA $0570,X                  ;
+FB9F  F0 D8     BEQ $FB79                    ;
+FBA1  29 1F     AND #$1F                     ;
+FBA3  A8        TAY                          ;
+FBA4  B9 E9 FB  LDA $FBE9,Y                  ;
+FBA7  85 00     STA $00                      ;
+FBA9  AD 20 04  LDA $0420                    ;
+FBAC  C9 06     CMP #$06                     ;
+FBAE  F0 06     BEQ $FBB6                    ;
+FBB0  C9 07     CMP #$07                     ;
+FBB2  F0 02     BEQ $FBB6                    ;
+FBB4  D0 07     BNE $FBBD                    ;
+FBB6  A5 00     LDA $00                      ;
+FBB8  38        SEC                          ;
+FBB9  E9 08     SBC #$08                     ;
+FBBB  85 00     STA $00                      ;
+FBBD  AD F0 04  LDA $04F0                    ;
+FBC0  38        SEC                          ;
+FBC1  FD F0 04  SBC $04F0,X                  ;
+FBC4  48        PHA                          ;
+FBC5  AD 00 05  LDA $0500                    ;
+FBC8  FD 00 05  SBC $0500,X                  ;
+FBCB  68        PLA                          ;
+FBCC  B0 04     BCS $FBD2                    ;
+FBCE  49 FF     EOR #$FF                     ;
+FBD0  69 01     ADC #$01                     ;
+FBD2  D9 09 FC  CMP $FC09,Y                  ;
+FBD5  B0 11     BCS $FBE8                    ;
+FBD7  AD 10 05  LDA $0510                    ;
+FBDA  38        SEC                          ;
+FBDB  FD 10 05  SBC $0510,X                  ;
+FBDE  B0 04     BCS $FBE4                    ;
+FBE0  49 FF     EOR #$FF                     ;
+FBE2  69 01     ADC #$01                     ;
+FBE4  C5 00     CMP $00                      ;
+FBE6  90 00     BCC $FBE8                    ;
+FBE8  60        RTS                          ;
+FBE9  16 0C     ASL $0C,X                    ;
+FBEB  12        ???
+FBEC  16 0E     ASL $0E,X                    ;
+FBEE  14        ???
+FBEF  16 1C     ASL $1C,X                    ;
+FBF1  16 12     ASL $12,X                    ;
+FBF3  0C        ???
+FBF4  10 16     BPL $FC0C                    ;
+FBF6  0E 14 0E  ASL $0E14                    ;
+FBF9  12        ???
+FBFA  1A        ???
+FBFB  1A        ???
+FBFC  12        ???
+FBFD  14        ???
+FBFE  16 16     ASL $16,X                    ;
+FC00  16 0E     ASL $0E,X                    ;
+FC02  0A        ASL A                        ;
+FC03  0A        ASL A                        ;
+FC04  0A        ASL A                        ;
+FC05  0A        ASL A                        ;
+FC06  0A        ASL A                        ;
+FC07  0A        ASL A                        ;
+FC08  0A        ASL A                        ;
+FC09  16 0C     ASL $0C,X                    ;
+FC0B  12        ???
+FC0C  1A        ???
+FC0D  0F        ???
+FC0E  12        ???
+FC0F  16 10     ASL $10,X                    ;
+FC11  0C        ???
+FC12  16 0C     ASL $0C,X                    ;
+FC14  10 1A     BPL $FC30                    ;
+FC16  12        ???
+FC17  13        ???
+FC18  12        ???
+FC19  12        ???
+FC1A  16 12     ASL $12,X                    ;
+FC1C  12        ???
+FC1D  10 14     BPL $FC33                    ;
+FC1F  1A        ???
+FC20  16 10     ASL $10,X                    ;
+FC22  0A        ASL A                        ;
+FC23  0A        ASL A                        ;
+FC24  0A        ASL A                        ;
+FC25  0A        ASL A                        ;
+FC26  0A        ASL A                        ;
+FC27  0A        ASL A                        ;
+FC28  0A        ASL A                        ;
+FC29  BD 90 05  LDA $0590,X                  ;
+FC2C  48        PHA                          ;
+FC2D  29 07     AND #$07                     ;
+FC2F  A8        TAY                          ;
+FC30  B9 43 FC  LDA $FC43,Y                  ;
+FC33  85 10     STA $10                      ;
+FC35  68        PLA                          ;
+FC36  4A        LSR A                        ;
+FC37  4A        LSR A                        ;
+FC38  4A        LSR A                        ;
+FC39  A8        TAY                          ;
+FC3A  B9 40 03  LDA $0340,Y                  ;
+FC3D  05 10     ORA $10                      ;
+FC3F  99 40 03  STA $0340,Y                  ;
+FC42  60        RTS                          ;
+FC43  01 02     ORA ($02,X)                  ;
+FC45  04        ???
+FC46  08        PHP                          ;
+FC47  10 20     BPL $FC69                    ;
+FC49  40        RTI                          ;
+FC4A  80        ???
+FC4B  FF        ???
+FC4C  FF        ???
+FC4D  FF        ???
+FC4E  FF        ???
+FC4F  FF        ???
