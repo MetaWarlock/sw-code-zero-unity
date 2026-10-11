@@ -1,0 +1,7 @@
+{"event":"loaded","rom":"D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes","sha1":"C7B81EE2FF158A58582BC1BF508FFB1213E7A53A","mesen_version":"2.1.1","console":"Nes","cpu":"Nes"}
+{"event":"state_loaded","file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\select_mission\\final.mss"}
+{"event":"lua_loaded","id":1,"file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\probe_m1_state\\capture.lua"}
+{"event":"state_saved","file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\m1_gameplay.mss"}
+{"event":"lua_error","phase":"callback","id":1,"file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\probe_m1_state\\capture.lua","error_count":1}
+{"event":"lua_log","id":1,"file":"D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\probe_m1_state\\capture.lua","error_count":1,"text":"Loading script...\nRegistered memory callback from $8000 to $FFFF\nRegistered memory callback from $2000 to $2007\nScript loaded successfully.\ncapture.lua:70: attempt to call a nil value (global 'mmc1BankState')\n"}
+{"event":"summary","ok":false,"reason":"lua_error","start_frame":3301,"final_frame":3302,"frames_executed":1,"stop_code":0}

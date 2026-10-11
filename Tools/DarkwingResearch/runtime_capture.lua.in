@@ -67,8 +67,7 @@ emu.addEventCallback(function()
     oam:write(bytes(emu.memType.nesSpriteRam, 256))
     -- nametable space 0x2000-0x2FFF (4 KiB) only at configured intervals; VRAM is reconstructable from ppu_writes
     if frame % __VRAM_EVERY__ == 0 then vram:write(string.pack("<I4", frame) .. bytes(emu.memType.nesNametableRam, 0x1000)) end
-    local pl, ph, cl, ch = mmc1BankState()
-    chr:write(string.format("%d,%d,%d,%d,%d,%d\n", frame, mmc1.ctrl, pl, ph, cl, ch))
+    chr:write(string.format("%d,%d,%d,%d,%d\n", frame, mmc1.ctrl, mmc1.chr0, mmc1.chr1, mmc1.prg))
     regs:write(string.format("%d,%d\n", frame, s["ppu.ctrl"] or -1))
     meta:write(string.format("%d,%d,%d,%04X,%d,%d\n", frame, s["ppu.frameCount"], s["cpu.cycleCount"], s["cpu.pc"], s["ppu.scanline"], s["ppu.cycle"]))
     if frame % __SNAPSHOT_EVERY__ == 0 then

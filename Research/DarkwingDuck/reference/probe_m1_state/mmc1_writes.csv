@@ -1,0 +1,3 @@
+relative_frame,cpu_cycle,pc,address,value,shift_count,latched_reg,bank
+0,98276600,FF6E,FFF0,0,3,-1,-1,-1,2
+0,98277791,FF6E,FFF0,0,3,-1,-1,-1,5

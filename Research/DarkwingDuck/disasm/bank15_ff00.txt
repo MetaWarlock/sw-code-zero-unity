@@ -1,0 +1,138 @@
+FF00  06 FF     ASL $FF                      ;
+FF02  CA        DEX                          ;
+FF03  D0 FA     BNE $FEFF                    ;
+FF05  60        RTS                          ;
+FF06  A9 01     LDA #$01                     ;
+FF08  85 93     STA $93                      ;
+FF0A  8A        TXA                          ;
+FF0B  48        PHA                          ;
+FF0C  98        TYA                          ;
+FF0D  48        PHA                          ;
+FF0E  20 F9 FE  JSR $FEF9                    ;
+FF11  A5 93     LDA $93                      ;
+FF13  95 81     STA $81,X                    ;
+FF15  A9 01     LDA #$01                     ;
+FF17  95 80     STA $80,X                    ;
+FF19  8A        TXA                          ;
+FF1A  A8        TAY                          ;
+FF1B  BA        TSX                          ;
+FF1C  96 82     STX $82,Y                    ;
+FF1E  4C 8F FE  JMP $FE8F                    ;
+FF21  85 F2     STA $F2                      ;
+FF23  8D FF BF  STA $BFFF                    ;
+FF26  4A        LSR A                        ;
+FF27  8D FF BF  STA $BFFF                    ;
+FF2A  4A        LSR A                        ;
+FF2B  8D FF BF  STA $BFFF                    ;
+FF2E  4A        LSR A                        ;
+FF2F  8D FF BF  STA $BFFF                    ;
+FF32  4A        LSR A                        ;
+FF33  8D FF BF  STA $BFFF                    ;
+FF36  A9 00     LDA #$00                     ;
+FF38  85 1A     STA $1A                      ;
+FF3A  60        RTS                          ;
+FF3B  85 F3     STA $F3                      ;
+FF3D  8D FF DF  STA $DFFF                    ;
+FF40  4A        LSR A                        ;
+FF41  8D FF DF  STA $DFFF                    ;
+FF44  4A        LSR A                        ;
+FF45  8D FF DF  STA $DFFF                    ;
+FF48  4A        LSR A                        ;
+FF49  8D FF DF  STA $DFFF                    ;
+FF4C  4A        LSR A                        ;
+FF4D  8D FF DF  STA $DFFF                    ;
+FF50  A9 00     LDA #$00                     ;
+FF52  85 1B     STA $1B                      ;
+FF54  60        RTS                          ;
+FF55  85 F1     STA $F1                      ;
+FF57  85 F4     STA $F4                      ;
+FF59  E6 F5     INC $F5                      ;
+FF5B  8D F0 FF  STA $FFF0                    ;
+FF5E  4A        LSR A                        ;
+FF5F  8D F0 FF  STA $FFF0                    ;
+FF62  4A        LSR A                        ;
+FF63  8D F0 FF  STA $FFF0                    ;
+FF66  4A        LSR A                        ;
+FF67  8D F0 FF  STA $FFF0                    ;
+FF6A  4A        LSR A                        ;
+FF6B  8D F0 FF  STA $FFF0                    ;
+FF6E  A9 00     LDA #$00                     ;
+FF70  85 F5     STA $F5                      ;
+FF72  A5 F6     LDA $F6                      ;
+FF74  D0 01     BNE $FF77                    ;
+FF76  60        RTS                          ;
+FF77  A9 03     LDA #$03                     ;
+FF79  8D F0 FF  STA $FFF0                    ;
+FF7C  4A        LSR A                        ;
+FF7D  8D F0 FF  STA $FFF0                    ;
+FF80  4A        LSR A                        ;
+FF81  8D F0 FF  STA $FFF0                    ;
+FF84  4A        LSR A                        ;
+FF85  8D F0 FF  STA $FFF0                    ;
+FF88  4A        LSR A                        ;
+FF89  8D F0 FF  STA $FFF0                    ;
+FF8C  A6 DB     LDX $DB                      ;
+FF8E  B5 DC     LDA $DC,X                    ;
+FF90  C9 88     CMP #$88                     ;
+FF92  F0 12     BEQ $FFA6                    ;
+FF94  48        PHA                          ;
+FF95  A9 88     LDA #$88                     ;
+FF97  95 DC     STA $DC,X                    ;
+FF99  E8        INX                          ;
+FF9A  8A        TXA                          ;
+FF9B  29 07     AND #$07                     ;
+FF9D  85 DB     STA $DB                      ;
+FF9F  68        PLA                          ;
+FFA0  20 03 80  JSR $8003                    ;
+FFA3  4C 8C FF  JMP $FF8C                    ;
+FFA6  20 00 80  JSR $8000                    ;
+FFA9  A9 00     LDA #$00                     ;
+FFAB  85 F6     STA $F6                      ;
+FFAD  A5 F4     LDA $F4                      ;
+FFAF  4C 55 FF  JMP $FF55                    ;
+FFB2  00        BRK                          ;
+FFB3  00        BRK                          ;
+FFB4  00        BRK                          ;
+FFB5  00        BRK                          ;
+FFB6  00        BRK                          ;
+FFB7  00        BRK                          ;
+FFB8  00        BRK                          ;
+FFB9  00        BRK                          ;
+FFBA  00        BRK                          ;
+FFBB  00        BRK                          ;
+FFBC  00        BRK                          ;
+FFBD  00        BRK                          ;
+FFBE  00        BRK                          ;
+FFBF  00        BRK                          ;
+FFC0  FF        ???
+FFC1  FF        ???
+FFC2  FF        ???
+FFC3  FF        ???
+FFC4  FF        ???
+FFC5  FF        ???
+FFC6  FF        ???
+FFC7  FF        ???
+FFC8  FF        ???
+FFC9  FF        ???
+FFCA  FF        ???
+FFCB  FF        ???
+FFCC  FF        ???
+FFCD  FF        ???
+FFCE  FF        ???
+FFCF  FF        ???
+FFD0  FF        ???
+FFD1  FF        ???
+FFD2  FF        ???
+FFD3  FF        ???
+FFD4  FF        ???
+FFD5  FF        ???
+FFD6  FF        ???
+FFD7  FF        ???
+FFD8  FF        ???
+FFD9  FF        ???
+FFDA  FF        ???
+FFDB  FF        ???
+FFDC  FF        ???
+FFDD  FF        ???
+FFDE  FF        ???
+FFDF  FF        ???

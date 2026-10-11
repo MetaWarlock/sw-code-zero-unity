@@ -1,0 +1,23 @@
+FFE0  78        SEI                          ;
+FFE1  EE E1 FF  INC $FFE1                    ;
+FFE4  D8        CLD                          ;
+FFE5  4C 00 FE  JMP $FE00                    ;
+FFE8  00        BRK                          ;
+FFE9  00        BRK                          ;
+FFEA  00        BRK                          ;
+FFEB  00        BRK                          ;
+FFEC  00        BRK                          ;
+FFED  00        BRK                          ;
+FFEE  00        BRK                          ;
+FFEF  00        BRK                          ;
+FFF0  84 22     STY $22                      ;
+FFF2  2E 60 33  ROL $3360                    ;
+FFF5  04        ???
+FFF6  00        BRK                          ;
+FFF7  00        BRK                          ;
+FFF8  08        PHP                          ;
+FFF9  33        ???
+FFFA  00        BRK                          ;
+FFFB  C0 E0     CPY #$E0                     ;
+FFFD  FF        ???
+FFFE  E0 FF     CPX #$FF                     ;
