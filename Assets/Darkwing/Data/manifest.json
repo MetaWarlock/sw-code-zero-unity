@@ -47,6 +47,14 @@
     "object_types.bytes": {
       "bytes": 525,
       "source": "bank4 $8AB3 (105x4: flags,behavior,anim,param) + $8C57 (105 HP); verified vs manifest placed_type_ids"
+    },
+    "prg_bank0.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 0 raw (room blocks 64B at (cell-1)*64 for worlds with set_bank<6; verified decoder decode_room.py 960/960)"
+    },
+    "prg_bank1.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 1 raw (room blocks for set_bank>=6 / FOWL)"
     }
   },
   "notes": [
