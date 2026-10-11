@@ -477,6 +477,29 @@ namespace Darkwing.Core
             if (StateTimer == 0) State = 0;
         }
 
+        // ---------- Level script hook ($DAFD) ----------
+        /// <summary>
+        /// Reads the level script byte for the current screen column. Byte $C1-$CF
+        /// (odd) = checkpoint id → $6D; low nibble == 1 = hook column (grab check);
+        /// low nibble == 2 = vertical scroll snap. The world supplies the byte.
+        /// </summary>
+        public void ApplyScriptByte(byte scriptByte)
+        {
+            if (scriptByte >= 0xC1 && scriptByte <= 0xCF && (scriptByte & 1) != 0)
+                CheckpointId = (byte)(scriptByte & 0x1F);
+            if ((scriptByte & 0x0F) == 1 && ScrollX == 0 && State != 0x0C)
+            {
+                // Hook grab ($DB6D): position-based — player screen Y >= $E8
+                int screenY = (short)(Y - (ScrollYRow * 0)); // $FA in-cell offset normally 0
+                if (screenY >= 0xE8)
+                {
+                    State = 0x0C; // hang
+                    YVelInt = 0; YVelFrac = 0x80; // 0.5 px/frame ride
+                    if (scriptByte == 0x90) OnHookTileFlag = true;
+                }
+            }
+        }
+
         // ---------- Gas gun (doc §7, $CF3A/$CE39) ----------
         public byte ActiveGasEnergyHi;  // $05BE
         public byte ActiveGasEnergyLo;  // $05C0
