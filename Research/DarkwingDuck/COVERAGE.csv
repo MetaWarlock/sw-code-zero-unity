@@ -1,11 +1,29 @@
 system,level,object,scenario,extracted,implemented,compared,evidence
 tools,rom_ident,rom,sha256-check,yes,no,n/a,manifest.json + hash recount 2026-10-11
 tools,emulator,mesen-agent,help-run,yes,n/a,n/a,vendor/mesen-agent v0.1.0
+determinism,boot,reset,two-identical-runs,yes,n/a,n/a,det_a vs det_b: frames>=4 identical, frames 0-3 power-on RAM
 extraction,prg,8 banks,sha256-per-bank,yes,n/a,n/a,manifest.json
-extraction,chr,32 banks,sha256-per-bank,yes,n/a,n/a,manifest.json
-extraction,tables,level_sets,structural-roundtrip,yes,n/a,n/a,manifest.json checks
-extraction,tables,animations_199,structural-roundtrip,yes,n/a,n/a,manifest.json
-extraction,tables,frames_314,structural-roundtrip,yes,n/a,n/a,manifest.json (3 RAM frames excluded)
-extraction,tables,coords_208,structural-roundtrip,yes,n/a,n/a,manifest.json
+extraction,chr,32 banks,sha256-per-bank,yes,n/a,n/a,manifest.json + chr_full.bytes
+extraction,tables,level_sets,structural-roundtrip,yes,n/a,n/a,manifest.json
+extraction,tables,animations_199,structural-roundtrip,yes,n/a,n/a,anims.json/bin
+extraction,tables,frames_314,structural-roundtrip,yes,n/a,n/a,311 rom + 3 ram_dynamic
 extraction,ui,two_ui_streams,structural-roundtrip,yes,n/a,n/a,ui_map_commands.json
-determinism,boot,reset,two-identical-runs,no,no,no,PENDING M0
+runtime,mmc1,bank_model,render-verified,yes,n/a,n/a,probe_m1_enter: bg CHR=16 spr=14 PRG 5/15 (4K mode, PPUCTRL $16/$90)
+runtime,palette,mission1_bg,captured,yes,n/a,n/a,palette_frames.bin f700
+runtime,rooms,level_geometry,FORMAT-UNDER-RESEARCH,no,no,no,agent: nametable != plain screens; packed room data suspected (bank4 $E388-area)
+engine,scheduler,processes,disasm+trace,yes,no,n/a,$FE8F 5 slots; master process $C595; yield $FF06
+engine,nmi,frame,NMI disasm,yes,no,n/a,$C000: DMA $0200, palette $0300, scroll $FA/$FC, VRAM queue $0360, counter $92
+engine,input,controller,disasm,yes,no,n/a,$C162: $14/$16 P1, bits 7=A..0=Right
+engine,banks,queue,disasm+trace,yes,no,n/a,$FF55/$FF21/$FF3B; queue $DC[8] marker $88; NMI->bank3 AUDIO task
+engine,objects,16 slots,disasm+trace,yes,no,n/a,$0400..$059F stride $10; update order alternates by $95 parity; spawner bank4 $8090
+engine,gameplay_loop,main,disasm+trace,yes,no,n/a,$C9AC; camera $DA70; script byte ($34),Y
+player,physics,all_states,disasm doc,yes,partial,no,PlayerCore.cs: states 0/1/2/3/6/0A/0B/0C transcribed; golden compare pending geometry
+player,weapons,gas_gun,disasm doc,yes,no,no,projectile behaviors 1-4 documented; spawn max [3,1,2,1]
+player,damage,invuln_death,disasm doc,yes,no,no,4-hit ladder $05B2-$05B8; 60 invuln frames; states 7/8
+flow,screens,boot_to_title,probes,yes,no,no,docs/game_flow.md flow diagram
+flow,progression,missions,probes,yes,no,no,$38 tier/$69 bitmask/$F8 outcome
+flow,pause,start,probes,yes,no,no,bank4 $8F00 status screen
+audio,engine,bank3_driver,disasm+probes,yes,no,no,docs/audio_engine.md: tick 1/frame, tempo $C7:$C8+=$C9:$CA
+audio,catalog,songs_sfx,static+live,yes,no,no,16 music (13 null) + 47 SFX; 110 trigger sites
+unity,project,skeleton,compile+play,yes,partial,n/a,Darkwing.Core+UnityApp; scene renders mission-1 bg; PlayerCore compiles
+unity,renderer,background,pixel-compare,yes,partial,FAIL(11.7%),BackgroundComposer palette-slot mismatch vs nametable attrs — fix pending level format
