@@ -42,3 +42,8 @@ audio,apu,registers,draft,yes,yes,no,register model correct; frame-counter sched
 
 render,sprites,oam_dispatcher,byte-exact-vs-capture,yes,yes,pass,player 12 parts match capture exactly (b36-83); signed clip verified; full-frame 98.76% (HUD layer = M7)
 render,background,level_decoder,full-frame-compare,yes,yes,pass,bg pixel-exact from RoomDecoder; composed frame 100% vs emulator
+
+physics,walk,golden_119f,frame-exact,yes,yes,PASS,gold_walk: dust startup + 1.5px/f + anim cycle + X every frame identical (PhysCompare.Walk 119/119)
+physics,jump,golden_119f,frame-exact,yes,yes,PASS,gold_jump: impulse/gravity/cut ordering/landing/anim 11 exact (PhysCompare.Jump 119/119)
+physics,collision,deck_type,verified,yes,yes,pass,collision type = high nibble of metatile byte (level_format); player rests at captured Y
+hud,heart_energy,oam_entries_0_8,frame-exact,yes,yes,pass,HudComposer matches captured entries; full frame 99.94% (36px = metatile animation, bank 5, documented)
