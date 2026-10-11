@@ -31,6 +31,8 @@ namespace Darkwing.Core
             public byte PlacementIndex;  // $0590 (FF = none)
             public byte ScreenX;         // $0450,X relative to scroll
             public byte ScreenY;         // $0440,X relative to scroll
+            public byte BehaviorParam;   // $0570,X (low 5 bits = touch class)
+            public byte HitFlash;        // $04C0,X hit-flash timer
         }
 
         public readonly Slot[] Slots = new Slot[SlotCount];

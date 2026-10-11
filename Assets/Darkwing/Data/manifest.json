@@ -59,6 +59,14 @@
     "prg_bank5.bytes": {
       "bytes": 16384,
       "source": "PRG bank 5 raw (anim tables $B429/$B4F0, frame tables $9B0B/$9C45 + $9C0B/$9D45, coord pointers $AE53/$AF23)"
+    },
+    "prg_bank6.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 6 raw (enemy behavior dispatch $8000, tables $825F/$82A7, behaviors $82F0+)"
+    },
+    "prg_bank1b.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 1 raw (boss dispatch $8800, tables $8836/$88B6)"
     }
   },
   "notes": [
