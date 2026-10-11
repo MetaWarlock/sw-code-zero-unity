@@ -14,9 +14,10 @@ namespace Darkwing.UnityApp
         public int PixelScale = 3;
 
         public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
+        public TextAsset Bank0Data, Bank1Data, Bank7Data;
 
         private DarkwingGame _game;
-        private BackgroundComposer _composer;
+        private Darkwing.Core.LevelTileMap _map;
         private Texture2D _screen;
         private double _accumulator;
         private System.DateTime _last;
@@ -40,12 +41,20 @@ namespace Darkwing.UnityApp
             var data = Darkwing.Core.DataLoader.Load(
                 ChrData.bytes, LevelSetsData.bytes, ScreensData.bytes,
                 LevelsData.bytes, AnimsData.bytes);
-            _composer = new BackgroundComposer(data);
-            _game = new DarkwingGame();
-            _game.Reset();
-            // M3 smoke test: compose mission-1 first screen at scroll 0.
-            var lv = data.Levels[0];
-            _composer.Compose(lv.TileSet, lv.FirstScreen, 0, 0, Mission1Palette, _game.Framebuffer);
+            var decoder = new Darkwing.Core.RoomDecoder(
+                Bank0Data.bytes, Bank1Data.bytes, Bank7Data.bytes, LevelSetsData.bytes);
+            _game = new DarkwingGame(data);
+            _map = new Darkwing.Core.LevelTileMap(decoder, _game.Ppu);
+            _game.Player.TileMap = _map;
+            var world = decoder.GetWorld(0);
+            _map.LoadRoom(world, 3, 0); // mission-1 start cell (row 3, col 0) = room 0x01
+            System.Array.Copy(Mission1Palette, _game.Ppu.PaletteRam, 32);
+            _game.Ppu.Chr1Bank = 16;    // bg pattern table (verified for set 0)
+            _game.Ppu.Chr0Bank = 14;    // sprite pattern table
+            _game.Ppu.WriteRegister(0x2000, 0x16); // NMI off phase, bg $1000, sprites $0000
+            _game.Ppu.WriteRegister(0x2001, 0x1E); // rendering on
+            _game.Ppu.ScrollX = 0;
+            _game.Ppu.ScrollY = 0;
             _screen = new Texture2D(DarkwingGame.ScreenWidth, DarkwingGame.ScreenHeight,
                 TextureFormat.RGBA32, false)
             {
@@ -73,8 +82,13 @@ namespace Darkwing.UnityApp
         private void LateUpdate()
         {
             var fb = _game.Framebuffer;
-            for (int i = 0; i < fb.Length; i++)
-                _pixels[i] = Palette[fb[i] & 0x3F];
+            for (int y = 0; y < DarkwingGame.ScreenHeight; y++)
+            {
+                int src = y * DarkwingGame.ScreenWidth;
+                int dst = (DarkwingGame.ScreenHeight - 1 - y) * DarkwingGame.ScreenWidth; // texture is bottom-up
+                for (int x = 0; x < DarkwingGame.ScreenWidth; x++)
+                    _pixels[dst + x] = Palette[fb[src + x] & 0x3F];
+            }
             _screen.SetPixels32(_pixels);
             _screen.Apply(false);
         }
@@ -103,8 +117,13 @@ namespace Darkwing.UnityApp
                 TextureFormat.RGBA32, false);
             var px = new Color32[_pixels.Length];
             var fb = _game.Framebuffer;
-            for (int i = 0; i < fb.Length; i++)
-                px[i] = Palette[fb[i] & 0x3F];
+            for (int y = 0; y < DarkwingGame.ScreenHeight; y++)
+            {
+                int src = y * DarkwingGame.ScreenWidth;
+                int dst = (DarkwingGame.ScreenHeight - 1 - y) * DarkwingGame.ScreenWidth;
+                for (int x = 0; x < DarkwingGame.ScreenWidth; x++)
+                    px[dst + x] = Palette[fb[src + x] & 0x3F];
+            }
             tex.SetPixels32(px);
             tex.Apply(false);
             System.IO.File.WriteAllBytes(path, ImageConversion.EncodeToPNG(tex));

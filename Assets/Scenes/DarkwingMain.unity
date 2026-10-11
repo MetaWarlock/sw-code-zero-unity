@@ -146,7 +146,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.05, g: 0.05, b: 0.05, a: 1}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -168,10 +168,10 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 1000
+  far clip plane: 20
   field of view: 60
   orthographic: 1
-  orthographic size: 3.5
+  orthographic size: 7.5
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -202,7 +202,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &855743320
+--- !u!21 &794559529
 Material:
   serializedVersion: 8
   m_ObjectHideFlags: 0
@@ -296,6 +296,9 @@ MonoBehaviour:
   ScreensData: {fileID: 4900000, guid: b45450aefd3115b4a923a49d10bd59b8, type: 3}
   LevelsData: {fileID: 4900000, guid: 0be18398a493b4d408a32602b6a19066, type: 3}
   AnimsData: {fileID: 4900000, guid: 0b22b036d7bd2f34c80b391ec06ccfda, type: 3}
+  Bank0Data: {fileID: 4900000, guid: ccaaf9b16d926f345a163b9cad94a09d, type: 3}
+  Bank1Data: {fileID: 4900000, guid: c89014e354edd4442bd467fa3db455b0, type: 3}
+  Bank7Data: {fileID: 4900000, guid: 544c9c9f21c92704c9e6f77f0846871f, type: 3}
 --- !u!23 &1140797529
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -321,7 +324,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 855743320}
+  - {fileID: 794559529}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -385,7 +388,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 16, y: 15, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

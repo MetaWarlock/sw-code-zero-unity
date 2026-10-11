@@ -13,6 +13,9 @@ public static class WireData
         launcher.ScreensData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/screens.bytes");
         launcher.LevelsData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/levels.bytes");
         launcher.AnimsData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/anims.bytes");
+        launcher.Bank0Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank0.bytes");
+        launcher.Bank1Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank1.bytes");
+        launcher.Bank7Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/world_bank7.bytes");
         EditorUtility.SetDirty(launcher);
         var path = "Assets/Scenes/DarkwingMain.unity";
         EditorSceneManager_Save(path);

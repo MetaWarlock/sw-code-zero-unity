@@ -50,7 +50,8 @@ namespace Darkwing.Core
         public byte FacingRight = 1;    // $0400 bit6
         public byte Flags = 0xD0;       // $0400 (active|facing)
 
-        private readonly ITileMap _tiles;
+        private ITileMap _tiles;
+        public ITileMap TileMap { get => _tiles; set => _tiles = value; }
         private readonly byte[] _probeX = new byte[64];  // $06 = last sampled X ($EB52 uses $06/$07)
         private readonly byte[] _probeY = new byte[64];
 
