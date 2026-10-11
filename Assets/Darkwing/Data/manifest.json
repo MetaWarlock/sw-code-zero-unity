@@ -43,6 +43,10 @@
     "map_palette.bin": {
       "bytes": 32,
       "source": "captured map-screen palette"
+    },
+    "object_types.bytes": {
+      "bytes": 525,
+      "source": "bank4 $8AB3 (105x4: flags,behavior,anim,param) + $8C57 (105 HP); verified vs manifest placed_type_ids"
     }
   },
   "notes": [
