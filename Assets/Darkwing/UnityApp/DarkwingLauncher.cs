@@ -95,5 +95,21 @@ namespace Darkwing.UnityApp
                 Right = k.rightArrowKey.isPressed,
             };
         }
+
+        /// <summary>Dev/test helper: dump the exact 256x240 framebuffer as PNG.</summary>
+        public string DumpFramebuffer(string path)
+        {
+            var tex = new Texture2D(DarkwingGame.ScreenWidth, DarkwingGame.ScreenHeight,
+                TextureFormat.RGBA32, false);
+            var px = new Color32[_pixels.Length];
+            var fb = _game.Framebuffer;
+            for (int i = 0; i < fb.Length; i++)
+                px[i] = Palette[fb[i] & 0x3F];
+            tex.SetPixels32(px);
+            tex.Apply(false);
+            System.IO.File.WriteAllBytes(path, ImageConversion.EncodeToPNG(tex));
+            Object.Destroy(tex);
+            return path;
+        }
     }
 }
