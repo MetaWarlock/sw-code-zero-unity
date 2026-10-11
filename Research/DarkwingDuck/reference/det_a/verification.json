@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "summary": {
+    "event": "summary",
+    "ok": true,
+    "reason": "frame_limit",
+    "start_frame": 1,
+    "final_frame": 301,
+    "frames_executed": 300,
+    "stop_code": 0
+  },
+  "audio": {
+    "rate": 48000,
+    "channels": 2,
+    "sample_width": 2,
+    "frames": 239539
+  },
+  "sha256": {
+    "apu_writes.csv": "f3a613bda349f16c79195feb3b5113e77cb2c314272a36e113da311ba6deeccb",
+    "audio.wav": "e43dcb73f75a9d748fd8e13167e7079aff04b737bfd239a875b011e65105893d",
+    "coverage.cdl": "04f3d1a27ed335c2d3d49738097f575a61e3d13fe9db741ae9028f6cb3561249",
+    "final.mss": "6644153f5e6debdc0827990ab52a45ce2e649e00c3c573b99dbd864a40fdaed8",
+    "final.png": "ef163b22a1d9cae3d22ce0c107190b01f51da400a574afc0aff14a9b6cc9ec4b",
+    "frames.csv": "4c7129984062afb1798c08d3e606a5fb89e0bfa185d26bd8d305225eeb54ea7e",
+    "frame_000150.png": "ca66d08fbff7db025968bfc4c9a958f016b18d92f0e8bbf8484df9c2de7e997e",
+    "frame_000300.png": "ef163b22a1d9cae3d22ce0c107190b01f51da400a574afc0aff14a9b6cc9ec4b",
+    "oam_frames.bin": "4102f3965ce9d4f578d9878eb3b0195f27e04e36a787df225c8b6d781b7d6424",
+    "palette_frames.bin": "a1580350984bb2f183ebf1d439c9d07348dc5f6d9fb4dcad59d51f2fefee114d",
+    "ram_frames.bin": "f0016873c34326df1ee389cd2ba7aa8413b19f5f48c996d87ba9ba9147ede090",
+    "state.json": "c2e9a6fd8601a399cf943e8497fefd32b2a01fa0545d49c164538e33f1216df1"
+  },
+  "scope": "Instrumentation smoke test. Not proof of game/port equivalence."
+}

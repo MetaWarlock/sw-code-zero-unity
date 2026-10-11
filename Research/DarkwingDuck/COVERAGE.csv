@@ -1,0 +1,11 @@
+system,level,object,scenario,extracted,implemented,compared,evidence
+tools,rom_ident,rom,sha256-check,yes,no,n/a,manifest.json + hash recount 2026-10-11
+tools,emulator,mesen-agent,help-run,yes,n/a,n/a,vendor/mesen-agent v0.1.0
+extraction,prg,8 banks,sha256-per-bank,yes,n/a,n/a,manifest.json
+extraction,chr,32 banks,sha256-per-bank,yes,n/a,n/a,manifest.json
+extraction,tables,level_sets,structural-roundtrip,yes,n/a,n/a,manifest.json checks
+extraction,tables,animations_199,structural-roundtrip,yes,n/a,n/a,manifest.json
+extraction,tables,frames_314,structural-roundtrip,yes,n/a,n/a,manifest.json (3 RAM frames excluded)
+extraction,tables,coords_208,structural-roundtrip,yes,n/a,n/a,manifest.json
+extraction,ui,two_ui_streams,structural-roundtrip,yes,n/a,n/a,ui_map_commands.json
+determinism,boot,reset,two-identical-runs,no,no,no,PENDING M0

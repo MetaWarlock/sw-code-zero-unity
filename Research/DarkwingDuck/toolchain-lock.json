@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "date": "2026-10-11",
+  "rom": {
+    "path": "Art/Darkwing Duck (USA).nes",
+    "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+    "payload_sha256": "f97f05a4f8747d81dc8adaf07df70d1f87366632ae3e93103d387043ef5ec508"
+  },
+  "python": {"version": "3.14.2"},
+  "mesen_agent": {
+    "path": "Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent.exe",
+    "version": "0.1.0",
+    "core": "Tools/DarkwingResearch/vendor/mesen-agent/MesenCore.dll"
+  },
+  "unity": {
+    "cli": "C:/Users/Warlock/AppData/Local/Unity/bin/unity.exe",
+    "project": "D:/Art/SW Code Zero Unity",
+    "editor": "6000.6.5f1 (3ff58d469c8a)",
+    "urp": "17.6.0",
+    "input_system": "1.20.0"
+  },
+  "reference_config": {
+    "emulator": "mesen-agent 0.1.0 defaults (NTSC, square pixels, default palette)",
+    "frame_phase": "endFrame at scanline 240 cycle 0 observed in prep runs; per-frame RAM snapshot via Lua at same hook",
+    "determinism": "from reset, frames 0-3 contain power-on RAM garbage not yet cleared; frames >=4 byte-identical across runs incl. final.mss, PNG, WAV"
+  },
+  "determinism_check": {
+    "runs": ["Research/DarkwingDuck/reference/det_a", "Research/DarkwingDuck/reference/det_b"],
+    "frames": 300,
+    "result": "identical from frame 4 onward (ram/palette/oam), identical final.mss/PNG/WAV; frames 0-3 differ only in uncleared power-on RAM"
+  },
+  "rules": [
+    "Golden comparisons start at frame >= 4 or from a snapshot",
+    "ROM is immutable; record_reference.py asserts sha256 each run"
+  ]
+}
