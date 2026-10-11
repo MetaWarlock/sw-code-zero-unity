@@ -122,7 +122,8 @@ namespace Darkwing.Core
                     int ntBase = baseNt | (ntRight ? 0x0400 : 0);
                     int tileIdx = NametableRam[ntBase + (row >> 3) * 32 + (col >> 3)];
                     int attrByte = NametableRam[ntBase + 0x3C0 + ((row >> 5) * 8) + (col >> 5)];
-                    int shift = ((row & 0x10) >> 3) | (col & 0x10) >> 4;
+                    // NES attribute byte: bits 0-1 TL, 2-3 TR, 4-5 BL, 6-7 BR (16px cells in a 32px block)
+                    int shift = ((row & 0x10) != 0 ? 4 : 0) | ((col & 0x10) != 0 ? 2 : 0);
                     int palSlot = (attrByte >> shift) & 3;
                     Decode(tileIdx, BgPatternHigh ? Chr1Bank : Chr0Bank);
                     int ci = _tile[(row & 7) * 8 + (col & 7)];
