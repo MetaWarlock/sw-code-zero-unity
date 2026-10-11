@@ -47,3 +47,6 @@ physics,walk,golden_119f,frame-exact,yes,yes,PASS,gold_walk: dust startup + 1.5p
 physics,jump,golden_119f,frame-exact,yes,yes,PASS,gold_jump: impulse/gravity/cut ordering/landing/anim 11 exact (PhysCompare.Jump 119/119)
 physics,collision,deck_type,verified,yes,yes,pass,collision type = high nibble of metatile byte (level_format); player rests at captured Y
 hud,heart_energy,oam_entries_0_8,frame-exact,yes,yes,pass,HudComposer matches captured entries; full frame 99.94% (36px = metatile animation, bank 5, documented)
+
+audio,integration,darkwing_game,event-wired,yes,yes,pass,AudioSequencer in Step pipeline; mission music from $DF04; SFX hooks 0x21/0x15/0x10; AudioOutFeed 48kHz; sequencer live in play mode (audio=True)
+audio,apu_wav,frame_counter,WAV-compare,pending,pending,pending,frame-counter scheduling approximation — verify against recorded WAV (M5 residual)
