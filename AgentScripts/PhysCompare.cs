@@ -26,9 +26,11 @@ public static class PhysCompare
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank1.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"));
-        var map = new Darkwing.Core.LevelTileMap(decoder, game.Ppu);
-        map.LoadRoom(decoder.GetWorld(0), 3, 0);
+        var world0 = decoder.GetWorld(0);
+        var map = new Darkwing.Core.LevelTileMap(decoder, game.Ppu, world0);
+        map.StreamColumns(0);
         game.Player.TileMap = map;
+        game.TileMap = map;
 
         // Seed from the golden frame 0.
         byte[] ram0 = new byte[2048];

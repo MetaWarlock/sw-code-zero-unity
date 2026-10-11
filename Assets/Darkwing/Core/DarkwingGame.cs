@@ -90,6 +90,9 @@ namespace Darkwing.Core
         /// <summary>The loaded mission's placement data (spawner source).</summary>
         public GameData.LevelDef CurrentLevel { get; set; }
 
+        /// <summary>World tile map; StreamColumns runs after the player moves.</summary>
+        public LevelTileMap TileMap { get; set; }
+
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
         public const int SfxJump = 0x21;
         public const int SfxLand = 0x10;
@@ -149,6 +152,7 @@ namespace Darkwing.Core
                 s0.Y = Player.Y;
                 Hud.Compose(3);
                 // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
+                TileMap?.StreamColumns(Player.ScrollX);
                 if (CurrentLevel != null)
                 {
                     // Spawner ($8090); culling happens per-slot in OamDispatcher

@@ -51,10 +51,11 @@ namespace Darkwing.UnityApp
             if (Bank6Data != null) _game.Bank6 = Bank6Data.bytes;
             _game.ObjectTypeTable = File.ReadAllBytes("Assets/Darkwing/Data/object_types.bytes");
             _audioOut = gameObject.AddComponent<AudioOutFeed>();
-            _map = new Darkwing.Core.LevelTileMap(decoder, _game.Ppu);
-            _game.Player.TileMap = _map;
             var world = decoder.GetWorld(0);
-            _map.LoadRoom(world, 3, 0); // mission-1 start cell (row 3, col 0) = room 0x01
+            _map = new Darkwing.Core.LevelTileMap(decoder, _game.Ppu, world);
+            _game.Player.TileMap = _map;
+            _game.TileMap = _map;
+            _map.StreamColumns(0);
             _game.CurrentLevel = data.Levels[0];
             _game.Player.Y = 0x374;     // captured standing position on the bridge deck
             _game.PlayMusic(world.Music); // mission music from the world descriptor ($DF04)
