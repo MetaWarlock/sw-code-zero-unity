@@ -1,0 +1,2685 @@
+[
+  {
+    "id": 0,
+    "cpu_pointer": 45043,
+    "file_offset": 94211,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      1
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 1,
+    "cpu_pointer": 45043,
+    "file_offset": 94211,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      1
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 2,
+    "cpu_pointer": 45046,
+    "file_offset": 94214,
+    "raw_header": 0,
+    "timer_raw": 4,
+    "frames": [
+      2
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 3,
+    "cpu_pointer": 45049,
+    "file_offset": 94217,
+    "raw_header": 4,
+    "timer_raw": 6,
+    "frames": [
+      2,
+      3,
+      5,
+      3,
+      4
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 4,
+    "cpu_pointer": 45056,
+    "file_offset": 94224,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      2,
+      6,
+      7
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 5,
+    "cpu_pointer": 45061,
+    "file_offset": 94229,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      2,
+      8,
+      8
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 6,
+    "cpu_pointer": 45066,
+    "file_offset": 94234,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      9,
+      10
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 7,
+    "cpu_pointer": 45070,
+    "file_offset": 94238,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      11,
+      11,
+      11
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 8,
+    "cpu_pointer": 45075,
+    "file_offset": 94243,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      12,
+      13
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 9,
+    "cpu_pointer": 45079,
+    "file_offset": 94247,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      14
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 10,
+    "cpu_pointer": 45082,
+    "file_offset": 94250,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      16,
+      15,
+      0
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 11,
+    "cpu_pointer": 45087,
+    "file_offset": 94255,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      17
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 12,
+    "cpu_pointer": 45090,
+    "file_offset": 94258,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      18,
+      19,
+      19
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 13,
+    "cpu_pointer": 45095,
+    "file_offset": 94263,
+    "raw_header": 3,
+    "timer_raw": 4,
+    "frames": [
+      20,
+      23,
+      24,
+      23
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 14,
+    "cpu_pointer": 45101,
+    "file_offset": 94269,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      25,
+      25
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 15,
+    "cpu_pointer": 45105,
+    "file_offset": 94273,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      26,
+      26
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 16,
+    "cpu_pointer": 45109,
+    "file_offset": 94277,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      20
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 17,
+    "cpu_pointer": 45112,
+    "file_offset": 94280,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      21
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 18,
+    "cpu_pointer": 45115,
+    "file_offset": 94283,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      22
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 19,
+    "cpu_pointer": 45118,
+    "file_offset": 94286,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      27,
+      222,
+      252
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 20,
+    "cpu_pointer": 45123,
+    "file_offset": 94291,
+    "raw_header": 5,
+    "timer_raw": 2,
+    "frames": [
+      28,
+      29,
+      30,
+      32,
+      33,
+      0
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 21,
+    "cpu_pointer": 45131,
+    "file_offset": 94299,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      20,
+      23,
+      24
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 22,
+    "cpu_pointer": 45136,
+    "file_offset": 94304,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      29,
+      30
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 23,
+    "cpu_pointer": 45140,
+    "file_offset": 94308,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      34
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 24,
+    "cpu_pointer": 45143,
+    "file_offset": 94311,
+    "raw_header": 130,
+    "timer_raw": 4,
+    "frames": [
+      311,
+      312,
+      313
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 25,
+    "cpu_pointer": 45148,
+    "file_offset": 94316,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      36,
+      37
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 26,
+    "cpu_pointer": 45152,
+    "file_offset": 94320,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      38,
+      39
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 27,
+    "cpu_pointer": 45156,
+    "file_offset": 94324,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      31
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 28,
+    "cpu_pointer": 45159,
+    "file_offset": 94327,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      40
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 29,
+    "cpu_pointer": 45162,
+    "file_offset": 94330,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      41
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 30,
+    "cpu_pointer": 45165,
+    "file_offset": 94333,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      42
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 31,
+    "cpu_pointer": 45168,
+    "file_offset": 94336,
+    "raw_header": 2,
+    "timer_raw": 28,
+    "frames": [
+      43,
+      43,
+      0
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 32,
+    "cpu_pointer": 45173,
+    "file_offset": 94341,
+    "raw_header": 2,
+    "timer_raw": 28,
+    "frames": [
+      44,
+      44,
+      0
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 33,
+    "cpu_pointer": 45178,
+    "file_offset": 94346,
+    "raw_header": 2,
+    "timer_raw": 28,
+    "frames": [
+      45,
+      45,
+      0
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 34,
+    "cpu_pointer": 45183,
+    "file_offset": 94351,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      46
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 35,
+    "cpu_pointer": 45186,
+    "file_offset": 94354,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      47
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 36,
+    "cpu_pointer": 45189,
+    "file_offset": 94357,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      48
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 37,
+    "cpu_pointer": 45192,
+    "file_offset": 94360,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      49
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 38,
+    "cpu_pointer": 45195,
+    "file_offset": 94363,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      50,
+      51
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 39,
+    "cpu_pointer": 45199,
+    "file_offset": 94367,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      52,
+      53
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 40,
+    "cpu_pointer": 45203,
+    "file_offset": 94371,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      54,
+      55
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 41,
+    "cpu_pointer": 45207,
+    "file_offset": 94375,
+    "raw_header": 1,
+    "timer_raw": 6,
+    "frames": [
+      34,
+      56
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 42,
+    "cpu_pointer": 45211,
+    "file_offset": 94379,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      101
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 43,
+    "cpu_pointer": 45214,
+    "file_offset": 94382,
+    "raw_header": 17,
+    "timer_raw": 4,
+    "frames": [
+      9,
+      6,
+      7,
+      7,
+      7,
+      7,
+      2,
+      174,
+      175,
+      175,
+      175,
+      175,
+      1,
+      1,
+      2,
+      176,
+      2,
+      1
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 44,
+    "cpu_pointer": 45234,
+    "file_offset": 94402,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      23,
+      24
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 45,
+    "cpu_pointer": 45238,
+    "file_offset": 94406,
+    "raw_header": 43,
+    "timer_raw": 4,
+    "frames": [
+      1,
+      2,
+      227,
+      227,
+      227,
+      227,
+      228,
+      228,
+      227,
+      227,
+      228,
+      228,
+      227,
+      227,
+      227,
+      227,
+      227,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 46,
+    "cpu_pointer": 45284,
+    "file_offset": 94452,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      156
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 47,
+    "cpu_pointer": 45287,
+    "file_offset": 94455,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      225,
+      226
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 48,
+    "cpu_pointer": 45291,
+    "file_offset": 94459,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      213,
+      214
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 49,
+    "cpu_pointer": 45295,
+    "file_offset": 94463,
+    "raw_header": 0,
+    "timer_raw": 0,
+    "frames": [
+      223
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 50,
+    "cpu_pointer": 45298,
+    "file_offset": 94466,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      217
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 51,
+    "cpu_pointer": 45301,
+    "file_offset": 94469,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      262
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 52,
+    "cpu_pointer": 45304,
+    "file_offset": 94472,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      263
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 53,
+    "cpu_pointer": 45307,
+    "file_offset": 94475,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      216
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 54,
+    "cpu_pointer": 45310,
+    "file_offset": 94478,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      272
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 55,
+    "cpu_pointer": 45313,
+    "file_offset": 94481,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      254,
+      255
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 56,
+    "cpu_pointer": 45317,
+    "file_offset": 94485,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      300
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 57,
+    "cpu_pointer": 45320,
+    "file_offset": 94488,
+    "raw_header": 132,
+    "timer_raw": 6,
+    "frames": [
+      275,
+      276,
+      277,
+      276,
+      275
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 58,
+    "cpu_pointer": 45327,
+    "file_offset": 94495,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      262
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 59,
+    "cpu_pointer": 45330,
+    "file_offset": 94498,
+    "raw_header": 134,
+    "timer_raw": 5,
+    "frames": [
+      267,
+      267,
+      267,
+      267,
+      307,
+      308,
+      309
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 60,
+    "cpu_pointer": 45339,
+    "file_offset": 94507,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      288
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 61,
+    "cpu_pointer": 45342,
+    "file_offset": 94510,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      301
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 62,
+    "cpu_pointer": 45345,
+    "file_offset": 94513,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      251
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 63,
+    "cpu_pointer": 45348,
+    "file_offset": 94516,
+    "raw_header": 2,
+    "timer_raw": 6,
+    "frames": [
+      229,
+      230,
+      253
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 64,
+    "cpu_pointer": 45353,
+    "file_offset": 94521,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      70
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 65,
+    "cpu_pointer": 45356,
+    "file_offset": 94524,
+    "raw_header": 3,
+    "timer_raw": 8,
+    "frames": [
+      65,
+      66,
+      65,
+      67
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 66,
+    "cpu_pointer": 45362,
+    "file_offset": 94530,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      68
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 67,
+    "cpu_pointer": 45365,
+    "file_offset": 94533,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      64,
+      69
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 68,
+    "cpu_pointer": 45369,
+    "file_offset": 94537,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      191
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 69,
+    "cpu_pointer": 45372,
+    "file_offset": 94540,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      71
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 70,
+    "cpu_pointer": 45375,
+    "file_offset": 94543,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      72,
+      73
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 71,
+    "cpu_pointer": 45379,
+    "file_offset": 94547,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      285
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 72,
+    "cpu_pointer": 45382,
+    "file_offset": 94550,
+    "raw_header": 3,
+    "timer_raw": 8,
+    "frames": [
+      60,
+      59,
+      61,
+      59
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 73,
+    "cpu_pointer": 45388,
+    "file_offset": 94556,
+    "raw_header": 1,
+    "timer_raw": 6,
+    "frames": [
+      62,
+      63
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 74,
+    "cpu_pointer": 45392,
+    "file_offset": 94560,
+    "raw_header": 10,
+    "timer_raw": 8,
+    "frames": [
+      59,
+      74,
+      74,
+      59,
+      59,
+      74,
+      59,
+      74,
+      75,
+      75,
+      76
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 75,
+    "cpu_pointer": 45405,
+    "file_offset": 94573,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      77,
+      78
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 76,
+    "cpu_pointer": 45409,
+    "file_offset": 94577,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      79
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 77,
+    "cpu_pointer": 45412,
+    "file_offset": 94580,
+    "raw_header": 11,
+    "timer_raw": 4,
+    "frames": [
+      79,
+      80,
+      80,
+      81,
+      82,
+      82,
+      82,
+      82,
+      82,
+      82,
+      82,
+      83
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 78,
+    "cpu_pointer": 45426,
+    "file_offset": 94594,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      84
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 79,
+    "cpu_pointer": 45429,
+    "file_offset": 94597,
+    "raw_header": 3,
+    "timer_raw": 9,
+    "frames": [
+      85,
+      86,
+      87,
+      86
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 80,
+    "cpu_pointer": 45435,
+    "file_offset": 94603,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      88
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 81,
+    "cpu_pointer": 45438,
+    "file_offset": 94606,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      89
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 82,
+    "cpu_pointer": 45441,
+    "file_offset": 94609,
+    "raw_header": 1,
+    "timer_raw": 6,
+    "frames": [
+      90,
+      91
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 83,
+    "cpu_pointer": 45445,
+    "file_offset": 94613,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      92
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 84,
+    "cpu_pointer": 45448,
+    "file_offset": 94616,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      93
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 85,
+    "cpu_pointer": 45451,
+    "file_offset": 94619,
+    "raw_header": 1,
+    "timer_raw": 6,
+    "frames": [
+      94,
+      95
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 86,
+    "cpu_pointer": 45455,
+    "file_offset": 94623,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      96
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 87,
+    "cpu_pointer": 45458,
+    "file_offset": 94626,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      98,
+      99
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 88,
+    "cpu_pointer": 45458,
+    "file_offset": 94626,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      98,
+      99
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 89,
+    "cpu_pointer": 45462,
+    "file_offset": 94630,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      100
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 90,
+    "cpu_pointer": 45465,
+    "file_offset": 94633,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      101
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 91,
+    "cpu_pointer": 45468,
+    "file_offset": 94636,
+    "raw_header": 10,
+    "timer_raw": 4,
+    "frames": [
+      102,
+      102,
+      102,
+      102,
+      102,
+      102,
+      102,
+      102,
+      102,
+      102,
+      103
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 92,
+    "cpu_pointer": 45481,
+    "file_offset": 94649,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      102,
+      104
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 93,
+    "cpu_pointer": 45485,
+    "file_offset": 94653,
+    "raw_header": 3,
+    "timer_raw": 16,
+    "frames": [
+      105,
+      105,
+      105,
+      105
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 94,
+    "cpu_pointer": 45491,
+    "file_offset": 94659,
+    "raw_header": 1,
+    "timer_raw": 6,
+    "frames": [
+      104,
+      106
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 95,
+    "cpu_pointer": 45495,
+    "file_offset": 94663,
+    "raw_header": 2,
+    "timer_raw": 8,
+    "frames": [
+      107,
+      108,
+      109
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 96,
+    "cpu_pointer": 45500,
+    "file_offset": 94668,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      110,
+      111
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 97,
+    "cpu_pointer": 45504,
+    "file_offset": 94672,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      112
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 98,
+    "cpu_pointer": 45507,
+    "file_offset": 94675,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      118
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 99,
+    "cpu_pointer": 45510,
+    "file_offset": 94678,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      114,
+      115
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 100,
+    "cpu_pointer": 45514,
+    "file_offset": 94682,
+    "raw_header": 4,
+    "timer_raw": 8,
+    "frames": [
+      116,
+      113,
+      117,
+      231,
+      231
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 101,
+    "cpu_pointer": 45521,
+    "file_offset": 94689,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      117,
+      113
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 102,
+    "cpu_pointer": 45525,
+    "file_offset": 94693,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      113
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 103,
+    "cpu_pointer": 45528,
+    "file_offset": 94696,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      119,
+      120
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 104,
+    "cpu_pointer": 45532,
+    "file_offset": 94700,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      121,
+      122
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 105,
+    "cpu_pointer": 45536,
+    "file_offset": 94704,
+    "raw_header": 5,
+    "timer_raw": 8,
+    "frames": [
+      130,
+      125,
+      124,
+      123,
+      123,
+      126
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 106,
+    "cpu_pointer": 45544,
+    "file_offset": 94712,
+    "raw_header": 1,
+    "timer_raw": 12,
+    "frames": [
+      123,
+      126
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 107,
+    "cpu_pointer": 45548,
+    "file_offset": 94716,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      123,
+      127
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 108,
+    "cpu_pointer": 45552,
+    "file_offset": 94720,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      128,
+      129
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 109,
+    "cpu_pointer": 45556,
+    "file_offset": 94724,
+    "raw_header": 2,
+    "timer_raw": 9,
+    "frames": [
+      131,
+      132,
+      133
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 110,
+    "cpu_pointer": 45561,
+    "file_offset": 94729,
+    "raw_header": 2,
+    "timer_raw": 9,
+    "frames": [
+      134,
+      135,
+      136
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 111,
+    "cpu_pointer": 45566,
+    "file_offset": 94734,
+    "raw_header": 2,
+    "timer_raw": 5,
+    "frames": [
+      137,
+      138,
+      139
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 112,
+    "cpu_pointer": 45571,
+    "file_offset": 94739,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      57
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 113,
+    "cpu_pointer": 45574,
+    "file_offset": 94742,
+    "raw_header": 2,
+    "timer_raw": 4,
+    "frames": [
+      140,
+      141,
+      58
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 114,
+    "cpu_pointer": 45579,
+    "file_offset": 94747,
+    "raw_header": 5,
+    "timer_raw": 8,
+    "frames": [
+      126,
+      123,
+      123,
+      124,
+      125,
+      130
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 115,
+    "cpu_pointer": 45587,
+    "file_offset": 94755,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      271
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 116,
+    "cpu_pointer": 45590,
+    "file_offset": 94758,
+    "raw_header": 3,
+    "timer_raw": 8,
+    "frames": [
+      142,
+      143,
+      142,
+      144
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 117,
+    "cpu_pointer": 45596,
+    "file_offset": 94764,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      145
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 118,
+    "cpu_pointer": 45599,
+    "file_offset": 94767,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      145,
+      146
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 119,
+    "cpu_pointer": 45603,
+    "file_offset": 94771,
+    "raw_header": 22,
+    "timer_raw": 2,
+    "frames": [
+      148,
+      145,
+      145,
+      147,
+      145,
+      145,
+      148,
+      149,
+      149,
+      147,
+      149,
+      149,
+      148,
+      149,
+      149,
+      147,
+      149,
+      149,
+      148,
+      150,
+      150,
+      147,
+      150
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 120,
+    "cpu_pointer": 45628,
+    "file_offset": 94796,
+    "raw_header": 5,
+    "timer_raw": 10,
+    "frames": [
+      151,
+      152,
+      152,
+      151,
+      153,
+      153
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 121,
+    "cpu_pointer": 45636,
+    "file_offset": 94804,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      154
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 122,
+    "cpu_pointer": 45639,
+    "file_offset": 94807,
+    "raw_header": 1,
+    "timer_raw": 12,
+    "frames": [
+      157,
+      158
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 123,
+    "cpu_pointer": 45643,
+    "file_offset": 94811,
+    "raw_header": 10,
+    "timer_raw": 4,
+    "frames": [
+      157,
+      157,
+      157,
+      159,
+      159,
+      159,
+      159,
+      160,
+      160,
+      160,
+      160
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 124,
+    "cpu_pointer": 45656,
+    "file_offset": 94824,
+    "raw_header": 0,
+    "timer_raw": 16,
+    "frames": [
+      159
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 125,
+    "cpu_pointer": 45659,
+    "file_offset": 94827,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      161
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 126,
+    "cpu_pointer": 45662,
+    "file_offset": 94830,
+    "raw_header": 35,
+    "timer_raw": 4,
+    "frames": [
+      162,
+      162,
+      163,
+      163,
+      163,
+      163,
+      164,
+      164,
+      164,
+      163,
+      163,
+      163,
+      164,
+      164,
+      164,
+      163,
+      163,
+      163,
+      163,
+      165,
+      165,
+      166,
+      166,
+      166,
+      166,
+      166,
+      166,
+      165,
+      167,
+      167,
+      167,
+      167,
+      167,
+      167,
+      167,
+      167
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 127,
+    "cpu_pointer": 45700,
+    "file_offset": 94868,
+    "raw_header": 10,
+    "timer_raw": 2,
+    "frames": [
+      165,
+      165,
+      165,
+      163,
+      163,
+      163,
+      163,
+      163,
+      162,
+      162,
+      162
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 128,
+    "cpu_pointer": 45713,
+    "file_offset": 94881,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      168,
+      169
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 129,
+    "cpu_pointer": 45717,
+    "file_offset": 94885,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      170
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 130,
+    "cpu_pointer": 45720,
+    "file_offset": 94888,
+    "raw_header": 19,
+    "timer_raw": 4,
+    "frames": [
+      170,
+      170,
+      170,
+      170,
+      171,
+      171,
+      171,
+      171,
+      170,
+      170,
+      170,
+      170,
+      171,
+      171,
+      171,
+      171,
+      172,
+      172,
+      171,
+      171
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 131,
+    "cpu_pointer": 45742,
+    "file_offset": 94910,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      173
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 132,
+    "cpu_pointer": 45745,
+    "file_offset": 94913,
+    "raw_header": 3,
+    "timer_raw": 10,
+    "frames": [
+      123,
+      124,
+      125,
+      130
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 133,
+    "cpu_pointer": 45751,
+    "file_offset": 94919,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      177
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 134,
+    "cpu_pointer": 45754,
+    "file_offset": 94922,
+    "raw_header": 2,
+    "timer_raw": 8,
+    "frames": [
+      178,
+      179,
+      180
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 135,
+    "cpu_pointer": 45759,
+    "file_offset": 94927,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      181,
+      182
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 136,
+    "cpu_pointer": 45763,
+    "file_offset": 94931,
+    "raw_header": 1,
+    "timer_raw": 16,
+    "frames": [
+      184,
+      184
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 137,
+    "cpu_pointer": 45767,
+    "file_offset": 94935,
+    "raw_header": 2,
+    "timer_raw": 8,
+    "frames": [
+      183,
+      184,
+      182
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 138,
+    "cpu_pointer": 45772,
+    "file_offset": 94940,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      185,
+      235
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 139,
+    "cpu_pointer": 45776,
+    "file_offset": 94944,
+    "raw_header": 15,
+    "timer_raw": 4,
+    "frames": [
+      187,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      186,
+      187,
+      186
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 140,
+    "cpu_pointer": 45794,
+    "file_offset": 94962,
+    "raw_header": 2,
+    "timer_raw": 8,
+    "frames": [
+      188,
+      189,
+      190
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 141,
+    "cpu_pointer": 45799,
+    "file_offset": 94967,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      192
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 142,
+    "cpu_pointer": 45802,
+    "file_offset": 94970,
+    "raw_header": 19,
+    "timer_raw": 2,
+    "frames": [
+      192,
+      192,
+      192,
+      192,
+      193,
+      194,
+      194,
+      199,
+      199,
+      200,
+      195,
+      195,
+      197,
+      197,
+      197,
+      197,
+      197,
+      197,
+      197,
+      197
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 143,
+    "cpu_pointer": 45824,
+    "file_offset": 94992,
+    "raw_header": 2,
+    "timer_raw": 8,
+    "frames": [
+      198,
+      196,
+      201
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 144,
+    "cpu_pointer": 45829,
+    "file_offset": 94997,
+    "raw_header": 1,
+    "timer_raw": 5,
+    "frames": [
+      202,
+      203
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 145,
+    "cpu_pointer": 45833,
+    "file_offset": 95001,
+    "raw_header": 1,
+    "timer_raw": 8,
+    "frames": [
+      204,
+      205
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 146,
+    "cpu_pointer": 45837,
+    "file_offset": 95005,
+    "raw_header": 129,
+    "timer_raw": 10,
+    "frames": [
+      282,
+      283
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 147,
+    "cpu_pointer": 45841,
+    "file_offset": 95009,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      284
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 148,
+    "cpu_pointer": 45844,
+    "file_offset": 95012,
+    "raw_header": 3,
+    "timer_raw": 10,
+    "frames": [
+      206,
+      208,
+      207,
+      208
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 149,
+    "cpu_pointer": 45850,
+    "file_offset": 95018,
+    "raw_header": 3,
+    "timer_raw": 10,
+    "frames": [
+      209,
+      211,
+      210,
+      211
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 150,
+    "cpu_pointer": 45856,
+    "file_offset": 95024,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      212
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 151,
+    "cpu_pointer": 45859,
+    "file_offset": 95027,
+    "raw_header": 1,
+    "timer_raw": 32,
+    "frames": [
+      238,
+      239
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 152,
+    "cpu_pointer": 45863,
+    "file_offset": 95031,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      215
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 153,
+    "cpu_pointer": 45866,
+    "file_offset": 95034,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      278
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 154,
+    "cpu_pointer": 45869,
+    "file_offset": 95037,
+    "raw_header": 145,
+    "timer_raw": 2,
+    "frames": [
+      280,
+      280,
+      280,
+      280,
+      281,
+      281,
+      281,
+      281,
+      281,
+      280,
+      280,
+      280,
+      280,
+      279,
+      279,
+      279,
+      279,
+      279
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 155,
+    "cpu_pointer": 45889,
+    "file_offset": 95057,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      218
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 156,
+    "cpu_pointer": 45892,
+    "file_offset": 95060,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      219
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 157,
+    "cpu_pointer": 45895,
+    "file_offset": 95063,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      220
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 158,
+    "cpu_pointer": 45898,
+    "file_offset": 95066,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      221
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 159,
+    "cpu_pointer": 45901,
+    "file_offset": 95069,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      240
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 160,
+    "cpu_pointer": 45904,
+    "file_offset": 95072,
+    "raw_header": 155,
+    "timer_raw": 4,
+    "frames": [
+      261,
+      261,
+      297,
+      257,
+      257,
+      257,
+      258,
+      258,
+      257,
+      257,
+      258,
+      258,
+      257,
+      257,
+      259,
+      259,
+      259,
+      259,
+      259,
+      259,
+      260,
+      260,
+      260,
+      259,
+      259,
+      259,
+      257,
+      257
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 161,
+    "cpu_pointer": 45934,
+    "file_offset": 95102,
+    "raw_header": 1,
+    "timer_raw": 4,
+    "frames": [
+      236,
+      237
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 162,
+    "cpu_pointer": 45938,
+    "file_offset": 95106,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      246
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 163,
+    "cpu_pointer": 45941,
+    "file_offset": 95109,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      264
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 164,
+    "cpu_pointer": 45944,
+    "file_offset": 95112,
+    "raw_header": 1,
+    "timer_raw": 2,
+    "frames": [
+      232,
+      233
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 165,
+    "cpu_pointer": 45948,
+    "file_offset": 95116,
+    "raw_header": 21,
+    "timer_raw": 2,
+    "frames": [
+      234,
+      243,
+      234,
+      243,
+      241,
+      244,
+      241,
+      244,
+      241,
+      244,
+      241,
+      244,
+      241,
+      244,
+      241,
+      244,
+      242,
+      245,
+      242,
+      245,
+      242,
+      245
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 166,
+    "cpu_pointer": 45972,
+    "file_offset": 95140,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      247
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 167,
+    "cpu_pointer": 45975,
+    "file_offset": 95143,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      155
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 168,
+    "cpu_pointer": 45978,
+    "file_offset": 95146,
+    "raw_header": 129,
+    "timer_raw": 10,
+    "frames": [
+      290,
+      291
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 169,
+    "cpu_pointer": 45982,
+    "file_offset": 95150,
+    "raw_header": 129,
+    "timer_raw": 10,
+    "frames": [
+      292,
+      293
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 170,
+    "cpu_pointer": 45986,
+    "file_offset": 95154,
+    "raw_header": 131,
+    "timer_raw": 8,
+    "frames": [
+      295,
+      294,
+      296,
+      294
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 171,
+    "cpu_pointer": 45992,
+    "file_offset": 95160,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      279
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 172,
+    "cpu_pointer": 45995,
+    "file_offset": 95163,
+    "raw_header": 130,
+    "timer_raw": 8,
+    "frames": [
+      264,
+      265,
+      266
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 173,
+    "cpu_pointer": 46000,
+    "file_offset": 95168,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      273
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 174,
+    "cpu_pointer": 46003,
+    "file_offset": 95171,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      274
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 175,
+    "cpu_pointer": 46006,
+    "file_offset": 95174,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      286
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 176,
+    "cpu_pointer": 46009,
+    "file_offset": 95177,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      287
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 177,
+    "cpu_pointer": 46012,
+    "file_offset": 95180,
+    "raw_header": 131,
+    "timer_raw": 96,
+    "frames": [
+      268,
+      269,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 178,
+    "cpu_pointer": 46018,
+    "file_offset": 95186,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      289
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 179,
+    "cpu_pointer": 46021,
+    "file_offset": 95189,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      248
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 180,
+    "cpu_pointer": 46024,
+    "file_offset": 95192,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      249
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 181,
+    "cpu_pointer": 46027,
+    "file_offset": 95195,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      250
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 182,
+    "cpu_pointer": 46030,
+    "file_offset": 95198,
+    "raw_header": 16,
+    "timer_raw": 8,
+    "frames": [
+      227,
+      227,
+      227,
+      227,
+      227,
+      228,
+      228,
+      227,
+      227,
+      228,
+      228,
+      227,
+      227,
+      227,
+      227,
+      227,
+      1
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 183,
+    "cpu_pointer": 46049,
+    "file_offset": 95217,
+    "raw_header": 129,
+    "timer_raw": 2,
+    "frames": [
+      298,
+      299
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 184,
+    "cpu_pointer": 46053,
+    "file_offset": 95221,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      302
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 185,
+    "cpu_pointer": 46053,
+    "file_offset": 95221,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      302
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 186,
+    "cpu_pointer": 46053,
+    "file_offset": 95221,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      302
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 187,
+    "cpu_pointer": 46056,
+    "file_offset": 95224,
+    "raw_header": 129,
+    "timer_raw": 16,
+    "frames": [
+      303,
+      261
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 188,
+    "cpu_pointer": 46060,
+    "file_offset": 95228,
+    "raw_header": 0,
+    "timer_raw": 8,
+    "frames": [
+      224
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 189,
+    "cpu_pointer": 46063,
+    "file_offset": 95231,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      304
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 190,
+    "cpu_pointer": 46066,
+    "file_offset": 95234,
+    "raw_header": 134,
+    "timer_raw": 88,
+    "frames": [
+      268,
+      268,
+      269,
+      269,
+      270,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 191,
+    "cpu_pointer": 46075,
+    "file_offset": 95243,
+    "raw_header": 137,
+    "timer_raw": 44,
+    "frames": [
+      268,
+      268,
+      268,
+      269,
+      269,
+      269,
+      270,
+      270,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 192,
+    "cpu_pointer": 46087,
+    "file_offset": 95255,
+    "raw_header": 131,
+    "timer_raw": 62,
+    "frames": [
+      268,
+      269,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 193,
+    "cpu_pointer": 46093,
+    "file_offset": 95261,
+    "raw_header": 131,
+    "timer_raw": 60,
+    "frames": [
+      268,
+      269,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 194,
+    "cpu_pointer": 46099,
+    "file_offset": 95267,
+    "raw_header": 131,
+    "timer_raw": 64,
+    "frames": [
+      268,
+      269,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 195,
+    "cpu_pointer": 46105,
+    "file_offset": 95273,
+    "raw_header": 131,
+    "timer_raw": 125,
+    "frames": [
+      268,
+      269,
+      270,
+      256
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 196,
+    "cpu_pointer": 46111,
+    "file_offset": 95279,
+    "raw_header": 129,
+    "timer_raw": 16,
+    "frames": [
+      305,
+      261
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 197,
+    "cpu_pointer": 46115,
+    "file_offset": 95283,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      306
+    ],
+    "needs_runtime_timer_validation": true
+  },
+  {
+    "id": 198,
+    "cpu_pointer": 46118,
+    "file_offset": 95286,
+    "raw_header": 128,
+    "timer_raw": 8,
+    "frames": [
+      310
+    ],
+    "needs_runtime_timer_validation": true
+  }
+]

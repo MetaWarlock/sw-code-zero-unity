@@ -1,0 +1,13 @@
+{"event":"loaded","rom":"D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes","sha1":"C7B81EE2FF158A58582BC1BF508FFB1213E7A53A","mesen_version":"2.1.1","console":"Nes","cpu":"Nes"}
+{"event":"memory_space","type":"NesMemory","size":65536}
+{"event":"memory_space","type":"NesPpuMemory","size":16384}
+{"event":"memory_space","type":"NesPrgRom","size":131072}
+{"event":"memory_space","type":"NesInternalRam","size":2048}
+{"event":"memory_space","type":"NesNametableRam","size":2048}
+{"event":"memory_space","type":"NesSpriteRam","size":256}
+{"event":"memory_space","type":"NesSecondarySpriteRam","size":32}
+{"event":"memory_space","type":"NesPaletteRam","size":32}
+{"event":"memory_space","type":"NesChrRom","size":131072}
+{"event":"program_counter","cpu":"Nes","value":65505}
+{"event":"state_json_saved","file":"D:\\Art\\SW Code Zero Unity\\Docs\\DarkwingPort\\evidence\\initial_state.json"}
+{"event":"summary","ok":true,"reason":"frame_limit","start_frame":1,"final_frame":1,"frames_executed":0,"stop_code":0}

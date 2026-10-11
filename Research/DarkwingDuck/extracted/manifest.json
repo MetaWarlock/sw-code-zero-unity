@@ -1,0 +1,471 @@
+{
+  "schema": 1,
+  "source_path": "D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes",
+  "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "sha1": "c7b81ee2ff158a58582bc1bf508ffb1213e7a53a",
+  "md5": "da86da29043284e236b5ece1c293c5ee",
+  "crc32": "a157e56c",
+  "header_hex": "4e 45 53 1a 08 10 10 08 00 00 00 00 00 00 00 01",
+  "format": "NES 2.0",
+  "mapper": 1,
+  "submapper": 0,
+  "region_byte12": 0,
+  "trainer": false,
+  "battery": false,
+  "file_size": 262160,
+  "prg_bytes": 131072,
+  "chr_bytes": 131072,
+  "payload_sha256": "f97f05a4f8747d81dc8adaf07df70d1f87366632ae3e93103d387043ef5ec508",
+  "prg_sha256": "ae18a422aa1c386110c1a5933cb324250f95e6b76f5e4d474347f2b6a4daa765",
+  "chr_sha256": "4f025ce2624111dc75cda7733164f0eb54511e0b51968e3b89ab88b179cc60da",
+  "vectors": {
+    "NMI": 49152,
+    "RESET": 65504,
+    "IRQ": 65504
+  },
+  "sections": [
+    {
+      "kind": "prg",
+      "bank": 0,
+      "file_offset": 16,
+      "size": 16384,
+      "sha256": "ad4123c4934d42fb43956822fc36127bc3a59abfc8b116ff7509f836c34dd729"
+    },
+    {
+      "kind": "prg",
+      "bank": 1,
+      "file_offset": 16400,
+      "size": 16384,
+      "sha256": "6f65f3aa67a10a278af5c76ca7188769afcdac5531e9dfbd56adfe141fdffe76"
+    },
+    {
+      "kind": "prg",
+      "bank": 2,
+      "file_offset": 32784,
+      "size": 16384,
+      "sha256": "6bf73aab8b2b85000a21e23896762c86d8b4eacd3e2ab05d8b31272b51ec0ce0"
+    },
+    {
+      "kind": "prg",
+      "bank": 3,
+      "file_offset": 49168,
+      "size": 16384,
+      "sha256": "2b45de92131ce699dba0f179712c5916fb1b9a7372caac8174a6a7d1f61798f7"
+    },
+    {
+      "kind": "prg",
+      "bank": 4,
+      "file_offset": 65552,
+      "size": 16384,
+      "sha256": "885849588c5c1cc968c3dad63467d948c7801ea0ed345d54470a2f1cf9905a23"
+    },
+    {
+      "kind": "prg",
+      "bank": 5,
+      "file_offset": 81936,
+      "size": 16384,
+      "sha256": "f912164c4f5fb8331b025ba5c6d564f7fd730f380c5b7118d028127582c6ef9c"
+    },
+    {
+      "kind": "prg",
+      "bank": 6,
+      "file_offset": 98320,
+      "size": 16384,
+      "sha256": "edbb11121d5c69b8a53de08b24df8f921b148469ebb51c24a9c634d45ddb9374"
+    },
+    {
+      "kind": "prg",
+      "bank": 7,
+      "file_offset": 114704,
+      "size": 16384,
+      "sha256": "96cc6beafb7bcdf753657887fedf5c1dfbc590588a692100a4fee7da5b73b9f5"
+    },
+    {
+      "kind": "chr",
+      "bank": 0,
+      "file_offset": 131088,
+      "size": 4096,
+      "sha256": "28573dfe36025d0a0747b4a7dfda2d212d890596e0f35cd6acadf42adcc8364d"
+    },
+    {
+      "kind": "chr",
+      "bank": 1,
+      "file_offset": 135184,
+      "size": 4096,
+      "sha256": "3830cfdc2547ced298fda1f17b3bf95cfe50e9fb4e016db80502bdcca33c311b"
+    },
+    {
+      "kind": "chr",
+      "bank": 2,
+      "file_offset": 139280,
+      "size": 4096,
+      "sha256": "a90ef29adb5cde009cbcfe2ca5c8e64dd49016574aafbf47393f1634b6aa65f9"
+    },
+    {
+      "kind": "chr",
+      "bank": 3,
+      "file_offset": 143376,
+      "size": 4096,
+      "sha256": "6b3019995a42020afe0636408e8ec1624e0b26c0f076e0cbde2c1ee4597cc244"
+    },
+    {
+      "kind": "chr",
+      "bank": 4,
+      "file_offset": 147472,
+      "size": 4096,
+      "sha256": "d145b96eac579e5791bf6107f17fbdcd934ee7da841a099766e7c5565fffcd55"
+    },
+    {
+      "kind": "chr",
+      "bank": 5,
+      "file_offset": 151568,
+      "size": 4096,
+      "sha256": "ab3edd115eeb37beaea04f743f570df68c6a62f2a50694459c443d94007b54d1"
+    },
+    {
+      "kind": "chr",
+      "bank": 6,
+      "file_offset": 155664,
+      "size": 4096,
+      "sha256": "5e94a098f74e339b027755928761ccab503e86517845e740d0d3bdd57f41c7ab"
+    },
+    {
+      "kind": "chr",
+      "bank": 7,
+      "file_offset": 159760,
+      "size": 4096,
+      "sha256": "bd33c9b34c0ea917daac4c7c2d2a4b197aaa581e3c714ce5dc5c0e3500b3b41b"
+    },
+    {
+      "kind": "chr",
+      "bank": 8,
+      "file_offset": 163856,
+      "size": 4096,
+      "sha256": "d21e06be6e41c0dd52abe235b9fbd0e24e3812719b109ad427db705c57512923"
+    },
+    {
+      "kind": "chr",
+      "bank": 9,
+      "file_offset": 167952,
+      "size": 4096,
+      "sha256": "e8c3b5a5252c5b4aa7d53aa3ccee67a7758c62d30a20fec05d0fafd6f0cb398c"
+    },
+    {
+      "kind": "chr",
+      "bank": 10,
+      "file_offset": 172048,
+      "size": 4096,
+      "sha256": "05acf642381d0f55b1befde953d93e917737e9c0ee6c438f9e38e23ac901ec26"
+    },
+    {
+      "kind": "chr",
+      "bank": 11,
+      "file_offset": 176144,
+      "size": 4096,
+      "sha256": "1ec8bac25494b64ca499fc8fcdc69e804e22152ccfc8673f1659265cd1bf3a7e"
+    },
+    {
+      "kind": "chr",
+      "bank": 12,
+      "file_offset": 180240,
+      "size": 4096,
+      "sha256": "0287a3ec857beda9871dcdd01d78ce542087b4e4fbe0d9b82fb576eee991b34a"
+    },
+    {
+      "kind": "chr",
+      "bank": 13,
+      "file_offset": 184336,
+      "size": 4096,
+      "sha256": "c2d035d25b16279a0275f65112c88c49724c8028f7cb954288b3f3528251e84f"
+    },
+    {
+      "kind": "chr",
+      "bank": 14,
+      "file_offset": 188432,
+      "size": 4096,
+      "sha256": "059384b353eb2d181edf5237e5fdcfe02af3a5771dc8b37724e62158f08d387b"
+    },
+    {
+      "kind": "chr",
+      "bank": 15,
+      "file_offset": 192528,
+      "size": 4096,
+      "sha256": "7b1b252abaeb48875113fba8b4d7cfee23ba4f66e00f922fdf4987b3cb0e57ea"
+    },
+    {
+      "kind": "chr",
+      "bank": 16,
+      "file_offset": 196624,
+      "size": 4096,
+      "sha256": "551380c6ab88d84b13d0ae7729bcb57df685aa6582a762a9570ab17e32db8974"
+    },
+    {
+      "kind": "chr",
+      "bank": 17,
+      "file_offset": 200720,
+      "size": 4096,
+      "sha256": "01524fa625b70404b802d739265225c785948fe5a314dc0ce01c80fbc1f896bd"
+    },
+    {
+      "kind": "chr",
+      "bank": 18,
+      "file_offset": 204816,
+      "size": 4096,
+      "sha256": "81a8f82a99f6fc95b1eea6615194e940d6e8b0c3940b6fb72b32cc7c5a3fbfae"
+    },
+    {
+      "kind": "chr",
+      "bank": 19,
+      "file_offset": 208912,
+      "size": 4096,
+      "sha256": "bec39e9685a6dca647c86b018d21189861ca39f65b87b3c2ea7eb29fa6f06117"
+    },
+    {
+      "kind": "chr",
+      "bank": 20,
+      "file_offset": 213008,
+      "size": 4096,
+      "sha256": "dda32a25e5e6c8e62f9cb2da864ccc4793a2c5a5a094c5bb3f3e64be7dfa2a5b"
+    },
+    {
+      "kind": "chr",
+      "bank": 21,
+      "file_offset": 217104,
+      "size": 4096,
+      "sha256": "e8aed17453aadb558f48d51aabae2971745bfb1371fd5141281c6fa9e045c18a"
+    },
+    {
+      "kind": "chr",
+      "bank": 22,
+      "file_offset": 221200,
+      "size": 4096,
+      "sha256": "eba3a838ec16b5e0bfb23b3e0a26a8a0f9cd291cb207fce0ee5f94f114658f6d"
+    },
+    {
+      "kind": "chr",
+      "bank": 23,
+      "file_offset": 225296,
+      "size": 4096,
+      "sha256": "91740bd968192bf8dacefb4ece08d2499f8faf344a3b618962a016e32d07b88b"
+    },
+    {
+      "kind": "chr",
+      "bank": 24,
+      "file_offset": 229392,
+      "size": 4096,
+      "sha256": "a2d5cd0f297b9ac79aa05a63c728325a4eb9a037dd204daca551268a6991430d"
+    },
+    {
+      "kind": "chr",
+      "bank": 25,
+      "file_offset": 233488,
+      "size": 4096,
+      "sha256": "8f29d39ef1d56aa638d9a099d9806e48187488e76a7d589552734cc300e842f7"
+    },
+    {
+      "kind": "chr",
+      "bank": 26,
+      "file_offset": 237584,
+      "size": 4096,
+      "sha256": "6656ef23cfa7cd65ac01ee329ee50258ff69cbfd459a3b5936aee4f129e6ab23"
+    },
+    {
+      "kind": "chr",
+      "bank": 27,
+      "file_offset": 241680,
+      "size": 4096,
+      "sha256": "486f81ec09f9bea9eb8c42933c82ca5f82f4edf4d57ab75c7106e078dfd46b61"
+    },
+    {
+      "kind": "chr",
+      "bank": 28,
+      "file_offset": 245776,
+      "size": 4096,
+      "sha256": "7fc06b87756abae54c60fc608238e7bb7068bfe2940e01301e00d07b5af60e7d"
+    },
+    {
+      "kind": "chr",
+      "bank": 29,
+      "file_offset": 249872,
+      "size": 4096,
+      "sha256": "3c3b39d3b9108c3de457eb4633cda2ac13dfec8437564c747f271ef18bd6d7f3"
+    },
+    {
+      "kind": "chr",
+      "bank": 30,
+      "file_offset": 253968,
+      "size": 4096,
+      "sha256": "fc6c451b1b9e393e40dc1c114010043dbba687349e3874457947fed3c1eddece"
+    },
+    {
+      "kind": "chr",
+      "bank": 31,
+      "file_offset": 258064,
+      "size": 4096,
+      "sha256": "bfd5c88f1c8d8ce54961b0b04b877eab8446cab775deaf244aeadbd139cc69cd"
+    }
+  ],
+  "counts": {
+    "chr_tiles_8x8": 8192,
+    "levels": 7,
+    "placed_object_records": 434,
+    "placed_type_ids_including_ff": 101,
+    "placed_type_ids_excluding_ff": 100,
+    "ff_object_records": 7,
+    "animation_records": 199,
+    "metasprite_frames": 314,
+    "static_metasprite_frames": 311,
+    "dynamic_ram_frames": 3,
+    "coordinate_pointers": 208,
+    "configured_screen_slots": 300
+  },
+  "placed_type_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    21,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    101,
+    102,
+    103,
+    104,
+    255
+  ],
+  "unresolved_screen_references": [
+    {
+      "level": "fowl_fortress",
+      "layout_index": 12,
+      "raw": 152,
+      "cadeditor_display_id": 408,
+      "status": "UNRESOLVED: do not treat as normal screen"
+    }
+  ],
+  "dynamic_frame_records": [
+    {
+      "id": 31,
+      "cpu_pointer": 1456,
+      "kind": "dynamic_ram",
+      "status": "Requires runtime RAM capture; not a PRG offset"
+    },
+    {
+      "id": 156,
+      "cpu_pointer": 1474,
+      "kind": "dynamic_ram",
+      "status": "Requires runtime RAM capture; not a PRG offset"
+    },
+    {
+      "id": 251,
+      "cpu_pointer": 1512,
+      "kind": "dynamic_ram",
+      "status": "Requires runtime RAM capture; not a PRG offset"
+    }
+  ],
+  "verification": {
+    "rom_reassembly": "PASS",
+    "chr_encode_decode_roundtrip": "PASS",
+    "tile_table_roundtrip": "PASS",
+    "static_frame_and_coordinate_roundtrip": "PASS",
+    "animation_record_roundtrip": "PASS",
+    "runtime_semantics": "NOT_TESTED"
+  },
+  "limitations": [
+    "No music/SFX extraction yet",
+    "No complete UI/cutscene decoding yet",
+    "No mapping of metasprites to runtime CHR banks/palettes",
+    "No gameplay port",
+    "Screen-zero semantics and FOWL raw 0x98 need tracing",
+    "Grayscale previews show bitplane indices, not final game colors",
+    "300 configured screen slots are not 300 proven playable rooms"
+  ]
+}

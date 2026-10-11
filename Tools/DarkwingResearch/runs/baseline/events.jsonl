@@ -1,0 +1,8 @@
+{"event":"loaded","rom":"D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes","sha1":"C7B81EE2FF158A58582BC1BF508FFB1213E7A53A","mesen_version":"2.1.1","console":"Nes","cpu":"Nes"}
+{"event":"audio_saved","file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\baseline\\intro.wav"}
+{"event":"memory_dumped","type":"NesInternalRam","start":0,"length":2048,"file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\baseline\\ram300.bin"}
+{"event":"cdl_saved","type":"NesPrgRom","file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\baseline\\coverage.cdl"}
+{"event":"state_saved","file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\baseline\\frame300.mss"}
+{"event":"state_json_saved","file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\baseline\\state300.json"}
+{"event":"screenshot_saved","file":"D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\baseline\\frame300.png"}
+{"event":"summary","ok":true,"reason":"frame_limit","start_frame":1,"final_frame":301,"frames_executed":300,"stop_code":0}

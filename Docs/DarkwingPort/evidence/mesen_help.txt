@@ -1,0 +1,52 @@
+Mesen Agent CLI - windowless emulator automation and debugging
+
+Usage:
+  mesen-agent ROM [options]
+
+Execution:
+  --frames N                    Run N frames (default: 60; 0 inspects initial state)
+  --timeout SECONDS             Wall-clock safety timeout (default: 30)
+  --no-max-speed                Use normal frame pacing
+  --home DIR                    Isolated Mesen data/firmware/save directory
+  --patch FILE                  Apply a ROM patch
+  --load-state FILE             Load a .mss state before execution
+  --save-state FILE             Save a .mss state after execution
+
+Lua and input:
+  --lua FILE                    Load a Mesen debugger Lua script (repeatable)
+  --lua-allow-io                Allow Lua io/os libraries and script data folder
+  --lua-allow-network           Allow Lua socket access
+  --lua-timeout SECONDS         Per-callback Lua timeout (default: 1)
+  --input PORT:BUTTONS@START-END  Override controller input over relative frames
+
+Artifacts:
+  --screenshot FILE.png         Save the last rendered frame
+  --video FILE.avi|FILE.gif     Record gameplay through Mesen's recorder
+  --video-codec cscd|zmbv|gif   Override codec inferred from extension
+  --compression 0-9             AVI codec compression level (default: 6)
+  --video-hud                   Include the system HUD in video
+  --input-hud                   Include controller HUD in video
+  --audio FILE.wav              Record emulated audio
+  --state-json FILE.json        Dump the complete serialized console state
+  --dump-memory TYPE[:START[:LENGTH]]=FILE
+  --save-cdl TYPE=FILE          Save code/data logger data
+  --trace FILE                  Save instruction trace
+  --log FILE                    Save the emulator/debugger log
+
+Debugging and inspection:
+  --cpu TYPE                    CPU for expressions, stepping and disassembly
+  --breakpoint TYPE:START[-END]:rwx[:CONDITION]
+  --step N                      Step N operations after the frame run
+  --step-type TYPE              step|over|out|cycle|ppu|scanline|frame|nmi|irq|back
+  --eval EXPR                   Evaluate a debugger expression (repeatable)
+  --read-memory TYPE:START:LENGTH
+  --write-memory TYPE:START:HEXBYTES
+  --disassemble ADDRESS[:LINES]
+  --pc                          Print the program counter
+  --set-pc ADDRESS              Set the program counter before execution
+  --callstack                   Print the final call stack
+  --list-memory                 List available memory spaces and sizes
+
+TYPE names are case-insensitive Mesen enum names (for example NesMemory,
+NesInternalRam, SnesWorkRam, GbaVideoRam).  The alias "cpu" selects the
+relative address space for the active CPU.  All stdout records are JSON Lines.
