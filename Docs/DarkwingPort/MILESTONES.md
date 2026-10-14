@@ -43,12 +43,14 @@ G18(а) остаётся гипотезой (порядок кадра: маши
 - Полный кадр: `Tools/DarkwingResearch/compare_frames.py <golden.png> <unity.png>`
   (PNG порта — `AgentScripts/PlayProbe.cs Capture`, снимок живого рендера).
 
-Одна конкретная операция сейчас: вывести число yield-итераций загрузки секции —
-дизассемблировать `$DE8A…$DEB8` + `$E698` (цикл `JSR $E698` до `$25==$0F`, `$FF06` = отдача
-кадра) и перенести staging в `DarkwingGame.LoadSection`; после этого `$50`, `$0420`,
-`$1A/$1B` должны стать 98/98 в `PhysCompare.Door`. Захват и харнесс:
-`reference/gold_door_id1` + `unity command run_script --file AgentScripts/PhysCompare.cs
---entry PhysCompare.Door` (команды записаны в M6).
+Одна конкретная операция сейчас: перенести staging в `DarkwingGame.LoadSection`. Механизм
+выведен из захвата (см. GAPS G16): цикл `$DE86…$DE91` делает ровно 1 итерацию `$E698` за кадр,
+`$25` идёт `05→12→21→30→40→50→5F→6F→7F→88` (10 кадров) и на f32 достигает `$0F`; на f33
+пишутся `$0420=$2C`/`$0400=$D0`/`$50=$12`, на f34 NMI применяет CHR и обнуляет `$1A/$1B`, а
+`$23` на выходе цикла = `$22+1`. После переноса `PhysCompare.Door` обязан дать 98/98 по всем
+14 полям (сейчас 8 из 14), регрессий нет критерия: Hook 298/298, Walk/Jump 119/119.
+Захват и харнесс: `reference/gold_door_id1` + `unity command run_script --file
+AgentScripts/PhysCompare.cs --entry PhysCompare.Door`.
 
 ## M0 — подготовка и воспроизводимость
 
