@@ -28,6 +28,10 @@ def main():
     p.add_argument("--vram-every", type=int, default=60)
     p.add_argument("--timeout", type=int, default=90)
     p.add_argument("--extra", action="append", default=[], help="extra raw CLI args for mesen-agent")
+    p.add_argument("--patch", action="append", default=[],
+                   help="seed emulated RAM once: ADDR=VALUE (hex, NES $0000-$07FF). "
+                        "Test fixture only — the ROM and the acceptance goldens stay untouched.")
+    p.add_argument("--patch-frame", type=int, default=1, help="frame at which --patch applies")
     args = p.parse_args()
     if args.frames < 1:
         p.error("frames must be positive")
@@ -37,10 +41,19 @@ def main():
     out.mkdir(parents=True, exist_ok=False)
     template = Path(__file__).with_name("runtime_capture.lua.in").read_text(encoding="utf-8")
     lua = out / "capture.lua"
+    patchItems = []
+    for entry in args.patch:
+        addrText, _, valueText = entry.partition("=")
+        addr, value = int(addrText, 16), int(valueText, 16)
+        if not (0 <= addr <= 0x7FF and 0 <= value <= 0xFF):
+            p.error(f"patch out of range (RAM $0000-$07FF, byte value): {entry}")
+        patchItems.append(f"{{addr=0x{addr:03X}, value=0x{value:02X}}}")
     lua.write_text(template
         .replace("__OUTPUT_DIR__", json.dumps(out.as_posix(), ensure_ascii=False))
         .replace("__FRAME_COUNT__", str(args.frames))
         .replace("__VRAM_EVERY__", str(args.vram_every))
+        .replace("__PATCHES__", "{" + ",".join(patchItems) + "}")
+        .replace("__PATCH_FRAME__", str(args.patch_frame))
         .replace("__SNAPSHOT_EVERY__", str(args.screenshot_every if args.screenshot_every > 0 else 10 ** 9)), encoding="utf-8")
     exe = ROOT / "Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent.exe"
     argv = [str(exe), str(rom), "--home", str(out / "home"), "--frames", str(args.frames),

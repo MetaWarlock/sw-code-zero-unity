@@ -54,6 +54,33 @@ end, emu.callbackType.write, 0x2000, 0x2007)
 
 -- Frame-end capture --------------------------------------------------------
 local closed = false
+-- Optional RAM seeding (test fixture): applied once at the configured frame,
+-- read-back verified and written to patch_report.txt._rom/hardware untouched.
+local patches = __PATCHES__
+local patchFrame = __PATCH_FRAME__
+local function writeRam(addr, value)
+    for _, call in ipairs({
+        function() emu.write(addr, value, emu.memType.nesInternalRam, false) end,
+        function() emu.write(addr, value, emu.memType.nesInternalRam) end,
+        function() emu.writebyte(addr, value, emu.memType.nesInternalRam) end,
+        function() emu.writebyte(addr, value) end,
+    }) do
+        if pcall(call) then return true end
+    end
+    return false
+end
+local patched = false
+local function applyPatches()
+    if patched then return end
+    patched = true
+    local h = assert(io.open(dir .. "/patch_report.txt", "w"))
+    for _, p in ipairs(patches) do
+        local ok = writeRam(p.addr, p.value)
+        local rb = emu.read(p.addr, emu.memType.nesInternalRam, false)
+        h:write(string.format("%04X <- %02X  ok=%s readback=%02X\n", p.addr, p.value, tostring(ok), rb or -1))
+    end
+    h:close()
+end
 local function bytes(kind, length)
     local data = {}
     for i = 0, length - 1 do data[#data+1] = string.char(emu.read(i, kind, false)) end
@@ -61,6 +88,7 @@ local function bytes(kind, length)
 end
 emu.addEventCallback(function()
     frame = frame + 1
+    if frame == patchFrame then applyPatches() end
     local s = emu.getState()
     ram:write(bytes(emu.memType.nesInternalRam, 2048))
     pal:write(bytes(emu.memType.nesPaletteRam, 32))

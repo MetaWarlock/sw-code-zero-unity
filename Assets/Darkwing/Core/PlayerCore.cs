@@ -53,6 +53,7 @@ namespace Darkwing.Core
         public byte BottomRow;          // $2D (lowest row the camera may scroll down into)
         public byte ScrollStep;         // $10 (px/frame handed to $DC6E/$DCC4)
         public byte ScrollMode;         // $2F (0 none, 4 down ride, 8 up ride)
+        public byte ScrollState;        // $2B (bits 0-1 horizontal scroll from $20, bits 2-3 vertical armed)
 
         public byte FacingRight = 1;    // $0400 bit6
         public byte Flags = 0xD0;       // $0400 (active|facing)
@@ -528,116 +529,133 @@ namespace Darkwing.Core
             if (StateTimer == 0) State = 0;
         }
 
-        // ---------- Level script hook / peg ride ($DAFD + $DB6D) ----------
+        // ---------- Level script hook ride ($DAFD) + vertical camera scroll ($DC6E/$DCC4) ----------
         /// <summary>
-        /// Transcription of $DAFD (per-frame, after camera follow) and $DB6D
-        /// Player_HookGrabCheck. The caller gate is scroll X low byte == 0 and
-        /// the cell script byte's low nibble == 1 (hook column, $DB29-$DB39); the
-        /// grab itself then requires the camera grid row $FB to equal the player's
-        /// Y high byte $0520 and the player's intra-row screen Y ($0510-$FA) to be
-        /// at least $E8 — i.e. he is dangling at the bottom edge of the window.
+        /// $DAFD, the per-frame level-script check. Cell script byte ($34),$22 bits:
+        /// 6 = the camera may cross this cell horizontally, 7 = the vertical scroll may
+        /// not advance the grid row here, low nibble 1 = hook column (ride one row
+        /// down), 2 = snap column (ride up). $6D gets script &amp; $CF when that value is
+        /// >= $C1 and not one of the even $C2..$CE pairs.
         /// </summary>
         public void HookGrabCheck()
         {
-            byte scrollLo = (byte)(ScrollX & 0xFF);   // $FC
-            if (scrollLo != 0) return;                // $DB29/$DB2B
-            byte scriptByte = CellScriptByte;         // ($34),$22
-            if ((scriptByte & 0x0F) == 1)             // $DB35/$DB37
+            byte script = CellScriptByte;                     // ($34),$22
+            byte section = (byte)(script & 0xCF);             // $DB01/$DB03
+            if (section >= 0xC1 && !(section >= 0xC2 && section <= 0xCE && (section & 1) == 0))
+                CheckpointId = section;                       // $DB05-$DB27
+            if ((byte)(ScrollX & 0xFF) != 0) return;          // $DB29/$DB2B
+            ScrollStep = 1;                                   // $DB2D/$DB2F
+            switch (script & 0x0F)                            // $DB31-$DB3D
             {
-                if ((scriptByte & 0x0F) != 0 && scriptByte >= 0xC1 && scriptByte <= 0xCF && (scriptByte & 1) != 0)
-                    CheckpointId = (byte)(scriptByte & 0x1F); // $DB27 (checkpoint feed)
-                HookGrab();
-            }
-            else if ((scriptByte & 0x0F) == 2)        // $DB3F fallthrough: vertical snap column
-            {
-                ScrollStep = VerticalSnapStep();
-                if (ScrollStep != 0) { ScrollMode = 8; VerticalScrollUp(); }
+                case 1: HookGrab(); break;                    // $DB39 → $DB6D
+                case 2:                                        // $DB3F → $DB40
+                    ScrollStep = 0;
+                    int d = RowOffsetBelowScroll();           // $DB43-$DB4E
+                    ScrollStep = (byte)d;
+                    if (d >= 0x48) return;                    // $DB50-$DB56
+                    int window = 0x48 - d;                    // $DB57-$DB5A
+                    ScrollStep = (byte)(window < 9 ? window : 4); // $DB5E-$DB64
+                    ScrollMode = 8;                           // $DB66/$DB68
+                    VerticalScrollUp();                       // $DB6A JMP $DCC4
+                    break;
             }
         }
 
-        /// <summary>$DB6D: grab test + $DB8B entry + $DBB3/$DBC3 ride tail.</summary>
+        /// <summary>$DB43/$DB47/$DB4B: ($0510 - $FA), biased by -$10 when it borrows.</summary>
+        private int RowOffsetBelowScroll()
+        {
+            int d = (Y & 0xFF) - ScrollY;
+            if (d < 0) d -= 0x10;
+            return d & 0xFF;
+        }
+
+        /// <summary>$DB6D: grab test, then $DB8B entry or the $DBB3 ride tail.</summary>
         private void HookGrab()
         {
-            if (State == 0x0C) { RideTail(3); return; }          // $DB6F/$DB71 already hanging
-            if (ScrollYRow != (byte)(Y >> 8)) return;             // $DB73/$DB75
-            int screenY = (byte)((Y & 0xFF) - ScrollY);           // $DB7A-$DB7E
-            if (screenY >= 0xE8) EnterHang();                     // $DB80/$DB82
-            else if (State == 0x0C) RideTail(3);                  // $DB84-$DB88
+            if (State == 0x0C) { RideTail(); return; }         // $DB6F/$DB71 already hanging
+            if (ScrollYRow != (byte)(Y >> 8)) return;         // $DB73/$DB75 ($FB == $0520)
+            if (((Y & 0xFF) - ScrollY) < 0) return;           // $DB7A-$DB7E borrow → $DB8A RTS
+            if ((byte)((Y & 0xFF) - ScrollY) >= 0xE8) EnterHang(); // $DB80/$DB82
         }
 
-        /// <summary>$DB8B: state 0C, +0.5 px/frame vertical drift, clear object slots 15..2.</summary>
+        /// <summary>$DB8B: state $0C, +0.5 px/frame vertical drift, clear object slots 15..2.</summary>
         private void EnterHang()
         {
-            State = 0x0C;                                        // $DB8B/$DB8D
-            YVelFrac = 0x80;                                     // $DB8F → $0550
-            YVelInt = 0;                                         // $DB94 → $0560
-            Objects?.ClearForHookRide();                         // $DB99-$DBB1
-            RideTail(3);
+            State = 0x0C;                                     // $DB8B/$DB8D
+            YVelFrac = 0x80;                                  // $DB8F → $0550
+            YVelInt = 0;                                      // $DB94 → $0560
+            Objects?.ClearForHookRide();                      // $DB99-$DBB1
+            RideTail();
         }
 
         /// <summary>$DBB3/$DBC3: peg grid byte re-asserts the on-hook flag, then ride the camera.</summary>
-        private void RideTail(byte step)
+        private void RideTail()
         {
-            if (CellGridByte == 0x90) Flags |= 0x20;              // $DBB5-$DBC0
-            ScrollStep = step;                                   // $DBC3 → $10
-            ScrollMode = 4;                                      // $DBC9 → $2F
-            VerticalScrollDown();                                // $DBCB JMP $DC6E
+            if (CellGridByte == 0x90) Flags |= 0x20;          // $DBB5-$DBC0
+            ScrollStep = 3;                                   // $DBC3 → $10
+            ScrollMode = 4;                                   // $DBC9 → $2F
+            VerticalScrollDown();                             // $DBCB JMP $DC6E
         }
 
-        /// <summary>$DC6E: ride the camera down $10 px/frame; on row wrap advance $FB/$22.</summary>
+        /// <summary>$DD36: a vertical scroll may start only with no horizontal scroll in
+        /// progress ($2B &amp; $0C == 0) and the camera on a cell boundary ($FC == 0); it
+        /// then arms the incoming cell ($23) and marks $2B = 4.</summary>
+        private bool BeginVerticalScroll()
+        {
+            if ((ScrollState & 0x0C) != 0) return true;       // $DD38/$DD3A → $DD53 SEC
+            if ((byte)(ScrollX & 0xFF) != 0) return false;    // $DD3C-$DD3E → $DD55 CLC
+            CellIndexNext = (byte)(CellIndex + RowStride);    // $DD40-$DD45 → $23
+            ScrollState = 4;                                  // $DD4D-$DD51 → $2B
+            return true;
+        }
+
+        /// <summary>$DC6E: ride the camera down $10 px/frame; on the 240 px wrap advance
+        /// $FB/$22 to the cell below. Every path except the two boundary gates redraws.</summary>
         private void VerticalScrollDown()
         {
-            if (ScrollY == 0)                                    // $DC6E/$DC70
+            if (ScrollY == 0)                                 // $DC6E/$DC70
             {
-                if (CellIndex + RowStride >= CellCount || GridAt(CellIndex + RowStride) == 0) return; // $DC72-$DC7A
-                if (ScrollYRow == BottomRow) return;             // $DC7C-$DC80
+                if (GridAt(CellIndex + RowStride) == 0) return; // $DC72-$DC7A
+                if (ScrollYRow == BottomRow) return;          // $DC7C-$DC80
             }
-            int next = ScrollY + ScrollStep;                     // $DC88-$DC8D
+            if (!BeginVerticalScroll()) return;               // $DC83/$DC86
+            int next = ScrollY + ScrollStep;                  // $DC88-$DC8D
             ScrollY = (byte)next;
-            if (next < 0xF0) return;                             // $DC8F/$DC91
-            ScrollY = (byte)(next + 0x10);                       // $DC93/$DC95 (wrap: next - 240)
-            if ((CellScriptByte & 0x80) != 0) { ScrollY = 0; return; } // $DC97-$DC9B
-            int row = ScrollYRow + 1;                            // $DC9D-$DCA1
-            int idx = CellIndex + RowStride;                     // $DCA3-$DCA8
-            if (idx >= CellCount || GridAt(idx) == 0) { ScrollY = 0; return; } // $DCAB-$DCAD
-            if (row > 0xFF) { ScrollY = 0; return; }             // $DCAF/$DCB1
-            ScrollYRow = (byte)row;                              // $DCB9-$DCBF
+            if (next < 0xF0) { ReloadRow(); return; }         // $DC8F-$DC91 → $DCC1
+            ScrollY = (byte)(next + 0x10);                    // $DC93/$DC95 (CMP leaves C=1)
+            if ((CellScriptByte & 0x80) != 0) { ScrollY = 0; ReloadRow(); return; } // $DC97-$DC9B
+            int row = ScrollYRow + 1;                         // $DC9D-$DC9F (ADC #0, C=1)
+            int idx = CellIndex + RowStride;                  // $DCA3-$DCA8
+            if (GridAt(idx) == 0) { ScrollY = 0; ReloadRow(); return; }  // $DCAB-$DCAD
+            if (row > 0x7F) { ScrollY = 0; ReloadRow(); return; }        // $DCAF/$DCB1 BPL
+            ScrollYRow = (byte)row;                           // $DCB9-$DCBF
             CellIndex = (byte)idx;
-            ReloadRow();                                         // $DCC1 JMP $E7C6
+            // The incoming-cell pointer follows the same step in the row-advance frame
+            // (gold_hook_ride2 f80: $22 $1C→$2D while $23 $2D→$3E).
+            CellIndexNext = (byte)(idx + RowStride);
+            ReloadRow();                                      // $DCC1 JMP $E7C6
         }
 
-        /// <summary>$DCC4: ride the camera up $10 px/frame; on row wrap step $FB/$22 back.</summary>
+        /// <summary>$DCC4: ride the camera up $10 px/frame; on the 240 px wrap step $FB/$22 back.</summary>
         private void VerticalScrollUp()
         {
-            if (ScrollY == 0)                                    // $DCC4/$DCC6
+            if (ScrollY == 0)                                 // $DCC4/$DCC6
             {
-                if (CellIndex < RowStride || GridAt(CellIndex - RowStride) == 0) return; // $DCC8-$DCD1
-                if (ScrollYRow != 0) return;                     // $DCD3/$DCD5
+                if (GridAt(CellIndex - RowStride) == 0) return; // $DCC8-$DCD1
+                if (ScrollYRow == 0) return;                  // $DCD3/$DCD5
             }
-            int next = ScrollY - ScrollStep;                     // $DCDD-$DCE2
-            if (next >= 0) { ScrollY = (byte)next; return; }     // $DCE4
-            next -= 0x10;                                        // $DCE6/$DCE8 (wrap: +240)
-            ScrollY = (byte)next;
-            if ((CellScriptByte & 0x80) != 0) { ScrollY = 0; return; } // $DCEA-$DCEE
-            int row = ScrollYRow - 1;                            // $DCF0-$DCF4
-            int idx = CellIndex - RowStride;                     // $DCF6-$DCFB
-            if (idx < 0 || GridAt(idx) == 0) { ScrollY = 0; return; } // $DCFE-$DD00
-            if (row < 0) { ScrollY = 0; return; }                // $DD02/$DD04
-            ScrollYRow = (byte)row;                              // $DD0C-$DD12
+            if (!BeginVerticalScroll()) return;               // $DCD8/$DCDB
+            int next = ScrollY - ScrollStep;                  // $DCDD-$DCE2
+            if (next >= 0) { ScrollY = (byte)next; ReloadRow(); return; } // $DCE4 → $DD14
+            ScrollY = (byte)(next - 0x10);                    // $DCE6/$DCE8 (borrow still set)
+            if ((CellScriptByte & 0x80) != 0) { ScrollY = 0; ReloadRow(); return; } // $DCEA-$DCEE
+            int row = ScrollYRow - 1;                         // $DCF0/$DCF2 (SBC #1, C=1)
+            int idx = CellIndex - RowStride;                  // $DCF6-$DCFB
+            if (GridAt(idx) == 0) { ScrollY = 0; ReloadRow(); return; }  // $DCFE-$DD00
+            if (row < 0) { ScrollY = 0; ReloadRow(); return; }           // $DD02/$DD04 BPL
+            ScrollYRow = (byte)row;                           // $DD0C-$DD12
             CellIndex = (byte)idx;
-            ReloadRow();                                         // $DD14 JMP $E7C6
-        }
-
-        /// <summary>$DB40/$DB50: vertical snap step for script nibble 2 columns.</summary>
-        private byte VerticalSnapStep()
-        {
-            int d = (byte)(Y & 0xFF);                            // $DB43
-            d = (byte)(d - ScrollY);                             // $DB47
-            if (d < 0) d = (byte)(d - 0x0F);                     // $DB4B/$DB4D
-            if (d >= 0x48) return 0;                             // $DB52/$DB54
-            int window = 0x48 - d;                               // $DB57-$DB5A
-            if (window < 0) return 0;                            // $DB5C
-            return (byte)(window < 9 ? d : 4);                   // $DB5E-$DB64
+            ReloadRow();                                      // $DD14 JMP $E7C6
         }
 
         // World feed (set by DarkwingGame/LevelTileMap before the check runs).
@@ -646,7 +664,6 @@ namespace Darkwing.Core
         public Func<int, byte> GridAt;          // ($32),Y reader
         public Func<int, byte> FlagAt;          // ($34),Y reader
         public Action ReloadRow;                // $E7C6 row redraw
-        public int CellCount = 68;              // grid length ($DC78 bounds test uses the same table)
 
         // ---------- Energy HUD drain ($CB0E-$CB3B / state 7 $D3D9-$D407) ----------
         public byte EnergyColRight = 0x79; // $05E6 (tile code $70-$79 = 9..0)

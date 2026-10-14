@@ -101,7 +101,6 @@ namespace Darkwing.Core
             var p = Player;
             p.GridAt = TileMap.GridByte;
             p.FlagAt = TileMap.FlagByte;
-            p.CellCount = TileMap.GridWidth * TileMap.GridRows;
             p.RowStride = (byte)TileMap.GridWidth;   // $2E
             p.BottomRow = (byte)(TileMap.GridRows - 1); // $2D
             p.ReloadRow = () =>
@@ -156,14 +155,16 @@ namespace Darkwing.Core
                 Paused = true; // TODO(M7): SFX $1C + status screen via VRAM queue
                 return;
             }
-            // Hook/peg column check ($DAFD): the cell script byte feeds the grab test.
+            Player.Step(held, pressed);
+            // Hook/peg column service ($DAFD) runs AFTER the player state machine:
+            // the grab frame leaves $0460/$0510 untouched (gold_hook_ride2 f1) and the
+            // ride's row wrap only releases $50 on the NEXT frame (f80 wrap → f81 release).
             if (TileMap != null)
             {
                 Player.CellGridByte = TileMap.GridByte(Player.CellIndex);   // ($32),$22
                 Player.CellScriptByte = TileMap.FlagByte(Player.CellIndex); // ($34),$22
                 Player.HookGrabCheck();
             }
-            Player.Step(held, pressed);
             // Audio advances via AudioSequencer.RenderFrame (Tick inside) once per
             // presented frame — SFX/music events queue at trigger time.
             if (Oam != null)

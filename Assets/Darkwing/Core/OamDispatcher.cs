@@ -88,14 +88,24 @@ namespace Darkwing.Core
                 return;
             }
             s.ScreenX = (byte)dxHi;
-            // Y: sy = yLo - fa, borrow → extra -15 ($8049-$8054)
+            // $8049-$8054: sy = $0510 - $FA; on a borrow subtract $0F more (the SBC
+            // carries the still-clear C, so the total is -16) and clear C so the row
+            // compare below does NOT propagate the borrow.
             int yLo = s.Y & 0xFF;
-            int fa = _player.ScrollYRow * 0; // $FA in-cell offset (0 in M3 scope)
-            int sy = yLo - fa;
-            if (sy < 0) sy -= 0x0F;
-            s.ScreenY = (byte)(sy & 0xFF);
-            int yHi = (s.Y >> 8) - _player.ScrollYRow;
+            int sy = yLo - _player.ScrollY;                        // $FA
+            if (sy < 0) sy -= 0x10;
+            s.ScreenY = (byte)(sy & 0xFF);                         // $0440
+            int yHi = (s.Y >> 8) - _player.ScrollYRow;             // $0520 - $FB, C=1
             if (yHi == 0) { s.Flags |= 0x80; return; }               // onscreen
+            if (slot == 0 && _player.ScrollMode != 0)
+            {
+                // Camera is riding a row ($2F≠0: hook ride / vertical snap). The
+                // player's row then legitimately leads $FB by one and the original
+                // neither kills nor deactivates slot 0 — gold_hook_ride2 f17-f79
+                // ($0520=02, $FB=01) keeps $50=$0C and $0400 bit7 set.
+                s.Flags |= 0x80;
+                return;
+            }
             if (slot >= 1) { Deactivate(s); return; }                // enemies cull vertically
             // player offscreen vertically ($8062-$8078): death path
             s.Flags = (byte)(s.Flags & 0x7F);

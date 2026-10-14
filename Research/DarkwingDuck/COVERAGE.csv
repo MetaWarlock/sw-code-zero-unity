@@ -54,6 +54,6 @@ audio,apu_wav,frame_counter,WAV-compare,pending,pending,pending,frame-counter sc
 enemies,dispatch,bank6_8000,port+integrated,yes,yes,partial-pass,47/47 behaviors + 7/7 bosses ported (agent, 4324 lines); probes: walker/pickup/gas/spike/hopper/boss-pop trajectories match docs; dispatcher live in Step
 enemies,spawner,placements_5arrays,cell-activation,yes,yes,pass,first enemy spawns on cell entry (walker @0x138); camera fixed to $DBCE delta model
 enemies,integration,game_loop,wired,yes,yes,pass,Bank6/ObjectTypeTable wired in launcher+scene; duplicate dispatch call removed
-player,hook_ride,DAFD_DB6D_transcription,disasm,yes,partial,no,PlayerCore: $DAFD/$DB6D/$DB8B/$DBB3-DBC3/$DC6E/$DCC4/$DB40/$D7F9/$F539 + $DB99 slot clear + WireWorldFeed $22/$2E/$2D; no golden yet (G15 entry condition)
+player,hook_ride,DAFD_DB6D_DB8B_DC6E_D7F9,gold_hook_ride2,yes,partial,ride-exact,PhysCompare.Hook 287/298 seed f1: grab->hang->ride f2-f81 byte-exact ($FA+3/f, $0510+0.5, row wrap $FB 1->2 $22 $1C->$2D $23->$3E, release $50=01 at f81, landing Y $0234 matches); residual f82-f93 = first-air-frame velocity (orig 00,80->FF,6B vs port FF,AB)
 player,regression,walk_jump_after_hook,frame-exact,yes,yes,PASS,PhysCompare.Walk/Jump 119/119 after hook transcription (unity command run_script --file AgentScripts/PhysCompare.cs, 2026-10-14)
 flow,doors,E388_section_loader,disasm,yes,no,no,docs/doors_sections.md: id=(flag&$1F) at $EBD4, 10 tables @world_bank7 0x2497..0x2611 (42B), $DE24 reset, engine select by $6D; bank1 $970C/$971A/$9728 door ids; implementation pending

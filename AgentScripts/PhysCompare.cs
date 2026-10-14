@@ -7,7 +7,8 @@ public static class PhysCompare
     /// Golden physics comparison through the full DarkwingGame stack (movement +
     /// anim advance + slot sync), replaying the captured original input schedule.
     /// </summary>
-    private static string Compare(string name, int frames, System.Func<int, byte> input)
+    private static string Compare(string name, int frames, System.Func<int, byte> input,
+        int seedFrame = 0, bool camera = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
@@ -33,9 +34,9 @@ public static class PhysCompare
         game.TileMap = map;
         game.WireWorldFeed();
 
-        // Seed from the golden frame 0.
+        // Seed from the golden frame `seedFrame`.
         byte[] ram0 = new byte[2048];
-        System.Array.Copy(ramAll, 0, ram0, 0, 2048);
+        System.Array.Copy(ramAll, seedFrame * 2048, ram0, 0, 2048);
         var p = game.Player;
         p.X = (ushort)(ram0[0x4F0] | (ram0[0x500] << 8));
         p.Y = (ushort)(ram0[0x510] | (ram0[0x520] << 8));
@@ -52,6 +53,10 @@ public static class PhysCompare
         // Camera/level-table state the hook mechanic reads ($FA, $22, $2E, $2D).
         p.ScrollY = ram0[0xFA];
         p.CellIndex = ram0[0x22];
+        p.CellIndexNext = ram0[0x23];
+        p.ScrollState = ram0[0x2B];
+        p.ScrollStep = ram0[0x10];
+        p.ScrollMode = ram0[0x2F];
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
         var s0 = game.Objects.Slots[0];
@@ -63,7 +68,7 @@ public static class PhysCompare
         sb.Append($"[player_mechanics] {name}: ");
         int firstDiv = -1;
         int matchFrames = 0;
-        for (int f = 1; f < avail; f++)
+        for (int f = seedFrame + 1; f < avail; f++)
         {
             var pad = Darkwing.Core.NesButtons.FromByte(input(f));
             game.Step(pad);
@@ -71,19 +76,24 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
-            if (f <= 20)
-                sb.Append($"[f{f} X={p.X:X2} af={s0.AnimFrame} at={s0.AnimTimer} an={s0.AnimNumber:X2} vi={p.XVelInt} vf={p.XVelFrac:X2}] ");
-            if (p.X == gx && p.Y == gy) matchFrames++;
+            if (f - seedFrame <= 2 || (f >= 75 && f <= 100))
+                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] ");
+            bool pos = p.X == gx && p.Y == gy;
+            bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
+                                   && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
+            if (pos && cam) matchFrames++;
             else
             {
                 if (firstDiv < 0) firstDiv = f;
                 if (f - firstDiv < 6 || f % 25 == 0)
-                    sb.Append($"f{f}: port=({p.X:X4},{p.Y:X4}) orig=({gx:X4},{gy:X4}) ");
+                    sb.Append($"f{f}: port=({p.X:X4},{p.Y:X4} st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}) " +
+                              $"orig=({gx:X4},{gy:X4} st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2}) ");
             }
         }
+        int span = avail - 1 - seedFrame;
         sb.Append(firstDiv < 0
-            ? $"RESULT: MATCH {matchFrames}/{avail - 1} frames"
-            : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{avail - 1})");
+            ? $"RESULT: MATCH {matchFrames}/{span} frames (seed {seedFrame})"
+            : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{span}, seed {seedFrame})");
         return sb.ToString();
     }
 
@@ -97,4 +107,14 @@ public static class PhysCompare
         if (f >= 20 && f <= 22) b |= 0x80;
         return b;
     });
+
+    /// <summary>
+    /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
+    /// seeded by probe_run --patch into cell $22=$1C (row 1, col 11, script byte $41 =
+    /// hook column) at the row bottom; the grab fires next frame and the camera rides
+    /// down one 240-px row ($FA 3 px/frame), then $D7F9 releases the player ($50=1).
+    /// Frame 0 of the capture is the patched seed frame, so the port starts at frame 1
+    /// (first ridden frame) and every later frame is compared, camera state included.
+    /// </summary>
+    public static string Hook() => Compare("hook_ride2", 300, f => 0, seedFrame: 1, camera: true);
 }
