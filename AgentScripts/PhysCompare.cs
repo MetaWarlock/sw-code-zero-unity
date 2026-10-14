@@ -445,6 +445,8 @@ public static class PhysCompare
             byte[] g = new byte[2048];
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             var e13 = game.Objects.Slots[13];
+            if (f <= seed + 4)
+                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} t={p.StateTimer:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={p.XFrac:X2} fl={p.Flags:X2} dir={p.DirBits:X2} iv={p.InvulnFrames:X2} E13({e13.X:X4},{e13.Y:X4})an={e13.AnimNumber:X2} | O({(g[0x4F0] | (g[0x500] << 8)):X4},{(g[0x510] | (g[0x520] << 8)):X4}) st={g[0x50]:X2} t={g[0x51]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} fl={g[0x400]:X2} dir={g[0x52]:X2} iv={g[0x7C]:X2} 13({g[0x4F0 + 13] | (g[0x500 + 13] << 8):X4})an={g[0x420 + 13]:X2}] ");
             int[] port = { p.State, p.StateTimer, p.InvulnFrames, game.Objects.Slots[0].AnimNumber,
                            game.Objects.Slots[0].AnimFrame, game.Objects.Slots[0].AnimTimer,
                            p.X, p.Y, (p.XVelInt << 8) | p.XVelFrac, ((byte)p.YVelInt << 8) | p.YVelFrac,
