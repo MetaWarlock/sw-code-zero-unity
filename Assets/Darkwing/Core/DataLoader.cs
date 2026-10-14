@@ -34,6 +34,7 @@ namespace Darkwing.Core
                     {
                         lv.Objects[o] = new GameData.Placement
                         {
+                            Index = o,                      // $0590/$0340 index in the level list
                             ScreenX = r.ReadByte(),
                             X = r.ReadByte(),
                             ScreenY = r.ReadByte(),

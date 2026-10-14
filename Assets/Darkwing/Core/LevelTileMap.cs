@@ -127,11 +127,24 @@ namespace Darkwing.Core
             return FlagByte(player.CellIndex);
         }
 
+        /// <summary>
+        /// $EBE8 index math ($EC05-$EC14 columns, $EC72-$EC90 rows, $ECA9 nibble mask):
+        /// the $0600 window is 8 bands x 16 columns x 2 nibbles, addressed by the LOW BYTE
+        /// of the position with bit7 of the index = X-hi bit0. The band is Y&gt;&gt;5 and the
+        /// nibble is bit3 of Y, so the cell row the original reads is 2*(Y&gt;&gt;5)+((Y&gt;&gt;3)&amp;1)
+        /// — NOT Y&gt;&gt;4. The two agree only while Y bits 4 and 3 match, which is exactly the
+        /// aligned positions $EDD2/$EDB3 snap to; mid-cell probes (e.g. a side probe 8 px
+        /// into a cell) read the row ABOVE the naive one for half the Y range. gold_m1_fulljump
+        /// f167/f208: the original keeps blocking on the pylon one frame longer than a Y&gt;&gt;4
+        /// lookup does, and stays airborne when walking off its top edge.
+        /// </summary>
         public byte TypeAt(int worldX, int worldY)
         {
             int cell = (worldX >> 8) & 0xFFFF;
             if ((uint)cell >= (uint)_world.RowWidth) return 0;
-            return _roomTypes[cell][((worldY & 0xFF) >> 4) * 16 + ((worldX & 0xFF) >> 4)];
+            int y = worldY & 0xFF;
+            int row = ((y >> 4) & 0xFE) | ((y >> 3) & 1);
+            return _roomTypes[cell][row * 16 + ((worldX & 0xFF) >> 4)];
         }
     }
 }

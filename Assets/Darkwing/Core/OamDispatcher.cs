@@ -70,10 +70,14 @@ namespace Darkwing.Core
             byte flags = s.Flags;
             if ((flags & 0x10) == 0)
             {
-                // $80C7: first-position copy, mark onscreen.
+                // $80C7-$80D8: absolute-position copy ($04F0→$0450, $0510→$0440) then
+                // $80D3 ORA #$80 ONLY. Bit 4 is a type-table property ($8AB3+0, e.g. $90
+                // for the walker, $80 for slot 1's fixed object), so a slot whose bit 4 is
+                // clear never enters the relative-move path and is never culled — that is
+                // why gold_m1_fulljump keeps slot 1 alive at $0018 for the whole level.
                 s.ScreenX = (byte)s.X;
                 s.ScreenY = (byte)s.Y;
-                s.Flags |= 0x10 | 0x80;
+                s.Flags = (byte)(flags | 0x80);
                 return;
             }
             // $8039-$8047: SEC + LDA $04F0 / SBC $FC gives the screen X byte, and the

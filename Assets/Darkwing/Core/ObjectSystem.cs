@@ -122,15 +122,21 @@ namespace Darkwing.Core
         {
             foreach (var o in level.Objects)
             {
-                // Verified activation rule (level_format.md §7): spawn when the
-                // object's cell column == scroll column ($FD) and its grid row == $FB.
-                int cellX = o.ScreenX, rowY = o.ScreenY;
-                int scrollCol = (scrollX >> 8) & 0xFFFF; // $FD = cell column
-                int scrollRow = scrollY >> 8;
-                if (cellX != scrollCol || rowY != scrollRow) continue;
+                // $80DA: the placement is live when BOTH page differences are exactly 0,
+                // i.e. the 16-bit (placement − scroll) difference is in [0x0000, 0x00FF]
+                // for X and the same window for Y ($FA/$FB, with the $80F2/$80F4 borrow
+                // that costs one extra row). So an object spawns when it enters the
+                // screen-width window ahead of the camera, one cell BEFORE $FD advances.
                 ushort wx = (ushort)((o.ScreenX << 8) | o.X);
                 ushort wy = (ushort)((o.ScreenY << 8) | o.Y);
-                if (IsSpawned(o.Index)) continue;
+                if (!InPlacementWindow(wx, wy, scrollX, scrollY)) continue;
+                if (IsSpawned(o.Index)) continue;                 // $8101/$8110: collected, not consumed-by-spawn
+                // $8112-$8124: a placement already held by a live slot is not re-spawned.
+                bool held = false;
+                for (int i = SlotCount - 1; i >= 4; i--)
+                    if (Slots[i].PlacementIndex == (byte)o.Index && Slots[i].Active)
+                    { held = true; break; }
+                if (held) continue;
                 int slot = FindFreeSlot();
                 if (slot < 0) return; // pool exhausted ($8132 RTS)
                 var s = Slots[slot];
@@ -138,6 +144,11 @@ namespace Darkwing.Core
                 s.X = wx;
                 s.Y = wy;
                 s.PlacementIndex = (byte)o.Index;
+                // $8090 sets NO $0340 bit: the mask is written by the pickup behaviors
+                // (bank6 $883C/$8A1F → $FC29) when an item is collected, so an enemy that
+                // is culled or killed releases $0590 and re-spawns when the window returns.
+                // $F7EE: face the player — $01 when the player is to the right, $02 left.
+                s.Direction = s.X >= Slots[0].X ? (byte)0x02 : (byte)0x01;
                 if (EnemyBehaviors.TryGetType(o.Type, out byte flags, out byte behavior,
                                               out byte anim, out byte param, out byte hp))
                 {
@@ -155,7 +166,26 @@ namespace Darkwing.Core
                 s.StateLow = 0;
                 s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;
                 s.AnimFrame = 0; s.AnimTimer = 0;
+                s.XFrac = 0; s.YFrac = 0; s.HitFlash = 0;      // $81D5-$81E7
             }
+        }
+
+        /// <summary>$80DA: the placement/scroll page differences the spawner tests.
+        /// Both must be zero, with the low-byte borrow feeding the high-byte SBC and
+        /// the $80F2/$80F4 pair costing one extra row when the Y low difference borrows.</summary>
+        private static bool InPlacementWindow(ushort px, ushort py, ushort sx, ushort sy)
+        {
+            int dx = (px & 0xFF) - (sx & 0xFF);
+            if (((px >> 8) - (sx >> 8) - (dx < 0 ? 1 : 0)) != 0) return false;
+            int dy = (py & 0xFF) - (sy & 0xFF);
+            return ((py >> 8) - (sy >> 8) - (dy < 0 ? 1 : 0)) == 0;
+        }
+
+        /// <summary>Restore the $0340 already-spawned mask from a captured frame so a
+        /// seeded golden run does not re-spawn placements the original consumed.</summary>
+        public void SeedSpawnMask(byte[] ram)
+        {
+            System.Array.Copy(ram, 0x340, _spawnedMask, 0, 32);
         }
 
         /// <summary>$DB99-$DBB1: hanging on a hook clears object slots 15..2

@@ -321,28 +321,24 @@ namespace Darkwing.Core
         /// the near edge. Verified against the captured gameplay trace; exact
         /// per-frame stepping re-verified in M3 golden comparisons.
         /// </summary>
+        /// <summary>
+        /// Horizontal camera follow. gold_m1_fulljump (400 frames) locks the player's
+        /// screen X at exactly $88 for the whole route — walk, airborne and after landing:
+        /// the scroll closes any larger gap and then tracks the player 1:1. $DBDF clamps
+        /// one frame's catch-up to 6 px, so a fast knockback leaves the camera behind.
+        /// </summary>
         public void UpdateCamera(bool movedLeft, bool movedRight)
         {
-            // $DA70/$DBCE/$DC19: the scroll delta = the player's move delta clamped
-            // to [1,6] px/frame ($DBDF clamp), applied when the player is past the
-            // dead-zone edge; the cell index rides the scroll high byte.
-            int delta = (short)(X - PrevX);
-            if (delta == 0) return;
-            int amt = delta < 0 ? -delta : delta;
-            if (amt > 6) amt = 6;
-            if (amt < 1) amt = 1;
-            int screenX = (short)(X - ScrollX);
-            if (movedRight && screenX >= 0x89)
-            {
-                ScrollX = (ushort)(ScrollX + amt);
-            }
-            else if (movedLeft && screenX >= 0x88)
+            int ahead = (short)(X - ScrollX) - 0x88;
+            if (ahead > 0) ScrollX = (ushort)(ScrollX + (ahead > 6 ? 6 : ahead));
+            else if (movedLeft && -ahead > 1)
             {
                 // chase left ($DC19 mirror): the window mirrors at the left edge
-                ScrollX = (ushort)(ScrollX - amt);
+                int back = -ahead;
+                ScrollX = (ushort)(ScrollX - (back > 6 ? 6 : back));
             }
             // push-to-dead-zone after scroll ($DABD/$DAEE: 16px inside the edge)
-            screenX = (short)(X - ScrollX);
+            int screenX = (short)(X - ScrollX);
             if (screenX < 0x10) ScrollX = (ushort)(X - 0x10);
         }
 
@@ -367,6 +363,11 @@ namespace Darkwing.Core
                 case 0x12: MaterializeState(); break;
                 default: break; // remaining states wired during M4/M7
             }
+
+            // $DA70/$DBCE is a per-frame service that runs after the state machine, not a
+            // walk-state action: gold_m1_fulljump keeps screen X at $88 through walk, the
+            // whole airborne phase and the landing, which is what advances $22 at f253.
+            UpdateCamera((held & 0x02) != 0, (held & 0x01) != 0);
         }
 
         // ---------- State 12: materialize walk-out ($D517) ----------
@@ -486,6 +487,17 @@ namespace Darkwing.Core
             bool landed = VerticalPhysics(held, pressed);
             if (State != 0) return; // jumped inside VerticalPhysics
 
+            // $CDF5-$CE38: when the vertical service's floor probe comes back without a
+            // landing ($F2D7 returns carry clear) and $55 is 0, $CE34 force-sets $50=1.
+            // $CB8E then re-tests $50 and RTS-es, so the walk move at $CCD9 never runs —
+            // gold_m1_fulljump f208 keeps X=$14B and only gains the falling anim $12 on
+            // f209, which is exactly the frame the pylon top ends.
+            if (!landed && _vertFalling)
+            {
+                State = 1;
+                return;
+            }
+
             // Damage from spike/contact probes is applied by the world (M4).
 
             if ((pressed & 0x80) != 0) // A pressed → jump ($CBB7 → JMP $CD0E)
@@ -530,7 +542,6 @@ namespace Darkwing.Core
                 int before = X;
                 MoveHorizontal(right);
                 bool moved = X != before;
-                UpdateCamera(!right, right && moved);
                 // wall block ($CCDF: blocked if $9E negative)
                 byte side = ProbeSide(right);
                 if (side >= 3)
@@ -612,6 +623,7 @@ namespace Darkwing.Core
             // the floor — gold_door_id1 f76 keeps $0560 = $FF instead of rising.
             if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
             bool falling = YVelInt < 0;
+            _vertFalling = falling;
             _wasAirborne = State is 1 or 0x0B or 0x10;
             if (falling)
             {
@@ -620,7 +632,12 @@ namespace Darkwing.Core
                 // player rests on a type-1 platform with $0560 still $FF, so no gravity
                 // is applied and the type-1 velocity gate does not reject the support.
                 bool grounded = State is 0 or 6;
-                if (!grounded) ApplyGravity();
+                // $F31F runs $F5DA unconditionally on the falling path ($F64A is a slot-pair
+                // test, not a ground test): gravity applies every frame and the landing
+                // branch re-cuts to $FF,AB afterwards. On the frame the floor disappears
+                // there is no cut, so the fall keeps accelerating (gold_m1_fulljump f208:
+                // $0560/$0550 FF,AB → FF,6B).
+                ApplyGravity();
                 byte floor = ProbeFloor();
                 // $F4E4-$F4F3: any type >= 2 hits; type 1 (one-way) only when the fall is
                 // NOT slow — $F4EC skips the hit when the velocity byte is >= $FC (-4..-1).
@@ -677,13 +694,30 @@ namespace Darkwing.Core
             // probe, and gravity still applies in the same frame (gold_hook_ride2 f82:
             // $0510 1F→20, $0460 D5→2A, velocity 00,80 → FF,AB → FF,6B).
             if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
-            bool landed = VerticalPhysics(held, pressed); // $CD0E: vertical first
-            AirborneControl(held);                        // then air steering ($CD18)
+            AirborneControl(held);                        // $CD18: steering runs FIRST
+            bool landed = VerticalPhysics(held, pressed); // $CD63: then the vertical service
+            SelectAirAnim();                              // $CD82-$CDBE
             if (landed)
             {
                 State = 0;
                 AirSubState = 0;
             }
+        }
+
+        /// <summary>
+        /// $CD6A-$CDBE: after the vertical service the air handler rewrites the anim from
+        /// the post-gravity velocity sign — rising $11 (group $0E), falling $12 (group $0F),
+        /// $56==1 keeps the reach pose $0D — and $CDBE always calls $FA78 with it. That is
+        /// why gold_m1_fulljump switches to $12 on f209 and, once the fall ends, the ground
+        /// handler sees anim != 3 at $CC7B and restarts $03 from frame 0, which triggers the
+        /// footstep-dust 0.28 px/frame velocity at $CCAA and slows the walk-out (f223-f228).
+        /// </summary>
+        private void SelectAirAnim()
+        {
+            if (Objects == null) return;
+            byte anim = AirSubState == 1 ? (byte)0x0D
+                    : YVelInt >= 0 ? (byte)0x11 : (byte)0x12;
+            SetAnimPlayer(anim);
         }
 
         /// <summary>Full air steering at walk speed ($CD18/$D78D).</summary>
@@ -988,6 +1022,7 @@ namespace Darkwing.Core
         /// </summary>
         public byte HitLadder; // 0-3 survived hits
         private bool _wasAirborne;
+        private bool _vertFalling;   // $CD6A sign test: the falling branch of $F2D7 ran
 
         /// <summary>
         /// $F9C2 hurt ladder. It runs ONLY for a caller that has just written

@@ -245,6 +245,15 @@ namespace Darkwing.Core
             // ride's row wrap only releases $50 on the NEXT frame (f80 wrap → f81 release).
             if (TileMap != null)
             {
+                // $22 = $FB*$2E + the camera's cell-within-row ($FD): recomputed every
+                // frame, because the scroll crossing a 256-px boundary is what arms the
+                // new cell's script byte and its placements (gold_m1_fulljump f253:
+                // camera $FC/$FD $FF→$0100 moves $22 $33→$34, walker slot $0C appears).
+                byte cell = (byte)(Player.ScrollYRow * Player.RowStride + (Player.ScrollX >> 8));
+                int step = cell - Player.CellIndex;
+                if (step == 1 || step == -1)
+                    Player.CellIndexNext = (byte)(cell + step);   // $DD2E/$DD34 ±1 table
+                Player.CellIndex = cell;
                 Player.CellGridByte = TileMap.GridByte(Player.CellIndex);   // ($32),$22
                 Player.CellScriptByte = TileMap.FlagByte(Player.CellIndex); // ($34),$22
                 Player.HookGrabCheck();
@@ -294,7 +303,8 @@ namespace Darkwing.Core
             {
                 // Spawner ($8090); culling happens per-slot in OamDispatcher
                 // ($802F semantics: ±16 screens, onscreen bit at high==0).
-                Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX, (ushort)(Player.ScrollYRow << 8));
+                Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX,
+                    (ushort)((Player.ScrollYRow << 8) | Player.ScrollY));
             }
             Enemies?.RunFrame();
             Oam.RunFrame(FrameParity, 36); // 36 = hidden entry 0 + 8 HUD sprites

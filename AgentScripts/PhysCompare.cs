@@ -8,7 +8,7 @@ public static class PhysCompare
     /// anim advance + slot sync), replaying the captured original input schedule.
     /// </summary>
     private static string Compare(string name, int frames, System.Func<int, byte> input,
-        int seedFrame = 0, bool camera = false)
+        int seedFrame = 0, bool camera = false, bool enemies = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
@@ -33,6 +33,14 @@ public static class PhysCompare
         game.Player.TileMap = map;
         game.TileMap = map;
         game.WireWorldFeed();
+        if (enemies)
+        {
+            game.Bank6 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank6.bytes");
+            game.ObjectTypeTable = File.ReadAllBytes(root + "/Assets/Darkwing/Data/object_types.bytes");
+            // RunWorldServices only spawns when a level def is live; the route golden needs
+            // the mission-1 placements so the room-0x02 walker exists for the f337 contact.
+            game.CurrentLevel = data.Levels[0];
+        }
 
         // Seed from the golden frame `seedFrame`.
         byte[] ram0 = new byte[2048];
@@ -60,9 +68,66 @@ public static class PhysCompare
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
         var s0 = game.Objects.Slots[0];
-        s0.AnimNumber = ram0[0x420];
-        s0.AnimFrame = ram0[0x410];
-        s0.AnimTimer = ram0[0x430];
+        if (enemies)
+        {
+            p.StateTimer = ram0[0x51];
+            p.SavedState = ram0[0x58];
+            p.InvulnFrames = ram0[0x7C];
+            p.DirBits = ram0[0x52];
+            game.FrameParity = ram0[0x95];
+            for (int s = 0; s < 16; s++)
+            {
+                var sl = game.Objects.Slots[s];
+                sl.Flags = ram0[0x400 + s];
+                sl.AnimFrame = ram0[0x410 + s];
+                sl.AnimNumber = ram0[0x420 + s];
+                sl.AnimTimer = ram0[0x430 + s];
+                sl.ScreenY = ram0[0x440 + s];
+                sl.ScreenX = ram0[0x450 + s];
+                sl.YFrac = ram0[0x460 + s];
+                sl.XFrac = ram0[0x470 + s];
+                sl.T480 = ram0[0x480 + s];
+                sl.T490 = ram0[0x490 + s];
+                sl.T4A0 = ram0[0x4A0 + s];
+                sl.T4B0 = ram0[0x4B0 + s];
+                sl.HitFlash = ram0[0x4C0 + s];
+                sl.StateLow = ram0[0x4D0 + s];
+                sl.Active = (ram0[0x4D0 + s] & 0x80) != 0;
+                sl.Behavior = ram0[0x4E0 + s];
+                sl.X = (ushort)(ram0[0x4F0 + s] | (ram0[0x500 + s] << 8));
+                sl.Y = (ushort)(ram0[0x510 + s] | (ram0[0x520 + s] << 8));
+                sl.XVelFrac = ram0[0x530 + s];
+                sl.XVelInt = ram0[0x540 + s];
+                sl.YVelFrac = ram0[0x550 + s];
+                sl.YVelInt = (sbyte)ram0[0x560 + s];
+                sl.BehaviorParam = ram0[0x570 + s];
+                sl.Direction = ram0[0x580 + s];
+                sl.PlacementIndex = ram0[0x590 + s];
+                sl.Health = ram0[0x5A0 + s];
+            }
+            // $0340 = СБОРАННЫЕ размещения (бит ставит только pickup-путь через $FC29),
+            // не «заспавненные»: захват начинается в середине уровня, поэтому уже
+            // собранные предметы нельзя возродить в отыгрываемом прогоне.
+            game.Objects.SeedSpawnMask(ram0);
+            map.LoadRow(p.ScrollYRow);
+            map.StreamColumns(p.ScrollX);
+        }
+        else
+        {
+            s0.AnimNumber = ram0[0x420];
+            s0.AnimFrame = ram0[0x410];
+            s0.AnimTimer = ram0[0x430];
+        }
+
+        // Per-field first-divergence report. The strict RESULT below is unchanged; this
+        // only localises WHICH field breaks first, so a known rendering-cadence residual
+        // (e.g. $23) cannot hide a real physics divergence further down the same capture.
+        var fieldNames = new[] { "X", "Y", "$50 state", "$FA scrollY", "$FB row",
+                                 "$22 cell", "$23 next", "$2B scrollstate" };
+        var firstBad = new int[fieldNames.Length];
+        var badPort = new int[fieldNames.Length];
+        var badOrig = new int[fieldNames.Length];
+        for (int i = 0; i < fieldNames.Length; i++) firstBad[i] = -1;
 
         var sb = new System.Text.StringBuilder();
         sb.Append($"[player_mechanics] {name}: ");
@@ -76,11 +141,37 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
-            if (f - seedFrame <= 2 || (f >= 75 && f <= 100))
-                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] ");
+            if (f - seedFrame <= 2 || (f >= 250 && f <= 262) || (f >= 330 && f <= 345))
+            {
+                string List(byte[] r)
+                {
+                    var s = new System.Text.StringBuilder();
+                    for (int sl = 1; sl < 15; sl++)
+                        if ((r[0x4D0 + sl] & 0x80) != 0)
+                            s.Append($"{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/{r[0x420 + sl]:X2} ");
+                    return s.ToString();
+                }
+                byte[] pr = new byte[2048];
+                for (int sl = 0; sl < 15; sl++)
+                {
+                    var sl2 = game.Objects.Slots[sl];
+                    if (!sl2.Active) continue;
+                    pr[0x4D0 + sl] = 0x80;
+                    pr[0x4F0 + sl] = (byte)(sl2.X & 0xFF); pr[0x500 + sl] = (byte)(sl2.X >> 8);
+                    pr[0x510 + sl] = (byte)(sl2.Y & 0xFF); pr[0x520 + sl] = (byte)(sl2.Y >> 8);
+                    pr[0x420 + sl] = sl2.AnimNumber;
+                }
+                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {List(pr)}| {List(g)}] ");
+            }
             bool pos = p.X == gx && p.Y == gy;
             bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
                                    && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
+            int[] pv = { p.X, p.Y, p.State, p.ScrollY, p.ScrollYRow,
+                         p.CellIndex, p.CellIndexNext, p.ScrollState };
+            int[] ov = { gx, gy, g[0x50], g[0xFA], g[0xFB],
+                         g[0x22], g[0x23], g[0x2B] };
+            for (int i = 0; i < pv.Length; i++)
+                if (pv[i] != ov[i] && firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
             if (pos && cam) matchFrames++;
             else
             {
@@ -91,9 +182,15 @@ public static class PhysCompare
             }
         }
         int span = avail - 1 - seedFrame;
+        sb.Append("FIELDS[");
+        for (int i = 0; i < fieldNames.Length; i++)
+            if (firstBad[i] >= 0)
+                sb.Append($"{fieldNames[i]}:f{firstBad[i]} {badPort[i]:X4}!={badOrig[i]:X4} ");
+        sb.Append("] ");
         sb.Append(firstDiv < 0
             ? $"RESULT: MATCH {matchFrames}/{span} frames (seed {seedFrame})"
             : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{span}, seed {seedFrame})");
+        File.WriteAllText(root + $"/Temp/{name}_trace.txt", sb.ToString());   // the run_script console truncates
         return sb.ToString();
     }
 
@@ -118,6 +215,19 @@ public static class PhysCompare
         f => (byte)(f >= 2 ? 0x01 : 0x00), camera: true);
 
     /// <summary>
+    /// Mission-1 route golden `gold_m1_fulljump`: Right held from f2 plus ONE 26-frame
+    /// A-hold at f160-185. A 3-frame tap only hops 14 px, so the pylon in room 0x02
+    /// (solid rows 6-15, cols 2-3) is impassable; the held jump (apex ~$0425 velocity,
+    /// 52 px rise) lands the player on the pylon top at Y=$354, he then walks right,
+    /// drops into the lower floor of cell $34 ($22 advances at f254, scroll crosses
+    /// $0100) and takes a NATURAL enemy hit at f338 ($50=$06, anim $09). One independent
+    /// trajectory that covers world feed + cell advance + spawn + bank-6 dispatch + $813B.
+    /// </summary>
+    public static string M1Route() => Compare("m1_fulljump", 400,
+        f => (byte)((f >= 2 && f <= 390 ? 0x01 : 0x00) | (f >= 160 && f <= 185 ? 0x80 : 0x00)),
+        camera: true, enemies: true);
+
+    /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
     /// seeded by probe_run --patch into cell $22=$1C (row 1, col 11, script byte $41 =
     /// hook column) at the row bottom; the grab fires next frame and the camera rides
@@ -126,6 +236,57 @@ public static class PhysCompare
     /// (first ridden frame) and every later frame is compared, camera state included.
     /// </summary>
     public static string Hook() => Compare("hook_ride2", 300, f => 0, seedFrame: 1, camera: true);
+
+    /// <summary>Dumps the mission-1 placement list the spawner reads, to find why the
+    /// route golden has no live objects (activation compares ScreenX/ScreenY against
+    /// $FD/$FB, and the ROM walker slot $0D spawns one cell AHEAD of the camera).</summary>
+    public static string ProbeLevel()
+    {
+        string root = "D:/Art/SW Code Zero Unity";
+        var data = Darkwing.Core.DataLoader.Load(
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/screens.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levels.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/anims.bytes"));
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"levels={data.Levels.Length} ");
+        for (int li = 0; li < System.Math.Min(3, data.Levels.Length); li++)
+        {
+            var l = data.Levels[li];
+            int maxSX = 0, maxSY = 0;
+            foreach (var o in l.Objects ?? new Darkwing.Core.GameData.Placement[0])
+            {
+                if (o.ScreenX > maxSX) maxSX = o.ScreenX;
+                if (o.ScreenY > maxSY) maxSY = o.ScreenY;
+            }
+            sb.Append($"[{li} id={l.Id} {l.Name} wh={l.Width}x{l.Height} n={l.ObjectCount} sx<= {maxSX} sy<= {maxSY}] ");
+        }
+        var lv = data.Levels[0];
+        foreach (var o in lv.Objects ?? new Darkwing.Core.GameData.Placement[0])
+            if (o.ScreenY <= 4 && o.ScreenX <= 3)
+                sb.Append($"#{o.Index} t={o.Type:X2} sx={o.ScreenX} x={o.X:X2} sy={o.ScreenY} y={o.Y:X2} wx={(o.ScreenX << 8) | o.X:X4} wy={(o.ScreenY << 8) | o.Y:X4}; ");
+        return sb.ToString();
+    }
+
+    /// <summary>Runs the whole player-physics suite and returns only the RESULT lines.</summary>
+    public static string Suite()
+    {
+        var sb = new System.Text.StringBuilder();
+        void One(string label, string full)
+        {
+            int i = full.LastIndexOf("RESULT:");
+            sb.Append(label).Append(": ").Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(60, full.Length - i))).Append('\n');
+        }
+        One("walk", Walk());
+        One("jump", Jump());
+        One("hook", Hook());
+        One("traverse", Traverse());
+        One("m1route", M1Route());
+        One("hurt", Hurt());
+        One("door", Door());
+        return sb.ToString();
+    }
 
     /// <summary>
     /// Damage/knockback golden: `gold_hurt_a41` is mission 1 where the capture patches the
