@@ -88,29 +88,24 @@ namespace Darkwing.Core
                 return;
             }
             s.ScreenX = (byte)dxHi;
-            // $8049-$8054: sy = $0510 - $FA; on a borrow subtract $0F more (the SBC
-            // carries the still-clear C, so the total is -16) and clear C so the row
-            // compare below does NOT propagate the borrow.
-            int yLo = s.Y & 0xFF;
-            int sy = yLo - _player.ScrollY;                        // $FA
-            if (sy < 0) sy -= 0x10;
-            s.ScreenY = (byte)(sy & 0xFF);                         // $0440
-            int yHi = (s.Y >> 8) - _player.ScrollYRow;             // $0520 - $FB, C=1
-            if (yHi == 0) { s.Flags |= 0x80; return; }               // onscreen
-            if (slot == 0 && _player.ScrollMode != 0)
-            {
-                // Camera is riding a row ($2F≠0: hook ride / vertical snap). The
-                // player's row then legitimately leads $FB by one and the original
-                // neither kills nor deactivates slot 0 — gold_hook_ride2 f17-f79
-                // ($0520=02, $FB=01) keeps $50=$0C and $0400 bit7 set.
-                s.Flags |= 0x80;
-                return;
-            }
-            if (slot >= 1) { Deactivate(s); return; }                // enemies cull vertically
-            // player offscreen vertically ($8062-$8078): death path
+            // $8049-$805A byte-exact: sy = $0510 - $FA; if it borrows, $8051 SBC #$0F
+            // runs with C still clear (−$10 more) and $8053 CLC makes the row compare
+            // $0520 - $FB subtract ONE EXTRA row. So the borrow belongs in the row
+            // difference — that is what keeps the hook ride onscreen: gold_hook_ride2
+            // f17-f79 has $0520=02, $FB=01 and $0510 < $FA, giving 2-1-1 = 0.
+            int sy = (s.Y & 0xFF) - _player.ScrollY;                    // $0510 - $FA
+            bool borrow = sy < 0;
+            if (borrow) sy -= 0x10;
+            s.ScreenY = (byte)(sy & 0xFF);                              // $0440
+            int yHi = ((s.Y >> 8) - _player.ScrollYRow - (borrow ? 1 : 0)) & 0xFF;
+            if (yHi == 0) { s.Flags |= 0x80; return; }                   // $805C → $80D3
+            if (slot >= 1) { Deactivate(s); return; }                    // $805E/$8060
+            // $8062-$8078: slot 0 goes offscreen; it dies only when the row difference
+            // is exactly 1 (the original PLA/CMP #$01), otherwise it stays active.
             s.Flags = (byte)(s.Flags & 0x7F);
-            _player.InvulnFrames = 0;
-            _player.State = 7;
+            if (yHi != 1) return;
+            _player.InvulnFrames = 0;                                    // $7C = 0
+            _player.State = 7;                                           // pit death
         }
 
         private static void Deactivate(ObjectSystem.Slot s)

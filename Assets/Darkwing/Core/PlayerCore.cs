@@ -443,6 +443,13 @@ namespace Darkwing.Core
         // ---------- State 1: air ($CD0E path) ----------
         private void AirState(byte held, byte pressed)
         {
+            // $CD3E-$CD54 runs BEFORE the vertical service $F2D7: while the velocity
+            // integer is 0..$04 and A is not held, $F5FC force-sets it to $FFAB. Only
+            // then does $F2E5 test the sign, so the frame after a hook release (whose
+            // ride velocity is $0080) already takes the FALLING branch — no ceiling
+            // probe, and gravity still applies in the same frame (gold_hook_ride2 f82:
+            // $0510 1F→20, $0460 D5→2A, velocity 00,80 → FF,AB → FF,6B).
+            if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
             bool landed = VerticalPhysics(held, pressed); // $CD0E: vertical first
             AirborneControl(held);                        // then air steering ($CD18)
             if (landed)
