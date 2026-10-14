@@ -173,6 +173,20 @@ namespace Darkwing.Core
             }
         }
 
+        /// <summary>$C235 (JSR'd by $C248 from the section loader and $DE24): writes
+        /// $0400/$04D0=0 and $0590=$FF for slots 15..1. DEX/BNE exits at X=0, so the
+        /// player slot is never cleared — $E3F5/$E3FA then re-seeds it explicitly.</summary>
+        public void ClearForSectionLoad()
+        {
+            for (int i = SlotCount - 1; i >= 1; i--)
+            {
+                var s = Slots[i];
+                s.Flags = 0;           // $0400
+                s.Active = false;      // $04D0
+                s.PlacementIndex = 0xFF; // $0590
+            }
+        }
+
         private bool IsSpawned(int placementIndex)
         {
             for (int i = 1; i < SlotCount; i++)

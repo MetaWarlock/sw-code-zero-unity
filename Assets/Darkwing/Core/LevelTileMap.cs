@@ -63,6 +63,11 @@ namespace Darkwing.Core
         /// <summary>Current grid row ($FB).</summary>
         public int Row => _row;
 
+        /// <summary>$36 — the section loader rewrites the metatile-set bank before it
+        /// rebuilds the row ($E38F STA $36 ... JSR $DE24 → $E698), so decoding must
+        /// use the new set. Same-world only: $E388 never touches $32/$34/$2E.</summary>
+        public void ApplyTilesetBank(byte setBank) => _world.SetBank = setBank;
+
         /// <summary>Grid row stride = $2E: linear cell index $22 = row*GridWidth + column.</summary>
         public int GridWidth => _world.RowWidth;
 

@@ -65,6 +65,11 @@ namespace Darkwing.Core
         public byte PendingSpawnType;   // $042E boss drop request (Bushroot vines $52)
         public byte PendingMissionFlag; // $66 door mission flag ($FF/$F0)
         public byte BonusDigits;        // $05C4-$05CC pickup cascade (mod-10 accumulator)
+        public byte TilesetBank;        // $36 section metatile-set bank ($E38F)
+        public byte SectionFlag3D;      // $3D section table byte — semantics unknown (G16)
+        public byte SectionRingEvent;   // $D9 section ring/event byte ($E3BA → JSR $F84E)
+        public byte ChrLatch0;          // $1A CHR request ($E3AB, applied by NMI $FF21)
+        public byte ChrLatch1;          // $1B CHR request ($E3B0, $FF3B)
 
         private ITileMap _tiles;
         public ITileMap TileMap { get => _tiles; set => _tiles = value; }
@@ -134,6 +139,7 @@ namespace Darkwing.Core
                 int py = (short)(Y + 12);
                 result = Math.Max(result, TileTypeAt(px, py));
             }
+            HandleProbeType(result);   // $EBAA tail
             return result;
         }
 
@@ -146,6 +152,7 @@ namespace Darkwing.Core
                 int py = (short)(Y - 12);
                 result = Math.Max(result, TileTypeAt(px, py));
             }
+            HandleProbeType(result);   // $EBAA tail
             return result;
         }
 
@@ -159,6 +166,7 @@ namespace Darkwing.Core
                 int py = (short)(Y + SideYOff[i]);
                 result = Math.Max(result, TileTypeAt(px, py));
             }
+            HandleProbeType(result);   // $EBAA tail
             return result;
         }
 
@@ -167,6 +175,81 @@ namespace Darkwing.Core
             byte t = _tiles.TypeAt(wx, wy);
             if (t == 6) return 0; // $EBE3 clears 6
             return t;
+        }
+
+        /// <summary>
+        /// $EBAA-$EBDA tail of the shared probe service, slot 0 branch: the maximum
+        /// metatile type over the probe set is the event. Type 5 = "exit here":
+        /// $5B = $6D = script byte of the cell the player is standing over
+        /// ($EBC8: $0500 - $FD + $22, then ($34),Y AND #$1F). $5B is consumed by
+        /// $CA6E (JSR $E388); $6D is the sticky id used for the engine fork ($E478)
+        /// and the respawn after death ($D461).
+        /// Type 7 sets $0400 bit5 in the original ($EBDB); the port currently raises
+        /// that flag from type 8 in the hook path — see GAPS G16, left alone so the
+        /// hook golden stays byte-exact.
+        /// </summary>
+        private void HandleProbeType(byte maxType)
+        {
+            if (maxType != 5) return;
+            int idx = ((X >> 8) - (ScrollX >> 8) + CellIndex) & 0xFF;
+            byte script = FlagAt(idx);
+            PendingEvent = (byte)(script & 0x1F);   // $5B
+            CheckpointId = PendingEvent;            // $6D
+        }
+
+        /// <summary>
+        /// $E38F-$E406 plus the $DE24 reset list: put the camera and the player at
+        /// the section start and enter the spawn state $50=$12. $E388 does NOT touch
+        /// $32/$34/$2E, so the world grid and row stride stay as loaded — only the
+        /// cell/row the camera points at changes. The original also zeroes
+        /// $28/$29/$70/$71/$57/$5E/$63/$9B/$3B/$9D/$F8 and rebuilds the VRAM queue
+        /// through $E698; the caller's row reload is that queue's equivalent here.
+        /// $5D (continue count) is 0 in a normal door load, so the $C850 seed-array
+        /// branch at $E408 is not taken.
+        /// </summary>
+        public void ApplySectionLoad(SectionTable t, int id)
+        {
+            TilesetBank = t.TilesetBank(id);                // $36 ($E38F)
+            CellIndex = CellIndexNext = t.StartCell(id);    // $22/$23 ($E394)
+            byte row = t.StartRow(id);                      // $FB/$0520 ($E39B)
+            byte col = t.StartColumn(id);                   // $FD/$0500 ($E3A3)
+            ScrollYRow = row;
+            ScrollX = (ushort)(col << 8);                   // $FC=0 ($DE3A) + $FD
+            X = (ushort)((col << 8) | 0x30);                // $0500/$04F0=$30 ($E3D1)
+            Y = (ushort)((row << 8) | 0x06);                // $0520/$0510=$06 ($E3CC)
+            ChrLatch0 = t.ChrRequest0(id);                  // $1A ($E3AB)
+            ChrLatch1 = t.ChrRequest1(id);                  // $1B ($E3B0)
+            SectionFlag3D = t.Flag3D(id);                   // $3D ($E3B5)
+            SectionRingEvent = t.RingEvent(id);             // $D9 ($E3BA)
+            ScrollY = 0;                                    // $FA ($DE3C)
+            DirBits = 1;                                    // $52 ($DE2C)
+            ScrollState = 1;                                // $2B ($DE30)
+            ScrollMode = 1;                                 // $2F ($DE32)
+            StateTimer = 0;                                 // $51 ($DE5A clears $50)
+            AirSubState = 0;                                // $56
+            SavedState = 0;                                 // $58
+            HopTimer = 0;                                   // $5A
+            LandedFlag = 0;                                 // $5C
+            GasActive = 0;                                  // $5F
+            DeathFlag = 0;                                  // $64
+            LevelActive = -1;                               // $65
+            GasToggle = 0;                                  // $98
+            WallBlocked = 0;                                // $9E
+            InvulnFrames = 0;                               // $7C ($80E9 path)
+            CellGridByte = 0;                               // ($32),$22 refreshed next frame
+            CellScriptByte = 0;                             // ($34),$22
+            Flags = 0xD0;                                   // $0400 ($E3FA)
+            if (Objects != null)
+            {
+                var s0 = Objects.Slots[0];
+                s0.AnimNumber = 0x2C;                       // $0420 ($FA78, A=$2C)
+                s0.AnimTimer = 0;                           // $0430
+                s0.AnimFrame = 0;                           // $0410
+                s0.Active = true;                           // $04D0=$80
+            }
+            CutVelocity();                                  // $F5FC → FF,AB ($E401)
+            State = 0x12;                                   // $50 ($E406)
+            PendingEvent = 0;                               // $5B ($E3E8)
         }
 
         // ---------- Camera ($DA70/$DC19/$DBCE) ----------

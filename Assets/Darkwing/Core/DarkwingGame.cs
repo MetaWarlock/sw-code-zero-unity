@@ -111,6 +111,41 @@ namespace Darkwing.Core
             p.CellIndex = (byte)(p.ScrollYRow * p.RowStride + (p.ScrollX >> 8)); // $22
         }
 
+        private SectionTable _sections;
+
+        /// <summary>$E388 section/door descriptor tables, read from bank 7.</summary>
+        public SectionTable Sections
+        {
+            get { if (_sections == null && Bank7 != null) _sections = new SectionTable(Bank7); return _sections; }
+        }
+
+        /// <summary>$E478 engine fork: ids {4,6,8,$A,$C,$E} keep running the PRG=4
+        /// internal engine ($9800); the rest return through the PRG=5 one ($8000).</summary>
+        public bool SectionUsesInternalEngine { get; private set; }
+
+        /// <summary>$E388 with X = section id ($CA6E calls it from the $5B door
+        /// request, $D461 for the respawn after death).</summary>
+        public void LoadSection(byte sectionId)
+        {
+            var t = Sections;
+            if (t == null) return;
+            Objects?.ClearForSectionLoad();               // $C248 → $C235
+            Player.ApplySectionLoad(t, sectionId);        // $E38F-$E406 + $DE24
+            if (TileMap != null)
+            {
+                TileMap.ApplyTilesetBank(Player.TilesetBank);
+                TileMap.LoadRow(Player.ScrollYRow);       // $E698 row rebuild
+                TileMap.StreamColumns(Player.ScrollX);
+            }
+            var bg = new byte[16];
+            var sp = new byte[16];
+            t.ReadBgPalette(sectionId, bg);               // $C2F9 → $0300/$0320
+            t.ReadSpritePalette(sectionId, sp);           // $C319 → $0310/$0330
+            for (int i = 0; i < 16; i++) Ppu.PaletteRam[i] = bg[i];
+            for (int i = 0; i < 16; i++) Ppu.PaletteRam[16 + i] = sp[i];
+            SectionUsesInternalEngine = SectionTable.UsesInternalEngine(sectionId);
+        }
+
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
         public const int SfxJump = 0x21;
         public const int SfxLand = 0x10;
@@ -165,6 +200,9 @@ namespace Darkwing.Core
                 Player.CellScriptByte = TileMap.FlagByte(Player.CellIndex); // ($34),$22
                 Player.HookGrabCheck();
             }
+            // $CA6E: LDX $5B / JSR $E388 — consume the door request raised by the
+            // probe tail ($EBAA/$EBC8) in the same frame.
+            if (Player.PendingEvent != 0) LoadSection(Player.PendingEvent);
             // Audio advances via AudioSequencer.RenderFrame (Tick inside) once per
             // presented frame — SFX/music events queue at trigger time.
             if (Oam != null)
