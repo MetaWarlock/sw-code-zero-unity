@@ -95,21 +95,32 @@ namespace Darkwing.Core
             0x16,0x12,0x12,0x10,0x14,0x1A,0x16,0x10,0x0A,0x0A,0x0A,0x0A,0x0A,0x0A,0x0A,0x0A
         };
 
-        // Probe offset tables (fixed bank): $ED19 X triples, $ECAD Y offsets.
+        // Probe offset tables (fixed bank), 108 bytes each: $ECAD Y / $ED19 X.
+        // One table index selects BOTH offsets, and $EB52 advances the index by 1 per
+        // sample, so a set is a run of points, not a triple of X with one Y.
         private static readonly byte[] ProbeX =
         {
             0x0C,0x0C,0x0C, 0xF4,0xF4,0xF4, 0xF5,0x00,0x0B, 0xF5,0x00,0x0B,
             0x02,0x02,0x02, 0xFE,0xFE,0xFE, 0xFF,0x01,0x01, 0xFF,0x01,0x01,
             0x0C,0x0C,0x0C, 0xF4,0xF4,0xF4, 0xFF,0x00,0x01, 0xFF,0x00,0x01,
-            0x09,0x09, 0xF7,0xF7, 0xF8,0x08, 0xF8,0x08, 0x14,0x14, 0xEC,0xEC,
-            0xFF,0x01,0xFF,0x01, 0x04,0x04,0x04, 0xFC,0xFC,0xFC,
-            0xFF,0x00,0x01, 0xFF,0x00,0x01
+            0x09,0x09,0xF7, 0xF7,0xF8,0x08, 0xF8,0x08,0x14, 0x14,0xEC,0xEC,
+            0xFF,0x01,0xFF, 0x01,0x04,0x04, 0x04,0xFC,0xFC, 0xFC,0xFF,0x00,
+            0x01,0xFF,0x00, 0x01,0xFD,0x03, 0xFD,0x03,0x0C, 0x0C,0x0C,0xF4,
+            0xF4,0xF4,0xF5, 0x00,0x0B,0xF5, 0x00,0x0B,0x10, 0x10,0x10,0xF0,
+            0xF0,0xF0,0xF1, 0x00,0x0F,0xF1, 0x00,0x0F,0x10, 0x10,0x10,0xF0,
+            0xF0,0xF0,0xF9, 0x00,0x07,0xF9, 0x00,0x07,0xF9, 0x07,0xFD,0x03
         };
         private static readonly byte[] ProbeY =
         {
             0xF5,0x00,0x0B, 0xF5,0x00,0x0B, 0x0C,0x0C,0x0C, 0xF4,0xF4,0xF4,
             0xFF,0x01,0x01, 0xFF,0x01,0x01, 0x02,0x02,0x02, 0xFE,0xFE,0xFE,
-            0xFF,0x00,0x01, 0xFF,0x00,0x01, 0x02,0x02
+            0xFF,0x00,0x01, 0xFF,0x00,0x01, 0x02,0x02,0x02, 0xFE,0xFE,0xFE,
+            0xF9,0x07,0xF9, 0x07,0x08,0x08, 0xF8,0xF8,0xFC, 0x04,0xFC,0x04,
+            0x02,0x02,0xFE, 0xFE,0xFD,0x00, 0x03,0xFD,0x00, 0x03,0xEC,0xEC,
+            0xEC,0xFD,0xFD, 0xFD,0x10,0x10, 0xF0,0xF0,0xFD, 0x00,0x03,0xFD,
+            0x00,0x03,0x04, 0x04,0x04,0xFC, 0xFC,0xFC,0xF1, 0x00,0x0F,0xF1,
+            0x00,0x0F,0x10, 0x10,0x10,0xF0, 0xF0,0xF0,0xF9, 0x00,0x07,0xF9,
+            0x00,0x07,0x08, 0x08,0x08,0xF8, 0xF8,0xF8,0x08, 0x08,0xFC,0xFC
         };
 
         // 24-sector direction → direction code table ($F9A2, 32 entries).
@@ -343,10 +354,25 @@ namespace Darkwing.Core
         /// <summary>$F55E/$F581/$F5A4 Y -= ($0560.$0550) (up-positive velocity).</summary>
         internal static void IntegrateYSub(ObjectSystem.Slot s)
         {
-            int acc = (s.Y << 8) | s.YFrac;
-            acc -= (s.YVelInt << 8) | s.YVelFrac;
-            s.Y = (ushort)((acc >> 8) & 0xFFFF);
-            s.YFrac = (byte)acc;
+            int f = s.YFrac - s.YVelFrac;                       // $0460 -= $0550
+            s.YFrac = (byte)f;
+            int low = (s.Y & 0xFF) - (s.YVelInt & 0xFF) - (f < 0 ? 1 : 0); // $0510 -= $0560
+            int screen = s.Y >> 8;
+            low &= 0xFF;
+            if (low >= 0xF0) { low -= 240; screen++; }          // $F5BB screen radix
+            s.Y = (ushort)(((screen & 0xFF) << 8) | low);
+        }
+
+        /// <summary>$F581 rising integrate: same subtraction, but a borrow dips into the
+        /// previous screen and steps 16 px further so the pixel byte stays under 240.</summary>
+        internal static void IntegrateYRising(ObjectSystem.Slot s)
+        {
+            int f = s.YFrac - s.YVelFrac;
+            s.YFrac = (byte)f;
+            int low = (s.Y & 0xFF) - (s.YVelInt & 0xFF) - (f < 0 ? 1 : 0);
+            int screen = s.Y >> 8;
+            if (low < 0) { low = (low - 16) & 0xFF; screen--; } // $F596
+            s.Y = (ushort)(((screen & 0xFF) << 8) | (low & 0xFF));
         }
 
         /// <summary>$F5DA gravity: velocity -= $99/256, clamp fall to 8.00.</summary>
@@ -371,49 +397,76 @@ namespace Darkwing.Core
         // ---- Probes ($EB52) + snaps ($ED85/$ED9D/$EDB3/$EDD2) ----
 
         /// <summary>
-        /// $EB52 probe: 3 points at ProbeX[$40..$40+2], Y + ProbeY[$41].
-        /// Returns the max tile type ($10); >= 3 solid, 1 = one-way.
+        /// $EB52/$EBE8 probe. ONE table index selects the X offset ($ED19) and the Y
+        /// offset ($ECAD) together and the sampling loop advances that index by one per
+        /// point ($EBA4 INC $40 / DEC $41), so a set is setY+1 points at indices
+        /// setX..setX+setY — a floor set is ±11 at +12, a side set is +12 at −11/0/+11.
+        /// Returns the max tile type ($10): 0 air, 1 one-way, >= 3 solid; 6/7 zero it
+        /// ($EBE3) and 7 also sets $0400 bit5 ($EBDB). The last point sampled stays in
+        /// ctx.ProbePointX/Y ($06/$07) because the snaps align to it, not to the slot.
         /// </summary>
         internal static byte Probe(EnemyDispatcher ctx, ObjectSystem.Slot s, int setX, int setY)
         {
             if (ctx.Tiles == null) return 0;
-            int y = (short)(s.Y + ProbeY[setY & 31]);
             byte result = 0;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i <= setY; i++)
             {
-                int px = (short)(s.X + ProbeX[(setX + i) & 63]);
-                byte t = ctx.Tiles.TypeAt(px, y);
+                int idx = setX + i;
+                int px = (s.X + (sbyte)ProbeX[idx]) & 0xFFFF;   // $06/$03 (high = cell column)
+                int py = ProbePointY(s, (sbyte)ProbeY[idx]);
+                ctx.ProbePointX = px;
+                ctx.ProbePointY = py;
+                byte t = ctx.Tiles.TypeAt(px, py);
                 if (t > result) result = t;
             }
+            if (result == 7) s.Flags |= 0x20;                   // $EBDB
+            if (result == 6 || result == 7) result = 0;         // $EBE3
+            ctx.ProbeResult = result;                            // $10
             return result;
         }
 
-        /// <summary>$ED85 snap left after pushing right into a wall (probe set 0).</summary>
-        internal static void SnapXWallRight(ObjectSystem.Slot s)
+        /// <summary>
+        /// $EC1B-$EC4B: Y is mixed-radix — the low byte is a pixel inside a 240 px screen
+        /// and the high byte counts screens, so a point landing in [$F0,$FF] normalizes by
+        /// ±16 and carries into the screen byte ($F5BB/$EC47 do the same for positions).
+        /// </summary>
+        private static int ProbePointY(ObjectSystem.Slot s, int off)
         {
-            int local = (s.X + 0x0C) & 0x0F;
-            s.X = (ushort)(s.X - local);
+            int low = (s.Y & 0xFF) + off;
+            int screen = s.Y >> 8;
+            if (low >= 0xF0) { low = (low + 16) & 0xFF; screen++; }
+            else if (low < 0) { low = (low - 16) & 0xFF; screen--; }
+            return ((screen & 0xFF) << 8) | (low & 0xFF);
         }
 
-        /// <summary>$ED9D snap right after pushing left into a wall (probe set 3).</summary>
-        internal static void SnapXWallLeft(ObjectSystem.Slot s)
+        /// <summary>$ED85 snap left after pushing right into a wall (aligns the probe point).</summary>
+        internal static void SnapXWallRight(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            int local = (s.X - 0x0C) & 0x0F;
-            s.X = (ushort)(s.X + ((~local) & 0x0F) + 1);
+            s.X = (ushort)((s.X - (ctx.ProbePointX & 0x0F)) & 0xFFFF);
         }
 
-        /// <summary>$EDD2 snap up onto floor tile top (probe set 6, y +12).</summary>
-        internal static void SnapToFloor(ObjectSystem.Slot s)
+        /// <summary>$ED9D snap right after pushing left into a wall.</summary>
+        internal static void SnapXWallLeft(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            int local = (s.Y + 0x0C) & 0x0F;
-            s.Y = (ushort)(s.Y - local);
+            s.X = (ushort)((s.X + 16 - (ctx.ProbePointX & 0x0F)) & 0xFFFF);
         }
 
-        /// <summary>$EDB3 snap down below a ceiling tile (probe set 9, y -12).</summary>
-        internal static void SnapToCeiling(ObjectSystem.Slot s)
+        /// <summary>$EDD2 snap up onto the floor tile top (aligns the probe point Y).</summary>
+        internal static void SnapToFloor(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            int local = (s.Y - 0x0C) & 0x0F;
-            s.Y = (ushort)(s.Y + ((~local) & 0x0F) + 1);
+            int low = (s.Y & 0xFF) - (ctx.ProbePointY & 0x0F);
+            int screen = s.Y >> 8;
+            if (low < 0) { low += 240; screen--; }
+            s.Y = (ushort)(((screen & 0xFF) << 8) | low);
+        }
+
+        /// <summary>$EDB3 snap down below a ceiling tile.</summary>
+        internal static void SnapToCeiling(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            int low = (s.Y & 0xFF) + 16 - (ctx.ProbePointY & 0x0F);
+            int screen = s.Y >> 8;
+            if (low >= 240) { low -= 240; screen++; }
+            s.Y = (ushort)(((screen & 0xFF) << 8) | low);
         }
 
         /// <summary>
@@ -422,7 +475,7 @@ namespace Darkwing.Core
         internal static void WalkRight(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
         {
             IntegrateXPos(s);
-            if (Probe(ctx, s, probeSet, probeY) >= 3) SnapXWallRight(s);
+            if (Probe(ctx, s, probeSet, probeY) >= 3) SnapXWallRight(ctx, s);
             s.Flags |= 0x40;
         }
 
@@ -430,7 +483,7 @@ namespace Darkwing.Core
         internal static void WalkLeft(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
         {
             IntegrateXNeg(s);
-            if (Probe(ctx, s, probeSet, probeY) >= 3) SnapXWallLeft(s);
+            if (Probe(ctx, s, probeSet, probeY) >= 3) SnapXWallLeft(ctx, s);
             s.Flags = (byte)(s.Flags & ~0x40);
         }
 
@@ -441,32 +494,35 @@ namespace Darkwing.Core
         /// </summary>
         internal static bool FallAndLand(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
         {
-            bool landed = false;
-            if (s.YVelInt < 0) // falling (up-positive, negative = down)
+            if (s.YVelInt < 0) // falling ($F2E8 BMI → $F5A4)
             {
-                IntegrateYSub(s); // v negative → Y increases
-                ApplyGravity(s, ctx.Player.GravityFrac);
-                byte floor = Probe(ctx, s, probeSet, probeY);
-                bool slowFall = s.YVelInt >= -3; // $F4EC
-                bool oneWay = floor == 1 && slowFall && ((s.Y + 0x0C) & 0x0F) >= 8;
-                if (floor >= 2 || oneWay)
+                IntegrateYSub(s);
+                ApplyGravity(s, ctx.Player.GravityFrac);            // $F31F
+                byte floor = Probe(ctx, s, probeSet, probeY);       // $F326
+                if (floor == 0) return false;
+                // $F32E-$F344 (enemy branch, $F33A CPX #$01): any solid type snaps and lands;
+                // type 1 only while the probe point sits in the first half of its 16 px block
+                // ($F332 LDA $07 / AND #$0F / CMP #$08). $EDD2 + $F5FC + SEC.
+                if (floor >= 2 || (floor == 1 && (ctx.ProbePointY & 0x0F) < 8))
                 {
-                    SnapToFloor(s);
+                    SnapToFloor(ctx, s);
                     CutVelocity(s);
-                    landed = true;
+                    return true;
                 }
+                return false;
             }
-            else // rising ($F3C4)
+            // rising ($F3C4): $F581 integrate, gravity, then the probe index widens by the
+            // sample count ($40 = $40 + $41 + 1) so the points sit above the head.
+            IntegrateYRising(s);
+            ApplyGravity(s, ctx.Player.GravityFrac);                // $F42A
+            // $F432/$F436: for an enemy ANY non-zero probe ($EDB3) snap plus ($F471) cut, and
+            // $F474 always clears carry — hitting a ceiling is never a landing.
+            if (Probe(ctx, s, probeSet + probeY + 1, probeY) >= 1)
             {
-                IntegrateYSub(s); // v positive → Y decreases
-                ApplyGravity(s, ctx.Player.GravityFrac);
-                if (Probe(ctx, s, probeSet, probeY) >= 3)
-                {
-                    SnapToCeiling(s);
-                    CutVelocity(s);
-                }
+                SnapToCeiling(ctx, s);
+                CutVelocity(s);
             }
-            return landed;
+            return false;
         }
 
         // ---- Direction/aim helpers ----
@@ -1029,10 +1085,11 @@ namespace Darkwing.Core
                 if (s.AnimNumber == 0x43) { ThugAttack(s, ctx); return; }
                 s.T480--;
                 MoveThug(s, ctx);
-                if (s.Health != 0 && DistX(ctx, s) < 0x32)
+                // $8C7D: health==0 skips the distance gate, so the ladder INC always runs.
+                if (s.Health == 0 || DistX(ctx, s) < 0x32)
                 {
                     FacePlayerApply(ctx, s);
-                    s.StateLow |= 0x02;
+                    s.StateLow++; // $8C8C INC $04D0,X (byte increment, not a bit set)
                 }
                 return;
             }
@@ -1041,23 +1098,28 @@ namespace Darkwing.Core
             if (landed)
             {
                 if (s.AnimNumber != 0x41) SetAnim(s, 0x41);
-                MoveThug(s, ctx);
-                // $8CF4: landed on solid (probe >= 3) → turn + RNG hop
-                if (Probe(ctx, s, 6, 2) >= 3)
-                {
-                    s.Direction ^= 3;
-                    int i = RngE5PlusE4(false) & 0x03; // $8D3F
-                    s.YVelFrac = WalkerHopYF[i];
-                    s.YVelInt = (sbyte)WalkerHopYI[i];
-                }
             }
-            if (s.Behavior == 0x0C && s.AnimNumber == 0x41 && s.T490 == 0)
+            else SetAnim(s, 0x42); // $8CD6 airborne pose
+            MoveThug(s, ctx);      // $8CDB: the walk runs in both the landed and air frames
+            // $8CF4: landed on solid (probe >= 3) → turn + RNG hop
+            if (landed && Probe(ctx, s, 6, 2) >= 3)
             {
-                s.T490 = WalkerDelay[RngE5PlusE4(false) & 0x07];
-                ctx.Sfx?.Invoke(0x27);
-                SpawnWalkerGas(ctx, s);
+                s.Direction ^= 3;
+                int i = RngE5PlusE4(false) & 0x03; // $8D3F
+                s.YVelFrac = WalkerHopYF[i];
+                s.YVelInt = (sbyte)WalkerHopYI[i];
             }
-            if (s.T490 != 0) s.T490--;
+            // $8D05: behavior $0C exits before the gas block — only $0D spits.
+            if (s.Behavior != 0x0C)
+            {
+                if (s.AnimNumber == 0x41 && s.T490 == 0)
+                {
+                    s.T490 = WalkerDelay[RngE5PlusE4(false) & 0x07];
+                    ctx.Sfx?.Invoke(0x27);
+                    SpawnWalkerGas(ctx, s);
+                }
+                if (s.T490 != 0) s.T490--;
+            }
         }
 
         private static void MoveThug(ObjectSystem.Slot s, EnemyDispatcher ctx)

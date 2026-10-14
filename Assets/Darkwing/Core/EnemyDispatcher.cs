@@ -37,7 +37,11 @@ namespace Darkwing.Core
         public int ProjSlot { get; private set; } = -1;
 
         /// <summary>$10 — the last $EB52 probe result (max tile type).</summary>
-        public int ProbeResult { get; private set; }
+        public int ProbeResult { get; set; }
+
+        /// <summary>$06/$07 — the last probe point sampled; $ED85/$ED9D/$EDB3/$EDD2 align to it.</summary>
+        public int ProbePointX;
+        public int ProbePointY;
 
         public EnemyDispatcher(byte[] bank6, ObjectSystem objects, PlayerCore player,
                                Darkwing.Audio.AudioSequencer audio = null)

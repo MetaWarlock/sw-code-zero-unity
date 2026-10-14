@@ -236,6 +236,8 @@ public static class PhysCompare
             byte[] g = new byte[2048];
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             var e13 = game.Objects.Slots[13];
+            if (f <= 180)
+                sb.Append($" |f{f} e13 st={e13.StateLow:X2} an={e13.AnimNumber:X2} X={e13.X:X4} Y={e13.Y:X4} vy={((byte)e13.YVelInt):X2},{e13.YVelFrac:X2} dir={e13.Direction:X2} t480={e13.T480:X2} ty={map.TypeAt(e13.X, e13.Y + 0x0C):X} pX={p.X:X4} pY={p.Y:X4} p$50={p.State:X2}");
             int[] port = { p.State, p.StateTimer, p.InvulnFrames, game.Objects.Slots[0].AnimNumber,
                            game.Objects.Slots[0].AnimFrame, game.Objects.Slots[0].AnimTimer,
                            p.X, p.Y, (p.XVelInt << 8) | p.XVelFrac, ((byte)p.YVelInt << 8) | p.YVelFrac,

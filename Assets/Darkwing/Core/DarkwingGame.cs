@@ -58,6 +58,7 @@ namespace Darkwing.Core
             {
                 _bank6 = value;
                 Enemies = value != null ? new EnemyDispatcher(value, Objects, Player) : null;
+                if (Enemies != null) Enemies.Tiles = TileMap;   // $EB52 probe backend
             }
         }
         private byte[] _bank6;
@@ -91,7 +92,12 @@ namespace Darkwing.Core
         public GameData.LevelDef CurrentLevel { get; set; }
 
         /// <summary>World tile map; StreamColumns runs after the player moves.</summary>
-        public LevelTileMap TileMap { get; set; }
+        public LevelTileMap TileMap
+        {
+            get => _tileMap;
+            set { _tileMap = value; if (Enemies != null) Enemies.Tiles = value; }
+        }
+        private LevelTileMap _tileMap;
 
         /// <summary>Wire the player's level-table feeds ($32/$34 readers, $E7C6 row
         /// redraw) and seed the camera cell index ($22 = $FB*$2E + $FD).</summary>
