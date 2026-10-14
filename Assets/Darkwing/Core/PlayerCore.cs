@@ -351,7 +351,6 @@ namespace Darkwing.Core
         public void Step(byte held, byte pressed)
         {
             OnHookTileFlag = false;
-            if (InvulnFrames > 0) InvulnFrames--;
 
             switch (State & 0x1F)
             {
@@ -543,15 +542,29 @@ namespace Darkwing.Core
                 return;
             }
 
-            if ((held & 0x0C) == 0x08) // Up only → look up ($CBEF)
+            if ((held & 0x0C) == 0x08) // Up only → look up ($CBD7/$CC3A)
             {
+                SetAnimPlayer(0x04);
                 State = 3;
                 return;
             }
-            if ((held & 0x0C) == 0x04) // Down → crouch ($CC44)
+            if ((held & 0x0C) == 0x04) // Down → crouch ($CBD7/$CC44)
             {
+                SetAnimPlayer(0x06);
                 State = 2;
+                if (Objects != null) Objects.Slots[0].T490 = 0;   // $CC4F
                 return;
+            }
+
+            // $CBEF-$CC14: with no direction held, the ground handler restores the idle
+            // anim whenever it isn't already 1 (anim 5 keeps its own frame timing).
+            // This is what drops the hurt anim ($09) after state 6 exits.
+            var s = Objects?.Slots[0];
+            if (s != null && s.AnimNumber != 5 && s.AnimNumber != 1)
+            {
+                SetAnimPlayer(0x01);                     // $CC0B
+                State = 0;                               // $CC12
+                HopTimer = 0;                            // $CC14 ($5A)
             }
         }
 
@@ -731,18 +744,43 @@ namespace Darkwing.Core
         // ---------- State 6: hurt ground/knockback ($D2C3) ----------
         private void HurtGroundState(byte held, byte pressed)
         {
-            // knockback drift 0.5 px/frame, inverted steering ($D2C3)
+            // $D2C3-$D2CA: the knockback velocity is a fixed 0.5 px/frame; its sign comes
+            // from the latched pad byte $52, not from the live pad.
             XVelInt = 0; XVelFrac = 0x80;
-            bool steerRight = (held & 0x02) != 0; // Left held → drift right, etc.
-            // inverted: held Right (bit0) pushes left; held Left pushes right
-            if ((held & 0x03) != 0)
+            if (StateTimer == 0)                        // $D2CD tests BEFORE any decrement
             {
-                bool invertRight = (held & 0x01) != 0; // Right held → move left
-                MoveHorizontal(!invertRight);
+                State = 0;                              // $D2D3
+                WallBlocked = 0;                        // $D2D5 ($9E)
+                return;                                 // no probe/move/DEC: $0460 and $0430 hold
             }
-            VerticalPhysics(held, pressed);
-            StateTimer--;
-            if (StateTimer == 0) State = 0;
+            if (StateTimer == 0x0F) SpawnHurtAfterimage();  // $D2D8-$D313 (only the first frame)
+            VerticalPhysics(held, pressed);             // $D316: X=0, Y=2, A=6 → JSR $F2D7
+            StateTimer--;                               // $D31F
+            // $D323-$D33F: $52 bit 0 set → $F254 SUBTRACTS the velocity (drift left, i.e.
+            // backwards from the direction the player was facing); clear → $F200 adds it.
+            MoveHorizontal((DirBits & 1) == 0);
+            var g5 = HurtGhost;                         // $D346-$D34F: the afterimage follows X
+            if (g5 != null) { g5.X = X; }
+        }
+
+        /// <summary>$D2E1-$D313: the hurt afterimage is a copy of the player in slot 5
+        /// ($04D5/$0405/$0425 anim $0A, 20 px higher, behavior and hitbox cleared).</summary>
+        private ObjectSystem.Slot HurtGhost => Objects == null ? null : Objects.Slots[5];
+
+        private void SpawnHurtAfterimage()
+        {
+            if (Objects == null) return;
+            var g = Objects.Slots[5];
+            g.StateLow = 0x80;                          // $04D5
+            g.Active = true;
+            g.Flags = Flags;                            // $0405 = $0400
+            g.AnimNumber = 0x0A;                        // $FA6C with X=5
+            g.AnimTimer = 0; g.AnimFrame = 0;
+            g.X = X;                                    // $04F5/$0505
+            // $D2FF/$D303: the low byte subtracts $14 with NO borrow into the high byte.
+            g.Y = (ushort)(((Y & 0xFF00) | ((Y & 0xFF) - 0x14 & 0xFF)) & 0xFFFF);
+            g.BehaviorParam = 0;                        // $0575
+            g.Behavior = 0;                             // $04E5
         }
 
         // ---------- Level script hook ride ($DAFD) + vertical camera scroll ($DC6E/$DCC4) ----------
@@ -940,31 +978,46 @@ namespace Darkwing.Core
 
         // ---------- Damage ($F9C2) ----------
         /// <summary>
-        /// Fresh enemy/spike hit: 4-hit ladder hidden in the $05B2-$05B8 template.
-        /// hitFlash 1..4; the 4th hit is death.
+        /// Count of the $05B4/$05B8/$05B6/$05B2 sentinel chain ($82,$83,$83,$82):
+        /// 0..3 survived hits, the 4th kills. The hearts HUD reads the same chain.
         /// </summary>
         public byte HitLadder; // 0-3 survived hits
         private bool _wasAirborne;
 
-        public void TakeHit()
+        /// <summary>
+        /// $F9C2 hurt ladder. It runs ONLY for a caller that has just written
+        /// $7C=$3C (all six sites do: $8160, $D138, $D268, $D73C, $F476, $8E60) —
+        /// $F9C2 tests $7C and RTS's otherwise. It writes no velocity: the knockback
+        /// comes from the state-6 handler on the NEXT frame ($D2C3 → $0530/$0540).
+        /// </summary>
+        /// <param name="hazardAnim">$0420 of the object that hurt the player ($FA29).</param>
+        public void TakeHit(int hazardAnim = 0)
         {
-            if (InvulnFrames > 0 || State is 7 or 8) return;
+            if (InvulnFrames != 0x3C) return;               // $F9C3/$F9C6
+            StateTimer = 0x0F;                              // $F9CA
+            if (State != 0x04 && State != 0x0E && State != 0x0D)
+                SetAnimPlayer(HurtAnim(hazardAnim));        // $FA29 → $FA78
+            SavedState = State;                             // $F9E2
+            State = 6;                                      // $F9E6
+            if (HitLadder >= 3)                             // $FA11: the 4th hit dies
+            {
+                HitLadder = 4;
+                InvulnFrames = 0;                           // $FA18
+                StartDeath();                               // $FA1A: $50=$07
+                if (Objects != null) Objects.Slots[0].StateLow = 0x80; // $FA1E
+                SetAnimPlayer(0x09);                        // $FA23
+                return;
+            }
             HitLadder++;
-            InvulnFrames = 0x3C; // 60 frames
-            Sfx?.Invoke(0x15); // hurt ($CB9D: SFX $15)
-            if (HitLadder >= 4)
-            {
-                StartDeath();
-            }
-            else
-            {
-                SavedState = State;
-                State = 6;
-                StateTimer = 0x0F;
-                // $F9C2 writes no velocity: gold_hurt_a41 f174 keeps $0540/$0530 = 01,80 and
-                // $0560/$0550 = FF,AB; the 0.5 px/frame knockback comes from the state-6
-                // handler on the NEXT frame.
-            }
+        }
+
+        /// <summary>$FA29 hurt-anim chooser: the two special forms only when the
+        /// $6D checkpoint id and the hazard's anim match; otherwise the plain hurt $09.</summary>
+        private byte HurtAnim(int hazardAnim)
+        {
+            if (CheckpointId == 0x08 && hazardAnim == 0x4D) return 0x1D;
+            if (CheckpointId == 0x0C && hazardAnim == 0x5D) return 0x1C;
+            return 0x09;
         }
 
         // ---------- Enemy/pickup meter hooks (fixed-bank $890B/$8982/$88FF sites) ----------

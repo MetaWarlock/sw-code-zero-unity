@@ -17,6 +17,9 @@ namespace Darkwing.Core
 
         public readonly byte[] Framebuffer = new byte[ScreenWidth * ScreenHeight]; // NES palette indices 0..63
         public long Frame;
+        /// <summary>$95: the NMI frame counter. Bit 2 gates the player's invulnerability
+        /// blink (bank5 $80EB) and bit 0 alternates the slot update order.</summary>
+        public byte FrameParity;
         public readonly PlayerCore Player;
         public readonly Ppu Ppu;
         public readonly ObjectSystem Objects;
@@ -194,6 +197,7 @@ namespace Darkwing.Core
         public void Reset()
         {
             Frame = 0;
+            FrameParity = 0;
         }
 
         private byte _prevHeld;
@@ -202,6 +206,7 @@ namespace Darkwing.Core
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
+            FrameParity++; // $95 is incremented by the NMI every frame, before any logic
             // $CA6E called $E388 on a previous frame: the frame is spent inside the
             // loader — the staging loop yields through $E7A8/$C115 and the fade through
             // $C2A7/$FF06 — so no input, player or anim update happens until it returns.
@@ -292,7 +297,7 @@ namespace Darkwing.Core
                 Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX, (ushort)(Player.ScrollYRow << 8));
             }
             Enemies?.RunFrame();
-            Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
+            Oam.RunFrame(FrameParity, 36); // 36 = hidden entry 0 + 8 HUD sprites
             Ppu.Render(Framebuffer);
         }
 
@@ -353,8 +358,9 @@ namespace Darkwing.Core
         {
             using var ms = new System.IO.MemoryStream();
             using var w = new System.IO.BinaryWriter(ms);
-            w.Write((int)2); // schema version
+            w.Write((int)3); // schema version
             w.Write(Frame);
+            w.Write(FrameParity);
             w.Write(Player.HitLadder);
             w.Write(Player.InvulnFrames);
             w.Write(Player.GasEnergyHi);
@@ -383,8 +389,9 @@ namespace Darkwing.Core
             using var ms = new System.IO.MemoryStream(data);
             using var r = new System.IO.BinaryReader(ms);
             int version = r.ReadInt32();
-            if (version != 2) throw new System.InvalidOperationException($"State schema {version} unsupported");
+            if (version != 3) throw new System.InvalidOperationException($"State schema {version} unsupported");
             Frame = r.ReadInt64();
+            FrameParity = r.ReadByte();
             Player.HitLadder = r.ReadByte();
             Player.InvulnFrames = r.ReadByte();
             Player.GasEnergyHi = r.ReadByte();

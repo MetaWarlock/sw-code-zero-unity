@@ -224,9 +224,9 @@ namespace Darkwing.Core
             }
             if (s.AnimNumber < 0x3F) return;                // $814F: harmless classes
             if (Player.State == 0x07 || Player.State == 0x12) return;
-            Sfx?.Invoke(0x15);
-            Player.InvulnFrames = 0x3C;
-            Player.TakeHit();                                // $F9C2 knockback path
+            Sfx?.Invoke(0x15);                   // $8160
+            Player.InvulnFrames = 0x3C;          // $8165 ($F9C2 only runs on $7C=$3C)
+            Player.TakeHit(s.AnimNumber);        // $F9C2, with X still = this slot ($FA29)
         }
 
         // ==================================================================

@@ -76,18 +76,26 @@ namespace Darkwing.Core
                 s.Flags |= 0x10 | 0x80;
                 return;
             }
-            int dxHi = (short)(((s.X & 0xFF) - _player.ScrollX) & 0xFF); // low
-            int xHi = (s.X >> 8) - (_player.ScrollX >> 8);               // signed screens
-            if (xHi != 0)
+            // $8039-$8047: SEC + LDA $04F0 / SBC $FC gives the screen X byte, and the
+            // SAME subtraction's borrow feeds the high-byte SBC $FD, so the page
+            // difference is (Xhi - ScrollXhi - borrow), not a plain byte delta.
+            ushort sx = _player.ScrollX;
+            int dxLo = (s.X & 0xFF) - (sx & 0xFF) - 1;       // $0450,X ($8039/$803D)
+            s.ScreenX = (byte)dxLo;
+            int dxHi = (s.X >> 8) - (sx >> 8) - (dxLo < 0 ? 1 : 0);
+            bool xNoBorrow = dxHi >= 0;                      // C after the SBC at $8045
+            if ((dxHi & 0xFF) != 0)
             {
-                int mag = xHi < 0 ? -xHi : xHi;
-                if (mag >= 0x10) { Deactivate(s); return; }           // $807A
+                // $8096-$80A1: the magnitude tested is the SCREEN X byte, negated when
+                // the object sits at a lower page than the scroll. So a slot stays alive
+                // up to one page + $0F px away and frees at one page + $10 px.
+                int mag = xNoBorrow ? s.ScreenX : (byte)(-s.ScreenX & 0xFF);
+                if (mag >= 0x10) { Deactivate(s); return; }              // $809F/$80A1 → $807A
                 if (s.AnimNumber is 0x13 or 0x14 or 0x17 or 0x18 or 0x19 or 0x29)
-                { Deactivate(s); return; }                            // projectiles cull closer
-                s.Flags &= 0x7F;                                      // offscreen: keep active
+                { Deactivate(s); return; }                                // $80A3-$80B8
+                s.Flags = (byte)(flags & 0x7F);                           // $80BE, no advance
                 return;
             }
-            s.ScreenX = (byte)dxHi;
             // $8049-$805A byte-exact: sy = $0510 - $FA; if it borrows, $8051 SBC #$0F
             // runs with C still clear (−$10 more) and $8053 CLC makes the row compare
             // $0520 - $FB subtract ONE EXTRA row. So the borrow belongs in the row
@@ -108,13 +116,15 @@ namespace Darkwing.Core
             _player.State = 7;                                           // pit death
         }
 
+        /// <summary>$807A-$808A: the four writes a culled slot gets. Behavior ($04E0)
+        /// and direction ($0580) are NOT touched, so a respawned placement reuses them.</summary>
         private static void Deactivate(ObjectSystem.Slot s)
         {
             s.Active = false;
-            s.StateLow = 0;
-            s.Behavior = 0;
-            s.Direction = 0;
-            s.PlacementIndex = 0xFF;
+            s.StateLow = 0;        // $04D0,X
+            s.HitFlash = 0;        // $04C0,X
+            s.BehaviorParam = 0;   // $0570,X
+            s.PlacementIndex = 0xFF;   // $0590,X: the placement is released
         }
 
         // ---------- $8100-$8141: animation advance ----------
