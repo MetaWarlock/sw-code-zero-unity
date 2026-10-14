@@ -283,7 +283,7 @@ namespace Darkwing.Core
             CellIndex = CellIndexNext = w.StartCell;        // $22/$23 ($DD7B)
             ScrollYRow = w.StartRow;                        // $FB ($DD82)
             ScrollX = 0;                                    // $FC/$FD = 0 ($DD84/$DD89)
-            X = 0x30;                                       // $0500=0 ($DD8B), $04F0=$30 ($DDE3)
+            X = 0x2C;                                       // $0500=0 ($DD8B), $04F0=$2C ($DDDB LDA #$2C/STA $04F0,X)
             Y = (ushort)((w.StartRow << 8) | 0x06);         // $0520 ($DD82), $0510=$06 ($DDE3)
             ChrLatch0 = w.ChrReq0;                          // $1A ($DD99)
             ChrLatch1 = w.ChrReq1;                          // $1B ($DD9E)
@@ -293,6 +293,13 @@ namespace Darkwing.Core
             RowStride = (byte)w.RowWidth;                   // $2E ($DD94)
             BottomRow = w.TopRow;                           // $2D ($DDB1)
             ResetLoaderState(0);                            // $DDC8 JSR $DE24, $FD = 0
+
+            // $DE86-$DE91: the loader walks its own $25 cursor to $0F and steps $23 with
+            // it — 144 passes for the world-load seed ($25 = $0F|$08 from $DE82). The ROM
+            // time-slices the loop with the $E7AC yield over ~10 frames (gold_w00-$23 at
+            // f328); the port runs it inline so the incoming cell is armed from the load
+            // frame instead of lagging two cells behind until the first scroll.
+            for (int guard = 0; guard < 256 && !StageSectionPass(); guard++) { }
 
             if (Objects != null)
             {

@@ -1,0 +1,33 @@
+{
+  "rom_sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "argv": [
+    "D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\vendor\\mesen-agent\\mesen-agent.exe",
+    "D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes",
+    "--home",
+    "D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\gold_w02\\home",
+    "--frames",
+    "700",
+    "--timeout",
+    "120",
+    "--lua",
+    "D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\gold_w02\\capture.lua",
+    "--lua-allow-io",
+    "--screenshot",
+    "D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\gold_w02\\final.png",
+    "--load-state",
+    "D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\runs\\select_mission\\final.mss",
+    "--input",
+    "0:right@30-33",
+    "--input",
+    "0:a@120-123",
+    "--input",
+    "0:a@300-303",
+    "--input",
+    "0:a@460-463",
+    "--input",
+    "0:right@520-690",
+    "--save-state",
+    "Research/DarkwingDuck/reference/gold_w02/gameplay.mss"
+  ],
+  "binary_sha256": "4143766f2b900e63663ea000655f24fd824f2ce5324c2575025f8bb68030a910"
+}

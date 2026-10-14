@@ -8,7 +8,7 @@ public static class PhysCompare
     /// anim advance + slot sync), replaying the captured original input schedule.
     /// </summary>
     private static string Compare(string name, int frames, System.Func<int, byte> input,
-        int seedFrame = 0, bool camera = false, bool enemies = false)
+        int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0)
     {
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
@@ -27,7 +27,7 @@ public static class PhysCompare
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank1.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"));
-        var world0 = decoder.GetWorld(0);
+        var world0 = decoder.GetWorld((byte)world);
         var map = new Darkwing.Core.LevelTileMap(decoder, game.Ppu, world0);
         map.StreamColumns(0);
         game.Player.TileMap = map;
@@ -39,7 +39,7 @@ public static class PhysCompare
             game.ObjectTypeTable = File.ReadAllBytes(root + "/Assets/Darkwing/Data/object_types.bytes");
             // RunWorldServices only spawns when a level def is live; the route golden needs
             // the mission-1 placements so the room-0x02 walker exists for the f337 contact.
-            game.CurrentLevel = data.Levels[0];
+            game.CurrentLevel = data.Levels[world];
         }
 
         // Seed from the golden frame `seedFrame`.
@@ -267,6 +267,116 @@ public static class PhysCompare
     /// (first ridden frame) and every later frame is compared, camera state included.
     /// </summary>
     public static string Hook() => Compare("hook_ride2", 300, f => 0, seedFrame: 1, camera: true);
+
+    /// <summary>Per-world `$DD57` seeding. `reference/gold_wNN` are original-ROM captures made
+    /// with `probe_run --patch 31=NN --patch-frame 314`: $31 is only READ by the level entry
+    /// (bank 7 `$C8B5 JSR $FF55 #$04` → `$C8BD JSR $DD57`), so injecting the world id one frame
+    /// before the loader runs selects the world without touching the ROM. The loader's seed
+    /// ($36/$FB/$22/$23/$2E/$2D/$1A/$1B/$3D/$04F0/$0510/$FC) must equal DarkwingGame.LoadWorld.
+    /// Fixture note: the world id is injected, the loader and all data are the original ROM's.</summary>
+    public static string WorldSeeds()
+    {
+        string root = "D:/Art/SW Code Zero Unity";
+        var data = Darkwing.Core.DataLoader.Load(
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/screens.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levels.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/anims.bytes"));
+        var sb = new System.Text.StringBuilder();
+        int okAll = 0, nAll = 0;
+        for (int world = 0; world < 7; world++)
+        {
+            string dir = root + $"/Research/DarkwingDuck/reference/gold_w{world:X2}";
+            if (!File.Exists(dir + "/ram_frames.bin")) { sb.Append($"w{world}: NO CAPTURE; "); continue; }
+            byte[] ram = File.ReadAllBytes(dir + "/ram_frames.bin");
+            int frames = ram.Length / 2048;
+
+            var game = new Darkwing.Core.DarkwingGame(data);
+            game.Bank5 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank5.bytes");
+            game.Bank7 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes");
+            var decoder = new Darkwing.Core.RoomDecoder(
+                File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank0.bytes"),
+                File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank1.bytes"),
+                File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes"),
+                File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"));
+            game.LoadWorld(decoder, (byte)world);
+            var p = game.Player;
+
+            // $2E is $01 before the load and 0x0A..0x13 for every world after it.
+            int lf = -1;
+            for (int f = 300; f < frames; f++)
+                if (ram[f * 2048 + 0x2E] != 0x01) { lf = f; break; }
+            if (lf < 0) { sb.Append($"w{world}: loader never ran; "); continue; }
+            byte[] g = new byte[2048];
+            System.Array.Copy(ram, lf * 2048, g, 0, 2048);
+
+            // $DD76-$DDB6 (descriptor) lands in the load frame; the slot-0/player seed
+            // ($DDDB-$DDFE) only shows in the snapshot once the ~10-frame $DE24 staging
+            // loop has run, so the ROM reports it from f328 for these fixtures and the
+            // port needs the same number of Steps. $1A/$1B hold the CHR request until
+            // the NMI at f330, which is why the latch itself is compared two frames later.
+            int pf = System.Math.Min(lf + 10, frames - 1);
+            int cf = System.Math.Min(lf + 12, frames - 1);
+            byte[] q = new byte[2048];
+            System.Array.Copy(ram, pf * 2048, q, 0, 2048);
+            byte[] r = new byte[2048];
+            System.Array.Copy(ram, cf * 2048, r, 0, 2048);
+            var pad = Darkwing.Core.NesButtons.FromByte(0);
+            for (int i = lf; i < pf; i++) game.Step(pad);
+
+            var fields = new System.Collections.Generic.List<string>();
+            void One(string label, byte got, byte want)
+            {
+                nAll++;
+                bool ok = got == want;
+                if (ok) okAll++;
+                fields.Add(ok ? label : $"{label}={want:X2}!={got:X2}");
+            }
+            One("$36", p.TilesetBank, g[0x36]);
+            One("$FB", p.ScrollYRow, g[0xFB]);
+            One("$2E", p.RowStride, g[0x2E]);
+            One("$2D", p.BottomRow, g[0x2D]);
+            One("$3D", p.SectionFlag3D, g[0x3D]);
+            One("$22", p.CellIndex, q[0x22]);
+            // $DD7B/$DD7D seed $23 = $22, $DE7E DEC $23 puts it one cell BEHIND the camera,
+            // and the $DE86-$DE91 loop walks the $25 cursor to $0F while stepping $23 with
+            // it (144 passes), ending at StartCell+1. The ROM time-slices that loop over
+            // ~10 frames, the port runs it inline inside ApplyWorldLoad.
+            One("$23", p.CellIndexNext, q[0x23]);
+            One("$04F0", (byte)(p.X & 0xFF), q[0x4F0]);
+            One("$0500", (byte)(p.X >> 8), q[0x500]);
+            One("$0510", (byte)(p.Y & 0xFF), q[0x510]);
+            One("$0520", (byte)(p.Y >> 8), q[0x520]);
+            One("$FC", (byte)(p.ScrollX & 0xFF), q[0xFC]);
+            One("$FD", (byte)(p.ScrollX >> 8), q[0xFD]);
+            One("$0400", p.Flags, q[0x400]);
+            One("$50", p.State, q[0x50]);
+            // The port applies the request inside LoadWorld and zeroes the latch there, so
+            // only the consumed-by-f330 semantics can be compared — the banks are below.
+            One("$1A", p.ChrLatch0, r[0x1A]);
+            One("$1B", p.ChrLatch1, r[0x1B]);
+            One("CHR1", (byte)game.Ppu.Chr1Bank, (byte)(g[0x1B] & 0x7F));
+            One("CHR0", (byte)game.Ppu.Chr0Bank, (byte)(g[0x1A] & 0x7F));
+            sb.Append($"w{world}@f{lf}/{pf}: {okAll}/{nAll} cum [{string.Join(" ", fields)}]\n");
+        }
+        sb.Append($"RESULT: world seeds {okAll}/{nAll} fields over 7 captures\n");
+        return sb.ToString();
+    }
+
+    /// <summary>Per-mission gameplay golden. Every `gold_wNN` capture is the level-entry
+    /// fixture (`probe_run --patch 31=NN --patch-frame 314 --input` idle pad), so the port is
+    /// seeded from f330 — two frames after the $DDFE state-$09 handover — and replayed with
+    /// zero input through the full stack (gravity, collision map, camera, column streamer,
+    /// spawner). Missions 2-7 had no frame comparisons at all before these captures.</summary>
+    public static string WorldWalks()
+    {
+        var sb = new System.Text.StringBuilder();
+        for (int world = 0; world < 7; world++)
+            sb.Append(Compare($"w{world:X2}", 360, f => (byte)0,
+                seedFrame: 330, camera: true, enemies: true, world: world)).Append('\n');
+        return sb.ToString();
+    }
 
     /// <summary>Dumps the mission-1 placement list the spawner reads, to find why the
     /// route golden has no live objects (activation compares ScreenX/ScreenY against
