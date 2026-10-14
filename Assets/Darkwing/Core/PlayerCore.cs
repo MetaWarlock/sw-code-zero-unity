@@ -67,6 +67,7 @@ namespace Darkwing.Core
         public byte BonusDigits;        // $05C4-$05CC pickup cascade (mod-10 accumulator)
         public byte TilesetBank;        // $36 section metatile-set bank ($E38F)
         public byte SectionFlag3D;      // $3D section table byte — semantics unknown (G16)
+        public byte IntroHoldFlag;      // $3B intro hold ($E476 sets $78 for even checkpoint ids)
         public byte SectionRingEvent;   // $D9 section ring/event byte ($E3BA → JSR $F84E)
         public byte ChrLatch0;          // $1A CHR request ($E3AB, applied by NMI $FF21)
         public byte ChrLatch1;          // $1B CHR request ($E3B0, $FF3B)
@@ -198,14 +199,13 @@ namespace Darkwing.Core
         }
 
         /// <summary>
-        /// $E38F-$E406 plus the $DE24 reset list: put the camera and the player at
-        /// the section start and enter the spawn state $50=$12. $E388 does NOT touch
-        /// $32/$34/$2E, so the world grid and row stride stay as loaded — only the
-        /// cell/row the camera points at changes. The original also zeroes
-        /// $28/$29/$70/$71/$57/$5E/$63/$9B/$3B/$9D/$F8 and rebuilds the VRAM queue
-        /// through $E698; the caller's row reload is that queue's equivalent here.
-        /// $5D (continue count) is 0 in a normal door load, so the $C850 seed-array
-        /// branch at $E408 is not taken.
+        /// $E38F-$E3D3 + $DE24, i.e. the frame $E388 spends on the descriptor tables.
+        /// $E388 does NOT touch $32/$34/$2E, so the world grid and row stride stay as
+        /// loaded — only the cell/row the camera points at changes. Everything the
+        /// loader writes after the $DE24 staging loop ($FA78 anim seed, $0400, the
+        /// $F5FC velocity cut, $50=$12) belongs to <see cref="FinishSectionLoad"/>:
+        /// gold_door_id1 shows those bytes landing 11 frames later, because $DE24 only
+        /// leaves when the $E698 cursor reaches $0F and $E3ED then yields one more NMI.
         /// </summary>
         public void ApplySectionLoad(SectionTable t, int id)
         {
@@ -232,12 +232,74 @@ namespace Darkwing.Core
             LandedFlag = 0;                                 // $5C
             GasActive = 0;                                  // $5F
             DeathFlag = 0;                                  // $64
-            LevelActive = -1;                               // $65
+            LevelActive = 0;                                // $65 ($DE5E, A=$00 — never negative after a load)
+            IntroHoldFlag = 0;                              // $3B ($DE62; $E476 may re-set it)
             GasToggle = 0;                                  // $98
             WallBlocked = 0;                                // $9E
             InvulnFrames = 0;                               // $7C ($80E9 path)
             CellGridByte = 0;                               // ($32),$22 refreshed next frame
             CellScriptByte = 0;                             // ($34),$22
+            PendingEvent = 0;                               // $5B ($E3E8)
+            State = 0;                                      // $50 ($DE5A, held until the tail)
+
+            // $DE6C-$DE78: the $E698 cursor starts at bit7 = bit0 of the start column
+            // (two RORs through carry, only bit7 kept) and $0F = ($25 ^ $80) | $08.
+            bool flipped = (col & 1) != 0;
+            StageCursor = (byte)(flipped ? 0x80 : 0x00);
+            StageTarget = (byte)(flipped ? 0x08 : 0x88);
+            // $DE7A-$DE84: a non-zero $23 decrements it and restarts the cursor at $0F|$70.
+            if (CellIndexNext != 0)
+            {
+                CellIndexNext--;
+                StageCursor = (byte)(StageTarget | 0x70);
+            }
+            // $E785 selects the (step, boundary) pair $E7BE/$E7BF indexed by $2F&2.
+            bool reverse = (ScrollMode & 2) != 0;
+            StageStep = (sbyte)(reverse ? 0xFF : 0x01);
+            StageBoundary = (byte)(reverse ? 0x7F : 0x00);
+        }
+
+        public byte StageCursor;                            // $25
+        public byte StageTarget;                            // $0F
+        public byte StageBoundary;                          // $E7BF,X
+        public sbyte StageStep;                             // $E7BE,X
+
+        /// <summary>
+        /// $E698 passes per frame. The real loop only yields at $E7AC when $F0 says the
+        /// frame's CPU time is gone, so the split is time-based, not counted: gold_door_id1
+        /// spends 144 passes over 10 frames with per-frame counts 9-16 (13,13,15,15,16,16,
+        /// 15,16,16,9). 15 reproduces that capture's frame count and scales pass totals to
+        /// frames proportionally for other sections.
+        /// </summary>
+        public const int StagePassesPerFrame = 15;
+
+        /// <summary>
+        /// One frame of the $DE86/$DE8A/$DE8D loop: $E698 rebuilds the next four VRAM
+        /// row records and advances $25 by $E7BE,X ($E78A-$E790); every time $25&$7F
+        /// hits $E7BF,X it also steps $23 ($E792-$E79F). Returns true when $25 reaches
+        /// $0F, which is what lets $E388 continue to the $FF06 yield.
+        /// </summary>
+        public bool StageSectionPass()
+        {
+            for (int i = 0; i < StagePassesPerFrame; i++)
+            {
+                StageCursor = (byte)(StageCursor + StageStep);
+                if ((StageCursor & 0x7F) == StageBoundary)
+                    CellIndexNext = (byte)(CellIndexNext + StageStep);
+                if (StageCursor == StageTarget) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// $E3F0-$E406, written on the frame after the staging loop exits: the $FA78
+        /// anim seed ($0420=$2C, $0430/$0410=0), $04D0=$80, $0400=$D0, the $F5FC
+        /// velocity cut and the spawn state $50=$12. $E408's $C850 seed-array branch is
+        /// not taken because $5D is 0 in a normal door load.
+        /// </summary>
+        public void FinishSectionLoad()
+        {
+            _matLanded = 0;                                 // $04D0 = $80 ($E3F5): low nibble clear
             Flags = 0xD0;                                   // $0400 ($E3FA)
             if (Objects != null)
             {
@@ -245,11 +307,10 @@ namespace Darkwing.Core
                 s0.AnimNumber = 0x2C;                       // $0420 ($FA78, A=$2C)
                 s0.AnimTimer = 0;                           // $0430
                 s0.AnimFrame = 0;                           // $0410
-                s0.Active = true;                           // $04D0=$80
+                s0.Active = true;                           // $04D0=$80 ($E3F5)
             }
             CutVelocity();                                  // $F5FC → FF,AB ($E401)
             State = 0x12;                                   // $50 ($E406)
-            PendingEvent = 0;                               // $5B ($E3E8)
         }
 
         // ---------- Camera ($DA70/$DC19/$DBCE) ----------
@@ -304,8 +365,62 @@ namespace Darkwing.Core
                 case 0x0A: ForcedHopState(); break;
                 case 0x07: DeathThroesState(); break;
                 case 0x08: DeathResolveState(); break;
+                case 0x12: MaterializeState(); break;
                 default: break; // remaining states wired during M4/M7
             }
+        }
+
+        // ---------- State 12: materialize walk-out ($D517) ----------
+        private byte _matLanded; // $04D0 bits 0-3 (slot 0): floor contact marker
+
+        /// <summary>
+        /// $D517-$D588: the post-transition fall. While $04D0&amp;$0F is 0 the player only
+        /// free-falls ($F5A4/$F5DA); $D51E takes the plain-physics branch while the fall
+        /// speed is still in $FA..$FF, and $D525 runs the floor probe ($F4D7 with $40=$06,
+        /// $41=$02) once it passes $F9 — that is why gold_door_id1 falls 24 frames from
+        /// Y=$0106 before $D535 marks the landing. The next frame takes $D568: state 0,
+        /// anim $01 ($FA78), velocity zeroed, or $50=$0F when $3B (the $E476 intro hold)
+        /// is set.
+        /// </summary>
+        private void MaterializeState()
+        {
+            if (_matLanded == 0)
+            {
+                // $D51E tests the PRE-gravity speed byte, so $FA..$FF takes the plain
+                // $D539 path and the floor probe only starts once the fall reaches $F9.
+                if ((byte)YVelInt >= 0xFA)
+                {
+                    IntegrateY();                                   // $D539: JSR $F5A4
+                    ApplyGravity();                                 // $D53C: JMP $F5DA
+                    return;
+                }
+                IntegrateY();                                       // $F4DB
+                ApplyGravity();                                     // $F4DE
+                byte hit = ProbeFloor();                            // $F4E1 → $10
+                // $F4EC: a type-1 platform is only landed on when the fall byte is < $FC.
+                if (hit != 0 && (hit != 1 || (byte)YVelInt < 0xFC))
+                {
+                    int probeY = Y + 12;
+                    Y = (ushort)((Y - (probeY & 0x0F)) & 0xFFFF);   // $EDD2 snap
+                    CutVelocity();                                  // $F4F6
+                }
+                if (hit != 0)
+                {
+                    _matLanded = 1;                                 // $D535 INC $04D0
+                    Sfx?.Invoke(0x10);                              // $D530 SFX $10
+                }
+                return;
+            }
+            State = 0;                                          // $D571
+            if (Objects != null)
+            {
+                var s = Objects.Slots[0];
+                s.AnimNumber = 0x01;                            // $D575 JSR $FA78
+                s.AnimFrame = 0;
+                s.AnimTimer = 0;
+            }
+            YVelInt = 0; YVelFrac = 0;                           // $D57A/$D57D
+            if (IntroHoldFlag != 0) State = 0x0F;               // $D580-$D586
         }
 
         // ---------- State 7: death throes ($D353) ----------
@@ -357,6 +472,7 @@ namespace Darkwing.Core
             YVelInt = 0; YVelFrac = 0;
             Flags = 0xD0;
             State = 0x12; // walk-out transition
+            _matLanded = 0;
             DeathFlag = 0;
             InvulnFrames = 0;
         }
@@ -472,6 +588,11 @@ namespace Darkwing.Core
         /// <returns>true if landed this frame</returns>
         private bool VerticalPhysics(byte held, byte pressed)
         {
+            // $CD3E-$CD54 runs BEFORE the $F2E5 sign test: with the velocity integer in
+            // 0..$04 and A released, $F5FC force-sets $FFAB, so a zero velocity (the state
+            // -$12 exit leaves $0560/$0550 = 0) still takes the falling branch and probes
+            // the floor — gold_door_id1 f76 keeps $0560 = $FF instead of rising.
+            if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
             bool falling = YVelInt < 0;
             _wasAirborne = State is 1 or 0x0B or 0x10;
             if (falling)
@@ -479,8 +600,9 @@ namespace Darkwing.Core
                 IntegrateY();               // down
                 ApplyGravity();
                 byte floor = ProbeFloor();
-                bool slowFall = YVelInt >= -3; // vel >= $FD (-3) per $F4EC
-                bool oneWayLand = floor == 1 && slowFall && ((Y + 12) & 0x0F) >= 8;
+                // $F4E4-$F4F3: any type >= 2 hits; type 1 (one-way) only when the fall is
+                // NOT slow — $F4EC skips the hit when the velocity byte is >= $FC (-4..-1).
+                bool oneWayLand = floor == 1 && (byte)YVelInt < 0xFC;
                 if (floor == 2 || floor == 3 || floor >= 8 || oneWayLand)
                 {
                     // land ($F360): snap onto tile top ($EDB3)

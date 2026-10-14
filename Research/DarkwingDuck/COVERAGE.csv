@@ -17,7 +17,7 @@ engine,input,controller,disasm,yes,no,n/a,$C162: $14/$16 P1, bits 7=A..0=Right
 engine,banks,queue,disasm+trace,yes,no,n/a,$FF55/$FF21/$FF3B; queue $DC[8] marker $88; NMI->bank3 AUDIO task
 engine,objects,16 slots,disasm+trace,yes,no,n/a,$0400..$059F stride $10; update order alternates by $95 parity; spawner bank4 $8090
 engine,gameplay_loop,main,disasm+trace,yes,no,n/a,$C9AC; camera $DA70; script byte ($34),Y
-player,physics,all_states,disasm doc,yes,partial,no,PlayerCore.cs: states 0/1/2/3/6/0A/0B/0C transcribed; golden compare pending geometry
+player,physics,all_states,disasm doc+golden,yes,partial,partial,PlayerCore.cs: states 0/1/2/3/6/0A/0B/0C/12 transcribed; walk/jump/hook/door goldens pass, damage/knockback golden pending (G14)
 player,weapons,gas_gun,disasm doc,yes,no,no,projectile behaviors 1-4 documented; spawn max [3,1,2,1]
 player,damage,invuln_death,disasm doc,yes,no,no,4-hit ladder $05B2-$05B8; 60 invuln frames; states 7/8
 flow,screens,boot_to_title,probes,yes,no,no,docs/game_flow.md flow diagram
@@ -56,4 +56,4 @@ enemies,spawner,placements_5arrays,cell-activation,yes,yes,pass,first enemy spaw
 enemies,integration,game_loop,wired,yes,yes,pass,Bank6/ObjectTypeTable wired in launcher+scene; duplicate dispatch call removed
 player,hook_ride,DAFD_DB6D_DB8B_DC6E_D7F9,gold_hook_ride2,yes,yes,byte-exact,PhysCompare.Hook 298/298 seed f1: grab->hang->ride f2-f81 byte-exact ($FA+3/f, $0510+0.5, row wrap $FB 1->2 $22 $1C->$2D $23->$3E, release $50=01 at f81) + post-release fall f82-f93 ($CD3E/$F5FC cut to FF,AB before $F2E5 sign test -> falling branch, gravity -40/f, landing Y $0234 at f93); Walk/Jump still 119/119
 player,regression,walk_jump_after_hook,frame-exact,yes,yes,PASS,PhysCompare.Walk/Jump 119/119 after hook transcription (unity command run_script --file AgentScripts/PhysCompare.cs, 2026-10-14)
-flow,doors,E388_section_loader,disasm,yes,no,no,docs/doors_sections.md: id=(flag&$1F) at $EBD4, 10 tables @world_bank7 0x2497..0x2611 (42B), $DE24 reset, engine select by $6D; bank1 $970C/$971A/$9728 door ids; implementation pending
+flow,doors,E388_section_loader,golden_98f,yes,yes,PASS,SectionTable+ApplySectionLoad+AdvanceSectionStage: $DE86 staging (1 $E698/frame, $25 05..88), $C270 fade, $E3F0-$E406 tail, $D517 state $12; PhysCompare.Door 15 fields x 98/98 frame-exact vs gold_door_id1

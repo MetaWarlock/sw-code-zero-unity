@@ -123,14 +123,26 @@ namespace Darkwing.Core
         /// internal engine ($9800); the rest return through the PRG=5 one ($8000).</summary>
         public bool SectionUsesInternalEngine { get; private set; }
 
+        /// <summary>0 = not loading, 1 = $DE24 staging loop, 2 = the $E3ED yield frame,
+        /// 3 = the $C270-$C2BF palette fade service.</summary>
+        private int _sectionStage;
+        private bool _chrPending;
+        private byte _fadeLevel;    // $0F fade level ($30 → $20 → $10 → $00)
+        private byte _fadeDelta;    // $0D per-step delta ($F0 = fade in from black)
+        private byte _fadeFrame;    // frames served inside the $C270 loop ($0E = 4 per step)
+        private readonly byte[] _paletteSrc = new byte[32]; // $0320/$0330 un-faded palette
+        public bool SectionLoading => _sectionStage != 0;
+
         /// <summary>$E388 with X = section id ($CA6E calls it from the $5B door
-        /// request, $D461 for the respawn after death).</summary>
+        /// request, $D461 for the respawn after death). The loader does not return
+        /// for ~11 frames, so only the descriptor tables are written here; <see cref="Step"/>
+        /// finishes the staging and the $E3F0-$E406 tail.</summary>
         public void LoadSection(byte sectionId)
         {
             var t = Sections;
             if (t == null) return;
             Objects?.ClearForSectionLoad();               // $C248 → $C235
-            Player.ApplySectionLoad(t, sectionId);        // $E38F-$E406 + $DE24
+            Player.ApplySectionLoad(t, sectionId);        // $E38F-$E3D3 + $DE24
             if (TileMap != null)
             {
                 TileMap.ApplyTilesetBank(Player.TilesetBank);
@@ -141,9 +153,16 @@ namespace Darkwing.Core
             var sp = new byte[16];
             t.ReadBgPalette(sectionId, bg);               // $C2F9 → $0300/$0320
             t.ReadSpritePalette(sectionId, sp);           // $C319 → $0310/$0330
-            for (int i = 0; i < 16; i++) Ppu.PaletteRam[i] = bg[i];
-            for (int i = 0; i < 16; i++) Ppu.PaletteRam[16 + i] = sp[i];
+            for (int i = 0; i < 16; i++) _paletteSrc[i] = bg[i];
+            for (int i = 0; i < 16; i++) _paletteSrc[16 + i] = sp[i];
+            for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = _paletteSrc[i];
+            // $E454-$E476: checkpoint ids $02,$04,$06,$08,$0A,$0C,$0E set the $3B intro
+            // hold, which redirects the state-$12 exit to $50=$0F instead of $50=$00.
+            Player.IntroHoldFlag =
+                (Player.CheckpointId >= 0x02 && Player.CheckpointId <= 0x0E
+                 && (Player.CheckpointId & 1) == 0) ? (byte)0x78 : (byte)0x00;
             SectionUsesInternalEngine = SectionTable.UsesInternalEngine(sectionId);
+            _sectionStage = 1;
         }
 
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
@@ -177,6 +196,25 @@ namespace Darkwing.Core
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
+            // $CA6E called $E388 on a previous frame: the frame is spent inside the
+            // loader — the staging loop yields through $E7A8/$C115 and the fade through
+            // $C2A7/$FF06 — so no input, player or anim update happens until it returns.
+            if (_sectionStage != 0)
+            {
+                // The NMI of this frame consumes any latch set on a previous frame; do it
+                // before the stage advances so the tail frame keeps $1A/$1B = $80/$90.
+                ConsumeChrLatch();
+                if (!AdvanceSectionStage())
+                {
+                    Frame++;
+                    return;
+                }
+                // $E388 RTS-ed into $CA75: the player dispatcher ($CAFC → $CB41) already
+                // ran its pass of this frame, only the world services are left.
+                RunWorldServices();
+                Frame++;
+                return;
+            }
             byte held = pad1.ToByte();
             byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
             _prevHeld = held;
@@ -203,32 +241,105 @@ namespace Darkwing.Core
             // $CA6E: LDX $5B / JSR $E388 — consume the door request raised by the
             // probe tail ($EBAA/$EBC8) in the same frame.
             if (Player.PendingEvent != 0) LoadSection(Player.PendingEvent);
+            if (_sectionStage != 0)
+            {
+                AdvanceSectionStage();
+                Frame++;
+                return;
+            }
+            ConsumeChrLatch();
+            RunWorldServices();
+            Frame++;
+        }
+
+        private void ConsumeChrLatch()
+        {
+            if (!_chrPending) return;
+            // NMI $FF21/$FF3B consumes the CHR request latches once rendering is on
+            // again (gold_door_id1: $1A/$1B = $80/$90 through the tail frame, 0 after —
+            // and rendering is already on during the fade frames).
+            Player.ChrLatch0 = 0;
+            Player.ChrLatch1 = 0;
+            _chrPending = false;
+        }
+
+        private void RunWorldServices()
+        {
             // Audio advances via AudioSequencer.RenderFrame (Tick inside) once per
             // presented frame — SFX/music events queue at trigger time.
-            if (Oam != null)
+            if (Oam == null) return;
+            // Slot 0 mirrors the player position/facing; the anim state is
+            // player-state driven (walk/fire/... in PlayerCore) and advanced
+            // by the dispatcher each frame.
+            var s0 = Objects.Slots[0];
+            s0.Active = true;
+            s0.Flags = (byte)(0x90 | (Player.FacingRight != 0 ? 0x40 : 0) | 0x10);
+            s0.X = Player.X;
+            s0.Y = Player.Y;
+            Hud.Compose(3);
+            // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
+            TileMap?.StreamColumns(Player.ScrollX);
+            if (CurrentLevel != null)
             {
-                // Slot 0 mirrors the player position/facing; the anim state is
-                // player-state driven (walk/fire/... in PlayerCore) and advanced
-                // by the dispatcher each frame.
-                var s0 = Objects.Slots[0];
-                s0.Active = true;
-                s0.Flags = (byte)(0x90 | (Player.FacingRight != 0 ? 0x40 : 0) | 0x10);
-                s0.X = Player.X;
-                s0.Y = Player.Y;
-                Hud.Compose(3);
-                // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
-                TileMap?.StreamColumns(Player.ScrollX);
-                if (CurrentLevel != null)
-                {
-                    // Spawner ($8090); culling happens per-slot in OamDispatcher
-                    // ($802F semantics: ±16 screens, onscreen bit at high==0).
-                    Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX, (ushort)(Player.ScrollYRow << 8));
-                }
-                Enemies?.RunFrame();
-                Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
-                Ppu.Render(Framebuffer);
+                // Spawner ($8090); culling happens per-slot in OamDispatcher
+                // ($802F semantics: ±16 screens, onscreen bit at high==0).
+                Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX, (ushort)(Player.ScrollYRow << 8));
             }
-            Frame++;
+            Enemies?.RunFrame();
+            Oam.RunFrame((byte)Frame, 36); // 36 = hidden entry 0 + 8 HUD sprites
+            Ppu.Render(Framebuffer);
+        }
+
+        /// <summary>
+        /// One frame inside $E388: a batch of $DE86/$E698 staging passes ($DE8A) until the
+        /// cursor hits $0F, then the $E3ED yield frame that runs the $E3F0-$E44E tail, then
+        /// the $C270-$C2BF palette fade the tail tail-calls through $E478/$C254.
+        /// Returns true on the frame where $E388 finally returns into the main loop: the
+        /// fade's last step does not yield, it RTS-es to $CA75, so that frame runs the
+        /// object/enemy/OAM services but NOT the player dispatcher ($CAFC ran earlier).
+        /// </summary>
+        private bool AdvanceSectionStage()
+        {
+            switch (_sectionStage)
+            {
+                case 1:
+                    if (Player.StageSectionPass()) _sectionStage = 2;
+                    return false;
+                case 2:
+                    Player.FinishSectionLoad();          // $E3F0-$E406
+                    _chrPending = true;                  // $E44E JSR $C158 re-enables rendering
+                    // $C270 LDA #$30/$C272 LDX #$F0: $0F is decremented by $0D on the
+                    // FIRST frame of each 4-yield step ($C2A4 loop + $C2B0), so prime one
+                    // step above the first ramped level and let the cadence apply $30.
+                    _fadeLevel = 0x40;
+                    _fadeDelta = 0xF0;
+                    _fadeFrame = 0;                      // $C283 LDY #$04 / STY $0E
+                    _sectionStage = 3;
+                    return false;
+                default:
+                    if ((_fadeFrame & 3) == 0)
+                    {
+                        _fadeLevel = (byte)(_fadeLevel + _fadeDelta);   // $C2B0-$C2B5
+                        if ((_fadeLevel & 0x80) != 0)                   // $C2BB BPL $C285
+                        {
+                            _sectionStage = 0;
+                            return true;
+                        }
+                        ApplyFadeRamp();                                // $C285-$C2A0
+                    }
+                    _fadeFrame++;
+                    return false;
+            }
+        }
+
+        /// <summary>$C285-$C2A0: palette = $0320 source − fade level, clamped to $0F.</summary>
+        private void ApplyFadeRamp()
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                int v = _paletteSrc[i] - _fadeLevel;
+                Ppu.PaletteRam[i] = (byte)(v < 0x0F ? 0x0F : v);
+            }
         }
 
         /// <summary>Serialize all future-affecting state. Version-tagged.</summary>

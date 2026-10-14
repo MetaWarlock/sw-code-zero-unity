@@ -176,13 +176,24 @@ public static class PhysCompare
         p.ScrollMode = ram0[0x2F];
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
-        p.PendingEvent = ram0[0x5B];      // $5B door request, consumed by $CA6E in Step
+        byte doorId = ram0[0x5B];
+        // Seed the player's object slot exactly as the capture has it at the seed frame:
+        // $E388 leaves $0410/$0420/$0430 alone until the $FA78 seed after its staging.
+        var slot0 = game.Objects.Slots[0];
+        slot0.AnimNumber = ram0[0x420];
+        slot0.AnimFrame = ram0[0x410];
+        slot0.AnimTimer = ram0[0x430];
+        slot0.Active = (ram0[0x4D0] & 0x80) != 0;
         map.LoadRow(p.ScrollYRow);
         map.StreamColumns(p.ScrollX);
+        // $E388 was already entered 16 frames earlier (the capture's $5B patch at f5), so
+        // the port starts the frame at index 22 INSIDE the loader: enter it at the seed.
+        if (doorId != 0) game.LoadSection(doorId);
 
         var names = new[] { "$22 cell", "$23 next", "$FB row", "$FD colhi", "$FC collo",
                             "$FA scrollY", "$50 state", "$36 tileset", "$1A chr0", "$1B chr1",
-                            "$0500/$04F0 X", "$0520/$0510 Y", "$0400 flags", "$0420 anim" };
+                            "$0500/$04F0 X", "$0520/$0510 Y", "$0400 flags", "$0420 anim",
+                            "$0460 ffc" };
         var ok = new int[names.Length];
         var firstBad = new int[names.Length];
         for (int i = 0; i < names.Length; i++) firstBad[i] = -1;
@@ -195,11 +206,11 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int[] port = { p.CellIndex, p.CellIndexNext, p.ScrollYRow, p.ScrollX >> 8, p.ScrollX & 0xFF,
                            p.ScrollY, p.State, p.TilesetBank, p.ChrLatch0, p.ChrLatch1,
-                           p.X, p.Y, p.Flags, game.Objects.Slots[0].AnimNumber };
+                           p.X, p.Y, p.Flags, game.Objects.Slots[0].AnimNumber, p.YFrac };
             int[] orig = { g[0x22], g[0x23], g[0xFB], g[0xFD], g[0xFC],
                            g[0xFA], g[0x50], g[0x36], g[0x1A], g[0x1B],
                            g[0x4F0] | (g[0x500] << 8), g[0x510] | (g[0x520] << 8),
-                           g[0x400], g[0x420] };
+                           g[0x400], g[0x420], g[0x460] };
             for (int i = 0; i < names.Length; i++)
             {
                 if (port[i] == orig[i]) { ok[i]++; continue; }
