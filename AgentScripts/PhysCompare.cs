@@ -109,6 +109,15 @@ public static class PhysCompare
     });
 
     /// <summary>
+    /// Mission-1 traversal golden `gold_traverse_m1`: the original resumed from
+    /// m1_standing.mss with Right held from frame 2. The player walks to the room-0x02 pylon
+    /// wall and stops at X=$114 (frame 159) — the first end-to-end check of the world feed
+    /// (cell/row advance, camera, spawn on cell entry), so camera state is compared too.
+    /// </summary>
+    public static string Traverse() => Compare("traverse_m1", 600,
+        f => (byte)(f >= 2 ? 0x01 : 0x00), camera: true);
+
+    /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
     /// seeded by probe_run --patch into cell $22=$1C (row 1, col 11, script byte $41 =
     /// hook column) at the row bottom; the grab fires next frame and the camera rides

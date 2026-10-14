@@ -580,21 +580,26 @@ namespace Darkwing.Core
             }
         }
 
+        /// <summary>
+        /// $ED85 (right-block path, called at $F248) and $ED9D (left-block path, $F2A3).
+        /// Both work on $06 = the last sampled probe point, so the snap aligns the SAMPLE
+        /// to a tile edge, not the body: right → X -= ($06 & $0F), left → X += ((~($06 &
+        /// $0F) & $0F) + 1) (SEC + ADC). With the player's side offset of +12/-12 that
+        /// makes the room-0x02 pylon wall rest at X=$114 (sample $120, nibble 0 → no
+        /// subtract), which gold_traverse_m1 shows from frame 159 on.
+        /// </summary>
         private void SnapX(bool right)
         {
-            int px = X;
             if (right)
             {
-                // pushed right into wall: snap left edge of the wall tile: X -= X&0F + recheck
-                int tile = (px + 12) >> 4; // wall column
-                px = (tile << 4) - 13;
+                int sample = X + 12;                        // $06
+                X = (ushort)((X - (sample & 0x0F)) & 0xFFFF);   // $ED85-$ED9C
             }
             else
             {
-                int tile = (px - 12) >> 4;
-                px = ((tile + 1) << 4) + 12;
+                int sample = X - 12;                        // $06
+                X = (ushort)((X + (((~(sample & 0x0F)) & 0x0F) + 1)) & 0xFFFF); // $ED9D-$EDB2
             }
-            X = (ushort)(px & 0xFFFF);
         }
 
         // ---------- Shared vertical physics ($CD0E/$F2D7) ----------
