@@ -71,6 +71,9 @@ namespace Darkwing.Core
         /// <summary>Grid row stride = $2E: linear cell index $22 = row*GridWidth + column.</summary>
         public int GridWidth => _world.RowWidth;
 
+        /// <summary>The world descriptor this map was built from ($DD57 tables).</summary>
+        public RoomDecoder.World World => _world;
+
         /// <summary>Number of grid rows described by the level's cell arrays.</summary>
         public int GridRows => _world.Grid.Length / _world.RowWidth;
 

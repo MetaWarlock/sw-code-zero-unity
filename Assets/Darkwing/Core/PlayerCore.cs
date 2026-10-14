@@ -222,6 +222,17 @@ namespace Darkwing.Core
             ChrLatch1 = t.ChrRequest1(id);                  // $1B ($E3B0)
             SectionFlag3D = t.Flag3D(id);                   // $3D ($E3B5)
             SectionRingEvent = t.RingEvent(id);             // $D9 ($E3BA)
+            ResetLoaderState(col);
+        }
+
+        /// <summary>
+        /// $DE24, the reset both loaders call ($E3E8 from $E388, DDC8 from $DD57):
+        /// render off, slots cleared, the scroll/camera fields, the zeroed flags and
+        /// the $DE6C-$DE78 staging-cursor seed. Shared by section and world loads
+        /// because the ROM shares the routine.
+        /// </summary>
+        private void ResetLoaderState(int col)
+        {
             ScrollY = 0;                                    // $FA ($DE3C)
             DirBits = 1;                                    // $52 ($DE2C)
             ScrollState = 1;                                // $2B ($DE30)
@@ -243,12 +254,10 @@ namespace Darkwing.Core
             PendingEvent = 0;                               // $5B ($E3E8)
             State = 0;                                      // $50 ($DE5A, held until the tail)
 
-            // $DE6C-$DE78: the $E698 cursor starts at bit7 = bit0 of the start column
-            // (two RORs through carry, only bit7 kept) and $0F = ($25 ^ $80) | $08.
+            // $DE6C-$DE78: a non-zero $23 decrements it and restarts the cursor at $0F|$70.
             bool flipped = (col & 1) != 0;
             StageCursor = (byte)(flipped ? 0x80 : 0x00);
             StageTarget = (byte)(flipped ? 0x08 : 0x88);
-            // $DE7A-$DE84: a non-zero $23 decrements it and restarts the cursor at $0F|$70.
             if (CellIndexNext != 0)
             {
                 CellIndexNext--;
@@ -258,6 +267,46 @@ namespace Darkwing.Core
             bool reverse = (ScrollMode & 2) != 0;
             StageStep = (sbyte)(reverse ? 0xFF : 0x01);
             StageBoundary = (byte)(reverse ? 0x7F : 0x00);
+        }
+
+        /// <summary>
+        /// $DD57 with $31 = world id: the mission descriptor ($32/$34 grid pointers and
+        /// $2E row width live in the tile map, not here), $DE24, then the slot-0 seed.
+        /// Unlike $E388 the world loader finishes inline — DDD4-$DDFE run in the same
+        /// call — and leaves the player in state $09 (not $12) with $04D0/$0400 written
+        /// only for mission worlds ($31 &lt; 7; ids 7+ are dialog scenes that keep
+        /// $0400=$D8 and skip the object seed).
+        /// </summary>
+        public void ApplyWorldLoad(RoomDecoder.World w)
+        {
+            TilesetBank = w.SetBank;                        // $36 ($DD76)
+            CellIndex = CellIndexNext = w.StartCell;        // $22/$23 ($DD7B)
+            ScrollYRow = w.StartRow;                        // $FB ($DD82)
+            ScrollX = 0;                                    // $FC/$FD = 0 ($DD84/$DD89)
+            X = 0x30;                                       // $0500=0 ($DD8B), $04F0=$30 ($DDE3)
+            Y = (ushort)((w.StartRow << 8) | 0x06);         // $0520 ($DD82), $0510=$06 ($DDE3)
+            ChrLatch0 = w.ChrReq0;                          // $1A ($DD99)
+            ChrLatch1 = w.ChrReq1;                          // $1B ($DD9E)
+            SectionFlag3D = w.Flag3D;                       // $3D ($DDB6)
+            // $DDA0-$DDAA: $D9 is only rewritten (and $F84E called) when it was already
+            // non-zero, so the ring event stays with the caller — see DarkwingGame.LoadWorld.
+            RowStride = (byte)w.RowWidth;                   // $2E ($DD94)
+            BottomRow = w.TopRow;                           // $2D ($DDB1)
+            ResetLoaderState(0);                            // $DDC8 JSR $DE24, $FD = 0
+
+            if (Objects != null)
+            {
+                var s0 = Objects.Slots[0];
+                s0.Behavior = 0;                            // $04E0 ($DDD6, X=$00)
+                s0.AnimNumber = 0x2C;                       // $0420 ($DDDE JSR $FA78, A=$2C)
+                s0.AnimTimer = 0;                           // $0430
+                s0.AnimFrame = 0;                           // $0410
+                s0.StateLow = 0x80;                         // $04D0 ($DDF1, $31 < 7)
+                s0.Active = true;
+            }
+            Flags = 0xD0;                                   // $0400 ($DDF6, $31 < 7)
+            CutVelocity();                                  // $F5FC → FF,AB ($DDF9)
+            State = 0x09;                                   // $50 ($DDFE) — map entry, not the $12 exit
         }
 
         public byte StageCursor;                            // $25

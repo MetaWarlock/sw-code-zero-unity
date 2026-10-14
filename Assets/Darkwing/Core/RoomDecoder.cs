@@ -22,44 +22,61 @@ namespace Darkwing.Core
         public sealed class World
         {
             public byte Id;
-            public byte SetBank;      // metatile/room-table bank
+            public byte SetBank;      // $36 ($DEAA): metatile/macrotile table bank
             public byte RoomBank;     // PRG bank holding 64-byte room blocks (0, or 1 for FOWL)
-            public byte StartCell;    // $DEB9
-            public byte StartRow;     // $DEC8 (scroll Y init = grid row)
-            public int RowWidth;      // $DED7 + 1
-            public byte ChrBg;        // $DEF5
-            public byte Music;        // $DF04
-            public byte TopRow;       // $DF41
+            public byte StartCell;    // $22/$23 ($DEB9)
+            public byte StartRow;     // $FB/$0520 ($DEC8)
+            public int RowWidth;      // $2E = $DED7 + 1
+            public byte ChrReq0;      // $1A ($DEE6) — CHR0 request, bank = value & $7F
+            public byte ChrReq1;      // $1B ($DEF5) — CHR1 request (bg pattern table)
+            public byte BgPalIdx;     // $DF04 — index byte handed to $C2F9 (NOT a music id)
+            public byte RingEvent;    // $DF13 — queued to $D9/$F84E only when $D9 was nonzero
+            public byte SpPalIdx;     // $DF22 — index byte handed to $C319
+            public byte Flag3D;       // $DF31 -> $3D
+            public byte TopRow;       // $DF41 -> $2D
             public byte[] Grid;       // room id per cell
             public byte[] Flags;      // script byte per cell
 
             public byte CellAt(int row, int col) => Grid[row * RowWidth + col];
             public byte FlagAt(int row, int col) => Flags[row * RowWidth + col];
+            public int GridRows => Grid.Length / RowWidth;
         }
+
+        /// <summary>$DD57 world descriptor table addresses (bank 7, indexed by $31).</summary>
+        public static byte DescByte(byte[] bank7, int table, byte id) => bank7[table - 0xC000 + id];
 
         public World GetWorld(byte id)
         {
-            int b7 = 0xDF50 - 0xC000; // descriptor table region base $DEAA
+            byte t(int addr) => _bank7[addr - 0xC000 + id];
             var w = new World
             {
                 Id = id,
-                SetBank = _bank7[0xDEAA - 0xC000 + id],
-                StartCell = _bank7[0xDEB9 - 0xC000 + id],
-                StartRow = _bank7[0xDEC8 - 0xC000 + id],
-                RowWidth = _bank7[0xDED7 - 0xC000 + id] + 1,
-                ChrBg = _bank7[0xDEF5 - 0xC000 + id],
-                Music = _bank7[0xDF04 - 0xC000 + id],
-                TopRow = _bank7[0xDF41 - 0xC000 + id],
+                SetBank = t(0xDEAA),
+                StartCell = t(0xDEB9),
+                StartRow = t(0xDEC8),
+                RowWidth = t(0xDED7) + 1,
+                ChrReq0 = t(0xDEE6),
+                ChrReq1 = t(0xDEF5),
+                BgPalIdx = t(0xDF04),
+                RingEvent = t(0xDF13),
+                SpPalIdx = t(0xDF22),
+                Flag3D = t(0xDF31),
+                TopRow = t(0xDF41),
             };
             w.RoomBank = w.SetBank >= 6 ? (byte)1 : (byte)0;
-            int gridPtr = _bank7[0xDF50 - 0xC000 + id] | (_bank7[0xDF60 - 0xC000 + id] << 8);
-            int flagPtr = _bank7[0xDF70 - 0xC000 + id] | (_bank7[0xDF80 - 0xC000 + id] << 8);
-            int gb = gridPtr - 0xC000, fb = flagPtr - 0xC000;
-            int count = 4 * w.RowWidth;
+            int gridPtr = t(0xDF50) | (t(0xDF60) << 8);
+            int flagPtr = t(0xDF70) | (t(0xDF80) << 8);
+            // $DD57 gives only the row WIDTH ($2E); the arrays have no length field, so each
+            // world's grid/flag tables run up to the next descriptor's table (id 7 = $E17F,
+            // the first dialog scene). Verified gaps: 0x44 (17x4), 0x78 (10x12), 0x39 (19x3).
+            int nextGrid = id < 7
+                ? (_bank7[0xDF50 - 0xC000 + id + 1] | (_bank7[0xDF60 - 0xC000 + id + 1] << 8))
+                : 0;
+            int count = nextGrid > gridPtr ? nextGrid - gridPtr : 4 * w.RowWidth;
             w.Grid = new byte[count];
             w.Flags = new byte[count];
-            System.Array.Copy(_bank7, gb, w.Grid, 0, count);
-            System.Array.Copy(_bank7, fb, w.Flags, 0, count);
+            System.Array.Copy(_bank7, gridPtr - 0xC000, w.Grid, 0, count);
+            System.Array.Copy(_bank7, flagPtr - 0xC000, w.Flags, 0, count);
             return w;
         }
 
@@ -73,7 +90,9 @@ namespace Darkwing.Core
         {
             var roomBank = RoomBank(w.RoomBank);
             int off = (cell - 1) * 64;
-            int setBase = w.SetBank * 1536;
+            // levelsets.bytes is 7 x 2304: macrotile table (1024) + 4 metatile tile
+            // quadrants (4x256) + type byte per metatile (256). Sets 1-6 need the stride.
+            int setBase = w.SetBank * 2304;
             for (int mr = 0; mr < 8; mr++)
             {
                 for (int mc = 0; mc < 8; mc++)

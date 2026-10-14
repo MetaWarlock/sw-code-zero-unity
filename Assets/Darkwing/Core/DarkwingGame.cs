@@ -111,7 +111,9 @@ namespace Darkwing.Core
             p.GridAt = TileMap.GridByte;
             p.FlagAt = TileMap.FlagByte;
             p.RowStride = (byte)TileMap.GridWidth;   // $2E
-            p.BottomRow = (byte)(TileMap.GridRows - 1); // $2D
+            // $2D ($DF41) is the down-scroll limit $DC7C compares $FB against — it is a
+            // descriptor value (world 0 = $00, worlds 2/4/5/6 = $03), not the row count.
+            p.BottomRow = TileMap.World.TopRow;
             p.ReloadRow = () =>
             {
                 TileMap.LoadRow(p.ScrollYRow);
@@ -121,6 +123,44 @@ namespace Darkwing.Core
         }
 
         private SectionTable _sections;
+
+        /// <summary>
+        /// $DD57 world load with $31 = world id (0-6 = missions 1-7, reached from the city
+        /// map bubbles; ids 7+ are dialog scenes). Builds the tile map from the descriptor,
+        /// seeds the player through <see cref="PlayerCore.ApplyWorldLoad"/>, and applies the
+        /// per-world palettes ($C2F9 ← $DF04, $C319 ← $DF22) and CHR requests
+        /// ($1A ← $DEE6, $1B ← $DEF5; the NMI maps a request to bank = value &amp; $7F, so
+        /// world 0 is CHR0=14/CHR1=16 exactly as captured in probe_m1_enter).
+        /// </summary>
+        public void LoadWorld(RoomDecoder decoder, byte worldId)
+        {
+            var w = decoder.GetWorld(worldId);
+            Objects?.ClearForSectionLoad();                 // $DD57 → $C248 → $C235
+            TileMap = new LevelTileMap(decoder, Ppu, w);
+            Player.TileMap = TileMap;
+            _gridByte = null; _flagByte = null;             // ($32)/($34) now point at this world
+            Player.ApplyWorldLoad(w);
+            WireWorldFeed();
+            if (_data != null && _data.Levels != null && worldId < _data.Levels.Length)
+                CurrentLevel = _data.Levels[worldId];
+
+            var t = Sections;
+            if (t != null)
+            {
+                t.ReadBgPaletteByIndex(w.BgPalIdx, _paletteSrc);            // $DDC2 → $C2F9
+                var sp = new byte[16];
+                t.ReadSpritePaletteByIndex(w.SpPalIdx, sp);                 // $DDC5 → $C319
+                for (int i = 0; i < 16; i++) _paletteSrc[16 + i] = sp[i];
+                for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = _paletteSrc[i];
+            }
+            Ppu.Chr0Bank = (byte)(w.ChrReq0 & 0x7F);        // $FF21 applies the $1A request
+            Ppu.Chr1Bank = (byte)(w.ChrReq1 & 0x7F);        // $FF3B applies the $1B request
+            Player.ChrLatch0 = 0; Player.ChrLatch1 = 0;
+            // $DDA0-$DDAA: the ring event is only re-queued when $D9 was still non-zero.
+            if (Player.SectionRingEvent != 0) PlaySfx(Player.SectionRingEvent);
+            _sectionStage = 0;                              // $DD57 finishes inline (DE06 JMP $C254)
+            SectionUsesInternalEngine = false;
+        }
 
         /// <summary>$E388 section/door descriptor tables, read from bank 7.</summary>
         public SectionTable Sections

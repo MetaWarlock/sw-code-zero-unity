@@ -19,18 +19,28 @@ Loader `$DD57` reads, for world X:
 
 | Table   | Addr       | Meaning |
 |---------|-----------|---------|
-| set     | `$DEAA+X` | -> `$36`: bank holding macrotile/metatile tables (0-6) |
+| set     | `$DEAA+X` | -> `$36`: levelset bank holding macrotile/metatile tables (0-6) |
 | start   | `$DEB9+X` | -> `$22`,`$23`: start cell index in the layout grid |
 | row Y   | `$DEC8+X` | -> `$FB` and `$0520`: starting grid row (world Y row) |
 | width   | `$DED7+X` | -> `$2C`; `$2E` = value+1 = **grid row width** |
-| chr bg  | `$DEF5+X` | bg CHR bank request (NMI: CHR1 = 16+2*set, CHR0 = 14) |
-| music   | `$DF04+X` | music id |
+| chr spr | `$DEE6+X` | -> `$1A`: sprite CHR request, all worlds `$8E` (bank = value & $7F = 14) |
+| chr bg  | `$DEF5+X` | -> `$1B`: bg CHR request, `$90..$96` (bank = value & $7F = 16..22) |
+| bg pal  | `$DF04+X` | **A-operand of `JSR $C2F9`** = BG palette index byte (NOT a music id — corrected 2026-10-15 by `$DD57` disasm: `LDA $DF04,X / JSR $C2F9`) |
+| ring    | `$DF13+X` | -> `$D9` + `JSR $F84E`, but only when `$D9 != 0` ($DDA0-$DDAA) |
+| sp pal  | `$DF22+X` | A-operand of `JSR $C319` = sprite palette index byte |
+| flag 3D | `$DF31+X` | -> `$3D` (per-world mode bit; `$80/$88/$8C/00`) |
 | top row | `$DF41+X` | -> `$2D`: highest reachable grid row (scroll-up limit) |
 | grid    | `$DF50/$DF60+X` | -> `$32/$33`: layout grid pointer (bank 7) |
 | flags   | `$DF70/$DF80+X` | -> `$34/$35`: per-cell flag table (bank 7) |
 
 Grid pointers per world: bridge `$DF90`, city `$DFD4`, sewers `$E018`,
-tower `$E05C`, forest `$E0D4`, warehouse `$E10D`, fowl `$E146`.
+tower `$E05C`, forest `$E0D4`, warehouse `$E10D`, fowl `$E146`, id 7 `$E17F`.
+
+**Array length**: `$DD57` never stores a row count, so the grid/flag length is
+the gap between consecutive grid pointers: bridge/city/sewers `0x44` = 4x17,
+tower `0x78` = 12x10, forest/warehouse/fowl `0x39` = 3x19. Grid rows =
+length / $2E. `$2D` (`$DF41`) is the scroll-up limit and is NOT rows-1
+(bridge `$00`, city `$00`, sewers `$03`, tower `$00`, forest+ `$03`).
 Flag tables sit at grid + $01FC (bridge `$E18C`, city `$E1D0`, sewers `$E214`,
 tower `$E258`, forest `$E2D0`, warehouse `$E309`, fowl `$E342`).
 

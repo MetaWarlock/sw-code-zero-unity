@@ -41,9 +41,12 @@ namespace Darkwing.Core
 
         /// <summary>$C2F9: four ASLs put index bit4 into carry (selects the $C45D
         /// block) and the low nibble ×16 into Y; 16 bytes → $0300 and mirror $0320.</summary>
-        public void ReadBgPalette(int id, byte[] out16)
+        public void ReadBgPalette(int id, byte[] out16) => ReadBgPaletteByIndex(_b[BgPal + id], out16);
+
+        /// <summary>$C2F9 called with the index byte directly — the world loader $DD57
+        /// passes $DF04[world] here, the section loader $E388 passes $E569[section].</summary>
+        public void ReadBgPaletteByIndex(byte v, byte[] out16)
         {
-            byte v = _b[BgPal + id];
             int baseOff = (v & 0x10) != 0 ? BgPalBlock2 : BgPalBlock1;
             int src = baseOff + ((v & 0x0F) << 4);
             for (int i = 0; i < 16; i++) out16[i] = _b[src + i];
@@ -51,9 +54,12 @@ namespace Darkwing.Core
 
         /// <summary>$C319: entries 0-7 always come from $C4FD (X-indexed, not Y),
         /// entries 8-15 from $C505 + (v&lt;&lt;3); 16 bytes → $0310 and mirror $0330.</summary>
-        public void ReadSpritePalette(int id, byte[] out16)
+        public void ReadSpritePalette(int id, byte[] out16) =>
+            ReadSpritePaletteByIndex(_b[SpPal + id], out16);
+
+        /// <summary>$C319 with the index byte directly ($DF22[world] from $DD57).</summary>
+        public void ReadSpritePaletteByIndex(byte v, byte[] out16)
         {
-            byte v = _b[SpPal + id];
             int second = SpPalShift + ((v << 3) & 0xFF);
             for (int i = 0; i < 8; i++) out16[i] = _b[SpPalFixed + i];
             for (int i = 0; i < 8; i++) out16[8 + i] = _b[second + i];

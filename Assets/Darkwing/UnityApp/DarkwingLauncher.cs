@@ -14,6 +14,9 @@ namespace Darkwing.UnityApp
         [Tooltip("Integer pixel scale for the 256x240 picture (0 = fit window).")]
         public int PixelScale = 3;
 
+        [Tooltip("$31 world id: 0-6 = missions 1-7. All per-world data comes from the $DD57 tables.")]
+        public int WorldId = 0;
+
         public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
         public TextAsset Bank0Data, Bank1Data, Bank7Data, Bank5Data, Bank3Data, Bank6Data;
 
@@ -23,12 +26,6 @@ namespace Darkwing.UnityApp
         private double _accumulator;
         private System.DateTime _last;
         private Color32[] _pixels = new Color32[DarkwingGame.ScreenWidth * DarkwingGame.ScreenHeight];
-        private static readonly byte[] Mission1Palette =
-        {
-            // Captured from original mission-1 gameplay (reference/probe_m1_enter palette_frames frame 700).
-            0x0F,0x20,0x27,0x17, 0x0F,0x37,0x07,0x01, 0x0F,0x20,0x31,0x22, 0x0F,0x0F,0x11,0x01,
-            0x0F,0x0F,0x30,0x27, 0x0F,0x0F,0x27,0x13, 0x0F,0x0F,0x27,0x15, 0x0F,0x0F,0x37,0x07,
-        };
 
         // 2C02 palette entry lookup is Presentation's job later; the Core
         // framebuffer stores NES indices and we convert with the fixed table.
@@ -51,18 +48,13 @@ namespace Darkwing.UnityApp
             if (Bank6Data != null) _game.Bank6 = Bank6Data.bytes;
             _game.ObjectTypeTable = File.ReadAllBytes("Assets/Darkwing/Data/object_types.bytes");
             _audioOut = gameObject.AddComponent<AudioOutFeed>();
-            var world = decoder.GetWorld(0);
-            _map = new Darkwing.Core.LevelTileMap(decoder, _game.Ppu, world);
-            _game.Player.TileMap = _map;
-            _game.TileMap = _map;
+            // $DD57: the whole per-world setup (descriptor, grid, palettes, CHR, player seed)
+            // comes from the ROM tables, so WorldId 0-6 selects missions 1-7 with no hardcoded
+            // palette/bank here. World 0 is what the goldens were captured on.
+            _game.LoadWorld(decoder, (byte)WorldId);
+            _map = _game.TileMap;
             _map.StreamColumns(0);
-            _game.CurrentLevel = data.Levels[0];
-            _game.Player.Y = 0x374;     // captured standing position on the bridge deck
-            _game.WireWorldFeed();      // $32/$34 feeds + $22 camera cell index
-            _game.PlayMusic(world.Music); // mission music from the world descriptor ($DF04)
-            System.Array.Copy(Mission1Palette, _game.Ppu.PaletteRam, 32);
-            _game.Ppu.Chr1Bank = 16;    // bg pattern table (verified for set 0)
-            _game.Ppu.Chr0Bank = 14;    // sprite pattern table
+            if (WorldId == 0) _game.PlayMusic(1);   // song 1 = mission-1 gameplay (audio_engine.md)
             _game.Ppu.WriteRegister(0x2000, 0x16); // NMI off phase, bg $1000, sprites $0000
             _game.Ppu.WriteRegister(0x2001, 0x1E); // rendering on
             _game.Ppu.ScrollX = 0;
