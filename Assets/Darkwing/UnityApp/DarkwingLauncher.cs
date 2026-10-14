@@ -19,6 +19,7 @@ namespace Darkwing.UnityApp
 
         public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
         public TextAsset Bank0Data, Bank1Data, Bank7Data, Bank5Data, Bank3Data, Bank6Data;
+        public TextAsset ObjectTypesData;
 
         private DarkwingGame _game;
         private Darkwing.Core.LevelTileMap _map;
@@ -46,7 +47,7 @@ namespace Darkwing.UnityApp
             if (Bank7Data != null) _game.Bank7 = Bank7Data.bytes;
             if (Bank3Data != null) _game.Bank3 = Bank3Data.bytes;
             if (Bank6Data != null) _game.Bank6 = Bank6Data.bytes;
-            _game.ObjectTypeTable = File.ReadAllBytes("Assets/Darkwing/Data/object_types.bytes");
+            _game.ObjectTypeTable = ObjectTypesData.bytes;
             _audioOut = gameObject.AddComponent<AudioOutFeed>();
             // $DD57: the whole per-world setup (descriptor, grid, palettes, CHR, player seed)
             // comes from the ROM tables, so WorldId 0-6 selects missions 1-7 with no hardcoded

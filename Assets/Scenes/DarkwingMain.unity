@@ -291,6 +291,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Darkwing.UnityApp::Darkwing.UnityApp.DarkwingLauncher
   PixelScale: 3
+  WorldId: 0
   ChrData: {fileID: 4900000, guid: a0d24ad9ac6fc504cb5d5d5ce9dcd509, type: 3}
   LevelSetsData: {fileID: 4900000, guid: 54198d65a282fca4abd3d65aa524ba44, type: 3}
   ScreensData: {fileID: 4900000, guid: b45450aefd3115b4a923a49d10bd59b8, type: 3}
@@ -302,6 +303,7 @@ MonoBehaviour:
   Bank5Data: {fileID: 4900000, guid: bbe378033145aea479d6f5f778924d82, type: 3}
   Bank3Data: {fileID: 4900000, guid: a70eaf87f4e7f874187d994c77e5744f, type: 3}
   Bank6Data: {fileID: 4900000, guid: 61f57bd9af14eb444a9e02d6051ae1d9, type: 3}
+  ObjectTypesData: {fileID: 4900000, guid: 7c838b6c6e86b9e49a3064c1344cd950, type: 3}
 --- !u!23 &1140797529
 MeshRenderer:
   m_ObjectHideFlags: 0
