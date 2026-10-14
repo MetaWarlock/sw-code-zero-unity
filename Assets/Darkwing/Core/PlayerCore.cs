@@ -598,11 +598,15 @@ namespace Darkwing.Core
             if (falling)
             {
                 IntegrateY();               // down
-                ApplyGravity();
+                // The keep-on-ground test (states 0/6) is not $F4D7: in gold_hurt_a41 the
+                // player rests on a type-1 platform with $0560 still $FF, so no gravity
+                // is applied and the type-1 velocity gate does not reject the support.
+                bool grounded = State is 0 or 6;
+                if (!grounded) ApplyGravity();
                 byte floor = ProbeFloor();
                 // $F4E4-$F4F3: any type >= 2 hits; type 1 (one-way) only when the fall is
                 // NOT slow — $F4EC skips the hit when the velocity byte is >= $FC (-4..-1).
-                bool oneWayLand = floor == 1 && (byte)YVelInt < 0xFC;
+                bool oneWayLand = floor == 1 && (grounded || (byte)YVelInt < 0xFC);
                 if (floor == 2 || floor == 3 || floor >= 8 || oneWayLand)
                 {
                     // land ($F360): snap onto tile top ($EDB3)
@@ -957,7 +961,9 @@ namespace Darkwing.Core
                 SavedState = State;
                 State = 6;
                 StateTimer = 0x0F;
-                CutVelocity();
+                // $F9C2 writes no velocity: gold_hurt_a41 f174 keeps $0540/$0530 = 01,80 and
+                // $0560/$0550 = FF,AB; the 0.5 px/frame knockback comes from the state-6
+                // handler on the NEXT frame.
             }
         }
 

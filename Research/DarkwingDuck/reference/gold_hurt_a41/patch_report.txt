@@ -1,0 +1,4 @@
+04F0 <- 7F  ok=true readback=7F
+0500 <- 01  ok=true readback=01
+0510 <- 24  ok=true readback=24
+0520 <- 03  ok=true readback=03

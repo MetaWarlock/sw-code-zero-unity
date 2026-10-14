@@ -119,14 +119,154 @@ public static class PhysCompare
     public static string Hook() => Compare("hook_ride2", 300, f => 0, seedFrame: 1, camera: true);
 
     /// <summary>
+    /// Damage/knockback golden: `gold_hurt_a41` is mission 1 where the capture patches the
+    /// player onto slot 13 (beh $0C, anim $41 => $814F C9 3F BCS passes, so this enemy DOES
+    /// hurt) at capture frame 174; frame 173 is therefore already recorded with the patched
+    /// position and is the seed. The original detects contact inside frame 174 ($50 06, $51 0F,
+    /// $7C 3B, anim $09 via $FA78) and then runs the state-6 handler, whose knockback drift is
+    /// $0540/$0530 = 00,80 — i.e. $F9C2 does NOT zero the velocity.
+    /// </summary>
+    public static string Hurt()
+    {
+        string root = "D:/Art/SW Code Zero Unity";
+        byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_hurt_a41/ram_frames.bin");
+        int avail = ramAll.Length / 2048;
+        var data = Darkwing.Core.DataLoader.Load(
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/screens.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levels.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/anims.bytes"));
+        var game = new Darkwing.Core.DarkwingGame(data);
+        game.Bank5 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank5.bytes");
+        game.Bank6 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank6.bytes");
+        game.ObjectTypeTable = File.ReadAllBytes(root + "/Assets/Darkwing/Data/object_types.bytes");
+        game.Bank7 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes");
+        var decoder = new Darkwing.Core.RoomDecoder(
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank0.bytes"),
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank1.bytes"),
+            game.Bank7,
+            File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"));
+        var world0 = decoder.GetWorld(0);
+        var map = new Darkwing.Core.LevelTileMap(decoder, game.Ppu, world0);
+        game.Player.TileMap = map;
+        game.TileMap = map;
+        game.WireWorldFeed();
+
+        const int seed = 173;                 // recorded WITH the teleport already applied
+        byte[] ram0 = new byte[2048];
+        System.Array.Copy(ramAll, seed * 2048, ram0, 0, 2048);
+        var p = game.Player;
+        p.X = (ushort)(ram0[0x4F0] | (ram0[0x500] << 8));
+        p.Y = (ushort)(ram0[0x510] | (ram0[0x520] << 8));
+        p.YVelFrac = ram0[0x550];
+        p.YVelInt = (sbyte)ram0[0x560];
+        p.YFrac = ram0[0x460];
+        p.XFrac = ram0[0x470];
+        p.XVelFrac = ram0[0x530];
+        p.XVelInt = ram0[0x540];
+        p.State = ram0[0x50];
+        p.StateTimer = ram0[0x51];
+        p.SavedState = ram0[0x58];
+        p.InvulnFrames = ram0[0x7C];
+        p.DirBits = ram0[0x52];
+        p.ScrollX = (ushort)(ram0[0xFC] | (ram0[0xFD] << 8));
+        p.ScrollYRow = ram0[0xFB];
+        p.Flags = ram0[0x400];
+        p.ScrollY = ram0[0xFA];
+        p.CellIndex = ram0[0x22];
+        p.CellIndexNext = ram0[0x23];
+        p.ScrollState = ram0[0x2B];
+        p.ScrollStep = ram0[0x10];
+        p.ScrollMode = ram0[0x2F];
+        p.RowStride = ram0[0x2E];
+        p.BottomRow = ram0[0x2D];
+        // Bulk-seed every object slot table the dispatcher reads ($0400..$05A0, 16 bytes/slot).
+        for (int s = 0; s < 16; s++)
+        {
+            var sl = game.Objects.Slots[s];
+            sl.Flags = ram0[0x400 + s];
+            sl.AnimFrame = ram0[0x410 + s];
+            sl.AnimNumber = ram0[0x420 + s];
+            sl.AnimTimer = ram0[0x430 + s];
+            sl.ScreenY = ram0[0x440 + s];
+            sl.ScreenX = ram0[0x450 + s];
+            sl.YFrac = ram0[0x460 + s];
+            sl.XFrac = ram0[0x470 + s];
+            sl.T480 = ram0[0x480 + s];
+            sl.T490 = ram0[0x490 + s];
+            sl.T4A0 = ram0[0x4A0 + s];
+            sl.T4B0 = ram0[0x4B0 + s];
+            sl.HitFlash = ram0[0x4C0 + s];
+            sl.StateLow = ram0[0x4D0 + s];
+            sl.Active = (ram0[0x4D0 + s] & 0x80) != 0;
+            sl.Behavior = ram0[0x4E0 + s];
+            sl.X = (ushort)(ram0[0x4F0 + s] | (ram0[0x500 + s] << 8));
+            sl.Y = (ushort)(ram0[0x510 + s] | (ram0[0x520 + s] << 8));
+            sl.XVelFrac = ram0[0x530 + s];
+            sl.XVelInt = ram0[0x540 + s];
+            sl.YVelFrac = ram0[0x550 + s];
+            sl.YVelInt = (sbyte)ram0[0x560 + s];
+            sl.BehaviorParam = ram0[0x570 + s];
+            sl.Direction = ram0[0x580 + s];
+            sl.PlacementIndex = ram0[0x590 + s];
+            sl.Health = ram0[0x5A0 + s];
+        }
+        map.LoadRow(p.ScrollYRow);
+        map.StreamColumns(p.ScrollX);
+        var dbg = new System.Text.StringBuilder("TYPES ");
+        for (int r = 0; r < 16; r++)
+        {
+            dbg.Append($"r{r:X}:");
+            for (int q = 0; q < 16; q++) dbg.Append(map.TypeAt(0x108 + q * 16, 0x308 + r * 16).ToString("X"));
+            dbg.Append(" ");
+        }
+        var names = new[] { "$50 state", "$51 timer", "$7C invuln", "$0420 anim", "$0410 aframe",
+                            "$0430 atimer", "X", "Y", "$0540/$0530 vx", "$0560/$0550 vy",
+                            "$0460 ffc", "$0400 flags", "13:$04D0", "13:X", "13:Y", "13:$0420" };
+        var ok = new int[names.Length];
+        var firstBad = new int[names.Length];
+        for (int i = 0; i < names.Length; i++) firstBad[i] = -1;
+        var sb = new System.Text.StringBuilder("[hurt_a41] " + dbg);
+        int span = avail - 1 - seed;
+        for (int f = seed + 1; f < avail; f++)
+        {
+            // The capture held right from frame 10 to 170, so nothing is pressed from the seed on.
+            game.Step(Darkwing.Core.NesButtons.FromByte(0));
+            byte[] g = new byte[2048];
+            System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
+            var e13 = game.Objects.Slots[13];
+            int[] port = { p.State, p.StateTimer, p.InvulnFrames, game.Objects.Slots[0].AnimNumber,
+                           game.Objects.Slots[0].AnimFrame, game.Objects.Slots[0].AnimTimer,
+                           p.X, p.Y, (p.XVelInt << 8) | p.XVelFrac, ((byte)p.YVelInt << 8) | p.YVelFrac,
+                           p.YFrac, p.Flags, e13.StateLow, e13.X, e13.Y, e13.AnimNumber };
+            int[] orig = { g[0x50], g[0x51], g[0x7C], g[0x420], g[0x410], g[0x430],
+                           g[0x4F0] | (g[0x500] << 8), g[0x510] | (g[0x520] << 8),
+                           (g[0x540] << 8) | g[0x530], (g[0x560] << 8) | g[0x550],
+                           g[0x460], g[0x400], g[0x4D0 + 13],
+                           g[0x4F0 + 13] | (g[0x500 + 13] << 8), g[0x510 + 13] | (g[0x520 + 13] << 8),
+                           g[0x420 + 13] };
+            for (int i = 0; i < names.Length; i++)
+            {
+                if (port[i] == orig[i]) { ok[i]++; continue; }
+                if (firstBad[i] < 0)
+                {
+                    firstBad[i] = f;
+                    sb.Append($"FIRST {names[i]}: f{f} port={port[i]:X4} orig={orig[i]:X4}; ");
+                }
+            }
+        }
+        for (int i = 0; i < names.Length; i++)
+            sb.Append($"{names[i]}={ok[i]}/{span} (first bad {(firstBad[i] < 0 ? "-" : firstBad[i].ToString())}) ");
+        return sb.ToString();
+    }
+
+    /// <summary>
     /// Door/section golden: `gold_door_id1` is mission 1 (world 0) with the request byte
-    /// $5B seeded to 1 by probe_run --patch at capture frame 5. The original consumes it at
-    /// $CA6E (LDX $5B / JSR $E388) 18 frames later; capture frame 23 = array index 22 is the
-    /// first frame where the geometry writes ($E394-$E3D3) are visible while $DE24 has
-    /// already zeroed $50, and $E406 ($50=$12, $0420=$2C from $FA78) only appears at
-    /// capture frame 33 — $E388 yields per row-redraw batch ($FF06/$E698), it is NOT
-    /// one frame. This harness seeds the port at index 21 (last pre-load frame) with
-    /// PendingEvent=1 and compares, per field, every RAM byte $E388 is documented to write.
+    /// $5B seeded to 1 at capture frame 5. The original consumes it at $CA6E (LDX $5B /
+    /// JSR $E388) 18 frames later; the loader yields per row-redraw batch ($FF06/$E698),
+    /// so staging spans 10 redraw frames plus a tail frame. Seeds the port at index 21
+    /// (last pre-load frame) and compares every RAM byte $E388 writes.
     /// </summary>
     public static string Door()
     {

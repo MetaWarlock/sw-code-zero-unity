@@ -17,7 +17,7 @@ engine,input,controller,disasm,yes,no,n/a,$C162: $14/$16 P1, bits 7=A..0=Right
 engine,banks,queue,disasm+trace,yes,no,n/a,$FF55/$FF21/$FF3B; queue $DC[8] marker $88; NMI->bank3 AUDIO task
 engine,objects,16 slots,disasm+trace,yes,no,n/a,$0400..$059F stride $10; update order alternates by $95 parity; spawner bank4 $8090
 engine,gameplay_loop,main,disasm+trace,yes,no,n/a,$C9AC; camera $DA70; script byte ($34),Y
-player,physics,all_states,disasm doc+golden,yes,partial,partial,PlayerCore.cs: states 0/1/2/3/6/0A/0B/0C/12 transcribed; walk/jump/hook/door goldens pass, damage/knockback golden pending (G14)
+player,physics,all_states,disasm doc+golden,yes,partial,partial,PlayerCore.cs: states 0/1/2/3/6/0A/0B/0C/12 transcribed; walk/jump/hook/door goldens pass; hurt golden (gold_hurt_a41) partial: Y/vy/flags/$0410 66/66 after the grounded-support fix (states 0/6 skip gravity, type 1 accepts support), $50/$51/$7C blocked on enemy beh $0C motion (G14)
 player,weapons,gas_gun,disasm doc,yes,no,no,projectile behaviors 1-4 documented; spawn max [3,1,2,1]
 player,damage,invuln_death,disasm doc,yes,no,no,4-hit ladder $05B2-$05B8; 60 invuln frames; states 7/8
 flow,screens,boot_to_title,probes,yes,no,no,docs/game_flow.md flow diagram
