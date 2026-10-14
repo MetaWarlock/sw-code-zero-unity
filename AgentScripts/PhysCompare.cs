@@ -31,6 +31,7 @@ public static class PhysCompare
         map.StreamColumns(0);
         game.Player.TileMap = map;
         game.TileMap = map;
+        game.WireWorldFeed();
 
         // Seed from the golden frame 0.
         byte[] ram0 = new byte[2048];
@@ -48,6 +49,11 @@ public static class PhysCompare
         p.ScrollX = (ushort)(ram0[0xFC] | (ram0[0xFD] << 8));
         p.ScrollYRow = ram0[0xFB];
         p.Flags = ram0[0x400];
+        // Camera/level-table state the hook mechanic reads ($FA, $22, $2E, $2D).
+        p.ScrollY = ram0[0xFA];
+        p.CellIndex = ram0[0x22];
+        p.RowStride = ram0[0x2E];
+        p.BottomRow = ram0[0x2D];
         var s0 = game.Objects.Slots[0];
         s0.AnimNumber = ram0[0x420];
         s0.AnimFrame = ram0[0x410];

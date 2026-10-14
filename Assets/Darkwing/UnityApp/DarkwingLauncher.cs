@@ -58,6 +58,7 @@ namespace Darkwing.UnityApp
             _map.StreamColumns(0);
             _game.CurrentLevel = data.Levels[0];
             _game.Player.Y = 0x374;     // captured standing position on the bridge deck
+            _game.WireWorldFeed();      // $32/$34 feeds + $22 camera cell index
             _game.PlayMusic(world.Music); // mission music from the world descriptor ($DF04)
             System.Array.Copy(Mission1Palette, _game.Ppu.PaletteRam, 32);
             _game.Ppu.Chr1Bank = 16;    // bg pattern table (verified for set 0)

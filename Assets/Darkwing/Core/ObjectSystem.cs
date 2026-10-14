@@ -158,6 +158,21 @@ namespace Darkwing.Core
             }
         }
 
+        /// <summary>$DB99-$DBB1: hanging on a hook clears object slots 15..2
+        /// (slot 1 is left alive, slot 0 is the player).</summary>
+        public void ClearForHookRide()
+        {
+            for (int i = SlotCount - 1; i >= 2; i--)
+            {
+                var s = Slots[i];
+                s.Active = false;   // $04D0
+                s.Flags = 0;        // $0400
+                s.BehaviorParam = 0; // $0570
+                s.HitFlash = 0;     // $04C0
+                s.PlacementIndex = 0xFF; // $0590
+            }
+        }
+
         private bool IsSpawned(int placementIndex)
         {
             for (int i = 1; i < SlotCount; i++)

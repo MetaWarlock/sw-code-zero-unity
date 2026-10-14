@@ -45,7 +45,14 @@ namespace Darkwing.Core
 
         public ushort PrevX;            // $6E/$6F
         public ushort ScrollX;          // $FC/$FD
-        public byte ScrollYRow = 3;     // $FB (cell row; $FA = in-cell Y offset, normally 0)
+        public byte ScrollYRow = 3;     // $FB (world grid row of the camera window)
+        public byte ScrollY;            // $FA (intra-row vertical scroll, 0..$EF, 3 px/frame steps)
+        public byte CellIndex;          // $22 (linear cell index = ScrollYRow*GridWidth + camera column)
+        public byte CellIndexNext;      // $23 (incoming cell during horizontal scroll)
+        public byte RowStride = 17;     // $2E (linear index step for one grid row)
+        public byte BottomRow;          // $2D (lowest row the camera may scroll down into)
+        public byte ScrollStep;         // $10 (px/frame handed to $DC6E/$DCC4)
+        public byte ScrollMode;         // $2F (0 none, 4 down ride, 8 up ride)
 
         public byte FacingRight = 1;    // $0400 bit6
         public byte Flags = 0xD0;       // $0400 (active|facing)
@@ -521,28 +528,125 @@ namespace Darkwing.Core
             if (StateTimer == 0) State = 0;
         }
 
-        // ---------- Level script hook ($DAFD) ----------
+        // ---------- Level script hook / peg ride ($DAFD + $DB6D) ----------
         /// <summary>
-        /// Reads the level script byte for the current screen column. Byte $C1-$CF
-        /// (odd) = checkpoint id → $6D; low nibble == 1 = hook column (grab check);
-        /// low nibble == 2 = vertical scroll snap. The world supplies the byte.
+        /// Transcription of $DAFD (per-frame, after camera follow) and $DB6D
+        /// Player_HookGrabCheck. The caller gate is scroll X low byte == 0 and
+        /// the cell script byte's low nibble == 1 (hook column, $DB29-$DB39); the
+        /// grab itself then requires the camera grid row $FB to equal the player's
+        /// Y high byte $0520 and the player's intra-row screen Y ($0510-$FA) to be
+        /// at least $E8 — i.e. he is dangling at the bottom edge of the window.
         /// </summary>
-        public void ApplyScriptByte(byte scriptByte)
+        public void HookGrabCheck()
         {
-            if (scriptByte >= 0xC1 && scriptByte <= 0xCF && (scriptByte & 1) != 0)
-                CheckpointId = (byte)(scriptByte & 0x1F);
-            if ((scriptByte & 0x0F) == 1 && ScrollX == 0 && State != 0x0C)
+            byte scrollLo = (byte)(ScrollX & 0xFF);   // $FC
+            if (scrollLo != 0) return;                // $DB29/$DB2B
+            byte scriptByte = CellScriptByte;         // ($34),$22
+            if ((scriptByte & 0x0F) == 1)             // $DB35/$DB37
             {
-                // Hook grab ($DB6D): position-based — player screen Y >= $E8
-                int screenY = (short)(Y - (ScrollYRow * 0)); // $FA in-cell offset normally 0
-                if (screenY >= 0xE8)
-                {
-                    State = 0x0C; // hang
-                    YVelInt = 0; YVelFrac = 0x80; // 0.5 px/frame ride
-                    if (scriptByte == 0x90) OnHookTileFlag = true;
-                }
+                if ((scriptByte & 0x0F) != 0 && scriptByte >= 0xC1 && scriptByte <= 0xCF && (scriptByte & 1) != 0)
+                    CheckpointId = (byte)(scriptByte & 0x1F); // $DB27 (checkpoint feed)
+                HookGrab();
+            }
+            else if ((scriptByte & 0x0F) == 2)        // $DB3F fallthrough: vertical snap column
+            {
+                ScrollStep = VerticalSnapStep();
+                if (ScrollStep != 0) { ScrollMode = 8; VerticalScrollUp(); }
             }
         }
+
+        /// <summary>$DB6D: grab test + $DB8B entry + $DBB3/$DBC3 ride tail.</summary>
+        private void HookGrab()
+        {
+            if (State == 0x0C) { RideTail(3); return; }          // $DB6F/$DB71 already hanging
+            if (ScrollYRow != (byte)(Y >> 8)) return;             // $DB73/$DB75
+            int screenY = (byte)((Y & 0xFF) - ScrollY);           // $DB7A-$DB7E
+            if (screenY >= 0xE8) EnterHang();                     // $DB80/$DB82
+            else if (State == 0x0C) RideTail(3);                  // $DB84-$DB88
+        }
+
+        /// <summary>$DB8B: state 0C, +0.5 px/frame vertical drift, clear object slots 15..2.</summary>
+        private void EnterHang()
+        {
+            State = 0x0C;                                        // $DB8B/$DB8D
+            YVelFrac = 0x80;                                     // $DB8F → $0550
+            YVelInt = 0;                                         // $DB94 → $0560
+            Objects?.ClearForHookRide();                         // $DB99-$DBB1
+            RideTail(3);
+        }
+
+        /// <summary>$DBB3/$DBC3: peg grid byte re-asserts the on-hook flag, then ride the camera.</summary>
+        private void RideTail(byte step)
+        {
+            if (CellGridByte == 0x90) Flags |= 0x20;              // $DBB5-$DBC0
+            ScrollStep = step;                                   // $DBC3 → $10
+            ScrollMode = 4;                                      // $DBC9 → $2F
+            VerticalScrollDown();                                // $DBCB JMP $DC6E
+        }
+
+        /// <summary>$DC6E: ride the camera down $10 px/frame; on row wrap advance $FB/$22.</summary>
+        private void VerticalScrollDown()
+        {
+            if (ScrollY == 0)                                    // $DC6E/$DC70
+            {
+                if (CellIndex + RowStride >= CellCount || GridAt(CellIndex + RowStride) == 0) return; // $DC72-$DC7A
+                if (ScrollYRow == BottomRow) return;             // $DC7C-$DC80
+            }
+            int next = ScrollY + ScrollStep;                     // $DC88-$DC8D
+            ScrollY = (byte)next;
+            if (next < 0xF0) return;                             // $DC8F/$DC91
+            ScrollY = (byte)(next + 0x10);                       // $DC93/$DC95 (wrap: next - 240)
+            if ((CellScriptByte & 0x80) != 0) { ScrollY = 0; return; } // $DC97-$DC9B
+            int row = ScrollYRow + 1;                            // $DC9D-$DCA1
+            int idx = CellIndex + RowStride;                     // $DCA3-$DCA8
+            if (idx >= CellCount || GridAt(idx) == 0) { ScrollY = 0; return; } // $DCAB-$DCAD
+            if (row > 0xFF) { ScrollY = 0; return; }             // $DCAF/$DCB1
+            ScrollYRow = (byte)row;                              // $DCB9-$DCBF
+            CellIndex = (byte)idx;
+            ReloadRow();                                         // $DCC1 JMP $E7C6
+        }
+
+        /// <summary>$DCC4: ride the camera up $10 px/frame; on row wrap step $FB/$22 back.</summary>
+        private void VerticalScrollUp()
+        {
+            if (ScrollY == 0)                                    // $DCC4/$DCC6
+            {
+                if (CellIndex < RowStride || GridAt(CellIndex - RowStride) == 0) return; // $DCC8-$DCD1
+                if (ScrollYRow != 0) return;                     // $DCD3/$DCD5
+            }
+            int next = ScrollY - ScrollStep;                     // $DCDD-$DCE2
+            if (next >= 0) { ScrollY = (byte)next; return; }     // $DCE4
+            next -= 0x10;                                        // $DCE6/$DCE8 (wrap: +240)
+            ScrollY = (byte)next;
+            if ((CellScriptByte & 0x80) != 0) { ScrollY = 0; return; } // $DCEA-$DCEE
+            int row = ScrollYRow - 1;                            // $DCF0-$DCF4
+            int idx = CellIndex - RowStride;                     // $DCF6-$DCFB
+            if (idx < 0 || GridAt(idx) == 0) { ScrollY = 0; return; } // $DCFE-$DD00
+            if (row < 0) { ScrollY = 0; return; }                // $DD02/$DD04
+            ScrollYRow = (byte)row;                              // $DD0C-$DD12
+            CellIndex = (byte)idx;
+            ReloadRow();                                         // $DD14 JMP $E7C6
+        }
+
+        /// <summary>$DB40/$DB50: vertical snap step for script nibble 2 columns.</summary>
+        private byte VerticalSnapStep()
+        {
+            int d = (byte)(Y & 0xFF);                            // $DB43
+            d = (byte)(d - ScrollY);                             // $DB47
+            if (d < 0) d = (byte)(d - 0x0F);                     // $DB4B/$DB4D
+            if (d >= 0x48) return 0;                             // $DB52/$DB54
+            int window = 0x48 - d;                               // $DB57-$DB5A
+            if (window < 0) return 0;                            // $DB5C
+            return (byte)(window < 9 ? d : 4);                   // $DB5E-$DB64
+        }
+
+        // World feed (set by DarkwingGame/LevelTileMap before the check runs).
+        public byte CellGridByte;      // ($32),$22 — room id of the camera cell ($DBB5)
+        public byte CellScriptByte;    // ($34),$22 — cell script byte ($DB33)
+        public Func<int, byte> GridAt;          // ($32),Y reader
+        public Func<int, byte> FlagAt;          // ($34),Y reader
+        public Action ReloadRow;                // $E7C6 row redraw
+        public int CellCount = 68;              // grid length ($DC78 bounds test uses the same table)
 
         // ---------- Energy HUD drain ($CB0E-$CB3B / state 7 $D3D9-$D407) ----------
         public byte EnergyColRight = 0x79; // $05E6 (tile code $70-$79 = 9..0)
@@ -712,18 +816,39 @@ namespace Darkwing.Core
         }
 
         // ---------- State 0C: hang on hook ($D7F9) ----------
+        /// <summary>
+        /// $F539: add the 8.8 velocity into ($0520:$0510) where $0510 is the offset
+        /// inside a 240 px row — the add's carry out of $0510 is DISCARDED (only
+        /// $0510 is stored), and the row count in $0520 advances solely through the
+        /// "$0510 >= $F0" wrap ($0510 += $0F with the CMP carry = +16, $0520 += 1).
+        /// </summary>
+        private void IntegrateYRide()
+        {
+            int frac = YFrac + YVelFrac;                    // $F53C CLC / ADC $0550
+            YFrac = (byte)frac;
+            int lo = (Y & 0xFF) + (YVelInt & 0xFF) + (frac >> 8); // $F546 ADC $0560
+            Y = (ushort)(((Y & 0xFF00) | (lo & 0xFF)) & 0xFFFF);  // $F549 STA $0510 only
+            if ((Y & 0xFF) >= 0xF0)                          // $F54C CMP #$F0
+            {
+                int wrapped = (Y & 0xFF) + 0x0F + 1;         // $F550 ADC #$0F (C=1 from CMP)
+                Y = (ushort)((((Y + 0x100) & 0xFF00) | (wrapped & 0xFF)) & 0xFFFF); // $F552/$F55A
+            }
+        }
+
+        /// <summary>$D7F9: released when the vertical scroll byte $FA returns to 0.</summary>
         private void HangState(byte held, byte pressed)
         {
-            // 0.5 px/frame rise while riding ($DB8F): vel = +0.5 up
-            YVelInt = 0; YVelFrac = 0x80;
-            IntegrateY();
-            YVelInt = 0; YVelFrac = 0; // no accumulation
-            if (ScrollYRow == 0) State = 1; // release when scroll Y reaches top ($D833)
-            if ((pressed & 0x80) != 0)
-            {
-                State = 1;
-                YVelInt = 4; YVelFrac = 0xE5; // jump off
-            }
+            if (ScrollY == 0) { State = 1; return; }         // $D7F9-$D801
+            if (CellGridByte == 0x90) Flags |= 0x20;         // $D802-$D80F
+            IntegrateYRide();                                // $D812
+            var s0 = Objects?.Slots[0];
+            if (s0 == null) return;
+            // $D815-$D824: only anims 6, $0D and 4 are pinned; others leave the
+            // animation alone (the $D824 RTS path).
+            if (s0.AnimNumber == 6 || s0.AnimNumber == 0x0D) s0.AnimFrame = 1; // $D825-$D827
+            else if (s0.AnimNumber == 4) s0.AnimFrame = 2;                      // $D82C-$D82E
+            else return;
+            s0.AnimTimer = 0;                                                    // $D831-$D833
         }
     }
 }

@@ -27,29 +27,55 @@ namespace Darkwing.Core
             _decoder = decoder;
             _ppu = ppu;
             _world = world;
-            _row = world.StartRow;
-            int cells = 4 * world.RowWidth; // linear cells; row-major lookup below
             _roomTiles = new byte[world.RowWidth][];
             _roomTypes = new byte[world.RowWidth][];
             _roomAttrs = new byte[world.RowWidth][];
             _roomMeta = new byte[world.RowWidth][];
-            for (int col = 0; col < world.RowWidth; col++)
+            LoadRow(world.StartRow);
+        }
+
+        /// <summary>
+        /// Pre-decode all cells of one grid row. The original redraws the whole row
+        /// through $E7C6 when $FA wraps and $FB/$22 advance ($DC6E/$DCC4).
+        /// </summary>
+        public void LoadRow(int row)
+        {
+            _row = row;
+            for (int col = 0; col < _world.RowWidth; col++)
             {
-                byte cell = world.CellAt(_row, col);
+                byte cell = _world.CellAt(_row, col);
                 var tiles = new byte[1024];
                 var types = new byte[256];
                 var macros = new byte[64];
                 if (cell != 0)
-                    decoder.Decode(world, cell, macros, tiles, types);
+                    _decoder.Decode(_world, cell, macros, tiles, types);
                 _roomTiles[col] = tiles;
                 _roomTypes[col] = types;
-                _roomMeta[col] = (byte[])decoder.MetaGrid.Clone();
+                _roomMeta[col] = (byte[])_decoder.MetaGrid.Clone();
                 var attrs = new byte[256];
-                var tb = decoder.TypeBytes;
+                var tb = _decoder.TypeBytes;
                 for (int m = 0; m < 256; m++) attrs[m] = (byte)(tb[m] & 3);
                 _roomAttrs[col] = attrs;
             }
+            _lastStreamed = -1;
         }
+
+        /// <summary>Current grid row ($FB).</summary>
+        public int Row => _row;
+
+        /// <summary>Grid row stride = $2E: linear cell index $22 = row*GridWidth + column.</summary>
+        public int GridWidth => _world.RowWidth;
+
+        /// <summary>Number of grid rows described by the level's cell arrays.</summary>
+        public int GridRows => _world.Grid.Length / _world.RowWidth;
+
+        /// <summary>Grid byte ($32),Y — room id for linear cell index Y=$22. 0 = no cell ($DC7A/$DCAD).</summary>
+        public byte GridByte(int index) =>
+            (uint)index < (uint)_world.Grid.Length ? _world.Grid[index] : (byte)0;
+
+        /// <summary>Script byte ($34),Y — cell flags: bit7 blocks the row change ($DC9B), low nibble 1 = hook column ($DAFD).</summary>
+        public byte FlagByte(int index) =>
+            (uint)index < (uint)_world.Flags.Length ? _world.Flags[index] : (byte)0;
 
         /// <summary>Stream nametable columns so the window covers scroll..scroll+256.</summary>
         public void StreamColumns(ushort scrollX)
@@ -88,6 +114,12 @@ namespace Darkwing.Core
                 byte pal = (byte)(_roomAttrs[cell][metaIndex] & 3);
                 nt[attrByteIndex] = (byte)((nt[attrByteIndex] & ~(3 << shift)) | (pal << shift));
             }
+        }
+
+        /// <summary>Level script byte ($34 flag table) for the player's cell column ($DAFD feed).</summary>
+        public byte FlagAtPlayer(PlayerCore player)
+        {
+            return FlagByte(player.CellIndex);
         }
 
         public byte TypeAt(int worldX, int worldY)

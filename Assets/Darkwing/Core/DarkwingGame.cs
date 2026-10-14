@@ -93,6 +93,25 @@ namespace Darkwing.Core
         /// <summary>World tile map; StreamColumns runs after the player moves.</summary>
         public LevelTileMap TileMap { get; set; }
 
+        /// <summary>Wire the player's level-table feeds ($32/$34 readers, $E7C6 row
+        /// redraw) and seed the camera cell index ($22 = $FB*$2E + $FD).</summary>
+        public void WireWorldFeed()
+        {
+            if (TileMap == null) return;
+            var p = Player;
+            p.GridAt = TileMap.GridByte;
+            p.FlagAt = TileMap.FlagByte;
+            p.CellCount = TileMap.GridWidth * TileMap.GridRows;
+            p.RowStride = (byte)TileMap.GridWidth;   // $2E
+            p.BottomRow = (byte)(TileMap.GridRows - 1); // $2D
+            p.ReloadRow = () =>
+            {
+                TileMap.LoadRow(p.ScrollYRow);
+                TileMap.StreamColumns(p.ScrollX);
+            };
+            p.CellIndex = (byte)(p.ScrollYRow * p.RowStride + (p.ScrollX >> 8)); // $22
+        }
+
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
         public const int SfxJump = 0x21;
         public const int SfxLand = 0x10;
@@ -136,6 +155,13 @@ namespace Darkwing.Core
             {
                 Paused = true; // TODO(M7): SFX $1C + status screen via VRAM queue
                 return;
+            }
+            // Hook/peg column check ($DAFD): the cell script byte feeds the grab test.
+            if (TileMap != null)
+            {
+                Player.CellGridByte = TileMap.GridByte(Player.CellIndex);   // ($32),$22
+                Player.CellScriptByte = TileMap.FlagByte(Player.CellIndex); // ($34),$22
+                Player.HookGrabCheck();
             }
             Player.Step(held, pressed);
             // Audio advances via AudioSequencer.RenderFrame (Tick inside) once per
