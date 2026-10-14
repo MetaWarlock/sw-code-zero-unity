@@ -45,6 +45,7 @@ namespace Darkwing.Core
 
         public ushort PrevX;            // $6E/$6F
         public ushort ScrollX;          // $FC/$FD
+        public ushort PrevPlayerX;      // $6E/$6F (player X as of the last scroll service)
         public byte ScrollYRow = 3;     // $FB (world grid row of the camera window)
         public byte ScrollY;            // $FA (intra-row vertical scroll, 0..$EF, 3 px/frame steps)
         public byte CellIndex;          // $22 (linear cell index = ScrollYRow*GridWidth + camera column)
@@ -291,6 +292,54 @@ namespace Darkwing.Core
             return false;
         }
 
+        public byte LastRedrawScroll;    // $28 (scroll X at the end of the last redraw)
+        public byte ColsToStream;        // $1F (column passes queued by the driver)
+        public byte PrevScrollMode;      // $20 ($2F as of the last queued pass)
+
+        /// <summary>$E7BA — the $23 step used when the direction byte changes, indexed by
+        /// ($2F&amp;2) plus one more when the $25 bit7 flips.</summary>
+        private static readonly byte[] CellStepOnFlip = { 0x02, 0x01, 0xFE, 0xFF };
+
+        /// <summary>
+        /// $E63A-$E698: the column-stream driver, JSR'd by the horizontal scroll service
+        /// ($DC14/$DC67) every frame the camera moves. It converts this frame's X delta
+        /// into a number of $E698 passes ($1F = (|$FC−$28| + $28 bit0) &gt;&gt; 1, so one
+        /// pass = 2 px of scroll), then runs the $E785 per-pass step: $25 counts passes
+        /// and $23 takes a step whenever $25&amp;$7F hits $E7BF,X — 128 passes = 256 px =
+        /// exactly one cell, which is why $23 (the incoming cell) is armed one screen
+        /// before the scroll reaches it (gold_m1_fulljump: $25 $FF→$00 at f243 moves
+        /// $23 $34→$35 while $22 is still $33; $22 only follows at the page crossing f253).
+        /// </summary>
+        public void ColumnStreamPass()
+        {
+            int fc = ScrollX & 0xFF;
+            int delta = (fc - LastRedrawScroll) & 0xFF;              // $E63C-$E640 (SEC/SBC)
+            if (delta >= 0x80) delta = (256 - delta) & 0xFF;         // $E643-$E646 two's complement
+            int x = ScrollMode & 2;                                 // $E64A-$E64E
+            int passes = x == 0
+                ? (((LastRedrawScroll & 1)) + delta) >> 1           // $E650-$E657
+                : (((LastRedrawScroll ^ 0xFF) & 1) + delta) >> 1;   // $E65D-$E666
+            if (passes == 0) return;                                // $E65A/$E669
+            ColsToStream = (byte)passes;                            // $E66C-$E66E
+            if (ScrollMode != PrevScrollMode)                       // $E670-$E676
+            {
+                byte bit7 = (byte)(StageCursor & 0x80);             // $E67B-$E680
+                StageCursor = (byte)(StageCursor + (x == 0 ? 0x91 : 0x6F)); // $E684 / $E7B6
+                int k = ((StageCursor & 0x80) == bit7) ? x : x + 1; // $E689-$E68F
+                CellIndexNext = (byte)(CellIndexNext + CellStepOnFlip[k]); // $E690-$E696
+            }
+            PrevScrollMode = ScrollMode;                            // $E674
+            sbyte step = (sbyte)(x == 0 ? 0x01 : 0xFF);              // $E7BE,X
+            byte boundary = (byte)(x == 0 ? 0x00 : 0x7F);           // $E7BF,X
+            for (int i = 0; i < passes; i++)                        // $E698 → $E7A5
+            {
+                StageCursor = (byte)(StageCursor + step);           // $E78A-$E790
+                if ((StageCursor & 0x7F) == boundary)
+                    CellIndexNext = (byte)(CellIndexNext + step);   // $E792-$E79F
+            }
+            LastRedrawScroll = (byte)fc;                            // $E7B1-$E7B3
+        }
+
         /// <summary>
         /// $E3F0-$E406, written on the frame after the staging loop exits: the $FA78
         /// anim seed ($0420=$2C, $0430/$0410=0), $04D0=$80, $0400=$D0, the $F5FC
@@ -315,31 +364,104 @@ namespace Darkwing.Core
 
         // ---------- Camera ($DA70/$DC19/$DBCE) ----------
         /// <summary>
-        /// Horizontal dead-zone follow. On player move: if screenX passes the far
-        /// edge ($88 moving left / $89 moving right) the scroll chases 1 px/frame
-        /// until the player re-enters; then the player is pushed to 16 px inside
-        /// the near edge. Verified against the captured gameplay trace; exact
-        /// per-frame stepping re-verified in M3 golden comparisons.
+        /// $DA70-$DC6D: the horizontal scroll service. Unlike a dead-zone follow, the
+        /// step is the player's own displacement since the previous call ($CA5C/$CA64
+        /// snapshots $0500/$04F0 into $6F/$6E), and $00 = X_lo − $FC_lo only gates
+        /// entry: ≥ $89 opens the right scroll ($DBCE adds the step, forced to 1 px when
+        /// it exceeds 6), ≤ $87 opens the left one ($DC19 subtracts it, capped at 6).
+        /// The camera therefore tracks the player 1:1, which is why gold_m1_fulljump
+        /// holds screen X at exactly $88 across walk, air and landing. While a scroll
+        /// succeeds $2F keeps its direction ($E63C copies it to $20), which is what
+        /// selects ColumnStreamPass's step/boundary tables.
         /// </summary>
-        /// <summary>
-        /// Horizontal camera follow. gold_m1_fulljump (400 frames) locks the player's
-        /// screen X at exactly $88 for the whole route — walk, airborne and after landing:
-        /// the scroll closes any larger gap and then tracks the player 1:1. $DBDF clamps
-        /// one frame's catch-up to 6 px, so a fast knockback leaves the camera behind.
-        /// </summary>
-        public void UpdateCamera(bool movedLeft, bool movedRight)
+        public void HorizontalScroll(System.Func<int, byte> gridByte, System.Func<int, byte> flagByte)
         {
-            int ahead = (short)(X - ScrollX) - 0x88;
-            if (ahead > 0) ScrollX = (ushort)(ScrollX + (ahead > 6 ? 6 : ahead));
-            else if (movedLeft && -ahead > 1)
+            if (State == 0x07 || State == 0x08 || State == 0x12)   // $DA70-$DA7D camera lock
             {
-                // chase left ($DC19 mirror): the window mirrors at the left edge
-                int back = -ahead;
-                ScrollX = (ushort)(ScrollX - (back > 6 ? 6 : back));
+                PrevPlayerX = X;
+                return;
             }
-            // push-to-dead-zone after scroll ($DABD/$DAEE: 16px inside the edge)
-            int screenX = (short)(X - ScrollX);
-            if (screenX < 0x10) ScrollX = (ushort)(X - 0x10);
+            byte ahead = (byte)(X - ScrollX);                       // $00 ($DA7F-$DA85)
+            int moved = X - PrevPlayerX;                            // $04 + high byte ($DA87-$DA96)
+            PrevPlayerX = X;
+            if (moved == 0) return;
+            if (moved > 0)
+            {
+                if (ahead < 0x89) return;                           // $DAD1-$DAD3
+                byte step = (byte)moved;                            // $DAD5-$DAD7
+                byte saved = ScrollMode;
+                ScrollMode = 1;                                     // $DADC-$DADE
+                if (!ScrollRight(step, gridByte, flagByte)) { ScrollMode = saved; return; }
+                if (ahead >= 0xF1) X = (ushort)(ScrollX + 0xF0);    // $DAE8-$DAFA player clamp
+            }
+            else
+            {
+                if (ahead >= 0x88) return;                          // $DAA2-$DAA6
+                byte step = (byte)(-(moved & 0xFF));                // $DA9A-$DAA0 two's complement
+                byte saved = ScrollMode;
+                ScrollMode = 2;                                     // $DAAB-$DAAD
+                if (!ScrollLeft(step, gridByte, flagByte)) { ScrollMode = saved; return; }
+                if (ahead < 0x10) X = (ushort)(ScrollX + 0x10);     // $DAB7-$DAC9 player clamp
+            }
+        }
+
+        /// <summary>$DC19-$DC6B: scroll left. Returns the carry; false = CLC (no scroll,
+        /// $2F restored by the caller). On rejection at the level edge the ROM pins $FC to
+        /// 0 but still returns SEC, so $2F stays latched at 2.</summary>
+        private bool ScrollLeft(byte step, System.Func<int, byte> gridByte, System.Func<int, byte> flagByte)
+        {
+            if ((flagByte(CellIndex) & 0x40) == 0) return false;         // $DC1B-$DC1F
+            if ((byte)ScrollX == 0)                                       // $DC21-$DC2C
+            {
+                if (gridByte(CellIndex - 1) == 0) return false;
+                if ((byte)(ScrollX >> 8) == 0) return false;
+            }
+            if (!ArmHorizontal()) return false;                           // $DC2E-$DC31
+            if (step > 6) step = 6;                                       // $DC33-$DC39
+            int lo = (byte)ScrollX - step;                                // $DC3B-$DC40
+            bool borrow = lo < 0;
+            byte newHi = (byte)((byte)(ScrollX >> 8) - (borrow ? 1 : 0));  // $0E ($DC43-$DC47)
+            byte newCell = (byte)(CellIndex - (borrow ? 1 : 0));           // $0F ($DC4A-$DC4E):
+                                                                            // the borrow comes from
+                                                                            // the LOW byte via PHP/PLP
+            if (gridByte(newCell) != 0 && (newHi & 0x80) == 0)              // $DC50-$DC57
+            {
+                ScrollX = (ushort)((newHi << 8) | (byte)lo);
+                CellIndex = newCell;
+            }
+            else
+                ScrollX = (ushort)((ScrollX >> 8) << 8);                    // $DC59-$DC5B pin $FC = 0
+            ColumnStreamPass();                                             // $DC67
+            return true;
+        }
+
+        /// <summary>$DBCE-$DC18: scroll right, the mirror of ScrollLeft.</summary>
+        private bool ScrollRight(byte step, System.Func<int, byte> gridByte, System.Func<int, byte> flagByte)
+        {
+            if ((flagByte(CellIndex + 1) & 0x40) == 0) return false;       // $DBCE-$DBD5
+            if ((byte)ScrollX == 0 && gridByte(CellIndex + 1) == 0) return false;   // $DBD7-$DBDD
+            if (step > 6) step = 1;                                         // $DBDF-$DBE7
+            if (!ArmHorizontal()) return false;                             // $DBE9-$DBEC
+            bool carry = (byte)ScrollX + step > 0xFF;                       // $DBEE-$DBF3
+            ScrollX = (ushort)(ScrollX + step);
+            if (carry) CellIndex = (byte)(CellIndex + 1);                   // $DBFD-$DC01
+            if (gridByte(CellIndex + 1) != 0) { ColumnStreamPass(); return true; }   // $DC03-$DC09
+            ScrollX = (ushort)((ScrollX >> 8) << 8);                        // $DC0B pin $FC = 0
+            ColumnStreamPass();
+            return true;
+        }
+
+        /// <summary>$DD17-$DD31: arm the incoming cell for a horizontal scroll. A vertical
+        /// scroll in progress ($FA ≠ 0) blocks it outright; otherwise $2B takes the latched
+        /// mode byte and $23 = $22 ± 1 through the $DD34 table indexed by $20 bit0
+        /// (0 → −1 for a left ride, 1 → +1 for a right one).</summary>
+        private bool ArmHorizontal()
+        {
+            if ((ScrollState & 3) != 0) return true;                        // $DD17-$DD1B
+            if (ScrollY != 0) return false;                                 // $DD1D-$DD1F
+            ScrollState = PrevScrollMode;                                   // $DD21-$DD23
+            CellIndexNext = (byte)(CellIndex + ((PrevScrollMode & 1) == 0 ? -1 : 1));
+            return true;                                                    // $DD30
         }
 
         // ---------- Main state dispatch ($CB41) ----------
@@ -364,10 +486,8 @@ namespace Darkwing.Core
                 default: break; // remaining states wired during M4/M7
             }
 
-            // $DA70/$DBCE is a per-frame service that runs after the state machine, not a
-            // walk-state action: gold_m1_fulljump keeps screen X at $88 through walk, the
-            // whole airborne phase and the landing, which is what advances $22 at f253.
-            UpdateCamera((held & 0x02) != 0, (held & 0x01) != 0);
+            // $DA70 (the scroll service) runs at $CA59, after the dispatcher returns, so it
+            // sees this frame's X but is called by DarkwingGame.Step, not here.
         }
 
         // ---------- State 12: materialize walk-out ($D517) ----------
@@ -519,21 +639,26 @@ namespace Darkwing.Core
 
             if ((held & 0x03) != 0) // Left/Right held → walk ($CBB7/$CC53)
             {
-                // Walk anim + footstep dust ($CC53/$CC84/$CCAA): anim 3, cycle 1-4,
-                // frame 0 with timer<4 = dust (velocity 0.28), fresh start dusts once.
+                // Walk anim ($CC6E-$CCB1): anim 3 is set when it isn't already the anim,
+                // the only manual frame edit here is the $CC84 wrap (frame 4 + timer 6 →
+                // frame 1, timer 0). Frame 0 with timer < 4 is the footstep dust and pins
+                // the speed to 0.$48 (0.28 px/frame); gold_m1_fulljump f354-f358 holds it
+                // for five frames and only reaches 1.$80 when the timer passes 4.
                 var s0 = Objects != null ? Objects.Slots[0] : null;
-                bool fresh = s0 == null || s0.AnimNumber != 3;
-                if (fresh)
+                if (s0 != null)
                 {
-                    if (s0 != null) { s0.AnimNumber = 3; s0.AnimFrame = 0; s0.AnimTimer = 0; }
-                }
-                else if (s0.AnimFrame == 0 && s0.AnimTimer == 0)
-                {
-                    s0.AnimFrame = 1; // $CC84 cycle wrap skips the dust frame
-                }
-                if (s0.AnimFrame == 0 && s0.AnimTimer < 4)
-                {
-                    XVelInt = 0; XVelFrac = 0x48; // footstep dust: 0.28 px/frame ($CCAA)
+                    if (s0.AnimNumber != 3)
+                    {
+                        s0.AnimNumber = 3; s0.AnimFrame = 0; s0.AnimTimer = 0;   // $CC81 → $FA78
+                    }
+                    else if (s0.AnimFrame == 4 && s0.AnimTimer == 6)
+                    {
+                        s0.AnimFrame = 1; s0.AnimTimer = 0;                       // $CC92-$CC99
+                    }
+                    if (s0.AnimFrame == 0 && s0.AnimTimer < 4)
+                    {
+                        XVelInt = 0; XVelFrac = 0x48;                             // $CCAA-$CCB1
+                    }
                 }
                 bool right = (held & 0x01) != 0;
                 FacingRight = right ? (byte)0x40 : (byte)0x00;

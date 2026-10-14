@@ -471,20 +471,25 @@ namespace Darkwing.Core
 
         /// <summary>
         /// $F200 move right at own velocity, probe right wall (set A, y Y), snap, face right.
+        /// Returns the probe code left in $10 (callers like $8CF4 read it after the move).
         /// </summary>
-        internal static void WalkRight(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
+        internal static byte WalkRight(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
         {
             IntegrateXPos(s);
-            if (Probe(ctx, s, probeSet, probeY) >= 3) SnapXWallRight(ctx, s);
+            byte code = Probe(ctx, s, probeSet, probeY);
+            if (code >= 3) SnapXWallRight(ctx, s);
             s.Flags |= 0x40;
+            return code;
         }
 
         /// <summary>$F254 move left at own velocity, probe left wall (set 3), snap, face left.</summary>
-        internal static void WalkLeft(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
+        internal static byte WalkLeft(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
         {
             IntegrateXNeg(s);
-            if (Probe(ctx, s, probeSet, probeY) >= 3) SnapXWallLeft(ctx, s);
+            byte code = Probe(ctx, s, probeSet, probeY);
+            if (code >= 3) SnapXWallLeft(ctx, s);
             s.Flags = (byte)(s.Flags & ~0x40);
+            return code;
         }
 
         /// <summary>
@@ -1075,34 +1080,36 @@ namespace Darkwing.Core
             }
             if ((s.StateLow & 0x02) == 0)
             {
-                if (s.T480 == 0)
+                // $8C58: the walk (move + $8C67 probes) only runs while T480 counts DOWN
+                // in anim $41; the wind-up anim $43 freezes horizontally ($8CA2 goes
+                // straight to the $8C7D distance gate).
+                if (s.T480 != 0 && s.AnimNumber != 0x43)
                 {
-                    if (s.AnimNumber == 0x43) { ThugAttack(s, ctx); return; }
-                    SetAnim(s, 0x43);
-                    s.T480 = 0x3C;
+                    s.T480--;
+                    MoveThug(s, ctx);
+                    ThugDistanceGate(s, ctx);
                     return;
                 }
-                if (s.AnimNumber == 0x43) { ThugAttack(s, ctx); return; }
-                s.T480--;
-                MoveThug(s, ctx);
-                // $8C7D: health==0 skips the distance gate, so the ladder INC always runs.
-                if (s.Health == 0 || DistX(ctx, s) < 0x32)
+                if (s.T480 == 0 && s.AnimNumber != 0x43)
                 {
-                    FacePlayerApply(ctx, s);
-                    s.StateLow++; // $8C8C INC $04D0,X (byte increment, not a bit set)
+                    SetAnim(s, 0x43);                       // $8C97
+                    s.T480 = 0x3C;                          // $8C9C
+                    return;
                 }
+                ThugAttack(s, ctx);                         // $8CA2
                 return;
             }
-            // chase/attack state ($8CBD)
+            // fall/chase state ($8CBD): $F2D7 integrates gravity and probes the floor.
             bool landed = FallAndLand(ctx, s, 6, 2); // $F2D7($06, $02)
             if (landed)
             {
                 if (s.AnimNumber != 0x41) SetAnim(s, 0x41);
             }
             else SetAnim(s, 0x42); // $8CD6 airborne pose
-            MoveThug(s, ctx);      // $8CDB: the walk runs in both the landed and air frames
-            // $8CF4: landed on solid (probe >= 3) → turn + RNG hop
-            if (landed && Probe(ctx, s, 6, 2) >= 3)
+            // $8CDB: the walk runs in both the landed and air frames, and $8CF4 reads
+            // $10 LEFT BY THAT MOVE (the wall probe), not the floor probe result.
+            byte code = MoveThug(s, ctx);
+            if (landed && code >= 3)
             {
                 s.Direction ^= 3;
                 int i = RngE5PlusE4(false) & 0x03; // $8D3F
@@ -1115,25 +1122,37 @@ namespace Darkwing.Core
                 if (s.AnimNumber == 0x41 && s.T490 == 0)
                 {
                     s.T490 = WalkerDelay[RngE5PlusE4(false) & 0x07];
-                    ctx.Sfx?.Invoke(0x27);
+                    ctx.Sfx?.Invoke(0x23);            // $8D1E LDA #$23 / JSR $F850
                     SpawnWalkerGas(ctx, s);
                 }
                 if (s.T490 != 0) s.T490--;
             }
         }
 
-        private static void MoveThug(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        /// <summary>$8C7D: while the player is further than $32 px (LOW BYTE ONLY —
+        /// $F928 returns the 8-bit magnitude, so 0x130 reads as 0x30 and aggroes),
+        /// stay in the walk state; otherwise face the player and enter the fall state.</summary>
+        private static void ThugDistanceGate(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if ((s.Direction & 1) != 0) WalkRight(ctx, s, 0, 2);
-            else WalkLeft(ctx, s, 3, 2);
+            // $8C7D: health==0 skips the distance gate, so the INC always runs.
+            if (s.Health != 0 && DistX(ctx, s) >= 0x32) return;   // $8C85 CMP #$32 / BCS $8C8F
+            FacePlayerApply(ctx, s);                              // $8C89 JSR $F81D
+            s.StateLow++;                                         // $8C8C INC $04D0,X
         }
 
-        /// <summary>$8CA2 thug attack window: walk while the timer runs; expiry →
-        /// anim $41, timer $32, turn.</summary>
+        private static byte MoveThug(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if ((s.Direction & 1) != 0) return WalkRight(ctx, s, 0, 2);
+            return WalkLeft(ctx, s, 3, 2);
+        }
+
+        /// <summary>$8CA2 wind-up window: timer counts down without moving; if it is
+        /// still running the $8C7D distance gate decides whether to start falling;
+        /// expiry → anim $41, timer $32, turn.</summary>
         private static void ThugAttack(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             s.T480--;
-            if (s.T480 != 0) { MoveThug(s, ctx); return; }
+            if (s.T480 != 0) { ThugDistanceGate(s, ctx); return; }
             SetAnim(s, 0x41);
             s.T480 = 0x32;
             s.Direction ^= 3;

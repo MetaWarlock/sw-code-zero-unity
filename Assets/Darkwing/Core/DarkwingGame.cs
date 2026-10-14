@@ -201,6 +201,7 @@ namespace Darkwing.Core
         }
 
         private byte _prevHeld;
+        private System.Func<int, byte> _gridByte, _flagByte;   // cached ($32)/($34) lookups for $DA70
         public bool Paused; // Start toggles in gameplay ($CA33 flow: SFX $1C, freeze, status screen)
 
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
@@ -240,20 +241,16 @@ namespace Darkwing.Core
                 return;
             }
             Player.Step(held, pressed);
-            // Hook/peg column service ($DAFD) runs AFTER the player state machine:
-            // the grab frame leaves $0460/$0510 untouched (gold_hook_ride2 f1) and the
-            // ride's row wrap only releases $50 on the NEXT frame (f80 wrap → f81 release).
+            // Hook/peg column service ($DAFD) is the fallthrough of the scroll service
+            // ($CA59 → $DA70), so both run AFTER the player state machine: the grab frame
+            // leaves $0460/$0510 untouched (gold_hook_ride2 f1) and the ride's row wrap only
+            // releases $50 on the NEXT frame (f80 wrap → f81 release).
             if (TileMap != null)
             {
-                // $22 = $FB*$2E + the camera's cell-within-row ($FD): recomputed every
-                // frame, because the scroll crossing a 256-px boundary is what arms the
-                // new cell's script byte and its placements (gold_m1_fulljump f253:
-                // camera $FC/$FD $FF→$0100 moves $22 $33→$34, walker slot $0C appears).
-                byte cell = (byte)(Player.ScrollYRow * Player.RowStride + (Player.ScrollX >> 8));
-                int step = cell - Player.CellIndex;
-                if (step == 1 || step == -1)
-                    Player.CellIndexNext = (byte)(cell + step);   // $DD2E/$DD34 ±1 table
-                Player.CellIndex = cell;
+                if (_gridByte == null) { _gridByte = TileMap.GridByte; _flagByte = TileMap.FlagByte; }
+                // $DA70-$DC6D owns $FC/$FD, $22, $23, $2B and $2F, and reaches the
+                // column-stream driver ($E63C) through $DC14/$DC67 on scrolled frames only.
+                Player.HorizontalScroll(_gridByte, _flagByte);
                 Player.CellGridByte = TileMap.GridByte(Player.CellIndex);   // ($32),$22
                 Player.CellScriptByte = TileMap.FlagByte(Player.CellIndex); // ($34),$22
                 Player.HookGrabCheck();

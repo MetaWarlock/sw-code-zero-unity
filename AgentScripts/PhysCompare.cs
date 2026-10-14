@@ -67,6 +67,11 @@ public static class PhysCompare
         p.ScrollMode = ram0[0x2F];
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
+        // $E63C driver state: the cursor phase is captured state, the step rule is the port's.
+        p.StageCursor = ram0[0x25];
+        p.LastRedrawScroll = ram0[0x28];
+        p.PrevScrollMode = ram0[0x20];
+        p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
         var s0 = game.Objects.Slots[0];
         if (enemies)
         {
@@ -123,7 +128,7 @@ public static class PhysCompare
         // only localises WHICH field breaks first, so a known rendering-cadence residual
         // (e.g. $23) cannot hide a real physics divergence further down the same capture.
         var fieldNames = new[] { "X", "Y", "$50 state", "$FA scrollY", "$FB row",
-                                 "$22 cell", "$23 next", "$2B scrollstate" };
+                                 "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor" };
         var firstBad = new int[fieldNames.Length];
         var badPort = new int[fieldNames.Length];
         var badOrig = new int[fieldNames.Length];
@@ -141,14 +146,14 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
-            if (f - seedFrame <= 2 || (f >= 250 && f <= 262) || (f >= 330 && f <= 345))
+            if (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366))
             {
                 string List(byte[] r)
                 {
                     var s = new System.Text.StringBuilder();
                     for (int sl = 1; sl < 15; sl++)
                         if ((r[0x4D0 + sl] & 0x80) != 0)
-                            s.Append($"{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/{r[0x420 + sl]:X2} ");
+                            s.Append($"{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2} ");
                     return s.ToString();
                 }
                 byte[] pr = new byte[2048];
@@ -156,20 +161,46 @@ public static class PhysCompare
                 {
                     var sl2 = game.Objects.Slots[sl];
                     if (!sl2.Active) continue;
-                    pr[0x4D0 + sl] = 0x80;
+                    pr[0x4D0 + sl] = (byte)(0x80 | sl2.StateLow);
+                    pr[0x4E0 + sl] = sl2.Behavior;
+                    pr[0x480 + sl] = sl2.T480;
+                    pr[0x580 + sl] = sl2.Direction;
+                    pr[0x590 + sl] = sl2.PlacementIndex;
                     pr[0x4F0 + sl] = (byte)(sl2.X & 0xFF); pr[0x500 + sl] = (byte)(sl2.X >> 8);
                     pr[0x510 + sl] = (byte)(sl2.Y & 0xFF); pr[0x520 + sl] = (byte)(sl2.Y >> 8);
                     pr[0x420 + sl] = sl2.AnimNumber;
                 }
-                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {List(pr)}| {List(g)}] ");
+                // Spawner diagnostic ($80DA/$80FC): the placement records near the
+                // divergence, the port's own window test inputs, and its live $0590 set.
+                int scx = p.ScrollX, scy = (p.ScrollYRow << 8) | p.ScrollY;
+                var sp = new System.Text.StringBuilder(
+                    $"[SP scx={scx:X4} scy={scy:X4}");
+                foreach (int pl in game.CurrentLevel?.Objects != null ? new[] { 2, 3, 4, 5, 6 } : System.Array.Empty<int>())
+                {
+                    var rec = game.CurrentLevel.Objects[pl];
+                    int px = (rec.ScreenX << 8) | rec.X, py = (rec.ScreenY << 8) | rec.Y;
+                    int dxb = (px & 0xFF) - (scx & 0xFF), dyb = (py & 0xFF) - (scy & 0xFF);
+                    bool win = ((px >> 8) - (scx >> 8) - (dxb < 0 ? 1 : 0)) == 0
+                            && ((py >> 8) - (scy >> 8) - (dyb < 0 ? 1 : 0)) == 0;
+                    int slot = -1;
+                    for (int sl = 1; sl < 15; sl++)
+                        if (game.Objects.Slots[sl].Active && game.Objects.Slots[sl].PlacementIndex == pl) { slot = sl; break; }
+                    sp.Append($" {pl:X2}:({px:X4},{py:X4})t{rec.Type:X2}w{(win ? 1 : 0)}s{slot:X2}");
+                }
+                int freeSlot = -1;
+                for (int sl = 14; sl >= 4; sl--)
+                    if (!game.Objects.Slots[sl].Active) { freeSlot = sl; break; }
+                sp.Append($" mask0={game.Objects.SpawnedBitmask(0):X2} free={freeSlot:X2}]");
+                sb.Append(sp.ToString() + " ");
+                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={s0.XFrac:X2} at={s0.AnimTimer:X2} pf={s0.AnimFrame} dur={(game.Oam == null ? 0 : game.Oam.AnimHeader(s0.AnimNumber).duration)} iv={p.InvulnFrames:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} at={g[0x430]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} ivc={g[0x7C]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {List(pr)}| {List(g)}] ");
             }
             bool pos = p.X == gx && p.Y == gy;
             bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
                                    && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
             int[] pv = { p.X, p.Y, p.State, p.ScrollY, p.ScrollYRow,
-                         p.CellIndex, p.CellIndexNext, p.ScrollState };
+                         p.CellIndex, p.CellIndexNext, p.ScrollState, p.StageCursor };
             int[] ov = { gx, gy, g[0x50], g[0xFA], g[0xFB],
-                         g[0x22], g[0x23], g[0x2B] };
+                         g[0x22], g[0x23], g[0x2B], g[0x25] };
             for (int i = 0; i < pv.Length; i++)
                 if (pv[i] != ov[i] && firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
             if (pos && cam) matchFrames++;
@@ -354,6 +385,11 @@ public static class PhysCompare
         p.ScrollMode = ram0[0x2F];
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
+        // $E63C driver state: the cursor phase is captured state, the step rule is the port's.
+        p.StageCursor = ram0[0x25];
+        p.LastRedrawScroll = ram0[0x28];
+        p.PrevScrollMode = ram0[0x20];
+        p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
         // Bulk-seed every object slot table the dispatcher reads ($0400..$05A0, 16 bytes/slot).
         for (int s = 0; s < 16; s++)
         {
@@ -490,6 +526,11 @@ public static class PhysCompare
         p.ScrollMode = ram0[0x2F];
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
+        // $E63C driver state: the cursor phase is captured state, the step rule is the port's.
+        p.StageCursor = ram0[0x25];
+        p.LastRedrawScroll = ram0[0x28];
+        p.PrevScrollMode = ram0[0x20];
+        p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
         byte doorId = ram0[0x5B];
         // Seed the player's object slot exactly as the capture has it at the seed frame:
         // $E388 leaves $0410/$0420/$0430 alone until the $FA78 seed after its staging.

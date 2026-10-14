@@ -212,5 +212,13 @@ namespace Darkwing.Core
             int cpu = _bank5[B5(0xB429) + anim] | (_bank5[B5(0xB4F0) + anim] << 8);
             return B5(cpu);
         }
+
+        /// <summary>Diagnostics: entry[0] (last frame) and entry[1] (duration) for an anim.</summary>
+        public (byte last, byte duration) AnimHeader(byte anim)
+        {
+            int entry = AnimEntryAddress(anim);
+            if (_bank5 == null || entry < 0 || entry + 1 >= _bank5.Length) return (0, 0);
+            return ((byte)(_bank5[entry] & 0x7F), _bank5[entry + 1]);
+        }
     }
 }
