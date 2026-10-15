@@ -550,6 +550,8 @@ namespace Darkwing.Core
         public void Step(byte held, byte pressed)
         {
             OnHookTileFlag = false;
+            PrevState = State;
+            HurtOrigin = 0;
 
             switch (State & 0x1F)
             {
@@ -765,6 +767,23 @@ namespace Darkwing.Core
             bool landed = VerticalPhysics(held, pressed);
             if (State != 0) return; // jumped inside VerticalPhysics
 
+            // $CB93-$CBB6: the vertical service leaves $10 = the maximum metatile code it
+            // sampled, and code 4 is the damage tile. Standing on one is the same fresh-hit
+            // ladder as the contact sites ($F476): $50=6, $51=$0F, anim $09 via $FA78,
+            // SFX $15, $7C=$3C, then JSR $F9C2. gold_w03 f583 is this path — the player
+            // lands on the type-4 block at X=$0081 and hurts on the very next frame.
+            if (_probeResult == 4 && InvulnFrames == 0)
+            {
+                State = 6;
+                StateTimer = 0x0F;
+                SetAnimPlayer(0x09);
+                Sfx?.Invoke(0x15);
+                InvulnFrames = 0x3C;
+                TakeHit(Objects != null ? Objects.Slots[0].AnimNumber : 0); // $F9C2, X=0 → $0420
+                HurtOrigin = 1;                                            // $CB93 tile site
+                return;
+            }
+
             // $CDF5-$CE38: when the vertical service's floor probe comes back without a
             // landing ($F2D7 returns carry clear) and $55 is 0, $CE34 force-sets $50=1.
             // $CB8E then re-tests $50 and RTS-es, so the walk move at $CCD9 never runs —
@@ -775,8 +794,6 @@ namespace Darkwing.Core
                 State = 1;
                 return;
             }
-
-            // Damage from spike/contact probes is applied by the world (M4).
 
             if ((pressed & 0x80) != 0) // A pressed → jump ($CBB7 → JMP $CD0E)
             {
@@ -900,6 +917,11 @@ namespace Darkwing.Core
         /// <returns>true if landed this frame</returns>
         private bool VerticalPhysics(byte held, byte pressed)
         {
+            // $EB62: $10 is cleared on entry to every probe service, so a hazard code only
+            // ever survives the frame whose $EB52 actually sampled it. Without the reset a
+            // stale 4 from an earlier frame re-runs the $CB93 hurt ladder every frame (w01
+            // f665 and w05 f635 hurt while the original keeps walking / keeps falling).
+            _probeResult = 0;
             // $CD3E-$CD54 runs BEFORE the $F2E5 sign test: with the velocity integer in
             // 0..$04 and A released, $F5FC force-sets $FFAB, so a zero velocity (the state
             // -$12 exit leaves $0560/$0550 = 0) still takes the falling branch and probes
@@ -922,6 +944,7 @@ namespace Darkwing.Core
                 // $0560/$0550 FF,AB → FF,6B).
                 ApplyGravity();
                 byte floor = ProbeFloor();
+                _probeResult = floor;               // $10 as left by $EB52
                 // $F4E4-$F4F1 verbatim: `LDA $10 / CMP #$01 / BCC no-hit / BNE hit`, and only
                 // the equal-to-1 case falls through the velocity gate `LDA $0560,X / CMP #$FC /
                 // BCS no-hit`. So EVERY type >= 1 is support — the port previously tested
@@ -950,6 +973,7 @@ namespace Darkwing.Core
                 IntegrateY();
                 ApplyGravity();
                 byte ceil = ProbeCeiling();
+                _probeResult = ceil;                // $10 as left by $EB52
                 if (ceil >= 3)
                 {
                     CutVelocity(); // head bonk: cancel ascent ($F607)
@@ -1308,6 +1332,13 @@ namespace Darkwing.Core
         public byte HitLadder; // 0-3 survived hits
         private bool _wasAirborne;
         private bool _vertFalling;   // $CD6A sign test: the falling branch of $F2D7 ran
+        private byte _probeResult;   // $10 as left by the last $EB52 inside $CD0E
+
+        /// <summary>Diagnostics for the golden harness: the state the dispatcher entered with
+        /// and which hurt site ($CB93 tile = 1, any other $F9C2 caller = 2) fired this frame.</summary>
+        public byte PrevState;
+        public byte HurtOrigin;
+        public byte ProbeResultForTest => _probeResult;   // $10 after the last probe service
 
         /// <summary>
         /// $F9C2 hurt ladder. It runs ONLY for a caller that has just written
@@ -1318,7 +1349,8 @@ namespace Darkwing.Core
         /// <param name="hazardAnim">$0420 of the object that hurt the player ($FA29).</param>
         public void TakeHit(int hazardAnim = 0)
         {
-            if (InvulnFrames != 0x3C) return;               // $F9C3/$F9C6
+            HurtOrigin = 2;                                     // $F9C2 reached from a slot site
+            if (InvulnFrames != 0x3C) return;                   // $F9C3/$F9C6
             StateTimer = 0x0F;                              // $F9CA
             if (State != 0x04 && State != 0x0E && State != 0x0D)
                 SetAnimPlayer(HurtAnim(hazardAnim));        // $FA29 → $FA78

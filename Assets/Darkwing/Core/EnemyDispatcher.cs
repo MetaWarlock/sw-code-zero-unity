@@ -43,6 +43,13 @@ namespace Darkwing.Core
         public int ProbePointX;
         public int ProbePointY;
 
+        /// <summary>Golden-harness diagnostics: the slot that produced the last $813B contact
+        /// hit this frame (a slot whose own behavior then cleared $04D0 disappears from the
+        /// end-of-frame dump, so it has to be snapshotted at the hit itself).</summary>
+        public int HurtSlot = -1;
+        public int HurtSlotX, HurtSlotY;
+        public byte HurtSlotAnim, HurtSlotBh, HurtSlotParam, HurtSlotFlags, HurtSlotState;
+
         public EnemyDispatcher(byte[] bank6, ObjectSystem objects, PlayerCore player,
                                Darkwing.Audio.AudioSequencer audio = null)
         {
@@ -59,6 +66,7 @@ namespace Darkwing.Core
         {
             Player.GravityFrac = 0x40; // $99 = $40 set by the bank6/bank1 dispatchers
             ProjSlot = -1;
+            HurtSlot = -1;
             // $8000 loop: slot 1's behavior runs first, then for slots 2..15 the
             // post-processing precedes the behavior (the RTS return address $8027
             // interleaves them exactly this way).
@@ -70,7 +78,7 @@ namespace Darkwing.Core
         private void DispatchSlot(int slot, bool postProcess)
         {
             var s = Objects.Slots[slot];
-            if (postProcess) PostProcess(s);
+            if (postProcess) PostProcess(slot, s);
             if (!s.Active) return;                      // $04D0 bit7
             byte behavior = s.Behavior;
             if (behavior >= 0x47)
@@ -84,12 +92,12 @@ namespace Darkwing.Core
         // ==================================================================
         // $8032-$816C per-slot post-processing
         // ==================================================================
-        private void PostProcess(ObjectSystem.Slot s)
+        private void PostProcess(int slot, ObjectSystem.Slot s)
         {
             // $8032: $0570,X bit6 gate for the flash/projectile handling
             if ((s.BehaviorParam & 0x40) == 0)
             {
-                ContactCheck(s); // $813B
+                ContactCheck(slot, s); // $813B
                 return;
             }
             // $803C hit-flash: toggle $0400 bit3 from bit3 of the timer
@@ -106,7 +114,7 @@ namespace Darkwing.Core
             // $8066 projectile overlap
             if (!ProjectileOverlapHit(s))
             {
-                ContactCheck(s); // $813B
+                ContactCheck(slot, s); // $813B
                 return;
             }
             // $8079 falling spikes ($1E/$34): the projectile must be below the
@@ -130,7 +138,7 @@ namespace Darkwing.Core
             var p = Objects.Slots[ProjSlot];
             if (p.Behavior != 0x07 && p.AnimNumber != 0x17 && p.AnimNumber != 0x18)
                 SpawnHitPuff();
-            ContactCheck(s);
+            ContactCheck(slot, s);
         }
 
         /// <summary>Weapon damage by projectile anim ($80A0 table).</summary>
@@ -196,7 +204,7 @@ namespace Darkwing.Core
         }
 
         /// <summary>$813B enemy→player contact.</summary>
-        private void ContactCheck(ObjectSystem.Slot s)
+        private void ContactCheck(int slot, ObjectSystem.Slot s)
         {
             if (Player.InvulnFrames != 0) return;           // $7C
             if (!EnemyBehaviors.TouchTest(this, s)) return; // $FB7B (CS = not touching)
@@ -225,6 +233,10 @@ namespace Darkwing.Core
             if (s.AnimNumber < 0x3F) return;                // $814F: harmless classes
             if (Player.State == 0x07 || Player.State == 0x12) return;
             Sfx?.Invoke(0x15);                   // $8160
+            HurtSlot = slot;                    // harness diagnostics
+            HurtSlotX = s.X; HurtSlotY = s.Y; HurtSlotAnim = s.AnimNumber;
+            HurtSlotBh = s.Behavior; HurtSlotParam = s.BehaviorParam;
+            HurtSlotFlags = s.Flags; HurtSlotState = s.StateLow;
             Player.InvulnFrames = 0x3C;          // $8165 ($F9C2 only runs on $7C=$3C)
             Player.TakeHit(s.AnimNumber);        // $F9C2, with X still = this slot ($FA29)
         }

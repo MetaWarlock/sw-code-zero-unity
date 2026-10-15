@@ -151,7 +151,17 @@ public static class PhysCompare
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
             if (trace)
-                sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}\n");
+            {
+                sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}");
+                sb.Append($" H pre={p.PrevState:X2} ho={p.HurtOrigin:X2} p10={p.ProbeResultForTest:X2} iv={p.InvulnFrames:X2} hl={p.HitLadder:X2} | O10={g[0x10]:X2} O7C={g[0x7C]:X2} Ohl={g[0x5B2]:X2},{g[0x5B4]:X2},{g[0x5B6]:X2},{g[0x5B8]:X2}");
+                var hs = game.Enemies != null && game.Enemies.HurtSlot >= 0
+                    ? game.Objects.Slots[game.Enemies.HurtSlot] : null;
+                if (hs != null)
+                    sb.Append($" HS={game.Enemies.HurtSlot:X2}@{game.Enemies.HurtSlotX:X4},{game.Enemies.HurtSlotY:X4} an{game.Enemies.HurtSlotAnim:X2} bh{game.Enemies.HurtSlotBh:X2} p{game.Enemies.HurtSlotParam:X2} fl{game.Enemies.HurtSlotFlags:X2} st{game.Enemies.HurtSlotState:X2} act{(hs.Active ? 1 : 0)}");
+                if (f >= _enemyDumpLo && f <= _enemyDumpHi)
+                    sb.Append($" E {ListSlots(PackedSlots(game), true)} | {ListSlots(g, true)}");
+                sb.Append('\n');
+            }
             if (trace && f == _tileDumpFrame && game.TileMap != null)
             {
                 var tm = game.TileMap;
@@ -164,28 +174,7 @@ public static class PhysCompare
             }
             if (!trace && (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366)))
             {
-                string List(byte[] r)
-                {
-                    var s = new System.Text.StringBuilder();
-                    for (int sl = 1; sl < 15; sl++)
-                        if ((r[0x4D0 + sl] & 0x80) != 0)
-                            s.Append($"{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2} ");
-                    return s.ToString();
-                }
-                byte[] pr = new byte[2048];
-                for (int sl = 0; sl < 15; sl++)
-                {
-                    var sl2 = game.Objects.Slots[sl];
-                    if (!sl2.Active) continue;
-                    pr[0x4D0 + sl] = (byte)(0x80 | sl2.StateLow);
-                    pr[0x4E0 + sl] = sl2.Behavior;
-                    pr[0x480 + sl] = sl2.T480;
-                    pr[0x580 + sl] = sl2.Direction;
-                    pr[0x590 + sl] = sl2.PlacementIndex;
-                    pr[0x4F0 + sl] = (byte)(sl2.X & 0xFF); pr[0x500 + sl] = (byte)(sl2.X >> 8);
-                    pr[0x510 + sl] = (byte)(sl2.Y & 0xFF); pr[0x520 + sl] = (byte)(sl2.Y >> 8);
-                    pr[0x420 + sl] = sl2.AnimNumber;
-                }
+                byte[] pr = PackedSlots(game);
                 // Spawner diagnostic ($80DA/$80FC): the placement records near the
                 // divergence, the port's own window test inputs, and its live $0590 set.
                 int scx = p.ScrollX, scy = (p.ScrollYRow << 8) | p.ScrollY;
@@ -199,7 +188,7 @@ public static class PhysCompare
                     bool win = ((px >> 8) - (scx >> 8) - (dxb < 0 ? 1 : 0)) == 0
                             && ((py >> 8) - (scy >> 8) - (dyb < 0 ? 1 : 0)) == 0;
                     int slot = -1;
-                    for (int sl = 1; sl < 15; sl++)
+                    for (int sl = 1; sl <= 0x0F; sl++)
                         if (game.Objects.Slots[sl].Active && game.Objects.Slots[sl].PlacementIndex == pl) { slot = sl; break; }
                     sp.Append($" {pl:X2}:({px:X4},{py:X4})t{rec.Type:X2}w{(win ? 1 : 0)}s{slot:X2}");
                 }
@@ -208,7 +197,7 @@ public static class PhysCompare
                     if (!game.Objects.Slots[sl].Active) { freeSlot = sl; break; }
                 sp.Append($" mask0={game.Objects.SpawnedBitmask(0):X2} free={freeSlot:X2}]");
                 sb.Append(sp.ToString() + " ");
-                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={s0.XFrac:X2} at={s0.AnimTimer:X2} pf={s0.AnimFrame} dur={(game.Oam == null ? 0 : game.Oam.AnimHeader(s0.AnimNumber).duration)} iv={p.InvulnFrames:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} at={g[0x430]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} ivc={g[0x7C]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {List(pr)}| {List(g)}] ");
+                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={s0.XFrac:X2} at={s0.AnimTimer:X2} pf={s0.AnimFrame:X2} dur={(game.Oam == null ? 0 : game.Oam.AnimHeader(s0.AnimNumber).duration)} iv={p.InvulnFrames:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} at={g[0x430]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} ivc={g[0x7C]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {ListSlots(pr)}| {ListSlots(g)}] ");
             }
             bool pos = p.X == gx && p.Y == gy;
             bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
@@ -419,6 +408,69 @@ public static class PhysCompare
     }
 
     public static string WorldEntryTrace() => TraceEntry(0, 505, 600);
+
+    /// <summary>Inclusive frame window for the per-frame active-slot dump inside the trace
+    /// (-1 disables it). G31 needs the w03 landing frames 575-592.</summary>
+    private static int _enemyDumpLo = -1, _enemyDumpHi = -1;
+
+    /// <summary>Maps the port's object slots onto the ROM's $04xx address layout.</summary>
+    private static byte[] PackedSlots(Darkwing.Core.DarkwingGame game)
+    {
+        var pr = new byte[2048];
+        for (int sl = 0; sl <= 0x0F; sl++)
+        {
+            var s = game.Objects.Slots[sl];
+            pr[0x4D0 + sl] = (byte)(s.Active ? 0x80 | s.StateLow : s.StateLow);
+            pr[0x400 + sl] = s.Flags;
+            pr[0x570 + sl] = s.BehaviorParam;
+            pr[0x4E0 + sl] = s.Behavior;
+            pr[0x480 + sl] = s.T480;
+            pr[0x580 + sl] = s.Direction;
+            pr[0x590 + sl] = s.PlacementIndex;
+            pr[0x4F0 + sl] = (byte)(s.X & 0xFF); pr[0x500 + sl] = (byte)(s.X >> 8);
+            pr[0x510 + sl] = (byte)(s.Y & 0xFF); pr[0x520 + sl] = (byte)(s.Y >> 8);
+            pr[0x420 + sl] = s.AnimNumber;
+        }
+        return pr;
+    }
+
+    private static string ListSlots(byte[] r, bool inactive = false)
+    {
+        var s = new System.Text.StringBuilder();
+        for (int sl = 1; sl <= 0x0F; sl++)
+        {
+            bool active = (r[0x4D0 + sl] & 0x80) != 0;
+            if (!active && !inactive) continue;
+            // An inactive slot is only interesting while it still carries a template.
+            if (!active && r[0x4E0 + sl] == 0 && r[0x420 + sl] == 0) continue;
+            s.Append($"{(active ? "" : "-")}{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2}p{r[0x570 + sl]:X2}f{r[0x400 + sl]:X2} ");
+        }
+        return s.ToString();
+    }
+
+    /// <summary>G31: which placement does the ROM activate at the w03 landing point, where
+    /// the golden goes to $50=$06 (hurt) at f583 while the port keeps walking.</summary>
+    public static string EnemyDumpW03()
+    {
+        _enemyDumpLo = 575; _enemyDumpHi = 592;
+        try { return TraceEntry(3, 575, 592); }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
+
+    /// <summary>The three remaining world divergences (w01 f665, w03 f664, w05 f635) with
+    /// the active-slot dump, to tell tile hazards from enemy contact.</summary>
+    public static string DivTraceAll()
+    {
+        var sb = new System.Text.StringBuilder();
+        int[][] w = { new[] { 1, 662, 674 }, new[] { 3, 661, 673 }, new[] { 5, 632, 644 } };
+        foreach (var t in w)
+        {
+            _enemyDumpLo = t[1]; _enemyDumpHi = t[2];
+            sb.Append($"=== w{t[0]:X2} ===\n").Append(TraceEntry(t[0], t[1], t[2])).Append('\n');
+            _enemyDumpLo = _enemyDumpHi = -1;
+        }
+        return sb.ToString();
+    }
 
     /// <summary>w03 starts falling on its own at f568 — the release-window trace for it.</summary>
     public static string ReleaseTraceW03() => TraceEntry(3, 540, 600);
