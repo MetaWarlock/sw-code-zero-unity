@@ -308,6 +308,7 @@ namespace Darkwing.Core
         public void ApplyWorldLoad(RoomDecoder.World w)
         {
             ApplyWorldPrelude(w);       // $DD5F-$DDC8, ends with the $DDCB yield
+            StageSectionToEnd();        // $DE86-$DE91 drained: no frame machine here
             ApplyWorldSpawn(w);         // $DDCE-$DDFE + $DE00 render-on
         }
 
@@ -336,10 +337,18 @@ namespace Darkwing.Core
             ResetLoaderState(0);                            // $DDC8 JSR $DE24, $FD = 0
 
             // $DE86-$DE91: the loader walks its own $25 cursor to $0F and steps $23 with
-            // it — 144 passes for the world-load seed ($25 = $0F|$08 from $DE82). The ROM
-            // time-slices the loop with the $E7AC yield over ~10 frames (gold_w00-$23 at
-            // f328); the port runs it inline so the incoming cell is armed from the load
-            // frame instead of lagging two cells behind until the first scroll.
+            // it. One JSR $E698 = one pass ($05 = 1 at $DE86-$DE88), and $DE91 branches back
+            // until $25 == $0F, so the loop is drained by $StageSectionPass batches — the ROM
+            // only yields to the NMI inside a pass through the $E7A8/$F0 test, which makes the
+            // batch boundary a CPU-time artifact (gold_dd57 write log: ~1783 cycles per pass
+            // against a 29781-cycle frame ⇒ 11-17 passes per frame, cursor phase ±2).
+            StageSectionPass();
+        }
+
+        /// <summary>Drains the $DE86-$DE91 staging loop in one call. Only the host's inline
+        /// first load uses this; the death reload keeps the per-frame batches.</summary>
+        public void StageSectionToEnd()
+        {
             for (int guard = 0; guard < 256 && !StageSectionPass(); guard++) { }
         }
 

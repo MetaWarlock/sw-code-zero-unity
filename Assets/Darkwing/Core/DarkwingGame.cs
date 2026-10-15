@@ -151,6 +151,7 @@ namespace Darkwing.Core
         {
             _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
             WorldPrelude();
+            Player.StageSectionToEnd();     // $DE86-$DE91: the inline entry has no frame machine
             WorldSpawn();
             // $C2F9/$C319 never flag $18 — the PPU only sees a new table through a fade step's
             // $C2A2 STY $18. Inside the staged loader that is the $DE06/$C270 fade-in; this
@@ -179,7 +180,7 @@ namespace Darkwing.Core
             WireWorldFeed();
             if (_data != null && _data.Levels != null && _worldId < _data.Levels.Length)
                 CurrentLevel = _data.Levels[_worldId];
-            AnchorAndSpawnPlacements();                     // $DE93-$DEA1, tail of $DE24
+            // $DE93-$DEA1 runs only after the $DE91 staging exit, so it belongs to WorldSpawn.
 
             var t = Sections;
             if (t != null)
@@ -198,11 +199,13 @@ namespace Darkwing.Core
             if (Player.SectionRingEvent != 0) PlaySfx(Player.SectionRingEvent);
         }
 
-        /// <summary>$DDCE-$DDFE + $DE00: the slot-0 seed, the entry pose and rendering
-        /// back on. Only the state-$09 release makes the player visible, one
-        /// $FF06-yield after the prelude (gold_m1_longroute: prelude f814, spawn f824).</summary>
+        /// <summary>$DE93-$DEA1 tail plus $DDCE-$DDFE + $DE00: the placement anchor, the CHR
+        /// switch, the slot-0 seed, the entry pose and rendering back on. Only the state-$09
+        /// release makes the player visible, one $FF06-yield after the prelude
+        /// (gold_m1_longroute: prelude f814, spawn f824).</summary>
         private void WorldSpawn()
         {
+            AnchorAndSpawnPlacements();                     // $DE93-$DEA1, after the $DE91 exit
             Player.ApplyWorldSpawn(_world);
             RenderOn();                                     // $DE00 JSR $C158
         }
@@ -223,11 +226,13 @@ namespace Darkwing.Core
         private int _sectionStage;
         /// <summary>Death-reload staging ($CB01 → $D41B → $C248/$C276 fade-out, then $DD57).
         /// 0 = idle, 1 = $C276 fade-out ($0F=$10 step $10, exit at $0F==$50), 2 = $DE24 render-off
-        /// prelude + the black streaming window, 3 = $DDD6-$DDFE spawn + $C158 render-on,
-        /// 4 = the $C270 fade-in, 5 = the $D450 $FF06 yield that spends the fade-exit frame.</summary>
+        /// prelude, 3 = the $DE86-$DE91 streaming window (one $StageSectionPass batch per frame),
+        /// 6 = the $DDCB yield's tail, 4 = the $C270 fade-in, 5 = the $D450 $FF06 yield that spends
+        /// the fade-exit frame.</summary>
         private int _reloadStage;
-        /// <summary>Frames left in the current <see cref="_reloadStage"/> hold (the $C248 tail and
-        /// the black streaming window; see GAPS G37 for why the window is a measured constant).</summary>
+        /// <summary>Frames left in the current <see cref="_reloadStage"/> hold (so far only the
+        /// $C24B/$C251 tail after the fade-out; the streaming window is driven by the $DE91
+        /// cursor exit, not a count).</summary>
         private int _reloadHold;
         private bool _chrPending;
         private byte _fadeLevel;    // $0F fade level ($30 → $20 → $10 → $00)
@@ -670,14 +675,19 @@ namespace Darkwing.Core
                     if (_reloadHold > 0) { _reloadHold--; return false; }
                     WorldPrelude();                         // $DD5F-$DDCB, $DE24 render-off
                     _reloadStage = 3;
-                    // G37: the ROM keeps streaming columns through $E63C until its $25 cursor
-                    // reaches $0F; the per-frame pass budget is not derived yet, so the window
-                    // f815-f823 is the measured constant (rendering is off, nothing is visible).
-                    _reloadHold = 9;
+                    // G37: the $DE86-$DE91 loop streams one $E698 pass per iteration and only
+                    // leaves when $25 hits $0F ($DE8F CMP $0F), so the window length is derived
+                    // from the cursor distance the prelude seeds at $DE84 ($0F | $70) — a world
+                    // load streams 144 passes and $StageSectionPass delivers 15 per frame.
                     return false;
                 case 3:
-                    if (_reloadHold > 0) { _reloadHold--; return false; }
-                    WorldSpawn();                           // $DDD6-$DDFE + $DE00 render-on
+                    if (!Player.StageSectionPass()) return false;
+                    // $DDCB JSR $FF06: the frame that ends the stream at $0F is spent in that
+                    // yield, so the spawn is the NEXT frame (gold f823 exit → f824 spawn).
+                    _reloadStage = 6;
+                    return false;
+                case 6:
+                    WorldSpawn();                           // $DE93-$DDFE + $DE00 render-on
                     // $DE03 JSR $FF06 spends the spawn frame, so $DE06/$C270 primes one frame
                     // later (f825 holds $0F=$30, f824 still the prelude's $88).
                     Player.EntryFreezeFrames = 0;           // stage 4 supplies the frozen frames
