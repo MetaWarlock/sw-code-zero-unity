@@ -1036,8 +1036,28 @@ public static class PhysCompare
         }
         for (int i = 0; i < names.Length; i++)
             sb.Append($"{names[i]}={ok[i]}/{span} (first bad {(firstBad[i] < 0 ? "-" : firstBad[i].ToString())}) ");
+        FieldResult(sb, names, ok, firstBad, span);
         File.WriteAllText(root + "/Temp/hurt_trace.txt", sb.ToString());   // full text, the console truncates
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Per-field golden checks (Hurt/Door) report one line per field, so Suite's RESULT-only
+    /// scoreboard used to print "no result" for checks that actually passed every field of every
+    /// frame. This folds them into the same verdict line the frame-based checks use: all
+    /// field-frames must match, and the first diverging frame is the first field divergence.
+    /// </summary>
+    private static void FieldResult(System.Text.StringBuilder sb, string[] names, int[] ok, int[] firstBad, int span)
+    {
+        int totalOk = 0, allFields = 0, firstDiv = -1;
+        for (int i = 0; i < names.Length; i++)
+        {
+            totalOk += ok[i]; allFields += span;
+            if (firstBad[i] >= 0 && (firstDiv < 0 || firstBad[i] < firstDiv)) firstDiv = firstBad[i];
+        }
+        sb.Append(firstDiv < 0
+            ? $"RESULT: MATCH {allFields}/{allFields} field-frames ({names.Length} fields x {span} frames)"
+            : $"RESULT: first divergence frame {firstDiv} (matched {totalOk}/{allFields} field-frames)");
     }
 
     /// <summary>
@@ -1159,6 +1179,7 @@ public static class PhysCompare
         }
         for (int i = 0; i < names.Length; i++)
             sb.Append($"{names[i]}={ok[i]}/{span} (first bad {(firstBad[i] < 0 ? "-" : firstBad[i].ToString())}) ");
+        FieldResult(sb, names, ok, firstBad, span);
         return sb.ToString();
     }
 

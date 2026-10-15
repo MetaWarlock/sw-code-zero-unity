@@ -513,9 +513,11 @@ namespace Darkwing.Core
         /// entry: ≥ $89 opens the right scroll ($DBCE adds the step, forced to 1 px when
         /// it exceeds 6), ≤ $87 opens the left one ($DC19 subtracts it, capped at 6).
         /// The camera therefore tracks the player 1:1, which is why gold_m1_fulljump
-        /// holds screen X at exactly $88 across walk, air and landing. While a scroll
-        /// succeeds $2F keeps its direction ($E63C copies it to $20), which is what
-        /// selects ColumnStreamPass's step/boundary tables.
+        /// holds screen X at exactly $88 across walk, air and landing. $DBCE/$DC19 return
+        /// SEC when the scroll happened and CLC when it was refused, and $DAE4/$DAB3
+        /// <c>BCS $DAFD</c> leaves on SEC — so $2F is restored AND the $DAE8/$DAB7 player
+        /// clamp runs only on the REFUSED path (gold_hurt_a41 f174: a +$6B displacement
+        /// caps to 1 px, the scroll succeeds, and the ROM leaves X at $17F).
         /// </summary>
         public void HorizontalScroll(System.Func<int, byte> gridByte, System.Func<int, byte> flagByte)
         {
@@ -534,18 +536,24 @@ namespace Darkwing.Core
                 byte step = (byte)moved;                            // $DAD5-$DAD7
                 byte saved = ScrollMode;
                 ScrollMode = 1;                                     // $DADC-$DADE
-                if (!ScrollRight(step, gridByte, flagByte)) { ScrollMode = saved; return; }
-                if (ahead >= 0xF1) X = (ushort)(ScrollX + 0xF0);    // $DAE8-$DAFA player clamp
-            }
+                if (!ScrollRight(step, gridByte, flagByte))
+                {
+                    ScrollMode = saved;                             // $DAE3-$DAE6 (PLA + STA $2F)
+                    if (ahead >= 0xF1) X = (ushort)(ScrollX + 0xF0); // $DAE8-$DAFA clamp: camera refused
+                }                                                   // $DAE4 BCS $DAFD: a scroll that SUCCEEDS
+            }                                                       // skips the clamp entirely
             else
             {
                 if (ahead >= 0x88) return;                          // $DAA2-$DAA6
                 byte step = (byte)(-(moved & 0xFF));                // $DA9A-$DAA0 two's complement
                 byte saved = ScrollMode;
                 ScrollMode = 2;                                     // $DAAB-$DAAD
-                if (!ScrollLeft(step, gridByte, flagByte)) { ScrollMode = saved; return; }
-                if (ahead < 0x10) X = (ushort)(ScrollX + 0x10);     // $DAB7-$DAC9 player clamp
-            }
+                if (!ScrollLeft(step, gridByte, flagByte))
+                {
+                    ScrollMode = saved;                                 // $DAB2-$DAB5
+                    if (ahead < 0x10) X = (ushort)(ScrollX + 0x10);     // $DAB7-$DAC9 clamp: camera refused
+                }                                                       // $DAB3 BCS $DAFD: a scroll that SUCCEEDS
+            }                                                           // skips the clamp entirely
         }
 
         /// <summary>$DC19-$DC6B: scroll left. Returns the carry; false = CLC (no scroll,
