@@ -404,6 +404,25 @@ public static class PhysCompare
     public static string EnemyVerify() => Compare("enemy_verify", 600, f => 0,
         enemies: true, world: 0, goldenDir: "probe_enemy_verify", scoreEnemies: true, trace: false);
 
+    /// <summary>Sweep every probe_enemy_verify capture and keep only the ENEMIES verdict line,
+    /// so the bank-6 frame-exact coverage claim spans all multi-enemy captures, not just one.</summary>
+    public static string EnemySweep()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (string dir in new[] { "probe_enemy_verify", "probe_enemy_verify2", "probe_enemy_verify3",
+                                        "probe_enemy_verify4", "probe_enemy_verify5" })
+        {
+            if (!System.IO.File.Exists("D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/" + dir + "/ram_frames.bin"))
+            { sb.Append($"{dir}: NO CAPTURE\n"); continue; }
+            string r = Compare("enemy_sweep", 600, f => 0, enemies: true, world: 0,
+                goldenDir: dir, scoreEnemies: true, trace: false);
+            int i = r.IndexOf("ENEMIES:");
+            sb.Append($"{dir}: {(i >= 0 ? r.Substring(i) : "(no enemy verdict)")} \n");
+        }
+        System.IO.File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/enemy_sweep.txt", sb.ToString());
+        return sb.ToString();
+    }
+
     /// <summary>Per-world `$DD57` seeding. `reference/gold_wNN` are original-ROM captures made
     /// with `probe_run --patch 31=NN --patch-frame 314`: $31 is only READ by the level entry
     /// (bank 7 `$C8B5 JSR $FF55 #$04` → `$C8BD JSR $DD57`), so injecting the world id one frame
