@@ -399,12 +399,24 @@ namespace Darkwing.Core
             // $DE03 JSR $FF06 + $DE06 JMP $C254 → $C270: the world loader stays in its
             // palette fade for 17 NMIs, so neither the input read nor $CAFC/$CB41 runs
             // (gold_w00: $50=$09 from f328, first dispatch tick f345, $95 parked at 01).
+            // The parity still has to catch up once before the first dispatched frame:
+            // the ROM ticked $8000 on the fade's first NMI (gold_w03 $95 $00→$01 on f329,
+            // then frozen f330-f344, $02 on f345). Nothing observable depends on the value
+            // during the residency (no engine, so no anim tick), only on its phase after
+            // the release, so the catch-up tick is applied on the last frozen frame.
             if (Player.EntryFreezeFrames > 0)
             {
-                Player.EntryFreezeFrames--;
+                if (--Player.EntryFreezeFrames == 0) FrameParity++;
                 return;
             }
-            FrameParity++; // $95 is incremented by the NMI every frame, before any logic
+            // $95 is NOT an NMI counter: its two writers are the frame engines themselves
+            // (bank 5 $8000 for the world, bank 4 $9800 for the title/map phase), so it only
+            // advances on a frame that actually reaches one of them — see RunWorldServices.
+            // gold_m1_longroute proves it: $95 sits at $94 from f796 through the death reload
+            // and the streaming window (f800-f836), and gold_w00 parks it at $01 through the
+            // entry fade. Because bank5 $80EB gates the player's animation tick on $95&$04
+            // while $7C is non-zero, a counter that advances during those frozen windows puts
+            // the whole anim clock one frame out of phase with the ROM.
             // $CA6E called $E388 on a previous frame: the frame is spent inside the
             // loader — the staging loop yields through $E7A8/$C115 and the fade through
             // $C2A7/$FF06 — so no input, player or anim update happens until it returns.
@@ -497,6 +509,18 @@ namespace Darkwing.Core
             // ($CA59 → $DA70), so both run AFTER the player state machine: the grab frame
             // leaves $0460/$0510 untouched (gold_hook_ride2 f1) and the ride's row wrap only
             // releases $50 on the NEXT frame (f80 wrap → f81 release).
+            // $9630/$FEFF: the intro card's release wait spins pure $FF06 yields inside
+            // $CAFC, so nothing past $CA43 runs — scroll service, spawner, bank-6/1 tasks and
+            // the bank-5 frame engine included. gold_m1_longroute parks $95 at $02 for exactly
+            // the f951..f1010 window (only the audio RAM moves), and gold_w00 parks it at $01
+            // over f453..f512; a port that ticks the engine there puts the whole anim clock
+            // 60 frames out of phase for the rest of the run.
+            if (Player.YieldOnlyFrame)
+            {
+                ConsumeChrLatch();
+                Frame++;
+                return;
+            }
             if (TileMap != null)
             {
                 if (_gridByte == null) { _gridByte = TileMap.GridByte; _flagByte = TileMap.FlagByte; }
@@ -559,6 +583,9 @@ namespace Darkwing.Core
                     (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
             }
             Enemies?.RunFrame();
+            // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
+            // the blink/iteration-order tests read is the one this frame's pass produced.
+            FrameParity++;                                     // $8000-$8002
             Oam.RunFrame(FrameParity, 36); // 36 = hidden entry 0 + 8 HUD sprites
             Ppu.Render(Framebuffer);
         }

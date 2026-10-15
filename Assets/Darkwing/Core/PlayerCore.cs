@@ -664,6 +664,11 @@ namespace Darkwing.Core
         /// $9605 loop, $3C..1 = the release wait. Cleared on release.</summary>
         private byte _cardWait;
 
+        /// <summary>True while $9630 spins the $FEFF yield loop: it never RTS-es back into
+        /// $CA43, so the scroll service, spawner, bank-6/1 tasks and the bank-5 frame engine
+        /// (and therefore $95) are skipped for the whole wait.</summary>
+        public bool YieldOnlyFrame => _cardWait != 0;
+
         /// <summary>
         /// $D53F/$9600 — the mission intro card, a coroutine: one $9605 iteration per
         /// frame, each ending inside $F89A (audio service, bank 5, $8000 frame engine,

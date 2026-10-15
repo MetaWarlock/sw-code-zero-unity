@@ -236,3 +236,23 @@
 - Стоящая цель НЕ достигнута: сквозная проходимость миссии 1 не доказана (f814…f2499 открыты);
   миссии 2-7, боссы, секреты, тайтл, финал `$D838`, ACCEPTANCE_REPORT и свежий standalone-билд
   открыты.
+
+### Смена 25 (2026-10-15): счёт после закрытия G41
+
+`unity recompile --project-path "D:/Art/SW Code Zero Unity"` (exit=0) →
+`unity command run_script --file AgentScripts/PhysCompare.cs --entry PhysCompare.Suite
+--project-path "D:/Art/SW Code Zero Unity" --timeout 600` → `Temp/suite_summary.txt`:
+
+| захват | кадр | результат |
+|---|---|---|
+| walk / jump | 0 | MATCH 119/119 |
+| hook | 1 | MATCH 298/298 |
+| traverse | 0 | MATCH 599/599 |
+| contact | 0 | MATCH 399/399 |
+| m1route | 0 | MATCH 399/399 |
+| worldseeds | — | 133/133 полей |
+| w00/w01/w02/w03/w04/w06 | 328 | MATCH 371/371 |
+| w05 | 328 | f675, 362/371 (окно посмертной перезагрузки = G37) |
+| m1_longroute | 0 | f814, 2321/2499 (G37; паритет `$95` расходится с f825) |
+
+6 из 7 захватов входа в миссии матчатся целиком (было 5: w03 чинился только фазой `$95`).
