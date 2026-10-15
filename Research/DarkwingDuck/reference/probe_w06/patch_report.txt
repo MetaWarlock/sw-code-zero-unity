@@ -1,0 +1,1 @@
+0038 <- 06  ok=true readback=06
