@@ -843,6 +843,19 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
       cell-advance + spawn + wall-snap; игрок rest у стены комнаты 0x02 на X=0114 от f360 —
       ровно как ROM, т.е. G14 («ходок ЗА пилоном, аним<`$3F` безвреден») воспроизведён.
       Прогон harness-only (`run_script`, без `recompile`); Suite-регрессий нет.
+- `[x]` **Промежуточный standalone-билд РЕАЛЬНО собран (смена 15, после ребута).** Связанный
+      редактор умеет собирать сам: `unity command build --target StandaloneWindows64
+      --dry_run true` → `{valid:true, validationErrors:[]}`, затем боевой прогон →
+      `result: Succeeded, totalErrors: 0, totalWarnings: 5, buildTimeMs: 25214,
+      totalSizeBytes: 106390798`, outputPath `Builds/DarkwingDuck/DarkwingDuck.exe`.
+      Проверено на ФС, а не только по отчёту: `DarkwingDuck_Data/level0` (в BuildReport роль
+      `Scene`) + `sharedassets0.assets` + `globalgamemanagers` перезаписаны 16:34, и в
+      `Managed/` легли собанные ассембли порта `Darkwing.Core.dll`, `Darkwing.UnityApp.dll`,
+      `Darkwing.Audio.dll`. Т.е. порт впервые реально ВНУТРИ standalone (старый exe 11 окт.
+      собирался без порта). Сам лоадер `DarkwingDuck.exe` не перезаписан (Unity byte-compare
+      пропускает идентичный бутлоадер) — дефектом не считаю, но отмечено честно.
+      НЕ ЗАКРЫТО: визуальная/рантайм проверка запущенного exe (см. СЛЕДУЮЩИЙ ШАГ 1) — «собралось
+      и упаковано» ≠ «игрально рендерит», и это не приёмка (контента M7/M8 нет).
 - `[x]` **Сводный скорборд смены 15 (рекавери ZCode quantified).** Единый прогон
       `PhysCompare.Suite` (`run_script`, 2026-10-15, timeout 420): walk 119/119, jump 119/119,
       hook 298/298, traverse 599/599, contact 399/399, m1route 399/399, worldseeds 133/133;
@@ -853,7 +866,15 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
 
 ## СЛЕДУЮЩИЙ ШАГ (после смены 15)
 
-1. **G33-2 (одна конкретная операция):** 28-кадровый stall уже закрыт (w05 361/371, вход на
+1. **Рантайм-проверка уже собранного standalone (одна конкретная операция).** Билд есть и
+   упакован (`level0` + `Darkwing.Core/UnityApp/Audio.dll`), но «собралось» ≠ «рендерит».
+   Доказать рантайм: `unity command editor_play` на `DarkwingMain.unity` → дождаться пары кадров
+   → `unity command capture_game_view --save_path Temp/port_play.png` и проверить, что в кадре
+   есть игрок/HUD/тайл-фон (после Play — `editor_stop`, состояние Domain-режима не трогать).
+   Альтернатива/дополнение: запустить `Builds/DarkwingDuck/DarkwingDuck.exe` и забрать
+   `UserData/Player.log` на предмет exception. Только после этого ставить build-строку в
+   COVERAGE.csv как PASS; до неё — «built, runtime unverified».
+2. **G33-2 (одна конкретная операция):** 28-кадровый stall уже закрыт (w05 361/371, вход на
    f685). Остались 10 кадров f675–f684, где ROM показывает промежуточную фазу `$50=00
    X=00D4 Y=0005` с обходом курсора `$25`. Разбить `_worldReloadDelay` на трёхфазную нарезку
    по образцу `DarkwingGame.AdvanceSectionStage`: held `$50=07` (18 к) → `$50=00` обход `$25`
@@ -869,9 +890,11 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
    (`DarkwingMain.unity` УЖЕ в `EditorBuildSettings.asset` — смена 15.) Пересборка exe и
    полный маршрут до финала в standalone возможны только после M7/M8-контента; до них
    `ACCEPTANCE_REPORT.md` остаётся честно «frozen» (частичный проход порта, не полный).
-   МЕХАНИКА билда (уточнено смена 15): `unity build` спавнит ВТОРОЙ batch-редактор и упрётся
-   в `Temp/UnityLockfile` живого Editor'а → пересборку гнать из batch/CI-контекста или после
-   закрытия интерактивного редактора (вариант `run_script --entry BuildPlayer.Win64` на живом
-   редакторе возможен, но с риском domain-reload, рвущего мост харнесса — не делать вслепую).
+   МЕХАНИКА билда (ИСПРАВЛЕНО в смене 15; предыдущая запись была неверна): закрывать редактор
+   и batch/CI НЕ нужно — связанный Editor собирает сам: `unity command build --target
+   StandaloneWindows64 [--dry_run true] [--outputPath ...]` (async-очередь, затем `build_status`).
+   Отдельный `unity build` (batch-редактор + `Temp/UnityLockfile`) просто не используется.
+   `get_build_settings` подтвердил после ребута: target StandaloneWindows64,
+   `DarkwingMain.unity` enabled index 0, `SampleScene` disabled.
    ROM-целостность перепроверена (2026-10-15): SHA-256 `1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00` совпадает.
 4. M5-остаток: сверка APU frame-counter с WAV.
