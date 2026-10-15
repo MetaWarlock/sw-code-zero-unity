@@ -8,7 +8,8 @@ public static class PhysCompare
     /// anim advance + slot sync), replaying the captured original input schedule.
     /// </summary>
     private static string Compare(string name, int frames, System.Func<int, byte> input,
-        int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0)
+        int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
+        int entryFreeze = 0, bool trace = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
@@ -72,6 +73,9 @@ public static class PhysCompare
         p.LastRedrawScroll = ram0[0x28];
         p.PrevScrollMode = ram0[0x20];
         p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
+        // $DDFE STA $50 runs during the load frame itself, so a capture seeded on the first
+        // frame that shows $50=$09 still owes 16 of the 17 fade frames ($DE03/$C270).
+        p.EntryFreezeFrames = entryFreeze;
         var s0 = game.Objects.Slots[0];
         if (enemies)
         {
@@ -146,7 +150,9 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
-            if (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366))
+            if (trace)
+                sb.Append($"f{f} P Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} | O Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2}\n");
+            if (!trace && (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366)))
             {
                 string List(byte[] r)
                 {
@@ -374,8 +380,32 @@ public static class PhysCompare
         var sb = new System.Text.StringBuilder();
         for (int world = 0; world < 7; world++)
             sb.Append(Compare($"w{world:X2}", 360, f => (byte)0,
-                seedFrame: 330, camera: true, enemies: true, world: world)).Append('\n');
+                seedFrame: 328, camera: true, enemies: true, world: world, entryFreeze: 16)).Append('\n');
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Compact per-frame trace of the $D517 entry fall for one world (G28): the golden is
+    /// seeded on f328, the first frame that shows $50=$09, and only Y/vy/$0460/state are
+    /// printed so the whole 700-frame capture still fits in the tool output.
+    /// </summary>
+    public static string WorldEntryTrace() => TraceEntry(0, 335, 385);
+
+    public static string TraceEntry(int world, int from, int to)
+    {
+        var full = Compare($"w{world:X2}", 360, f => (byte)0,
+            seedFrame: 328, camera: true, enemies: true, world: world, entryFreeze: 16, trace: true);
+        var lines = full.Split('\n');
+        var keep = new System.Text.StringBuilder();
+        foreach (var l in lines)
+        {
+            int sp = l.IndexOf(' ');
+            if (!l.StartsWith("f") || sp < 2) continue;
+            if (!int.TryParse(l.Substring(1, sp - 1), out int f)) continue;
+            if (f >= from && f <= to) keep.Append(l).Append('\n');
+        }
+        keep.Append(lines[lines.Length - 1]);
+        return keep.ToString();
     }
 
     /// <summary>Dumps the mission-1 placement list the spawner reads, to find why the
@@ -426,6 +456,15 @@ public static class PhysCompare
         One("m1route", M1Route());
         One("hurt", Hurt());
         One("door", Door());
+        One("worldseeds", WorldSeeds());
+        foreach (var line in WorldWalks().Split('\n'))      // seven worlds, one line each
+        {
+            int i = line.LastIndexOf("RESULT:");
+            int j = line.IndexOf("] w");
+            if (i < 0 || j < 0) continue;
+            sb.Append(line.Substring(j + 3, 3)).Append("fall: ")
+              .Append(line.Substring(i, System.Math.Min(58, line.Length - i))).Append('\n');
+        }
         return sb.ToString();
     }
 

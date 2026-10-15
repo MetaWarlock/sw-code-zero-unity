@@ -247,6 +247,14 @@ namespace Darkwing.Core
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
+            // $DE03 JSR $FF06 + $DE06 JMP $C254 → $C270: the world loader stays in its
+            // palette fade for 17 NMIs, so neither the input read nor $CAFC/$CB41 runs
+            // (gold_w00: $50=$09 from f328, first dispatch tick f345, $95 parked at 01).
+            if (Player.EntryFreezeFrames > 0)
+            {
+                Player.EntryFreezeFrames--;
+                return;
+            }
             FrameParity++; // $95 is incremented by the NMI every frame, before any logic
             // $CA6E called $E388 on a previous frame: the frame is spent inside the
             // loader — the staging loop yields through $E7A8/$C115 and the fade through

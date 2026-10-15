@@ -105,14 +105,17 @@ namespace Darkwing.Core
             YFrac = (byte)(acc & 0xFF);
         }
 
-        /// <summary>Gravity $F5DA: velocity -= $99/256 (0.25), signed; clamp fall to 8.00.</summary>
+        /// <summary>Gravity $F5DA: velocity -= $99 (0.25 px/frame), then the fall saturates.</summary>
         public void ApplyGravity()
         {
-            int v = VelToInt(YVelFrac, YVelInt);
-            v -= GravityFrac; // $99 = $40 = 0.25 px/frame^2
-            // terminal fall $F5EB: velocity >= 8.00 (i.e. v <= -0x0800) -> clamp
-            if (v < -0x0800) v = -0x0800;
-            YVelInt = (sbyte)((v >> 8) & 0xFF);
+            int v = VelToInt(YVelFrac, YVelInt) - GravityFrac;   // $F5DA-$F5E8 (byte SBC + borrow)
+            byte hi = (byte)((v >> 8) & 0xFF);
+            // $F5EB-$F5F8: a negative high byte is left alone only while it is >= $F9; any
+            // value in $80-$F8 is rewritten to exactly $F8,$00. So the cap is 8.00 px/frame
+            // and it lands on a clean $F8:$00 — a 16-bit "<= -$0800" test would let $F8:$EB
+            // through, which is what desynchronised the world-entry fall at f371.
+            if (hi >= 0x80 && hi < 0xF9) { YVelInt = -8; YVelFrac = 0x00; return; }
+            YVelInt = (sbyte)hi;
             YVelFrac = (byte)(v & 0xFF);
         }
 
@@ -314,7 +317,20 @@ namespace Darkwing.Core
             Flags = 0xD0;                                   // $0400 ($DDF6, $31 < 7)
             CutVelocity();                                  // $F5FC → FF,AB ($DDF9)
             State = 0x09;                                   // $50 ($DDFE) — map entry, not the $12 exit
+            _matLanded = 0;                                 // $04D0 & $0F ($DDF1 seeds $80)
+            // $DE03 JSR $FF06 (1 frame) + $DE06 JMP $C254 → $C270 palette fade: $0F=$30
+            // stepped by $0D=$F0 with $0E=$04 yields per round ($C2A4-$C2B0) = 30/20/10/00,
+            // exiting when $0F goes negative (it reads $F0 from the release frame on).
+            // $CAFC/$CB41 never runs inside that window: gold_w00..w06 all show $50=$09 at
+            // f328, $0530/$0540 (written every dispatch by $CB43/$CB4A) first appear at f345.
+            EntryFreezeFrames = 17;
         }
+
+        /// <summary>
+        /// Frames the main loop must skip after a $DD57 world load: $DE03/$C270 spends
+        /// 17 NMIs in the loader's tail, so no input, player or world service runs.
+        /// </summary>
+        public int EntryFreezeFrames;
 
         public byte StageCursor;                            // $25
         public byte StageTarget;                            // $0F
@@ -534,6 +550,7 @@ namespace Darkwing.Core
                 case 0x03: LookUpState(held, pressed); break;
                 case 0x06: HurtGroundState(held, pressed); break;
                 case 0x0B: case 0x10: AirborneFullState(held, pressed); break;
+                case 0x09: case 0x18: WorldEntryFallState(); break;
                 case 0x0C: HangState(held, pressed); break;
                 case 0x0A: ForcedHopState(); break;
                 case 0x07: DeathThroesState(); break;
@@ -546,7 +563,46 @@ namespace Darkwing.Core
             // sees this frame's X but is called by DarkwingGame.Step, not here.
         }
 
-        // ---------- State 12: materialize walk-out ($D517) ----------
+        // ---------- States 9/18: world-entry drop ($D517) ----------
+        /// <summary>
+        /// $D517, reached for $50 = $09 (the $DD57 mission seed) and $50 = $18 through the
+        /// $CB5F/$CB75 state table. $04D0 &amp; $0F picks the phase: 0 = falling, where $D51E
+        /// sends the $FA..$FF speed bytes straight to $F5A4/$F5DA and anything past $F9 runs
+        /// the $D525 probe service ($F4D7 with $40=$06, $41=$02 — which integrates and applies
+        /// gravity itself, so the $F800 terminal clamp still shows up in those frames). A hit
+        /// requests SFX $10 and INC $04D0 ($D530-$D535). Phase 1 is $D53F: $97=$04, the audio
+        /// service, bank 2, $9600 (the mission intro card, which holds $50 at $09 for ~140
+        /// frames — gold_w00 releases at f513 with anim $01 and $1A=$D589[$31]=80), then
+        /// $50=$00. $9600 is not ported yet (G29), so phase 1 keeps the player parked: the
+        /// capture shows $0510/$0460/$0550 frozen from the landing frame through the release.
+        /// </summary>
+        private void WorldEntryFallState()
+        {
+            if (_matLanded != 0) return;                    // $D51C → $D53F, parked pending $9600
+            if ((byte)YVelInt < 0xFA)                       // $D51E/$D523
+            {
+                IntegrateY();                               // $F4DB
+                ApplyGravity();                             // $F4DE
+                byte hit = ProbeFloor();                    // $F4E1 → $10
+                // $F4E4-$F4F6: $10 == 0 never lands; $10 >= 2 always does; a single-tile
+                // hit lands only once the fall is fast enough ($0560 < $FC after gravity),
+                // so a player that merely brushes a ledge keeps falling.
+                if (hit >= 2 || (hit == 1 && (byte)YVelInt < 0xFC))
+                {
+                    int probeY = Y + 12;
+                    Y = (ushort)((Y - (probeY & 0x0F)) & 0xFFFF);   // $EDD2 snap (low byte only)
+                    CutVelocity();                          // $F4F6 (golden: $0550/$0560 back to FFAB)
+                }
+                if (hit == 0) return;                       // $D52C/$D52E
+                _matLanded = 1;                             // $D535 INC $04D0
+                Sfx?.Invoke(0x10);                          // $D530
+                return;
+            }
+            IntegrateY();                                   // $D539
+            ApplyGravity();                                 // $D53C
+        }
+
+        // ---------- State 12: materialize walk-out ($D7F9 → $F539) ----------
         private byte _matLanded; // $04D0 bits 0-3 (slot 0): floor contact marker
 
         /// <summary>
