@@ -256,6 +256,7 @@ namespace Darkwing.Core
             CellScriptByte = 0;                             // ($34),$22
             PendingEvent = 0;                               // $5B ($E3E8)
             State = 0;                                      // $50 ($DE5A, held until the tail)
+            Objects?.ResetPlacementCursors();               // $DE42/$DE44
 
             // $DE6C-$DE78: a non-zero $23 decrements it and restarts the cursor at $0F|$70.
             bool flipped = (col & 1) != 0;

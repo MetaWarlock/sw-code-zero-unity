@@ -149,6 +149,7 @@ namespace Darkwing.Core
             WireWorldFeed();
             if (_data != null && _data.Levels != null && worldId < _data.Levels.Length)
                 CurrentLevel = _data.Levels[worldId];
+            AnchorAndSpawnPlacements();                     // $DE93-$DEA1, tail of $DE24
 
             var t = Sections;
             if (t != null)
@@ -409,12 +410,12 @@ namespace Darkwing.Core
             Hud.Compose(3);
             // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
             TileMap?.StreamColumns(Player.ScrollX);
-            if (CurrentLevel != null)
+            if (Objects?.Placements != null)
             {
                 // Spawner ($8090); culling happens per-slot in OamDispatcher
                 // ($802F semantics: ±16 screens, onscreen bit at high==0).
-                Objects.SpawnFromPlacements(CurrentLevel, Player.ScrollX,
-                    (ushort)((Player.ScrollYRow << 8) | Player.ScrollY));
+                Objects.SpawnFromPlacements(Player.ScrollX,
+                    (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
             }
             Enemies?.RunFrame();
             Oam.RunFrame(FrameParity, 36); // 36 = hidden entry 0 + 8 HUD sprites
@@ -434,7 +435,11 @@ namespace Darkwing.Core
             switch (_sectionStage)
             {
                 case 1:
-                    if (Player.StageSectionPass()) _sectionStage = 2;
+                    if (Player.StageSectionPass())
+                    {
+                        _sectionStage = 2;
+                        AnchorAndSpawnPlacements();        // $DE93-$DEA1
+                    }
                     return false;
                 case 2:
                     Player.FinishSectionLoad();          // $E3F0-$E406
@@ -461,6 +466,18 @@ namespace Darkwing.Core
                     _fadeFrame++;
                     return false;
             }
+        }
+
+        /// <summary>$DE93-$DEA1: once the $DE24 staging loop is done (and only for the
+        /// mission worlds, $31 &lt; 7), bank 4 re-anchors the spawner cursors to the camera
+        /// and runs one spawn pass, so the incoming screen's objects activate on the load
+        /// frame rather than at the first scroll.</summary>
+        private void AnchorAndSpawnPlacements()
+        {
+            if (Objects == null || Objects.Placements == null || Player.WorldId >= 7) return;
+            Objects.AnchorPlacementCursors(Player.ScrollX, Player.ScrollYRow);
+            Objects.SpawnFromPlacements(Player.ScrollX,
+                (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
         }
 
         /// <summary>$C285-$C2A0: palette = $0320 source − fade level, clamped to $0F.</summary>

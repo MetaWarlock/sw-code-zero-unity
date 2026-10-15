@@ -59,6 +59,7 @@ namespace Darkwing.Core
             _data = data;
             for (int i = 0; i < SlotCount; i++) Slots[i] = new Slot();
             Slots[0].Active = true; // player slot
+            InitPlacementLists(data?.Levels);
         }
 
         public int Parity => _parity;
@@ -110,64 +111,235 @@ namespace Darkwing.Core
         /// <summary>Raw $0340-mask read (behavior 29's $0301-class checks use indexes).</summary>
         public byte SpawnedBitmask(int cell) => _spawnedMask[cell & 31];
 
+        /// <summary>$70/$71. The spawner never scans the whole list: it walks entry
+        /// indexes from a cursor and stops at the FIRST entry outside the window, so
+        /// out-of-order entries behind it are not considered this pass.</summary>
+        public byte CursorFwd;
+        public byte CursorRev;
+
+        /// <summary>$DE42-$DE44, part of the $DE24 loader reset.</summary>
+        public void ResetPlacementCursors() { CursorFwd = 0; CursorRev = 0; }
+
         /// <summary>
-        /// Spawn objects whose placement record scrolled into view ($8090).
-        /// placement arrays come from GameData.Levels[level].Objects (5-byte records:
-        /// screenX, localX, screenY, localY, type). Spawned objects load
-        /// Flags/Behavior/AnimNumber/BehaviorParam/Health from the bank-4 type
-        /// tables ($8AB3 = [flags, behavior, anim, param] × 105, $8C57 = HP × 105)
-        /// via EnemyBehaviors.TryGetType.
+        /// $72-$7B. Bank-4's <c>$8000</c> (<c>ObjectPointerInit</c>) points the five
+        /// parallel placement arrays at the lists of world <c>$31</c>, and the spawner
+        /// only ever dereferences those pointers. The pointers are STATE: the world-load
+        /// path does not re-run $8000 — gold_w01-$23 latch $31 to $01..$06 at f314 and the
+        /// pointers keep the $31=$00 values ($72/$73 = $826C, $74/$75 = $8239) for the
+        /// whole capture, so every mission's first section spawns from mission 1's list.
         /// </summary>
-        public void SpawnFromPlacements(GameData.LevelDef level, ushort scrollX, ushort scrollY)
+        public GameData.LevelDef Placements { get; private set; }
+
+        /// <summary>The world index $8000 last used (LDA $81F3..$8232,X with X=$31).</summary>
+        public int PlacementListIndex { get; private set; } = -1;
+
+        private GameData.LevelDef[] _placementLists;
+
+        /// <summary>Supplies the per-world lists $8000 selects between; index = $31.</summary>
+        public void InitPlacementLists(GameData.LevelDef[] lists)
         {
-            foreach (var o in level.Objects)
+            _placementLists = lists;
+            SelectPlacementList(0);                         // the boot-time call with $31=$00
+        }
+
+        /// <summary>$8000-$8034: LDX $31, then the five pointer pairs.</summary>
+        public void SelectPlacementList(int worldId)
+        {
+            if (_placementLists == null) return;
+            if (worldId < 0 || worldId >= _placementLists.Length) return;
+            PlacementListIndex = worldId;
+            Placements = _placementLists[worldId];
+        }
+
+        /// <summary>The X-lo array pointers bank-4 keeps at $8201/$8208 (lo,hi per $31).</summary>
+        private static readonly byte[] ListXloPtrLo = { 0x6C, 0x74, 0xA8, 0xEE, 0x16, 0x95, 0xCB };
+        private static readonly byte[] ListXloPtrHi = { 0x82, 0x83, 0x84, 0x85, 0x87, 0x88, 0x89 };
+
+        /// <summary>Selects the list from a $72/$73 pointer pair (used to seed a capture).</summary>
+        public bool SelectPlacementListByPointer(byte lo, byte hi)
+        {
+            for (int i = 0; i < ListXloPtrLo.Length; i++)
+                if (ListXloPtrLo[i] == lo && ListXloPtrHi[i] == hi)
+                {
+                    SelectPlacementList(i);
+                    return true;
+                }
+            return false;
+        }
+
+        /// <summary>
+        /// $8040, the re-anchor $DE93 runs after the staging loop when $31 &lt; 7.
+        /// Pass 1 takes the first entry whose row equals $FB with X &gt;= scroll X
+        /// ($804B/$804F SBC/SBC, found on BCS = no borrow); if none, pass 2 takes the
+        /// first entry in that row with X &lt; scroll+0xFF ($8058-$8076). Neither
+        /// happening, INY wraps Y to 0 and $8056/$807B store 0 into both cursors.
+        /// </summary>
+        public void AnchorPlacementCursors(ushort scrollX, byte scrollRow)
+        {
+            var level = Placements;
+            if (level == null) return;
+            int n = System.Math.Min(level.ObjectCount, 256);
+            for (int y = 0; y < n; y++)
             {
-                // $80DA: the placement is live when BOTH page differences are exactly 0,
-                // i.e. the 16-bit (placement − scroll) difference is in [0x0000, 0x00FF]
-                // for X and the same window for Y ($FA/$FB, with the $80F2/$80F4 borrow
-                // that costs one extra row). So an object spawns when it enters the
-                // screen-width window ahead of the camera, one cell BEFORE $FD advances.
-                ushort wx = (ushort)((o.ScreenX << 8) | o.X);
-                ushort wy = (ushort)((o.ScreenY << 8) | o.Y);
-                if (!InPlacementWindow(wx, wy, scrollX, scrollY)) continue;
-                if (IsSpawned(o.Index)) continue;                 // $8101/$8110: collected, not consumed-by-spawn
-                // $8112-$8124: a placement already held by a live slot is not re-spawned.
-                bool held = false;
-                for (int i = SlotCount - 1; i >= 4; i--)
-                    if (Slots[i].PlacementIndex == (byte)o.Index && Slots[i].Active)
-                    { held = true; break; }
-                if (held) continue;
-                int slot = FindFreeSlot();
-                if (slot < 0) return; // pool exhausted ($8132 RTS)
-                var s = Slots[slot];
-                s.Active = true;
-                s.X = wx;
-                s.Y = wy;
-                s.PlacementIndex = (byte)o.Index;
-                // $8090 sets NO $0340 bit: the mask is written by the pickup behaviors
-                // (bank6 $883C/$8A1F → $FC29) when an item is collected, so an enemy that
-                // is culled or killed releases $0590 and re-spawns when the window returns.
-                // $F7EE: face the player — $01 when the player is to the right, $02 left.
-                s.Direction = s.X >= Slots[0].X ? (byte)0x02 : (byte)0x01;
-                if (EnemyBehaviors.TryGetType(o.Type, out byte flags, out byte behavior,
-                                              out byte anim, out byte param, out byte hp))
-                {
-                    s.Flags = flags;             // $0400 ← $8AB3+0
-                    s.Behavior = behavior;       // $04E0 ← $8AB3+1
-                    s.AnimNumber = anim;         // $0420 ← $8AB3+2
-                    s.BehaviorParam = param;     // $0570 ← $8AB3+3
-                    s.Health = hp;               // $05A0 ← $8C57+type
-                }
-                else
-                {
-                    s.Behavior = (byte)o.Type; // fallback when no table is loaded
-                    s.Health = 1;
-                }
-                s.StateLow = 0;
-                s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;
-                s.AnimFrame = 0; s.AnimTimer = 0;
-                s.XFrac = 0; s.YFrac = 0; s.HitFlash = 0;      // $81D5-$81E7
+                if (level.Objects[y].ScreenY != scrollRow) continue;
+                if (PlacementX(level, y) >= scrollX) { CursorFwd = CursorRev = (byte)y; return; }
             }
+            ushort ahead = (ushort)(scrollX + 0xFF);        // $8058-$8063: $FC + $FF with the carry into $FD
+            for (int y = 0; y < n; y++)
+            {
+                if (level.Objects[y].ScreenY != scrollRow) continue;
+                if (PlacementX(level, y) < ahead) { CursorFwd = CursorRev = (byte)y; return; }
+            }
+            CursorFwd = 0;
+            CursorRev = 0;
+        }
+
+        /// <summary>
+        /// $8090: the placement spawner. The scroll state byte $2F picks the pass —
+        /// 0 = no pass at all (standing still spawns nothing), 1/4/8 = forward from $70
+        /// (walk right, elevator down/up), 2 and any other value = reverse from $71.
+        /// Entries come from the five parallel arrays $72/$74/$76/$78/$7A point at, so
+        /// the walk reads <see cref="Placements"/> — the list $8000 selected, not the
+        /// world currently loaded. The entry index is the placement index ($0590/$0340).
+        /// </summary>
+        public void SpawnFromPlacements(ushort scrollX, ushort scrollY, byte scrollState)
+        {
+            var level = Placements;
+            if (level == null) return;
+            switch (scrollState & 0x0F)                     // $8090/$8092
+            {
+                case 0: return;                             // $80BE RTS
+                case 1: case 4: case 8:                     // $80BF forward
+                    ForwardPass(level, scrollX, scrollY);
+                    break;
+                default:                                    // $80A6 reverse
+                    ReversePass(level, scrollX, scrollY);
+                    break;
+            }
+        }
+
+        private void ForwardPass(GameData.LevelDef level, ushort sx, ushort sy)
+        {
+            int y = CursorFwd;
+            while (y < level.ObjectCount && InWindow(level, y, sx, sy))
+            {
+                TryActivate(level, y, sx, sy);              // $80FC
+                y++;                                        // $80C9 INC $70
+                if (y == 256) break;                        // $80CB BNE exits on the wrap
+            }
+            CursorFwd = (byte)y;
+            if (y == 0) { CursorRev = 0; return; }          // $80CD BEQ $80D7
+            int r = y;
+            for (int steps = 0; steps < 256; steps++)       // $80D1 DEY / $80D5 BEQ $80D1
+            {
+                r--;
+                if (r < 0 || !InWindow(level, r, sx, sy)) break;
+            }
+            CursorRev = (byte)(r & 0xFF);                   // $80D7 STY $71
+        }
+
+        private void ReversePass(GameData.LevelDef level, ushort sx, ushort sy)
+        {
+            int y = CursorRev;
+            while (y < level.ObjectCount && InWindow(level, y, sx, sy))
+            {
+                TryActivate(level, y, sx, sy);
+                y--;                                        // $80B0 DEC $71
+                if (y < 0) { y = 255; }                     // the ROM wraps and keeps walking
+                if (y == 0) break;                          // $80B2 BNE exits when $71 lands on 0
+                if (y >= level.ObjectCount) break;          // wrapped past the list
+            }
+            CursorRev = (byte)y;
+            int f = y;                                      // $80B4 LDY $71 / $80B6 INY
+            for (int steps = 0; steps < 256; steps++)
+            {
+                f++;
+                if (f == 256) { f = 0; break; }
+                if (!InWindow(level, f, sx, sy)) break;
+            }
+            CursorFwd = (byte)f;                            // $80BC STY $70
+        }
+
+        private ushort PlacementX(GameData.LevelDef level, int index)
+            => (ushort)((level.Objects[index].ScreenX << 8) | level.Objects[index].X);
+
+        /// <summary>$80DA: the entry is inside the window when both 16-bit
+        /// (placement − scroll) differences lie in [0x0000, 0x00FF]. The Y low compare
+        /// carries an extra dead <c>SBC #$0F</c> ($80F2) whose result is dropped by the
+        /// unconditional CLC, so the borrow is what reaches the row compare.</summary>
+        private bool InWindow(GameData.LevelDef level, int index, ushort sx, ushort sy)
+        {
+            if (index < 0 || index >= level.ObjectCount) return false;
+            var o = level.Objects[index];
+            return InPlacementWindow(PlacementX(level, index),
+                                     (ushort)((o.ScreenY << 8) | o.Y), sx, sy);
+        }
+
+        /// <summary>$80FC: try to hand entry <paramref name="index"/> to a slot.</summary>
+        private void TryActivate(GameData.LevelDef level, int index, ushort sx, ushort sy)
+        {
+            if ((_spawnedMask[index >> 3] & (1 << (index & 7))) != 0) return;   // $810B/$8110 collected
+            for (int x = SlotCount - 1; x >= 5; x--)              // $8112: slots 15..5, never 4
+                if (Slots[x].PlacementIndex == (byte)index)
+                {
+                    if (Slots[x].Active) return;                   // $8121 BMI $80FB
+                    break;                                         // dead holder: allocate anyway
+                }
+            int slot = -1;
+            for (int x = SlotCount - 1; x >= 5; x--)              // $8126 free-slot walk
+                if (!Slots[x].Active) { slot = x; break; }
+            if (slot < 0) return;                                  // $8132 RTS, pool exhausted
+            Activate(level, index, slot);
+        }
+
+        /// <summary>$8194-$81C5: these animation ids are not facing-dependent, so the
+        /// spawn does not run $F808 (they are the pickups/particles that keep $0400 bit6).</summary>
+        private static readonly byte[] NoFlipAnims =
+            { 0x1C, 0x1D, 0x1E, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x9B, 0x56 };
+
+        /// <summary>
+        /// $8133-$81EA: hand the entry to a slot. The four coordinate bytes the $80DA
+        /// compare already read go to $04F0/$0500/$0510/$0520, $0590 gets the entry
+        /// index, the bank-4 type record ($8AB3[type*4] = flags, behavior, anim, param,
+        /// with HP at $8C57[type*4]) fills $0400/$04E0/$0420/$0570/$05A0 and $04D0=$80
+        /// activates it. $F7EE faces the slot at the player, $F808 mirrors that facing
+        /// into $0400 bit6, $F5FC cuts the vertical velocity to FF,$AB and the tail
+        /// zeroes $0410/$0430/$0460-$04C0.
+        /// </summary>
+        private void Activate(GameData.LevelDef level, int index, int slot)
+        {
+            var o = level.Objects[index];
+            var s = Slots[slot];
+            s.PlacementIndex = (byte)index;                        // $8134
+            s.X = PlacementX(level, index);                        // $8139/$813E
+            s.Y = (ushort)((o.ScreenY << 8) | o.Y);                // $8143/$8148
+            if (EnemyBehaviors.TryGetType(o.Type, out byte flags, out byte behavior,
+                                          out byte anim, out byte param, out byte hp))
+            {
+                s.Flags = flags;
+                s.Behavior = behavior;
+                s.AnimNumber = anim;
+                s.BehaviorParam = param;
+                s.Health = hp;
+            }
+            else
+            {
+                s.Behavior = (byte)o.Type;      // fallback when no table is loaded
+                s.Health = 1;
+            }
+            s.Active = true; s.StateLow = 0;                       // $818C LDA #$80 / STA $04D0
+            // $F7EE: $01 when the slot sits left of the player, $02 at or right of it.
+            s.Direction = s.X >= Slots[0].X ? (byte)0x02 : (byte)0x01;
+            bool flip = true;
+            for (int i = 0; i < NoFlipAnims.Length; i++)
+                if (NoFlipAnims[i] == s.AnimNumber) { flip = false; break; }
+            if (flip)                                              // $F808
+                s.Flags = (byte)((s.Flags & 0xBF) | ((s.Direction & 1) << 6));
+            EnemyBehaviors.CutVelocity(s);                         // $F5FC
+            s.AnimTimer = 0; s.AnimFrame = 0;                      // $81CF/$81D2
+            s.YFrac = 0; s.XFrac = 0;                              // $81D5/$81D8
+            s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;        // $81DB-$81E4
+            s.HitFlash = 0;                                        // $81E7
         }
 
         /// <summary>$80DA: the placement/scroll page differences the spawner tests.
@@ -215,20 +387,6 @@ namespace Darkwing.Core
                 s.Active = false;      // $04D0
                 s.PlacementIndex = 0xFF; // $0590
             }
-        }
-
-        private bool IsSpawned(int placementIndex)
-        {
-            for (int i = 1; i < SlotCount; i++)
-                if (Slots[i].Active && Slots[i].PlacementIndex == placementIndex) return true;
-            return false;
-        }
-
-        private int FindFreeSlot()
-        {
-            for (int i = SlotCount - 1; i >= 4; i--)
-                if (!Slots[i].Active) return i;
-            return -1;
         }
 
         public void EndFrame() => _parity++;

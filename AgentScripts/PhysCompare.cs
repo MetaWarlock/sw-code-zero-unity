@@ -66,6 +66,13 @@ public static class PhysCompare
         p.ScrollState = ram0[0x2B];
         p.ScrollStep = ram0[0x10];
         p.ScrollMode = ram0[0x2F];
+        game.Objects.CursorFwd = ram0[0x70];      // $70/$71 spawner entry cursors
+        game.Objects.CursorRev = ram0[0x71];
+        // $72-$7B: the spawner dereferences pointers, so the placement list is pointer
+        // state. Every gold_w capture latches $31 to $01..$06 and keeps $72/$73 on the
+        // $31=$00 list — bank-4:$8000 is not in the world-load path, so the list has to
+        // be seeded from the capture rather than derived from the world id.
+        game.Objects.SelectPlacementListByPointer(ram0[0x72], ram0[0x73]);
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
         // $E63C driver state: the cursor phase is captured state, the step rule is the port's.
@@ -457,12 +464,13 @@ public static class PhysCompare
         finally { _enemyDumpLo = _enemyDumpHi = -1; }
     }
 
-    /// <summary>The three remaining world divergences (w01 f665, w03 f664, w05 f635) with
-    /// the active-slot dump, to tell tile hazards from enemy contact.</summary>
+    /// <summary>The two remaining world divergences (w03 f664, w05 f656 — w01 matched after
+    /// the spawner became pointer state) with the active-slot dump, to tell tile hazards
+    /// from enemy contact.</summary>
     public static string DivTraceAll()
     {
         var sb = new System.Text.StringBuilder();
-        int[][] w = { new[] { 1, 662, 674 }, new[] { 3, 661, 673 }, new[] { 5, 632, 644 } };
+        int[][] w = { new[] { 3, 658, 670 }, new[] { 5, 652, 664 } };
         foreach (var t in w)
         {
             _enemyDumpLo = t[1]; _enemyDumpHi = t[2];
@@ -617,6 +625,13 @@ public static class PhysCompare
         p.ScrollState = ram0[0x2B];
         p.ScrollStep = ram0[0x10];
         p.ScrollMode = ram0[0x2F];
+        game.Objects.CursorFwd = ram0[0x70];      // $70/$71 spawner entry cursors
+        game.Objects.CursorRev = ram0[0x71];
+        // $72-$7B: the spawner dereferences pointers, so the placement list is pointer
+        // state. Every gold_w capture latches $31 to $01..$06 and keeps $72/$73 on the
+        // $31=$00 list — bank-4:$8000 is not in the world-load path, so the list has to
+        // be seeded from the capture rather than derived from the world id.
+        game.Objects.SelectPlacementListByPointer(ram0[0x72], ram0[0x73]);
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
         // $E63C driver state: the cursor phase is captured state, the step rule is the port's.
@@ -760,6 +775,13 @@ public static class PhysCompare
         p.ScrollState = ram0[0x2B];
         p.ScrollStep = ram0[0x10];
         p.ScrollMode = ram0[0x2F];
+        game.Objects.CursorFwd = ram0[0x70];      // $70/$71 spawner entry cursors
+        game.Objects.CursorRev = ram0[0x71];
+        // $72-$7B: the spawner dereferences pointers, so the placement list is pointer
+        // state. Every gold_w capture latches $31 to $01..$06 and keeps $72/$73 on the
+        // $31=$00 list — bank-4:$8000 is not in the world-load path, so the list has to
+        // be seeded from the capture rather than derived from the world id.
+        game.Objects.SelectPlacementListByPointer(ram0[0x72], ram0[0x73]);
         p.RowStride = ram0[0x2E];
         p.BottomRow = ram0[0x2D];
         // $E63C driver state: the cursor phase is captured state, the step rule is the port's.
