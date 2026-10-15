@@ -843,6 +843,13 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
       cell-advance + spawn + wall-snap; игрок rest у стены комнаты 0x02 на X=0114 от f360 —
       ровно как ROM, т.е. G14 («ходок ЗА пилоном, аним<`$3F` безвреден») воспроизведён.
       Прогон harness-only (`run_script`, без `recompile`); Suite-регрессий нет.
+- `[x]` **Сводный скорборд смены 15 (рекавери ZCode quantified).** Единый прогон
+      `PhysCompare.Suite` (`run_script`, 2026-10-15, timeout 420): walk 119/119, jump 119/119,
+      hook 298/298, traverse 599/599, contact 399/399, m1route 399/399, worldseeds 133/133;
+      WorldWalks 00/01/02/04/06 = 371/371, 03 = 362/371 (f664 = G30-остаток раскрутки ходьбы),
+      05 = 361/371 (f675 = G33 principled-остаток: yield-нарезка `$DD57`, требует cycle-emu).
+      `hurt`/`door` в Suite печатаются как «no result» только из-за формата (field-count 16×66 и
+      15×98, без строки `RESULT: MATCH`) — отдельно они PASS, регрессий нет.
 
 ## СЛЕДУЮЩИЙ ШАГ (после смены 15)
 
