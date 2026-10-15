@@ -1235,84 +1235,113 @@ namespace Darkwing.Core
             {
                 if (s.T480 == 0)
                 {
-                    if (s.AnimNumber == 0x5C) { HeavyStride(s, ctx); return; }
-                    if (s.AnimNumber == 0x5D) { HeavyTurn(s, ctx); return; }
-                    SetAnim(s, 0x5C);
-                    s.Health = 2;
+                    if (s.AnimNumber == 0x5C) { HeavyTurn(s, ctx); return; }      // $8EC6-$8ECC → $8EE7
+                    if (s.AnimNumber == 0x5D) { HeavyStride(s, ctx); return; }    // $8ECD-$8ED0 → $8EFB
+                    SetAnim(s, 0x5C);                                             // $8ED1-$8ED6
+                    s.Health = 2;                                                 // $8ED8 STA $05A0,X
                     return;
                 }
-                s.T480--;
-                if (DistX(ctx, s) >= 0x48) { HeavyStride(s, ctx); return; }
-                return;
+                s.T480--;                                    // $8EDC DEC $0480,X
+                // $8EDF-$8EE4: JSR $F928 / CMP #$48 / BCC $8ED1. The test CLOSES the
+                // pace anim when the player comes within $48 px; it is not a walk
+                // command. The port ran HeavyStride when the distance was >= $48, which
+                // both inverted the sense and moved the enemy, so m1_longroute slot 0E
+                // walked from X=$02F8 to $02EC by f568 while the ROM froze it at $02F8,
+                // and the ported player then died on f611 to an enemy the ROM keeps away.
+                if (DistX(ctx, s) < 0x48)
+                {
+                    SetAnim(s, 0x5C);
+                    s.Health = 2;
+                }
+                return;                                      // $8EE6 / $8EDB RTS
             }
             // charge state ($8F3F)
-            if (s.AnimNumber == 0x5B) { HeavyChargeWalk(s, ctx); return; }
-            if (s.AnimNumber == 0x5C) { HeavyStride(s, ctx); return; }
-            if (s.AnimNumber != 0x5D) { HeavyChargeJump(s, ctx); return; }
-            HeavyChargeWind(s, ctx);
+            if (s.AnimNumber == 0x5B) { HeavyChargeWalk(s, ctx); return; }   // $8F44 → $8F91
+            if (s.AnimNumber == 0x5C) { HeavyChargeTurn(s, ctx); return; }   // $8F48 → $8FD4
+            if (s.AnimNumber != 0x5D) { HeavyChargeJump(s, ctx); return; }   // $8F54
+            HeavyChargeWind(s, ctx);                                          // $8F4E → $8FED
         }
 
         private static void HeavyStride(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            // $8EFB: stride wobble via T490
-            if (s.T490 == 0)
+            HeavyWobble(s);                                        // $8EFB-$8F22
+            if (s.AnimFrame == 3 && s.AnimTimer == 0x10)           // $8F25-$8F31
             {
-                s.X -= 2; // $8F00 nudge
-            }
-            else if (s.T490 == 4)
-            {
-                s.T490 = 0;
-                s.X += 2;
-            }
-            else s.T490++;
-            if (s.AnimFrame == 3 && s.AnimTimer == 0x10)
-            {
-                s.StateLow |= 0x02;
-                SetAnim(s, 0x5E);
-                HeavySpawnPuff(ctx, s);
+                s.StateLow |= 0x02;                                // $8F33 INC $04D0,X
+                SetAnim(s, 0x5E);                                  // $8F36-$8F38
+                HeavySpawnPuff(ctx, s);                            // $8F3B JSR $9028
             }
         }
 
+        /// <summary>$8EFB-$8F22 / $8FED-$9014: the heavy's pace wobble. It is a 4-frame
+        /// cycle on $0490 that nets ZERO displacement and touches only the X LOW byte
+        /// ($04F0), so a nudge at $02 never borrows out of $0500. The port kept $0490 at
+        /// 0 after the nudge instead of INCing it, which turned the once-per-cycle
+        /// -2 px into a continuous 2 px/frame walk.</summary>
+        private static void HeavyWobble(ObjectSystem.Slot s)
+        {
+            if (s.T490 == 0)
+            {
+                NudgeXLo(s, -2);                 // $8F00-$8F08
+                s.T490 = 1;                      // $8F22, via either the BNE or the $8F0B fallthrough
+            }
+            else if (s.T490 == 4)
+            {
+                s.T490 = 0;                      // $8F12-$8F14
+                NudgeXLo(s, 2);                  // $8F17-$8F1D
+                if ((s.X & 0xFF) == 0) s.T490 = 1;   // $8F20 BNE $8F25 → else falls into the INC
+            }
+            else s.T490++;                       // $8F22
+        }
+
+        private static void NudgeXLo(ObjectSystem.Slot s, int delta) =>
+            s.X = (ushort)((s.X & 0xFF00) | ((s.X + delta) & 0xFF));
+
+        /// <summary>$8EE7: the turn anim only hands over to the stride at frame 1/$10.</summary>
         private static void HeavyTurn(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             if (s.AnimFrame == 1 && s.AnimTimer == 0x10) { SetAnim(s, 0x5D); s.T490 = 0; }
         }
 
+        /// <summary>$8FD4: same hand-over as $8EE7 but the miss path burns $0490
+        /// ($8FDB-$8FE0 → $8FD0 DEC $0490,X), which the non-charge branch does not do.</summary>
+        private static void HeavyChargeTurn(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if (s.AnimFrame == 1 && s.AnimTimer == 0x10)
+            {
+                SetAnim(s, 0x5D);   // $8FE2-$8FE4
+                s.T490 = 0;         // $8FE7-$8FE9
+            }
+            else s.T490--;          // $8FD0
+        }
+
         private static void HeavyChargeWind(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.T490 == 0)
+            HeavyWobble(s);                                       // $8FED-$9014
+            if (s.AnimFrame == 3 && s.AnimTimer == 0x10)          // $9017-$9023
             {
-                s.X -= 2;
-            }
-            else if (s.T490 == 4)
-            {
-                s.T490 = 0;
-                s.X += 2;
-            }
-            else s.T490++;
-            if (s.AnimFrame == 3 && s.AnimTimer == 0x10)
-            {
-                SetAnim(s, 0x5E);
-                HeavySpawnPuff(ctx, s);
+                SetAnim(s, 0x5E);                                 // $8F36 via $9025
+                HeavySpawnPuff(ctx, s);                           // $8F3B JSR $9028
             }
         }
 
         private static void HeavyChargeWalk(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            // $8F91: run; T490 counts the run, anim $4A hop at frame 9
+            // $8F91: $0490 is a one-shot hop counter. The enemy moves only while it is
+            // nonzero, then DECs it and RTSes; at 0 the handler FREEZES (the $8FAB path
+            // just RTSes unless the animation reaches frame $0A / timer $04).
             if (s.T490 != 0)
             {
                 if ((s.Direction & 1) != 0) IntegrateXNeg(s); else IntegrateXPos(s);
-                if (s.T490 != 0) { s.T490--; return; }
+                if (s.T490 != 0) { s.T490--; return; }            // $8FA6-$8FD0
             }
-            if (s.AnimFrame == 0x0A && s.AnimTimer == 4)
+            if (s.AnimFrame == 0x0A && s.AnimTimer == 4)          // $8FAB-$8FB7
             {
-                s.Direction ^= 3;
-                s.Health = s.T4A0;
-                SetAnim(s, 0x5C);
-                ctx.Sfx?.Invoke(0x08); // $F808-adjacent cue (patroller step)
+                s.Direction ^= 3;                                 // $8FBC-$8FBE EOR #$03
+                s.Health = s.T4A0;                                // $8FC1-$8FC4
+                SetAnim(s, 0x5C);                                 // $8FC7-$8FC9
+                ctx.Sfx?.Invoke(0x08);                            // $8FCC JSR $F808
             }
-            else if (s.T490 == 0) s.T490--;
         }
 
         private static void HeavyChargeJump(ObjectSystem.Slot s, EnemyDispatcher ctx)

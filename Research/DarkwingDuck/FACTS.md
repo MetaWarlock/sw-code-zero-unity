@@ -294,3 +294,42 @@
   Evidence: `Temp/watchpxv/writes.csv` (`$0530/$0540` written every frame by the `$CB41` prologue,
   so velocity is not the variable), `Temp/watchpx/writes.csv` (`F510 → $04F0` alone at f438 vs
   `F510 + ED94/ED9C` at f433–f437), `Temp/m1_longroute_trace.txt` FIELDS line.
+
+- **FACT (bank 6 `$8EA3`, behavior `$0F` "heavy gas-immune walker"; verified 2026-10-15 by
+  `gold_m1_longroute` slot `0E`)**: the handler is a counter ladder, and only two of its branches
+  move the slot at all. `$8EBA` splits on `$04D0` bit 1; in the clear branch `$8EC1` does
+  `DEC $0480` and then `$8EDF JSR $F928 / CMP #$48 / BCC $8ED1`, which on a close player
+  (< $48 px) only stamps anim `$5C` + `$05A0 = #$02` — it is NOT a walk command, and a
+  distance test that "aggroes" the enemy into moving is a porting error. When `$0480` reaches 0
+  the anim decides the branch: `$8EC6` sends anim `$5C` to `$8EE7` (hand over to `$5D` at frame 1 /
+  timer `$10`) and anim `$5D` to `$8EFB`. Both paces (`$8EFB` and its charge-state twin `$8FED`)
+  are 4-frame cycles on `$0490` that write ONLY the X low byte `$04F0` (`SEC/SBC #$02`,
+  `CLC/ADC #$02`), so they never borrow into `$0500` and net ZERO displacement; `$0490` is
+  incremented on every frame the nudge is not applied, which is what stops the nudge from
+  repeating. In the `$04D0` bit-1 (charge) branch: anim `$5B` → `$8F91` moves the slot by the
+  `$0530/$0540` velocity exactly once per `$0490` unit and FREEZES at `$0490 = 0` (only the
+  frame `$0A` / timer `$04` test at `$8FAB` ends the pose: `EOR #$03` on `$0580`,
+  `$05A0 = $04A0`, anim `$5C`, `JSR $F808`); anim `$5C` → `$8FD4` (same hand-over as `$8EE7` but
+  its miss path burns `$0490` through `$8FD0 DEC`); anim `$5D` → `$8FED`; anything else → `$8F54`
+  (`$F2D7 #$28,$01` fall + `$F200/$F254` chase, and on landing `$04A0 = $05A0`,
+  `$05A0 = #$80` (gas-immune while airborne), anim `$5B`, `$0490 = 1`).
+  Evidence: `Temp/m1_longroute_trace.txt` ` E ` slot dump (window 552..620, `$0490` exposed as
+  `q`) — before the fix the ported slot left `X=$02F8` at 2 px/frame from f562 (ROM froze there)
+  and killed the player at f611; after the port matched every dumped frame.
+
+- **FACT (bank 7 `$CB41` player state table, verified 2026-10-15)**: the dispatch is
+  `$CB4D LDA $50 / AND #$1F / TAY / $CB52 LDA $CB5F,Y / $CB57 LDA $CB75,Y / $CB5C JMP ($0000)`
+  with the low-byte table at `$CB5F` and the high-byte table at `$CB75` (only the first `$10`
+  entries are used, so `y` indexes `$CB5F+y` and `$CB75+y`). Reproduced entries: y=4 → `$D1A4`
+  (the parked/pause state), y=7 → `$D353` (death throes: low `$CB66=$53`, high `$CB7C=$D3`),
+  y=$0B → `$D626` (full airborne), y=$0E... — the table is therefore the reliable way to name a
+  `$50` handler without guessing. `$D353` runs on the PLAYER's slot-0 bytes, not on `$50` alone:
+  it uses `$04D0` low nibble (init guard, `INC $04D0` after the hop), `$0490` (15-frame hop,
+  `JMP $F55E`), `$0480` (hold phase, `$3C` down, with SFX `$25` + `$9B=$FF` at `$1E`),
+  `$0530/$0540 = $10,$00` and `$0550/$0560 = $8E,$01` for that phase, anim `$16` via `$F850`,
+  SFX `$09` via `$FA78`, `AND #$DF` on `$0400`, and finally at `$D3B9` the `$0400 = $50/$10`
+  energy-drain branch (`$05E6`/`$05E4`, death counter `$64`) versus the fall branch
+  (`$0560 = $FC` → `$F5A4` then `LDA $04D0 / BMI $D41A`, else `$F5C9` + `JMP $F4FD`) — the
+  `BMI $D41A` on `$04D0` bit 7 is how a death actually reaches the `$D41B` resolve/respawn.
+  Evidence: `flat_bank7.txt` listing plus `gold_m1_longroute` f795–f814 (both sides byte-identical
+  in `$07` until the ROM respawns on the checkpoint `X=$0094, Y=$0305` at f814).

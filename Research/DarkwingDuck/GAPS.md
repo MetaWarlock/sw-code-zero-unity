@@ -229,18 +229,39 @@
  Candidates: скорость выхода (`$0530/$0540`) и ветка приземления `$D253`. Счёт до фикса:
   longroute 507/620.
 
-- **G36 шаг 5 (open, 2026-10-15): heavy walker in slot 0E (behavior `$0F` = `HeavyImmuneWalker`,
-  bank 6 `$8EA3`) is not stopped where the ROM stops it.** In `gold_m1_longroute` the slot first
-  differs at f562 — port `X = $02F6` vs ROM `$02F8` (both `Y=$03B8`, `an=$5B`, `st=$81`,
-  `p=$49`, `pl=$07`, `vy=$FF,$AB`) — and the port keeps walking left until f608 (`$02DA`), 28 px
-  behind a ROM slot that never moves again. That drift is what makes the PORT take a hit the ROM
-  does not: f611 port `$50=$06`, anim `$09`, `$7C=$3B`; ROM stays `$50=$00`, anim `$03`, and the
-  X/`$23`/`$25` fields then break at f612. longroute is 610/620 with first divergence f611; the
-  previous player-side chain (f438/f441/f511) is closed.
-  Unknown: which gate holds the ROM walker at `$02F8` — wall snap (`$ED85/$ED9D` inside
-  `$F254`), a floor-edge probe, or a `$0570`-parameter driven stop in `$8EA3`. Next: read the
-  `E` lines f552–f568 already dumped in `Temp/m1_longroute_trace.txt`, then disassemble `$8EA3`
-  in `flat_bank6.txt`. Do NOT copy the ROM value into the port; port the decision.
+- **G36 шаг 5 (closed, 2026-10-15): heavy walker in slot 0E (behavior `$0F` = `HeavyImmuneWalker`,
+  bank 6 `$8EA3`) walked while the ROM stands.** Root cause was not a wall or a floor-edge
+  probe — the `$0F` handler itself was mis-ported in three places, all read out of
+  `flat_bank6.txt:$8EA3-$9014`: (a) the `$8EC1/$8EDC` branch never moves the slot, it only
+  `DEC $0480` and then tests `$F928` `CMP #$48 / BCC $8ED1`, i.e. closing to `$48` px switches
+  the anim to `$5C` and writes `$05A0=#$02`; the port ran `HeavyStride` when the distance was
+  `>= $48` (inverted sense + phantom motion). (b) the anim dispatch at `$8EC6` was mirrored
+  (`$5C → $8EE7`, `$5D → $8EFB`). (c) `$8EFB`/`$8FED` is a 4-frame `$0490` cycle that touches
+  only the X low byte (`$04F0`) and nets zero displacement; the port did not `INC $0490` after
+  the nudge, so the once-per-cycle −2 px became a continuous 2 px/frame walk. Also removed a
+  fabricated `else if (T490 == 0) T490--` in `$8F91` (`$8F91` hops one frame then freezes) and
+  added `$8FD4`. Evidence: the ` E ` slot dump in `Temp/m1_longroute_trace.txt` (window
+  552..620, `$0490` added as `q`), slot `0E` now equal on every dumped frame. Score after the
+  fix: longroute **973/2499** with `limit` removed (the 620-frame cap was only an unverified
+  time estimate; the comparison runs in 75 ms), first divergence moved to f814. No suite
+  regressions.
+
+- **G36 шаг 6 (open, 2026-10-15): the port never leaves state `$07` where the ROM respawns.**
+  f795–f813 the port and the ROM are byte-identical inside `$50=$07` (`X=0394`, `Y=0405`,
+  `vy=$FA,$2B`, anim `$12/00/00`), then f814 the ROM is back on the checkpoint
+  (`$50=$00`, `X=$0094`, `Y=$0305`, cells `$33`) while the port stays `$07` forever, which
+  breaks X/Y/`$50`/`$22`/`$23`/`$25` on that frame. Handler located via the state table
+  `$CB4D`: `LDA $50 / AND #$1F / TAY / LDA $CB5F,Y / LDA $CB75,Y / JMP ($0000)`; y=7 gives
+  low `$CB66=$53`, high `$CB7C=$D3` → `$D353` (sanity-checked against the already-ported
+  y=4 → `$D1A4` and y=$0B → `$D626`). Unknown / to port: the ROM's own `$0480`/`$0490`/`$04D0`
+  counter ladder in `$D353` (`$0490=$0F` hop via `JMP $F55E`, then `$0480` countdown with
+  `$0550=$8E,$0560=$01,$0530=$10,$0540=$00`, SFX `$25` + `$9B=$FF` at `$0480=$1E`, then the
+  `$D3B9` fall/energy branch and `LDA $04D0 / BMI $D41A` into the resolve). The port's
+  `DeathThroesState` is a hand-made `_deathPhase/_deathTimer` machine that does not model those
+  bytes, so it cannot reach `$D41B` on the same frame. Do NOT patch the respawn coordinates —
+  port the counter ladder and let `$D41B`/`SectionReloadRequest` produce them.
   Smaller open items on the same capture: `$0420` at f440 (port `$11`, ROM `$12` — `$D6AC
-  LDA #$12 / JSR $FA78`), and `IntegrateYAdd` (port's `$F539`) still lacks the `$F54C–$F55A`
-  `≥$F0` screen correction that every other `$F539`-style integrator has.
+  LDA #$12 / JSR $FA78`), slot `0C` (bh `$0C`) Y `0396` vs ROM `0382` in the same dump,
+  `IntegrateYAdd` (port's `$F539`) still lacks the `$F54C–$F55A` `≥$F0` screen correction,
+  and `$9B` is not modelled in the port at all.
+
