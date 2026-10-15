@@ -277,6 +277,18 @@ public static class PhysCompare
         camera: true, enemies: true);
 
     /// <summary>
+    /// Natural contact golden `gold_contact` (objective item 3/7): mission 1 from
+    /// `m1_standing.mss`, original input is `0:right@10-360` — NO jump, so the player walks
+    /// right until the room-0x02 tower wall (the G14 finding: the walker sits behind that
+    /// wall, so a straight walk can't reach it). Replaying the EXACT schedule and comparing
+    /// byte-exact tells whether the port stops at the same wall at the same X as the ROM.
+    /// If it diverges that is a real finding (G14 climb), not something to fake.
+    /// </summary>
+    public static string Contact() => Compare("contact", 400,
+        f => (byte)(f >= 10 && f <= 360 ? 0x01 : 0x00),
+        camera: true, enemies: true);
+
+    /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
     /// seeded by probe_run --patch into cell $22=$1C (row 1, col 11, script byte $41 =
     /// hook column) at the row bottom; the grab fires next frame and the camera rides
@@ -563,6 +575,7 @@ public static class PhysCompare
         One("jump", Jump());
         One("hook", Hook());
         One("traverse", Traverse());
+        One("contact", Contact());
         One("m1route", M1Route());
         One("hurt", Hurt());
         One("door", Door());
