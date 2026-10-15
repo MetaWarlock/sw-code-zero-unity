@@ -228,3 +228,19 @@
   (обработчик из таблицы = `$D626`) после выхода из переноса на f420. Причина НЕ установлена —
  Candidates: скорость выхода (`$0530/$0540`) и ветка приземления `$D253`. Счёт до фикса:
   longroute 507/620.
+
+- **G36 шаг 5 (open, 2026-10-15): heavy walker in slot 0E (behavior `$0F` = `HeavyImmuneWalker`,
+  bank 6 `$8EA3`) is not stopped where the ROM stops it.** In `gold_m1_longroute` the slot first
+  differs at f562 — port `X = $02F6` vs ROM `$02F8` (both `Y=$03B8`, `an=$5B`, `st=$81`,
+  `p=$49`, `pl=$07`, `vy=$FF,$AB`) — and the port keeps walking left until f608 (`$02DA`), 28 px
+  behind a ROM slot that never moves again. That drift is what makes the PORT take a hit the ROM
+  does not: f611 port `$50=$06`, anim `$09`, `$7C=$3B`; ROM stays `$50=$00`, anim `$03`, and the
+  X/`$23`/`$25` fields then break at f612. longroute is 610/620 with first divergence f611; the
+  previous player-side chain (f438/f441/f511) is closed.
+  Unknown: which gate holds the ROM walker at `$02F8` — wall snap (`$ED85/$ED9D` inside
+  `$F254`), a floor-edge probe, or a `$0570`-parameter driven stop in `$8EA3`. Next: read the
+  `E` lines f552–f568 already dumped in `Temp/m1_longroute_trace.txt`, then disassemble `$8EA3`
+  in `flat_bank6.txt`. Do NOT copy the ROM value into the port; port the decision.
+  Smaller open items on the same capture: `$0420` at f440 (port `$11`, ROM `$12` — `$D6AC
+  LDA #$12 / JSR $FA78`), and `IntegrateYAdd` (port's `$F539`) still lacks the `$F54C–$F55A`
+  `≥$F0` screen correction that every other `$F539`-style integrator has.

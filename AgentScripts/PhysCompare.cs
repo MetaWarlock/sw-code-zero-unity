@@ -144,7 +144,8 @@ public static class PhysCompare
         // only localises WHICH field breaks first, so a known rendering-cadence residual
         // (e.g. $23) cannot hide a real physics divergence further down the same capture.
         var fieldNames = new[] { "X", "Y", "$50 state", "$FA scrollY", "$FB row",
-                                 "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor" };
+                                 "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor",
+                                 "$0460 Yfrac", "$0470 Xfrac", "$0560 YvelI", "$0550 YvelF" };
         var firstBad = new int[fieldNames.Length];
         var badPort = new int[fieldNames.Length];
         var badOrig = new int[fieldNames.Length];
@@ -216,9 +217,11 @@ public static class PhysCompare
             bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
                                    && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
             int[] pv = { p.X, p.Y, p.State, p.ScrollY, p.ScrollYRow,
-                         p.CellIndex, p.CellIndexNext, p.ScrollState, p.StageCursor };
+                         p.CellIndex, p.CellIndexNext, p.ScrollState, p.StageCursor,
+                         p.YFrac, p.XFrac, p.YVelInt & 0xFF, p.YVelFrac };
             int[] ov = { gx, gy, g[0x50], g[0xFA], g[0xFB],
-                         g[0x22], g[0x23], g[0x2B], g[0x25] };
+                         g[0x22], g[0x23], g[0x2B], g[0x25],
+                         g[0x460], g[0x470], g[0x560], g[0x550] };
             for (int i = 0; i < pv.Length; i++)
                 if (pv[i] != ov[i] && firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
             if (pos && cam) matchFrames++;
@@ -300,7 +303,7 @@ public static class PhysCompare
     /// </summary>
     public static string M1LongRoute()
     {
-        _enemyDumpLo = 290; _enemyDumpHi = 340;
+        _enemyDumpLo = 552; _enemyDumpHi = 568;
         try
         {
             return Compare("m1_longroute", 2500,

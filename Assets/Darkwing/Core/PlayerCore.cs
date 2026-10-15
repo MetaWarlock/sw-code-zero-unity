@@ -986,7 +986,7 @@ namespace Darkwing.Core
 
         // ---------- Shared vertical physics ($CD0E/$F2D7) ----------
         /// <returns>true if landed this frame</returns>
-        private bool VerticalPhysics(byte held, byte pressed)
+        private bool VerticalPhysics(byte held, byte pressed, bool cutOnLand = true)
         {
             // $EB62: $10 is cleared on entry to every probe service, so a hazard code only
             // ever survives the frame whose $EB52 actually sampled it. Without the reset a
@@ -1027,9 +1027,18 @@ namespace Darkwing.Core
                     int py = Y + 12;
                     py = py - (py & 0x0F) - 12;  // top of the 16px tile under the probe
                     Y = (ushort)(py & 0xFFFF);
-                    CutVelocity(); // landing leaves the $F607 value (-0.33), capture-verified
+                    // $F360 pairs the snap with $F5FC, but the $50=0B/10 landing is the other
+                    // branch: $D711 = $50→0, $56→0, then `LDA $0560 / BPL $D71F / JMP $EDD2`,
+                    // i.e. snap only — the fall velocity survives into state 0 (m1_longroute
+                    // f441: ROM $0550 = $E5-$40 = $A5 while the port cut to $AB, which leaves
+                    // $0460 six units low for the rest of the run and costs the Y carry at
+                    // f511). $CE08's landing SFX belongs to the state-1 handler, not $D711.
+                    if (cutOnLand)
+                    {
+                        CutVelocity(); // landing leaves the $F607 value (-0.33), capture-verified
+                        if (_wasAirborne) Sfx?.Invoke(0x10); // landing SFX ($CE08: SFX $10)
+                    }
                     LandedFlag = 1;
-                    if (_wasAirborne) Sfx?.Invoke(0x10); // landing SFX ($CE08: SFX $10)
                     return true;
                 }
                 return false;
@@ -1059,9 +1068,15 @@ namespace Darkwing.Core
         // ---------- State 0B/10: full airborne control ($D626) ----------
         private void AirborneFullState(byte held, byte pressed)
         {
+            // $D626 runs the vertical service FIRST ($D650 JSR $F5C9, $D653 JSR $EB52) and only
+            // reaches the steering at $D756/$D76E when that probe did not land ($D656 CMP #$03 →
+            // $D711 leaves without touching X). So the $F200 side probe samples the Y already
+            // moved this frame. The port had the order reversed, which cost one frame of wall
+            // stop: m1_longroute f438 Y=0374 → ROM X 01D4→01D6 (bottom point 037F leaves the
+            // solid row 0380), port 01D4 (it still probed from 0375, point 0380).
+            bool landed = VerticalPhysics(held, pressed, cutOnLand: false);
+            if (landed) { State = 0; AirSubState = 0; return; }   // $D711-$D715 ($56 → 0 too)
             AirborneControl(held);
-            bool landed = VerticalPhysics(held, pressed);
-            if (landed) { State = 0; AirSubState = 0; }
         }
 
         // ---------- State 1: air ($CD0E path) ----------

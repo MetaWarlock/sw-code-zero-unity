@@ -267,7 +267,7 @@
   `X=$01A4 Y=$039E state=$04` — прямое следствие отсутствующей ветки, а не физики.
 
 - **Хелпер `$F2AF` (банк 7) = `STA $40 / STY $41 / JSR $F539 / JSR $EB52 / (BCC skip) JSR
-  $EDD2`** — то есть «пробить тайлы и прилипнуть к полу»Always включает интеграцию скорости Y
+  $EDD2`** — то есть «пробить тайлы и прилипнуть к полу»всегда включает интеграцию скорости Y
   ДО замера; аргумент `#$40` кладётся в zero-page `$40` (номер набора точек), а не в `$0550`.
   Доказательство: `flat_bank7.txt:7080–7088` + `Temp/watch0e/writes.csv` (каждый кадр слота `0E`
   запись в `$051E` с PC `F54C` ⇒ STA внутри `$F539`, а на f335 вторая запись `B5 → B0` с PC
@@ -278,3 +278,19 @@
   `$D2C3` (нокаут `xv = 0,$80`, `$F2D7` вертикальная физика, `MoveHorizontal`, после-образ)
   НЕ выполняется — только `DEC $51`, а при `$51 == 0` возврат `$50 = $58`. Отсюда «замороженные»
   X/Y/velocити в золотом `gold_m1_longroute` на f331–f346 при `$50 = 06`.
+
+- **FACT (bank 7, verified by write monitors + disasm 2026-10-15): `$D626` runs the vertical
+  service BEFORE the horizontal steering, and its landing keeps the fall velocity.**
+  `$D62B/$D636` pick the probe set from the sign of `$0560` (rising → `$40=$09,$41=$02`;
+  falling → `$40=$06,$41=$02`), `$D650 JSR $F5C9` integrates + applies gravity, `$D653 JSR $EB52`
+  probes, and only then can control reach `$D756 → $D76E → JSR $F200/$F254` (`$F200` with
+  `A=#$00`, `$F254` with `A=#$02` after `LDY #$02` at `$D76E`). Consequences: (a) the side probe
+  samples the Y already moved this frame — with the old order the player stayed wall-stopped one
+  frame too long (m1_longroute f438, ROM `X 01D4→01D6` because the bottom sample point leaves the
+  solid row `$380`); (b) the landing branch `$D656 CMP #$03 → $D711` is `$50→$00`, `$56→$00`,
+  `LDA $0560 / BPL $D71F / JMP $EDD2`, i.e. snap WITHOUT `$F5FC`, unlike the generic `$F360`
+  landing — so `$0550/$0560` survive into state `$00` (f441: ROM `$0550 = $E5-$40 = $A5`) and the
+  `$0460` accumulator keeps that 6-unit difference for hundreds of frames (f511 Y carry).
+  Evidence: `Temp/watchpxv/writes.csv` (`$0530/$0540` written every frame by the `$CB41` prologue,
+  so velocity is not the variable), `Temp/watchpx/writes.csv` (`F510 → $04F0` alone at f438 vs
+  `F510 + ED94/ED9C` at f433–f437), `Temp/m1_longroute_trace.txt` FIELDS line.
