@@ -866,14 +866,24 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
 
 ## СЛЕДУЮЩИЙ ШАГ (после смены 15)
 
-1. **Рантайм-проверка уже собранного standalone (одна конкретная операция).** Билд есть и
-   упакован (`level0` + `Darkwing.Core/UnityApp/Audio.dll`), но «собралось» ≠ «рендерит».
-   Доказать рантайм: `unity command editor_play` на `DarkwingMain.unity` → дождаться пары кадров
-   → `unity command capture_game_view --save_path Temp/port_play.png` и проверить, что в кадре
-   есть игрок/HUD/тайл-фон (после Play — `editor_stop`, состояние Domain-режима не трогать).
-   Альтернатива/дополнение: запустить `Builds/DarkwingDuck/DarkwingDuck.exe` и забрать
-   `UserData/Player.log` на предмет exception. Только после этого ставить build-строку в
-   COVERAGE.csv как PASS; до неё — «built, runtime unverified».
+1. **Рантайм-проверка собранного standalone — ОТКРЫТО, результат НЕОДНОЗНАЧЕН.** Что уже
+   сделано и измерено (смена 15):
+   • headless-запуск `DarkwingDuck.exe -batchmode -nographics -logFile Temp/runtime_boot.log`
+     → чистый бут движка 6000.6.5f1 (Mono `ReloadAssembly`, PhysX backend, `UnloadTime`),
+     **0 exception/error**; но это доказывает только «игрок стартует», а не «рендерит»
+     (на уровне лога нет ни одной игры-строки, т.к. лаунчер ничего не логирует).
+   • Play-режим в редакторе (`open_scene DarkwingMain` → `editor_play` → `capture_game_view`
+     → `editor_stop`) вернул **полностью ЧЁРНЫЙ кадр** (`Assets/Temp/port_play.png`,
+     12152 байт, 1280×720). Двусмысленно: либо артефакт захвата (`source=screen` снимает
+    невидимую/неактивную вкладку Game), либо реальная дыра рендера в рантайме. НЕ считать
+     ни PASS, ни «порт не рисуется».
+   Развязать так: (а) повторить захват с `source=camera` на рантайм-камере порта (тогда
+   невидимая вкладка не мешает), (б) проверить, что в `DarkwingMain.unity` есть Camera и
+   что лаунчер создаёт display-объект до первого `Step`, (в) добавить в `DarkwingLauncher`
+   один `Debug.Log` с числом построенных кадров/размером текстуры — это отличит «игра крутится,
+   но камера не та» от «игра не крутится вовсе»; после правки ядра ОБЯЗАТЕЛЬНО `unity recompile`.
+   Только после визуального доказательства ставить build-строку в COVERAGE.csv как PASS;
+   сейчас честный статус — «built + boots, runtime render unverified».
 2. **G33-2 (одна конкретная операция):** 28-кадровый stall уже закрыт (w05 361/371, вход на
    f685). Остались 10 кадров f675–f684, где ROM показывает промежуточную фазу `$50=00
    X=00D4 Y=0005` с обходом курсора `$25`. Разбить `_worldReloadDelay` на трёхфазную нарезку
