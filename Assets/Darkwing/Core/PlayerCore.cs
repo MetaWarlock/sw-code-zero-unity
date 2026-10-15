@@ -576,7 +576,7 @@ namespace Darkwing.Core
                 case 0x02: CrouchState(held, pressed); break;
                 case 0x03: LookUpState(held, pressed); break;
                 case 0x06: HurtGroundState(held, pressed); break;
-                case 0x04: case 0x0D: HurtAirState(held); break;
+                case 0x04: case 0x0D: HurtAirState(held, pressed); break;
                 case 0x0B: case 0x10: AirborneFullState(held, pressed); break;
                 case 0x09: case 0x18: WorldEntryFallState(); break;
                 case 0x0C: HangState(held, pressed); break;
@@ -1211,9 +1211,15 @@ namespace Darkwing.Core
         /// and the three exits. Before it was ported the dispatcher's
         /// <c>default: break</c> parked the player forever at $50=$04 (live route probe,
         /// mission 1: X=$01A4 Y=$039E frozen from f2430 on).
-        /// Pad reads follow the rest of the port: $14/$16 are both taken from <c>held</c>.
+        /// Pad reads are per-instruction, not "both from held": the write-monitored pad
+        /// service ($C173/$C17C shift loop, then $C188/$C199/$C19B) leaves <c>$14</c> =
+        /// freshly pressed this frame (<c>current &amp; ~previous</c>) and <c>$16</c> =
+        /// held, so $D1F4/$D20E/$D21E read the edge byte and $D1D5/$D243 read the held byte.
+        /// Evidence: gold_m1_longroute holds A from f290 but $14 = $80 only at f290, and the
+        /// carried state $50=$04 survives the drag until f420 — the next press edge, where
+        /// $D21E lets the player leave the carrier into $50=$0B.
         /// </summary>
-        private void HurtAirState(byte held)
+        private void HurtAirState(byte held, byte pressed)
         {
             HurtAirLanding();                                       // $D1B8 JSR $D253
             var s0 = Objects?.Slots[0];
@@ -1221,26 +1227,26 @@ namespace Darkwing.Core
             // 2nd frame / 4th timer tick (that frame is what the ROM leaves unpoked).
             if (s0 != null && !(s0.AnimNumber == 0x0C && s0.AnimFrame == 0x02 && s0.AnimTimer == 0x04))
                 SetAnimPlayer(0x0B);                                // $D1D0-$D1D2
-            byte dir = (byte)(held & 0x03);                         // $D1D5-$D1D9
+            byte dir = (byte)(held & 0x03);                         // $D1D5-$D1D9 ($16)
             if (dir != 0)
             {
                 DirBits = dir;                                      // $D1DB
                 FacingRight = (dir & 1) != 0 ? (byte)0x40 : (byte)0x00;   // $D1DD-$D1F1
                 Flags = (byte)((Flags & ~0x40) | FacingRight);
             }
-            // $D1F4-$D20B: B held AND $CF3A's per-weapon max-active gate open → the $0C
-            // pose plus $CE39's weapon spawn. $CE39 itself is not wired into the world yet
-            // (nothing calls TryGetFireSpawn), so only the anim side of the branch runs.
-            if ((held & 0x40) != 0 && CanFire(ProjectileCount) && s0 != null && s0.AnimNumber != 0x0C)
+            // $D1F4-$D20B: B pressed this frame AND $CF3A's per-weapon max-active gate open
+            // → the $0C pose plus $CE39's weapon spawn. $CE39 itself is not wired into the
+            // world yet (nothing calls TryGetFireSpawn), so only the anim side runs.
+            if ((pressed & 0x40) != 0 && CanFire(ProjectileCount) && s0 != null && s0.AnimNumber != 0x0C)
                 SetAnimPlayer(0x0C);
-            if ((held & 0x04) != 0)                                 // $D20E-$D212: Down
+            if ((pressed & 0x04) != 0)                              // $D20E-$D212: Down ($14)
             {
                 State = 0;                                          // $D214-$D216
                 AirSubState = 0;                                    // $D218 ($56)
                 CutVelocity();                                      // $D21A JSR $F607
                 return;                                             // $D21D
             }
-            if ((held & 0x80) == 0) return;                         // $D21E-$D222: A released
+            if ((pressed & 0x80) == 0) return;                      // $D21E-$D222: A not pressed ($14)
             // $D224-$D22B: the same impulse the ground jump uses, so breaking out of a
             // grab costs nothing but the button press.
             YVelFrac = 0xE5; YVelInt = 4;

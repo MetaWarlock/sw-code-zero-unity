@@ -997,7 +997,7 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
    ROM-целостность перепроверена (2026-10-15): SHA-256 `1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00` совпадает.
 6. **M5-остаток:** сверка APU frame-counter с WAV.
 
-## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 17)
+## Шаг смены 17 (ВЫПОЛНЕН в смене 18) — G36 шаг 1: ROM-захват того же маршрута и diff
 
 1. **G36, шаг 1 — одна конкретная операция: снять ROM-захват того же маршрута и diff'ом
    разделить «политику ввода пробника» и баг порта.** `probe_run --load-state
@@ -1010,3 +1010,64 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
    объяснить зафиксированный откат X (`$019D → $0114 → $004B` при удержанном Right,
    `state=$00`) — кандидат `$DAB7-$DAC9` clamp. Прогон после `unity recompile`:
    `unity command run_script --file AgentScripts/PhysCompare.cs --entry PhysCompare.Suite --project-path "D:/Art/SW Code Zero Unity" --timeout 420`.
+
+## СМЕНА 18 — G36: длинный ROM-золотой + перенос `$90D3` (поведение `$11`) + pad-семантика
+
+- [x] **Доказано: блокиратор длинного маршрута — баг порта, а не ввод пробника.** Новый
+  золотой `Research/DarkwingDuck/reference/gold_m1_longroute` (2500 кадров, `probe_run
+  --load-state m1_standing.mss`, Right@2-2490 + удержания A по 26 кадров каждые 130 кадров;
+  аргументы зафиксированы в `request.json`, SHA-256 ROM сверен): ROM уходит за `X=$01CF`,
+  порт умирал там же. Харнесс `PhysCompare.M1LongRoute` (limit 620, `camera+enemies`).
+- [x] **Писатель `f294 $50=04` найден мониторингом записей** (`Tools/DarkwingResearch/
+  watch_writes.py` + `zero_page_watch.lua.in`, новый инструмент; лог `Temp/watch50/writes.csv`):
+  `STA $50` на `$912A` (Mesen в write-callback отдаёт PC СЛЕДУЮЩЕЙ инструкции ⇒ в логе `$912C`),
+  физический PRG-банк **6** — подтверждение CDL-кодовым логом `--save-cdl NesPrgRom=…`:
+  из смещений ≡ `$112C (mod $4000)` исполнен только `$1912C`. Хозяин — обработчик поведения
+  `$11`/`$16` `$90D3` (таблицы `$825F[17]=$D3`/`$82A7[17]=$90`), слот 15. Байты `$9145–$9262`
+  сверены побайтово с `extracted/raw/prg.bin` (листинг `Temp/beh11_tail*.txt`).
+- [x] **`$90D3–$9200` перенесены** в `EnemyBehaviors.Carrier` + `CarrierDrag`/`CarrierRisingGate`/
+  `CarrierGrab`/`CarrierStatusAdvance`/`CountCarrierKind`/`IntegrateYRideSlot`
+  (`Assets/Darkwing/Core/EnemyBehaviors.cs`). Исправлены: инверсные гейты `$9104`
+  (ROM выходит при `|ΔX| ≥ $0C`), отсутствовавший carry-тест `$F919` (`player $0510 ≥ slot $0510`),
+  пороги `$9130` (`|ΔY| ∈ [$0F,$14)` И `|ΔX| < $08` → общее тело `$911D`), `INC $04D0,X`
+  вместо `StateLow = 1`, drag-путь `$9145` (`$F539` по **слоту**, а не по игроку; игрок
+  `+0.5 px/кадр` отдельной арифметикой `$9154–$9162`; `DEC $0490,X`), освобождения `{0,1,2}`
+  при `{4,6}` = остаться и default → `$917C`, хвост `$9192` (счётчик `$9201/$9233` по `$0590`
+  + спавн дочернего слота `$04E0=$12`, anim `$5A`, `X = slot X + $18`, `$0510=$01`).
+  Доказательство: f294 порт == золотой (`$50=04`, SFX `$12`, `$048F 00→01`) ⇒ **294/620**.
+- [x] **Pad-семантика восстановлена write-монитором `$14–$16`** (`Temp/watch1416/writes.csv`,
+  писатели `$C173/$C17C` (сдвиг-цикл), `$C188/$C18E`, `$C199`, `$C19B`): в этой игре
+  **`$14` = «наято этим кадром»** (`current & ~previous`), **`$16` = «удерживается»**.
+  Золотой RAM: A удержана f290–f315, но `$14=80` только на f290 ⇒ выход по A в `$D1A4`
+  edge-триггерный. Дизасм `$D1A4–$D252` (`flat_bank7.txt`) задал адрес: `$D1D5`/`$D243` читают
+  `$16`, а `$D1F4` (B), `$D20E` (Down), `$D21E` (A) — `$14`. `PlayerCore.HurtAirState` получал
+  `held` для всех пяти ⇒ правка на `pressed` для трёх `$14`-гейтов.
+  Доказательство: **294 → 331/620**, f295 совпал (`$50=04`, anim `$0B`, vy `03,A5`, Y `039F`),
+  drag-окно f295–f331 совпадает с ROM.
+- [x] **Регрессия Suite прогнана после правок порта, расхождений нет** (сводка на диске
+  `Temp/suite_summary.txt`, прогоны `PhysCompare.Suite` + `PhysCompare.Hurt`/`PhysCompare.Door`
+  отдельно, т.к. `One()` печатает «no result» для своего формата вывода): walk 119/119,
+  jump 119/119, hook 298/298, traverse 599/599, contact 399/399, m1route 399/399,
+  worldseeds 133/133, door 15 полей × 98/98, hurt 14 полей игрока × 66/66 (X = 0/66 = G23),
+  w00/w01/w02/w04/w06 371/371, w03 362/371 (f664), w05 361/371 (f675),
+  longroute 331/620. `Suite` теперь пишет сводку в `Temp/suite_summary.txt` и включает
+  `longroute`; `Assets/Settings/UniversalRP.asset` (Editor сбросил
+  `m_Light2DKeptVariantCombos`) в этот коммит НЕ включён.
+
+## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 18)
+
+1. **G36 шаг 3 — одна конкретная операция: объяснить f331, где ROM ставит `$50=06`
+   (ground-hurt) и `$7C=$3B`, а порт остаётся в `$50=04`.** Это событие «касание врагом
+   во время переноса»: `trace_zp` по `gold_m1_longroute` f330→f331 даёт `Ohl`
+   `80,80,81,81 → 80,82,81,81` (слот, у которого статус +1) и `O7C=3B`; в порте ни `$50`,
+   ни `$7C` не меняются. Шаг: write-монитором (`watch_writes.py --addr 0x7C --addr 0x50`,
+   `--load-state m1_standing.mss --frames 340`, ввод как в `request.json`) найти PC писателя
+   f331, дизасмить его по банку (CDL), и перенести в порт (кандидаты: `$F9C2 TakeHit`
+   и лесенка `G22/G23`). Ожидание: 331 → ≥360/620. Прогон после `unity recompile`:
+   `unity command run_script --file AgentScripts/PhysCompare.cs --entry PhysCompare.M1LongRoute --project-path "D:/Art/SW Code Zero Unity" --timeout 420`,
+   затем регрессия `PhysCompare.Suite`. Регрессий по Suite быть не должно
+   (walk/jump 119/119, hook 298/298, contact 399/399, m1route 399/399, door 98/98,
+   worldseeds 133/133, w00/01/02/04/06 371/371, w03 362/371, w05 361/371).
+   Побочно зарегистрировать: `IntegrateYAdd` (`$F539`) в порту без `≥$F0` screen-коррекции
+   `$F54C–$F55A` — для carrier-слотов она теперь есть (`IntegrateYRideSlot`), для остальных
+   вызовов нет; сверить на следующем золотом, где слот доходит до `$F0`.

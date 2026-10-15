@@ -351,6 +351,19 @@ namespace Darkwing.Core
             s.YFrac = (byte)acc;
         }
 
+        /// <summary>$F539 exactly, including the $F54C-$F55A screen radix: the byte written
+        /// to $0510,X is kept under $F0, and the row byte $0520,X takes the carry out of
+        /// <c>ADC #$0F</c> — which is always 1 here, because the CMP only passes at ≥ $F0.</summary>
+        internal static void IntegrateYRideSlot(ObjectSystem.Slot s)
+        {
+            int frac = s.YFrac + s.YVelFrac;                                  // $F53C ADC $0550,X
+            s.YFrac = (byte)frac;
+            int lo = ((s.Y & 0xFF) + (s.YVelInt & 0xFF) + (frac >> 8)) & 0xFF; // $F546 ADC $0560,X
+            s.Y = (ushort)((s.Y & 0xFF00) | lo);                              // $F549 STA $0510,X
+            if (lo >= 0xF0)                                                   // $F54C CMP #$F0
+                s.Y = (ushort)((((s.Y >> 8) + 1) << 8) | ((lo + 0x0F + 1) & 0xFF)); // $F550-$F55A
+        }
+
         /// <summary>$F55E/$F581/$F5A4 Y -= ($0560.$0550) (up-positive velocity).</summary>
         internal static void IntegrateYSub(ObjectSystem.Slot s)
         {
@@ -1360,61 +1373,124 @@ namespace Darkwing.Core
             PipeHopTail(s, ctx);
         }
 
-        /// <summary>$90D3 behaviors 11/16: carried/grabbed enemy (state table $90CD:
-        /// 0 init → 1 rise ($0560=$0D... via table) → grabbed states). Player doc:
-        /// carried by the end-of-level enemy (anim $2D).</summary>
+        /// <summary>$90D3 behaviors 11/16: the carried/grabbed enemy controller.
+        /// Every gate below is transcribed from raw PRG bank 6 ($180D3-$18200), verified
+        /// byte-for-byte against `extracted/raw/prg.bin`; the port splits $04D0 into
+        /// `Active` (bit 7) + `StateLow`, so the ROM's `INC $04D0,X` is a StateLow
+        /// increment and `STA $04D0,#$80` is Active + StateLow 0.</summary>
         private static void Carrier(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            switch (s.StateLow & 0x0F)
+            if ((s.StateLow & 0x0F) == 0) // $90D3-$90ED init
             {
-                case 0: // $90D4 init
-                    s.YVelInt = (sbyte)s.StateLow; s.YVelFrac = (byte)0x80;
-                    s.T490 = 0x10;
-                    s.StateLow = 1;
-                    s.T4B0 = (byte)(s.Y & 0xFF); // $90EA latch Y low
-                    break;
-                case 1: // $90F0 rise + carry
-                    if (ctx.Player.State == 7) return;
-                    if (ctx.Player.State == 0x0B) { CarriedBounce(ctx, s); return; }
-                    if (s.T480 == 0)
-                    {
-                        if (DistX(ctx, s) < 0x0C) return;
-                        if (DistY(ctx, s) >= 0x14 || DistY(ctx, s) < 0x0C) return;
-                        if (ctx.Player.YVelInt < 0) { CarriedGrab(ctx, s); return; }
-                        if (ctx.Player.State == 4) return;
-                        ctx.Sfx?.Invoke(0x12);
-                        ctx.Player.State = 4;
-                        s.T480++;
-                    }
-                    return;
-                case 2: // $9145 carry flight
-                    if ((s.StateLow & 0x02) != 0)
-                    {
-                        if (s.T490 == 0) { CarrierRelease(ctx, s); return; }
-                        MoveY(s);
-                        s.T490--;
-                    }
-                    if (ctx.Player.State == 0 || ctx.Player.State == 1 ||
-                        ctx.Player.State == 2 || ctx.Player.State == 6)
-                        CarrierRelease(ctx, s);
-                    return;
+                s.YVelInt = 0; s.YVelFrac = 0x80;
+                s.T490 = 0x10;
+                s.StateLow = (byte)(s.StateLow + 1);   // $90E7 INC $04D0,X ($80 -> $81)
+                s.T4B0 = (byte)(s.Y & 0xFF);           // $90EA latch Y low
             }
+            // $90F0 — falls through in the same frame as the init.
+            if (ctx.Player.State == 7) return;                                // $90F3
+            if (ctx.Player.State == 0x0B) { CarrierRiseOrRelease(ctx, s); return; }  // $90F9 JMP $917C
+            if (s.T480 != 0) { CarrierDrag(ctx, s); return; }                 // $9101 BNE $9145
+            // $9104 trigger gate.
+            if (DistX(ctx, s) >= 0x0C) return;                                // $9108 BCS
+            if (!PlayerAtOrBelowSlot(ctx, s)) return;                         // $910E BCC ($F919 carry)
+            int dy = DistY(ctx, s);
+            if (dy >= 0x14) return;                                           // $9112
+            if (dy < 0x0C) return;                                            // $9116
+            if (ctx.Player.YVelInt < 0) { CarrierRisingGate(ctx, s); return; } // $9118 BMI $9130
+            CarrierGrab(ctx, s);                                              // $911D
         }
 
-        private static void CarriedGrab(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        /// <summary>$911D: the shared grab body — queues SFX $12, sets the carried state.</summary>
+        private static void CarrierGrab(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            if (DistY(ctx, s) >= 0x0F || DistY(ctx, s) < 0x0C || DistX(ctx, s) >= 8) return;
+            if (ctx.Player.State == 4) return;                                // $9121
+            ctx.Sfx?.Invoke(0x12);
             ctx.Player.State = 4;
+            s.T480++;                                                         // $912C INC $0480,X
         }
 
-        private static void CarriedBounce(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        /// <summary>$9130: gate used while the player rises — wider Y band, tight X band.</summary>
+        private static void CarrierRisingGate(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            if (ctx.Player.YVelInt < 0) { CarriedGrab(ctx, s); return; }
+            if (!PlayerAtOrBelowSlot(ctx, s)) return;                         // $9133 BCC
+            int dy = DistY(ctx, s);
+            if (dy < 0x0F) return;                                            // $9137
+            if (dy >= 0x14) return;                                           // $913B
+            if (DistX(ctx, s) >= 0x08) return;                                // $9141 BCS
+            CarrierGrab(ctx, s);                                              // $9143 → $911D
         }
+
+        /// <summary>$9145: while $0480,X is set the slot drags the player up half a pixel
+        /// per frame and watches the player state for release.</summary>
+        private static void CarrierDrag(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            if ((s.StateLow & 0x02) == 0)                                     // $9145 AND #$02
+            {
+                if (s.T490 == 0) { CarrierStatusAdvance(ctx, s); return; }    // $914C BEQ $9192
+                IntegrateYRideSlot(s);                                        // $9151 JSR $F539 (indexed: the SLOT, not the player)
+                int frac = ctx.Player.YFrac + 0x80;                           // $9154-$9162 player += 0.5 px
+                ctx.Player.YFrac = (byte)frac;
+                ctx.Player.Y = (ushort)((ctx.Player.Y & 0xFF00) |
+                    (byte)(((ctx.Player.Y & 0xFF) + (frac >> 8)) & 0xFF));
+                s.T490--;                                                     // $9165 DEC $0490,X
+            }
+            byte st = ctx.Player.State;
+            if (st == 0 || st == 1 || st == 2) { CarrierRelease(ctx, s); return; }  // $916A/$9172/$9176
+            if (st == 4 || st == 6) return;                                   // $916E/$917A
+            CarrierRiseOrRelease(ctx, s);                                     // $917C
+        }
+
+        /// <summary>$917C: rising keeps the grab window open; otherwise drop back.</summary>
+        private static void CarrierRiseOrRelease(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            if (ctx.Player.YVelInt < 0) { CarrierRisingGate(ctx, s); return; } // $917F BMI $9130
+            CarrierRelease(ctx, s);                                            // $9181
+        }
+
+        /// <summary>$9192: the drag counter expired — advance the status and, once the
+        /// $04A0 kind latch says so, release a behavior-$12 child at slot X + $18.</summary>
+        private static void CarrierStatusAdvance(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            s.StateLow = (byte)(s.StateLow + 1);                              // $9192 INC $04D0,X
+            bool eleven = s.Behavior == 0x11;
+            byte kind = eleven ? (byte)0x80 : (byte)0x81;                     // $9205 / $9237
+            s.T4A0 = CountCarrierKind(ctx, kind) == 1 ? (byte)0xFF : (byte)0x00;
+            if (s.T4A0 != 0) return;                                          // $91AA/$91A2 BNE $9191
+            int y = FindFreeSlot(ctx);                                        // $91AF JSR $FA4C
+            if (y < 0) return;                                                // $91B1 BCS
+            var t = ctx.Objects.Slots[y];
+            t.X = (ushort)((s.X + 0x18) & 0xFFFF);                            // $91B6-$91C8
+            t.Y = (ushort)((s.Y & 0xFF00) | 0x01);                            // $91CD/$91D3
+            SpawnInit(ctx, y, 0x5A);                                          // $91D8 JSR $FA84 #$5A
+            t.Behavior = 0x12;                                                // $91DD
+            t.BehaviorParam = 0x47;                                           // $91E2 $0570,Y
+            t.PlacementIndex = kind;                                          // $91F2 $0590,Y
+            t.YVelFrac = kind;                                                // $91F5 $0550,Y
+            t.Health = kind;                                                  // $91F8 $05A0,Y
+            t.YVelInt = 7;                                                    // $91FD $0560,Y
+        }
+
+        /// <summary>$9201/$9233: count active slots 15..5 whose $0590 equals the carrier kind
+        /// (the loop exits when Y reaches 4, so slot 4 is never tested).</summary>
+        private static int CountCarrierKind(EnemyDispatcher ctx, byte kind)
+        {
+            int count = 0;
+            for (int y = 0x0F; y >= 0x05; y--)
+            {
+                var slot = ctx.Objects.Slots[y];
+                if (slot.Active && slot.PlacementIndex == kind) count++;
+            }
+            return count;
+        }
+
+        /// <summary>$F919 carry out: player $0510 >= slot $0510 (unsigned byte compare).</summary>
+        private static bool PlayerAtOrBelowSlot(EnemyDispatcher ctx, ObjectSystem.Slot s) =>
+            (ctx.Player.Y & 0xFF) >= (s.Y & 0xFF);
 
         private static void CarrierRelease(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            s.Y = (ushort)((s.T4B0 | (s.Y & 0xFF00))); // $9181 restore latched Y
+            s.Y = (ushort)((s.Y & 0xFF00) | s.T4B0); // $9181 restore latched Y
             s.StateLow = 0x80; s.T480 = 0;
         }
 

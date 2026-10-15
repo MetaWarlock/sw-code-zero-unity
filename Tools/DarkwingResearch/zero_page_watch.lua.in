@@ -1,0 +1,66 @@
+-- Research instrumentation: which PC writes which RAM bytes?
+-- Substituted by watch_writes.py. Read-only (no memory writes, ROM untouched).
+local dir = __OUTPUT_DIR__
+local frame = 0
+local log = assert(io.open(dir .. "/writes.csv", "w"))
+local meta = assert(io.open(dir .. "/frames.csv", "w"))
+log:write("relative_frame,cpu_cycle,pc,addr,value\n")
+meta:write("relative_frame,ppu_frame,cpu_cycle,pc\n")
+
+local ranges = __RANGES__
+-- One context record per distinct writing PC: enough to resolve the physical
+-- bank and the instruction, without turning the log into a full trace.
+local seen = {}
+local ctxCount = 0
+local h = assert(io.open(dir .. "/context.csv", "w"))
+h:write("relative_frame,cpu_cycle,pc,prg_offset,value,disasm\n")
+
+local function prgOffset(pc)
+    local ok, s = pcall(function() return emu.getState()["cpu.bankNumbers"] end)
+    if ok and s and s.prg then
+        local window = pc >= 0xC000 and 3 or math.floor((pc - 0x8000) / 0x4000)
+        return s.prg[window + 1] * 0x4000 + (pc - 0x8000 - window * 0x4000)
+    end
+    return -1
+end
+
+local function asm(pc)
+    for _, f in ipairs({ "getAsmString", "disassemble" }) do
+        if emu[f] then
+            local ok, res = pcall(emu[f], pc)
+            if ok and type(res) == "string" then return (res:gsub(",", ";")) end
+        end
+    end
+    return ""
+end
+
+for _, r in ipairs(ranges) do
+    emu.addMemoryCallback(function(a, v)
+        local s = emu.getState()
+        local pc = s["cpu.pc"]
+        log:write(string.format("%d,%d,%04X,%04X,%02X\n", frame, s["cpu.cycleCount"], pc, a, v))
+        if not seen[pc] and ctxCount < 40 then
+            seen[pc] = true
+            ctxCount = ctxCount + 1
+            h:write(string.format("%d,%d,%04X,%04X,%02X,%s\n",
+                frame, s["cpu.cycleCount"], pc, prgOffset(pc), v, asm(pc)))
+            h:flush()
+        end
+    end, emu.callbackType.write, r.lo, r.hi)
+end
+
+local closed = false
+emu.addEventCallback(function()
+    frame = frame + 1
+    local s = emu.getState()
+    meta:write(string.format("%d,%d,%d,%04X\n", frame, s["ppu.frameCount"], s["cpu.cycleCount"], s["cpu.pc"]))
+    if frame % 25 == 0 then log:flush(); meta:flush() end
+    if frame == __FRAME_COUNT__ then
+        log:close(); meta:close(); h:close(); closed = true
+        emu.log("write watch complete: " .. frame .. " frames")
+    end
+end, emu.eventType.endFrame)
+emu.addEventCallback(function()
+    if closed then return end
+    log:close(); meta:close(); h:close()
+end, emu.eventType.scriptEnded)

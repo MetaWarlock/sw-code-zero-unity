@@ -9,7 +9,7 @@ public static class PhysCompare
     /// </summary>
     private static string Compare(string name, int frames, System.Func<int, byte> input,
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
-        int entryFreeze = 0, bool trace = false)
+        int entryFreeze = 0, bool trace = false, int limit = 0)
     {
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
@@ -154,7 +154,7 @@ public static class PhysCompare
         sb.Append($"[player_mechanics] {name}: ");
         int firstDiv = -1;
         int matchFrames = 0;
-        for (int f = seedFrame + 1; f < avail; f++)
+        for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
             var pad = Darkwing.Core.NesButtons.FromByte(input(f));
             game.Step(pad);
@@ -231,6 +231,7 @@ public static class PhysCompare
             }
         }
         int span = avail - 1 - seedFrame;
+        if (limit > 0) span = System.Math.Min(limit, span);
         sb.Append("FIELDS[");
         for (int i = 0; i < fieldNames.Length; i++)
             if (firstBad[i] >= 0)
@@ -287,6 +288,28 @@ public static class PhysCompare
     public static string Contact() => Compare("contact", 400,
         f => (byte)(f >= 10 && f <= 360 ? 0x01 : 0x00),
         camera: true, enemies: true);
+
+    /// <summary>
+    /// G36 step 1 — the long mission-1 route `gold_m1_longroute` (2500 frames from
+    /// m1_standing.mss, Right held f2-2490 plus 26-frame A-holds every 130 frames from f160,
+    /// NO B so the unported $CE39 weapon spawn cannot pollute the diff). The ROM on this exact
+    /// schedule clears the pylon, parks in state $04 at X=$01C1 for 126 frames, escapes it via
+    /// $D21E on the next A-hold ($50=$0B), reaches maxX=$0394 and only then dies in a pit
+    /// (f795, $50=$07) — so the live port's death at X=$01CF is a port divergence, not input
+    /// policy. First chunk compares f1..f620 (the run_script main-thread budget is 30 s).
+    /// </summary>
+    public static string M1LongRoute() => Compare("m1_longroute", 2500,
+        f =>
+        {
+            byte b = (f >= 2 && f <= 2490) ? (byte)0x01 : (byte)0x00;
+            for (int k = 0; k < 18; k++)
+            {
+                int s = 160 + 130 * k;
+                if (f >= s && f <= s + 25) b |= 0x80;
+            }
+            return b;
+        },
+        camera: true, enemies: true, trace: true, limit: 620);
 
     /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
@@ -588,6 +611,9 @@ public static class PhysCompare
             sb.Append(line.Substring(j + 3, 3)).Append("fall: ")
               .Append(line.Substring(i, System.Math.Min(58, line.Length - i))).Append('\n');
         }
+        // the run_script console truncates, so keep the scoreboard on disk too
+        One("longroute", M1LongRoute());
+        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/suite_summary.txt", sb.ToString());
         return sb.ToString();
     }
 
