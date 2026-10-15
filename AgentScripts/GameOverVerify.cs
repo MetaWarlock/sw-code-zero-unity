@@ -58,7 +58,7 @@ public static class GameOverVerify
         // --- boot to the mission: title → map → bubble 0 → briefing → A ---
         var flow = new GameFlow(game, decoder);
         StepFrames(game, flow, 1, Pad(0x10));
-        StepFrames(game, flow, 3, Pad(0));
+        StepFrames(game, flow, 200, Pad(0));                   // $C5F7 intro dialog, then the map
         StepFrames(game, flow, 1, Pad(0x40));                        // B: confirm bubble 0
         StepFrames(game, flow, GameFlow.PromptFrames + 5, Pad(0));
         StepFrames(game, flow, 1, Pad(0x80));                        // A: enter the world
@@ -142,7 +142,7 @@ public static class GameOverVerify
         // --- B = $D4B3 STAGE SELECT: city map, $62=07, $38 NOT incremented ---
         var flow2 = new GameFlow(game, decoder);
         StepFrames(game, flow2, 1, Pad(0x10));
-        StepFrames(game, flow2, 3, Pad(0));
+        StepFrames(game, flow2, 200, Pad(0));                      // $C5F7 intro dialog, then the map
         StepFrames(game, flow2, 1, Pad(0x40));
         StepFrames(game, flow2, GameFlow.PromptFrames + 5, Pad(0));
         StepFrames(game, flow2, 1, Pad(0x80));

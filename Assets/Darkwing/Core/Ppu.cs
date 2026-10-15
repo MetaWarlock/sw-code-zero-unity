@@ -81,14 +81,17 @@ namespace Darkwing.Core
             }
         }
 
-        /// <summary>Flush one VRAM queue buffer (original $C119 semantics).</summary>
+        /// <summary>Flush one VRAM queue buffer (original $C119 semantics): entries are
+        /// [addrHi][addrLo][run-1][tiles...], terminated by a byte with bit7 set. The count
+        /// field is one less than the run because $C131 `DEY / BPL` writes the first tile
+        /// before it tests, so $0362 = 0 uploads exactly one tile.</summary>
         public void FlushQueue(byte[] queue)
         {
             int x = 0;
             while (x < queue.Length && (queue[x] & 0x80) == 0)
             {
                 int addr = (queue[x] << 8) | queue[x + 1];
-                int count = queue[x + 2];
+                int count = queue[x + 2] + 1;
                 for (int i = 0; i < count; i++)
                     WriteVram(addr + i, queue[x + 3 + i]);
                 x += 3 + count;

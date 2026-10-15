@@ -43,6 +43,7 @@ public static class FlowVerify
         game.Bank7 = bank7;
         game.Bank3 = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/audio_bank3.bytes");
         game.Bank6 = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/prg_bank6.bytes");
+        game.Bank2 = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/prg_bank2.bytes");   // $AA00 dialog
         game.ObjectTypeTable = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/object_types.bytes");
         game.MapNametable = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/map_nametable.bytes");
         game.MapPalette = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/map_palette.bytes");
@@ -58,9 +59,11 @@ public static class FlowVerify
         sb.AppendLine($"after ctor: stage={flow.Stage} WorldRunning={game.WorldRunning} " +
                       $"mask=$ {game.Ppu.Mask:X2} (title black)");
 
-        // --- Title → MapCursor (Start $10) ---
+        // --- Title → Intro ($C5F7 dialog) → MapCursor (Start $10) ---
         Run(game, flow, 1, Pad(0x10));
-        Run(game, flow, 30, Pad(0));
+        sb.AppendLine($"after Start: stage={flow.Stage} $31={flow.World.CurrentWorld:X2} " +
+                      $"stream=${(game.Text != null ? game.Text.StreamId : -1):X2}");
+        UntilMap(game, flow, sb);
         sb.AppendLine($"stage={flow.Stage} $38={flow.World.CompletedCount} WorldRunning={game.WorldRunning} " +
                       $"mask=$ {game.Ppu.Mask:X2}");
         DumpPng(game, Root + "/Temp/flow_map.png", sb);
@@ -103,14 +106,36 @@ public static class FlowVerify
         flow.World.CompletedMask = 0x01;
         game.LoadWorld(decoder, 1);
         var flow2 = new GameFlow(game, decoder);
-        Run(game, flow2, 1, Pad(0x10));                       // Start -> map
-        Run(game, flow2, 2, Pad(0));
+        Run(game, flow2, 1, Pad(0x10));                       // Start -> $C5F7 intro
+        UntilMap(game, flow2, sb);
         Run(game, flow2, 1, Pad(0x40));                       // B -> confirm bubble 0
         Run(game, flow2, GameFlow.PromptFrames + 5, Pad(0));
         Run(game, flow2, 1, Pad(0x40));                       // B -> $F8=$FF, back to map
         sb.AppendLine($"B branch: stage={flow2.Stage} $F8=$ {flow2.World.LastOutcome:X2} " +
                       $"$38={flow2.World.CompletedCount} WorldRunning={game.WorldRunning}");
         return sb.ToString();
+    }
+
+    /// <summary>$C5F7 plays two $AA00 dialog streams ($0E then $0F, $C612 delays 30 frames
+    /// between them) before the map is built. Steps until the flow leaves Phase.Intro and
+    /// reports the nametable text held on the last Intro frame — the ROM leaves stream $0F's
+    /// three lines on screen ($AADD only clears when the NEXT stream starts).</summary>
+    /// <returns>frames spent inside Phase.Intro</returns>
+    private static int UntilMap(DarkwingGame game, GameFlow flow, StringBuilder sb)
+    {
+        var pad = Pad(0);
+        string last = null;
+        int f = 0;
+        for (; f < 600 && flow.Stage == GameFlow.Phase.Intro; f++)
+        {
+            var t = game.Text;
+            if (t != null)
+                last = $"$ {t.StreamId:X2}: \"{t.LineText(0, 29)}\" | \"{t.LineText(1, 29)}\" | \"{t.LineText(2, 29)}\"";
+            flow.Step(in pad);
+            game.Step(in pad);
+        }
+        sb?.AppendLine($"intro: {f} frames, exits to {flow.Stage}, last frame drew {last ?? "(no bank 2)"}");
+        return f;
     }
 
     private static void Run(DarkwingGame game, GameFlow flow, int frames, NesButtons pad)

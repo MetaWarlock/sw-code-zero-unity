@@ -32,6 +32,7 @@ namespace Darkwing.Core
         public enum Phase
         {
             Title,          // $C792: logo + PRESS START, waits for Start
+            Intro,          // $C5F7: night scene + the $AA00 dialog streams $0E and $0F
             MapCursor,      // $C9AC map loop, $A448 bubble chooser
             MapBriefing,    // $D46C tail + $9900 prompt (flight arrived at the node)
             Mission,        // $31 world running on the bank-5 engine
@@ -108,9 +109,15 @@ namespace Darkwing.Core
                     if ((pressed & 0x10) != 0)      // $C7AD waits for Start → $C7CF (game_flow.md §"TITLE")
                     {
                         _game.PlaySfx(DarkwingGame.SfxPause);
-                        SetPhase(Phase.MapCursor);
-                        _game.LoadMapScreen();
+                        SetPhase(Phase.Intro);                    // $C5F7: $31=$07 then the dialog
+                        World.CurrentWorld = 0x07;                // $C5FC LDA #$07 / STA $31
+                        _introStage = 0;
+                        _game.Text?.Start(0x0E);                  // $C608/$C60F: $62=$0E, JSR $AA00
                     }
+                    break;
+
+                case Phase.Intro:
+                    StepIntro(held);
                     break;
 
                 case Phase.MapCursor:
@@ -198,6 +205,51 @@ namespace Darkwing.Core
         }
 
         private byte _prevHeld;
+        private int _introStage;      // 0 = stream $0E, 1 = the $C612 delay, 2 = stream $0F
+        private int _introDelay;      // $C612 LDX #$1E / JSR $FEFF
+
+        /// <summary>$C5F7: the night-scene intro. The ROM drives the $AA00 coroutine twice —
+        /// $62=$0E at $C608, a 30-frame $FEFF delay at $C612, then $62=$0F at $C617 — and only
+        /// after that enters the $C61E flight loop ($F5A4/$F5DA in bank 5, which runs until the
+        /// sprite counter $0510 reaches $5C). That flight animation is not ported yet, so the
+        /// dialog hands straight over to the city map; the text itself is frame-exact (TextVerify).</summary>
+        private void StepIntro(byte held)
+        {
+            var text = _game.Text;
+            if (text == null)                       // the host did not wire prg_bank2
+            {
+                SetPhase(Phase.MapCursor);
+                _game.LoadMapScreen();
+                return;
+            }
+            switch (_introStage)
+            {
+                case 0:
+                    if (!text.Running) { _introStage = 1; _introDelay = 30; }
+                    else StepText(text, held);
+                    break;
+                case 1:
+                    if (--_introDelay > 0) break;
+                    _introStage = 2;
+                    text.Start(0x0F);               // $C617 LDA #$0F / STA $62, $C61B JSR $AA00
+                    break;
+                case 2:
+                    if (!text.Running)
+                    {
+                        SetPhase(Phase.MapCursor);  // $C61E flight loop: still open
+                        _game.LoadMapScreen();
+                    }
+                    else StepText(text, held);
+                    break;
+            }
+        }
+
+        /// <summary>One $AA00 frame: the typewriter plus its $AA77 SFX $3F enqueue through $F850.</summary>
+        private void StepText(TextEngine text, byte held)
+        {
+            text.Tick(PhaseFrames, held);
+            if (text.SfxToPlay != 0) _game.PlaySfx(text.SfxToPlay);
+        }
 
         /// <summary>$A416/$A448/$A452: A($80) alone is a no-op, Right($01)/Left($02)
         /// move the bubble cursor (SFX $22, $38==6 freezes the cursor but still beeps),

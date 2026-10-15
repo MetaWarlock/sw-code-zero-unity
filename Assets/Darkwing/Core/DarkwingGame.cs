@@ -332,6 +332,15 @@ namespace Darkwing.Core
         /// and palette (see WorldState.GameOver* for the addresses and their evidence).</summary>
         public byte[] Bank2 { get; set; }
 
+        /// <summary>The bank-2 dialog coroutine ($AA00) — streams $0E/$0F are the intro lines
+        /// Darkwing speaks over the night scene ($C606/$C617). Built on first use because the
+        /// host wires <see cref="Bank2"/> after construction; null while bank 2 is missing.</summary>
+        public TextEngine Text
+        {
+            get { if (Bank2 != null && _text == null) _text = new TextEngine(Ppu, Bank2); return _text; }
+        }
+        private TextEngine _text;
+
         /// <summary>CHR banks the map screen selects. $C8B5 drives them through the same
         /// $1A/$1B request bytes as LoadWorld, so these are set from the bank-7 descriptor
         /// for world 31 rather than hardcoded — see <see cref="LoadMapScreen"/>.</summary>
