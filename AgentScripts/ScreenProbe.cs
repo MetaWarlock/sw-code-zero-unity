@@ -240,8 +240,11 @@ public static class ScreenProbe
         int lastX = game.Player.X, stalledSince = 0, maxX = lastX;
         for (int f = 1; f <= frames; f++)
         {
-            byte bits = 0x01;                                   // hold Right
-            if (f % 30 < 4) bits |= 0x80;                       // jump every 30 frames
+            byte bits = 0x01;
+            // The room-0x02 pylon needs a HELD jump: 26 frames of A rise ~52 px onto the
+            // pylon top (gold_m1_fulljump); a short tap only hops 14 px and is impassable
+            // in the ROM too, so tapping here would measure the input, not the port.
+            if ((f / 26) % 5 == 0) bits |= 0x80;
             if (f % 200 < 6) bits |= 0x40;                      // fire/hook probe
             Step(bits);
 

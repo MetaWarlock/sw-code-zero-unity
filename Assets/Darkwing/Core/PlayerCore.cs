@@ -576,6 +576,7 @@ namespace Darkwing.Core
                 case 0x02: CrouchState(held, pressed); break;
                 case 0x03: LookUpState(held, pressed); break;
                 case 0x06: HurtGroundState(held, pressed); break;
+                case 0x04: case 0x0D: HurtAirState(held); break;
                 case 0x0B: case 0x10: AirborneFullState(held, pressed); break;
                 case 0x09: case 0x18: WorldEntryFallState(); break;
                 case 0x0C: HangState(held, pressed); break;
@@ -1199,6 +1200,73 @@ namespace Darkwing.Core
             g.Y = (ushort)(((Y & 0xFF00) | ((Y & 0xFF) - 0x14 & 0xFF)) & 0xFFFF);
             g.BehaviorParam = 0;                        // $0575
             g.Behavior = 0;                             // $04E5
+        }
+
+        // ---------- States 4 / $0D: hurt or carried in the air ($D1A4) ----------
+        /// <summary>
+        /// $D1A4, the handler the $CB5F/$CB75 state table points at for $50 = $04, $0D and
+        /// $0E (low bytes $CB63/$CB6C/$CB6D with high byte $D1). Enemy contact sites that
+        /// lift the player leave him in $04 with the carrier owning his position, so this
+        /// handler moves nothing itself — it only runs the landing check, the facing latch
+        /// and the three exits. Before it was ported the dispatcher's
+        /// <c>default: break</c> parked the player forever at $50=$04 (live route probe,
+        /// mission 1: X=$01A4 Y=$039E frozen from f2430 on).
+        /// Pad reads follow the rest of the port: $14/$16 are both taken from <c>held</c>.
+        /// </summary>
+        private void HurtAirState(byte held)
+        {
+            HurtAirLanding();                                       // $D1B8 JSR $D253
+            var s0 = Objects?.Slots[0];
+            // $D1BB-$D1D2: the struggle anim, kept only while the $0C hang pose is on its
+            // 2nd frame / 4th timer tick (that frame is what the ROM leaves unpoked).
+            if (s0 != null && !(s0.AnimNumber == 0x0C && s0.AnimFrame == 0x02 && s0.AnimTimer == 0x04))
+                SetAnimPlayer(0x0B);                                // $D1D0-$D1D2
+            byte dir = (byte)(held & 0x03);                         // $D1D5-$D1D9
+            if (dir != 0)
+            {
+                DirBits = dir;                                      // $D1DB
+                FacingRight = (dir & 1) != 0 ? (byte)0x40 : (byte)0x00;   // $D1DD-$D1F1
+                Flags = (byte)((Flags & ~0x40) | FacingRight);
+            }
+            // $D1F4-$D20B: B held AND $CF3A's per-weapon max-active gate open → the $0C
+            // pose plus $CE39's weapon spawn. $CE39 itself is not wired into the world yet
+            // (nothing calls TryGetFireSpawn), so only the anim side of the branch runs.
+            if ((held & 0x40) != 0 && CanFire(ProjectileCount) && s0 != null && s0.AnimNumber != 0x0C)
+                SetAnimPlayer(0x0C);
+            if ((held & 0x04) != 0)                                 // $D20E-$D212: Down
+            {
+                State = 0;                                          // $D214-$D216
+                AirSubState = 0;                                    // $D218 ($56)
+                CutVelocity();                                      // $D21A JSR $F607
+                return;                                             // $D21D
+            }
+            if ((held & 0x80) == 0) return;                         // $D21E-$D222: A released
+            // $D224-$D22B: the same impulse the ground jump uses, so breaking out of a
+            // grab costs nothing but the button press.
+            YVelFrac = 0xE5; YVelInt = 4;
+            if (State == 0x0D) State = 0x10;                        // $D22E-$D232, $D23F-$D241
+            else
+            {
+                if (Objects != null) Objects.Slots[1].T480 = 0;     // $D234-$D236 ($0481)
+                State = 0x0B;                                       // $D239-$D23B
+            }
+            SetAnimPlayer((held & 0x08) != 0 ? (byte)0x0D : (byte)0x11);   // $D243-$D24F
+        }
+
+        /// <summary>$D253-$D281: while airborne-hurt, a floor probe ($40=$06, $41=$02
+        /// through $EB52) that reports metatile type $04 with $7C clear lands the player
+        /// into the ground-hurt state ($50=$06, $51=$0F) — SFX $15, anim $09, $7C=$3C and
+        /// the $F9C2 ladder, i.e. the same fresh-hit sequence as the $CB93 damage tile.</summary>
+        private void HurtAirLanding()
+        {
+            _probeResult = ProbeFloor();                            // $D253-$D25B
+            if (_probeResult != 4 || InvulnFrames != 0) return;     // $D25E-$D267
+            State = 6;                                              // $D268-$D26A
+            StateTimer = 0x0F;                                      // $D26C-$D26E
+            Sfx?.Invoke(0x15);                                      // $D270-$D272
+            SetAnimPlayer(0x09);                                    // $D275-$D277
+            InvulnFrames = 0x3C;                                    // $D27A-$D27C
+            TakeHit(Objects != null ? Objects.Slots[0].AnimNumber : 0);   // $D27E, X=0 → $0420
         }
 
         // ---------- Level script hook ride ($DAFD) + vertical camera scroll ($DC6E/$DCC4) ----------
