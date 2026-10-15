@@ -694,6 +694,7 @@ namespace Darkwing.Core
             State = 0;                                      // $D556
             SetAnimPlayer(0x01);                            // $D558/$D55A
             ChrLatch0 = CardReleaseChr;                     // $D560-$D565 ($1A = $D589[$31])
+            HitLadder = 0;                                  // $D55D JSR $C850
         }
 
         // ---------- State 12: materialize walk-out ($D7F9 → $F539) ----------
@@ -1590,8 +1591,14 @@ namespace Darkwing.Core
 
         // ---------- Damage ($F9C2) ----------
         /// <summary>
-        /// Count of the $05B4/$05B8/$05B6/$05B2 sentinel chain ($82,$83,$83,$82):
-        /// 0..3 survived hits, the 4th kills. The hearts HUD reads the same chain.
+        /// Survived hits, 0..3 — the 4th kills. Physically this is the tile bytes of the
+        /// player's RAM metasprite template: $F9C2 walks $05B4 ($80→$82), $05B8 and $05B6
+        /// ($81→$83), then $05B2 ($80→$82) plus the death write; $C850 copies the 18-byte
+        /// $C8CF template back over $05B0…$05C1, which is a FULL HEAL. Its two call sites
+        /// are $D55D (mission intro-card release, so every mission starts at 3 hearts) and
+        /// $E40C (door load with $5D ≠ 0 — $E40A branches to $E43D when $5D is 0, so a
+        /// normal door load does NOT heal). Bank 6 $89D6 is the repair side: one rung per
+        /// call, full reset when the object's $0420 is $22 (not ported yet).
         /// </summary>
         public byte HitLadder; // 0-3 survived hits
         private bool _wasAirborne;
