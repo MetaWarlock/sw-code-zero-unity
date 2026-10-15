@@ -40,7 +40,7 @@
       "bytes": 1024,
       "source": "city-map screen nametable captured from live VRAM (probe_map frame 30; static bg = ui_map stream 1 + dialog text)"
     },
-    "map_palette.bin": {
+    "map_palette.bytes": {
       "bytes": 32,
       "source": "captured map-screen palette"
     },

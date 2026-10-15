@@ -19,6 +19,9 @@ public static class WireData
         launcher.Bank5Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank5.bytes");
         launcher.Bank3Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/audio_bank3.bytes");
         launcher.Bank6Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank6.bytes");
+        launcher.ObjectTypesData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/object_types.bytes");
+        launcher.MapNametableData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/map_nametable.bytes");
+        launcher.MapPaletteData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/map_palette.bytes");
         EditorUtility.SetDirty(launcher);
         var path = "Assets/Scenes/DarkwingMain.unity";
         EditorSceneManager_Save(path);

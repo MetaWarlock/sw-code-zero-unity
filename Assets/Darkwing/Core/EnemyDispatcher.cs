@@ -32,6 +32,8 @@ namespace Darkwing.Core
         public readonly PlayerCore Player;
         public ITileMap Tiles;                          // $EB52 probe backend
         public System.Action<int> Sfx;                  // $F84E/$F850 sites
+        /// <summary>$B315 fired: the host's end-of-mission event (GameFlow → $D838).</summary>
+        public System.Action BossDefeated;
 
         /// <summary>$0F — the projectile slot found by the last $FAAE scan.</summary>
         public int ProjSlot { get; private set; } = -1;

@@ -20,8 +20,8 @@ engine,gameplay_loop,main,disasm+trace,yes,no,n/a,$C9AC; camera $DA70; script by
 player,physics,all_states,disasm doc+golden,yes,partial,partial,PlayerCore.cs: states 0/1/2/3/6/0A/0B/0C/12 transcribed; walk/jump/hook/door/hurt goldens pass (hurt golden: 15/16 fields 66/66, X = 0/66 — see player,hurt row and G23)
 player,weapons,gas_gun,disasm doc,yes,no,no,projectile behaviors 1-4 documented; spawn max [3,1,2,1]
 player,damage,invuln_death,disasm doc,yes,no,no,4-hit ladder $05B2-$05B8; 60 invuln frames; states 7/8
-flow,screens,boot_to_title,probes,yes,no,no,docs/game_flow.md flow diagram
-flow,progression,missions,probes,yes,no,no,$38 tier/$69 bitmask/$F8 outcome
+flow,screens,boot_to_title,probes,yes,partial,partial,docs/game_flow.md flow diagram; GameFlow Phase.Title→MapCursor→MapBriefing→Mission→MissionCleared route runs headless (AgentScripts/FlowVerify.Check); title logo nametable and map cursor/HELP-bubble sprites still unported (GAPS G32), so the screens are not pixel-compared yet
+flow,progression,missions,probes,yes,yes,PARTIAL,$38 tier/$69 bitmask/$F8 outcome modelled from $A4B0/$A503/$A53A/$A1D0/$A5AB/$D95B; FlowVerify proves Start→cursor(Right/Left $A452)→confirm→prompt(A/Start $9947 enter, B $998C $F8=$FF)→mission→$B315 BossDefeat→$38+1/$69|=(1<<m); map CHR bank 26 proven by MapChrSearch vs probe_flow/final.png (58509/61440 px); missions 2-7 still lack ROM golden captures (G26)
 flow,pause,start,probes,yes,no,no,bank4 $8F00 status screen
 audio,engine,bank3_driver,disasm+probes,yes,no,no,docs/audio_engine.md: tick 1/frame, tempo $C7:$C8+=$C9:$CA
 audio,catalog,songs_sfx,static+live,yes,no,no,16 music (13 null) + 47 SFX; 110 trigger sites

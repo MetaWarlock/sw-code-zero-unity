@@ -60,8 +60,12 @@ namespace Darkwing.Core
             set
             {
                 _bank6 = value;
-                Enemies = value != null ? new EnemyDispatcher(value, Objects, Player) : null;
-                if (Enemies != null) Enemies.Tiles = TileMap;   // $EB52 probe backend
+                Enemies = value != null ? new EnemyDispatcher(value, Objects, Player, Audio) : null;
+                if (Enemies != null)
+                {
+                    Enemies.Tiles = TileMap;   // $EB52 probe backend
+                    Enemies.BossDefeated = () => MissionCleared = true;  // $B315 → $D838
+                }
             }
         }
         private byte[] _bank6;
@@ -162,6 +166,8 @@ namespace Darkwing.Core
             if (Player.SectionRingEvent != 0) PlaySfx(Player.SectionRingEvent);
             _sectionStage = 0;                              // $DD57 finishes inline (DE06 JMP $C254)
             SectionUsesInternalEngine = false;
+            MissionCleared = false;
+            WorldRunning = true;
         }
 
         /// <summary>$E388 section/door descriptor tables, read from bank 7.</summary>
@@ -216,9 +222,56 @@ namespace Darkwing.Core
             _sectionStage = 1;
         }
 
+        // ==================================================================
+        // M7 flow hooks: the city map owns the screen between missions
+        // ==================================================================
+
+        /// <summary>City-map VRAM exported from the ROM ($2000-$23FF, map_nametable.bytes)
+        /// and its 32-entry palette ($map_palette.bin, verified against a live PPU read).</summary>
+        public byte[] MapNametable { get; set; }
+        public byte[] MapPalette { get; set; }
+
+        /// <summary>CHR banks the map screen selects. $C8B5 drives them through the same
+        /// $1A/$1B request bytes as LoadWorld, so these are set from the bank-7 descriptor
+        /// for world 31 rather than hardcoded — see <see cref="LoadMapScreen"/>.</summary>
+        public byte MapChrBank0 { get; set; }
+        public byte MapChrBank1 { get; set; }
+
+        /// <summary>False while the title/map/briefing phase renders instead of the world
+        /// engine. <see cref="Step"/> still advances the frame counters and re-renders so
+        /// the host keeps presenting the nametable it was given.</summary>
+        public bool WorldRunning = true;
+
+        /// <summary>Raised by $B315 (<see cref="BossBehaviors.BossDefeat"/>) when the world's
+        /// boss dies — the end-of-mission event that <see cref="GameFlow"/> watches.</summary>
+        public bool MissionCleared;
+
+        /// <summary>Loads the city-map screen (the $C8B5 world-31 path: nametable + palette +
+        /// CHR from the descriptor, rendering re-enabled, scroll zeroed, world objects cleared).
+        /// The HELP-bubble/cursor sprites are composed by the bank-7 map task, still unported
+        /// (GAPS G27), so this paints the background layer only.</summary>
+        public void LoadMapScreen()
+        {
+            if (MapNametable != null)
+                System.Array.Copy(MapNametable, 0, Ppu.NametableRam, 0,
+                    System.Math.Min(MapNametable.Length, 0x800));
+            if (MapPalette != null)
+                for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = MapPalette[i];
+            Ppu.Chr0Bank = MapChrBank0;
+            Ppu.Chr1Bank = MapChrBank1;
+            Ppu.ScrollX = 0; Ppu.ScrollY = 0;
+            // The map's own sprites (HELP bubbles + cursor, composed by the bank-7 map task)
+            // are not ported yet, so park OAM at the NES hidden line instead of leaving the
+            // last world's objects on screen.
+            for (int i = 0; i < 256; i += 4) Ppu.Oam[i] = 0xFF;
+            Ppu.WriteRegister(0x2001, 0x1E);    // $C158: rendering back on for the map screen
+            Objects?.ClearForSectionLoad();
+            MissionCleared = false;
+            WorldRunning = false;
+        }
+
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
-        public const int SfxJump = 0x21;
-        public const int SfxLand = 0x10;
+        public const int SfxJump = 0x21;        public const int SfxLand = 0x10;
         public const int SfxHurt = 0x15;
         public const int SfxSelect = 0x1B;
         public const int SfxPause = 0x1C;
@@ -278,6 +331,16 @@ namespace Darkwing.Core
                 return;
             }
             byte held = pad1.ToByte();
+            if (!WorldRunning)
+            {
+                // The title/map/briefing phase is bank 7's own loop ($C792/$C9AC): no player
+                // dispatcher, no bank-6 task — just the NMI frame counter and the nametable
+                // the phase handler wrote into PPU memory.
+                FrameParity++;
+                Ppu.Render(Framebuffer);
+                Frame++;
+                return;
+            }
             byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
             _prevHeld = held;
             if (Paused)

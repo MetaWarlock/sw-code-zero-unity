@@ -3441,6 +3441,7 @@ namespace Darkwing.Core
             s.StateLow = 0; s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;
             ctx.Player.YVelFrac = 0xAB; ctx.Player.YVelInt = -1; // $F607 knockback
             if (ctx.Player.State != 6 && ctx.Player.State != 7) ctx.Player.State = 0x0F;
+            ctx.BossDefeated?.Invoke();
         }
 
         /// <summary>$B4BA child-object projectile check: weak projectiles (anim
