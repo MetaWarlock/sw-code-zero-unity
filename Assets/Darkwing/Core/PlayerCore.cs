@@ -922,10 +922,12 @@ namespace Darkwing.Core
                 // $0560/$0550 FF,AB → FF,6B).
                 ApplyGravity();
                 byte floor = ProbeFloor();
-                // $F4E4-$F4F3: any type >= 2 hits; type 1 (one-way) only when the fall is
-                // NOT slow — $F4EC skips the hit when the velocity byte is >= $FC (-4..-1).
-                bool oneWayLand = floor == 1 && (grounded || (byte)YVelInt < 0xFC);
-                if (floor == 2 || floor == 3 || floor >= 8 || oneWayLand)
+                // $F4E4-$F4F1 verbatim: `LDA $10 / CMP #$01 / BCC no-hit / BNE hit`, and only
+                // the equal-to-1 case falls through the velocity gate `LDA $0560,X / CMP #$FC /
+                // BCS no-hit`. So EVERY type >= 1 is support — the port previously tested
+                // `2,3,>=8` and walked the player straight through type-4 floors (w03 f582).
+                bool oneWayLand = grounded || (byte)YVelInt < 0xFC;
+                if (floor != 0 && (floor > 1 || oneWayLand))
                 {
                     // land ($F360): snap onto tile top ($EDB3)
                     int py = Y + 12;

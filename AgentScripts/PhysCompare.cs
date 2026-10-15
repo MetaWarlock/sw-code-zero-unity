@@ -152,6 +152,16 @@ public static class PhysCompare
             int gy = g[0x510] | (g[0x520] << 8);
             if (trace)
                 sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}\n");
+            if (trace && f == _tileDumpFrame && game.TileMap != null)
+            {
+                var tm = game.TileMap;
+                int py = p.Y + 12;
+                var strip = new System.Text.StringBuilder();
+                for (int c = 0; c < 16; c++) strip.Append(tm.TypeAt((p.X & 0xFF00) | (c * 16 + 8), py).ToString("X"));
+                var win = new System.Text.StringBuilder();
+                for (int b = 0x600; b < 0x680; b++) win.Append(g[b].ToString("X2"));
+                sb.Append($"DUMP cell={p.X >> 8} row={(py & 0xFF) >> 4} probes={tm.TypeAt(p.X - 11, py):X}{tm.TypeAt(p.X, py):X}{tm.TypeAt(p.X + 11, py):X} strip={strip} ROM600={win}\n");
+            }
             if (!trace && (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366)))
             {
                 string List(byte[] r)
@@ -396,6 +406,18 @@ public static class PhysCompare
     /// seeded on f328, the first frame that shows $50=$09, and only Y/vy/$0460/state are
     /// printed so the whole 700-frame capture still fits in the tool output.
     /// </summary>
+    /// <summary>Frame at which the trace also dumps the port's tile-type strip and the
+    /// ROM's own $0600 collision window (-1 = off; set by the *Dump entries below).</summary>
+    private static int _tileDumpFrame = -1;
+
+    /// <summary>w03 falls through the floor the ROM lands on at f582 (G30) — dump the probe data.</summary>
+    public static string FloorProbeDumpW03()
+    {
+        _tileDumpFrame = 582;
+        try { return TraceEntry(3, 578, 584); }
+        finally { _tileDumpFrame = -1; }
+    }
+
     public static string WorldEntryTrace() => TraceEntry(0, 505, 600);
 
     /// <summary>w03 starts falling on its own at f568 — the release-window trace for it.</summary>
@@ -409,6 +431,7 @@ public static class PhysCompare
         var keep = new System.Text.StringBuilder();
         foreach (var l in lines)
         {
+            if (l.StartsWith("DUMP")) { keep.Append(l).Append('\n'); continue; }
             int sp = l.IndexOf(' ');
             if (!l.StartsWith("f") || sp < 2) continue;
             if (!int.TryParse(l.Substring(1, sp - 1), out int f)) continue;
