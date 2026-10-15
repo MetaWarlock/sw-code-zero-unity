@@ -318,6 +318,8 @@ namespace Darkwing.Core
             CutVelocity();                                  // $F5FC → FF,AB ($DDF9)
             State = 0x09;                                   // $50 ($DDFE) — map entry, not the $12 exit
             _matLanded = 0;                                 // $04D0 & $0F ($DDF1 seeds $80)
+            _cardWait = 0;                                  // $9600 has not run yet
+            WorldId = w.Id;                                 // $31 (the $D589/$9636 index)
             // $DE03 JSR $FF06 (1 frame) + $DE06 JMP $C254 → $C270 palette fade: $0F=$30
             // stepped by $0D=$F0 with $0E=$04 yields per round ($C2A4-$C2B0) = 30/20/10/00,
             // exiting when $0F goes negative (it reads $F0 from the release frame on).
@@ -331,6 +333,12 @@ namespace Darkwing.Core
         /// 17 NMIs in the loader's tail, so no input, player or world service runs.
         /// </summary>
         public int EntryFreezeFrames;
+
+        /// <summary>$31 — the world id the current $DD57 load came from (missions 1-7 = 0-6).</summary>
+        public byte WorldId;
+
+        /// <summary>$D589[$31] — the CHR0 request ($1A) $D560 writes when the intro card releases.</summary>
+        public byte CardReleaseChr;
 
         public byte StageCursor;                            // $25
         public byte StageTarget;                            // $0F
@@ -421,6 +429,7 @@ namespace Darkwing.Core
         public void FinishSectionLoad()
         {
             _matLanded = 0;                                 // $04D0 = $80 ($E3F5): low nibble clear
+            _cardWait = 0;                                  // a $12 entry never runs $9600
             Flags = 0xD0;                                   // $0400 ($E3FA)
             if (Objects != null)
             {
@@ -578,7 +587,7 @@ namespace Darkwing.Core
         /// </summary>
         private void WorldEntryFallState()
         {
-            if (_matLanded != 0) return;                    // $D51C → $D53F, parked pending $9600
+            if (_matLanded != 0) { MissionIntroCard(); return; }   // $D51C → $D53F
             if ((byte)YVelInt < 0xFA)                       // $D51E/$D523
             {
                 IntegrateY();                               // $F4DB
@@ -600,6 +609,42 @@ namespace Darkwing.Core
             }
             IntegrateY();                                   // $D539
             ApplyGravity();                                 // $D53C
+        }
+
+        /// <summary>$FEFF counter used by the intro card: 0 = still spinning in the
+        /// $9605 loop, $3C..1 = the release wait. Cleared on release.</summary>
+        private byte _cardWait;
+
+        /// <summary>
+        /// $D53F/$9600 — the mission intro card, a coroutine: one $9605 iteration per
+        /// frame, each ending inside $F89A (audio service, bank 5, $8000 frame engine,
+        /// then $FF06 ProcessYield), so the engine tick of frame f is what the check at
+        /// the start of f+1 reads — the same order the port has (dispatcher before
+        /// RunWorldServices). $960C releases on $0410 == $11, or on the animation's last
+        /// frame $0410 == $0F once its timer reaches $04 ($9626); $9630 then spends
+        /// 60 yield-only frames ($FEFF with X = $3C — no engine tick, which is why
+        /// gold_w00 freezes $0410/$0430 at $0F/$04 for f453..f512) and $D554 releases
+        /// $50 = 0 with anim $01 on the 61st (gold_w00 f513).
+        /// </summary>
+        private void MissionIntroCard()
+        {
+            var s0 = Objects != null ? Objects.Slots[0] : null;
+            if (_cardWait == 0)
+            {
+                if (s0 == null) return;
+                if (s0.AnimNumber != 0x2B)                  // $9600/$9602 first visit
+                {
+                    SetAnimPlayer(0x2B);
+                    return;
+                }
+                if (s0.AnimFrame == 0x11 ||
+                    (s0.AnimFrame == 0x0F && s0.AnimTimer == 0x04)) _cardWait = 0x3C;   // $960C-$9632
+                return;
+            }
+            if (--_cardWait != 0) return;                   // $FEFF-$FF03
+            State = 0;                                      // $D556
+            SetAnimPlayer(0x01);                            // $D558/$D55A
+            ChrLatch0 = CardReleaseChr;                     // $D560-$D565 ($1A = $D589[$31])
         }
 
         // ---------- State 12: materialize walk-out ($D7F9 → $F539) ----------
@@ -705,6 +750,7 @@ namespace Darkwing.Core
             Flags = 0xD0;
             State = 0x12; // walk-out transition
             _matLanded = 0;
+            _cardWait = 0;
             DeathFlag = 0;
             InvulnFrames = 0;
         }

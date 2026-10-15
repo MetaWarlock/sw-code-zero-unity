@@ -140,6 +140,8 @@ namespace Darkwing.Core
             Player.TileMap = TileMap;
             _gridByte = null; _flagByte = null;             // ($32)/($34) now point at this world
             Player.ApplyWorldLoad(w);
+            if (Bank7 != null)
+                Player.CardReleaseChr = RoomDecoder.DescByte(Bank7, 0xD589, worldId);  // $D562 ($1A on $9600 release)
             WireWorldFeed();
             if (_data != null && _data.Levels != null && worldId < _data.Levels.Length)
                 CurrentLevel = _data.Levels[worldId];

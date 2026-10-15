@@ -151,7 +151,7 @@ public static class PhysCompare
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
             if (trace)
-                sb.Append($"f{f} P Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} | O Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2}\n");
+                sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}\n");
             if (!trace && (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366)))
             {
                 string List(byte[] r)
@@ -379,21 +379,31 @@ public static class PhysCompare
     {
         var sb = new System.Text.StringBuilder();
         for (int world = 0; world < 7; world++)
-            sb.Append(Compare($"w{world:X2}", 360, f => (byte)0,
+            sb.Append(Compare($"w{world:X2}", 360, WorldInput,
                 seedFrame: 328, camera: true, enemies: true, world: world, entryFreeze: 16)).Append('\n');
         return sb.ToString();
     }
+
+    /// <summary>All seven `gold_wNN/request.json` files carry the identical schedule
+    /// (`0:right@30-33 0:a@120-123 0:a@300-303 0:a@460-463 0:right@520-690`). Only the last
+    /// two fall inside the f328-seeded window; replaying them is mandatory — with zero input
+    /// the port stands still while the golden walks right from f520.</summary>
+    private static byte WorldInput(int f) =>
+        (byte)(((f >= 520 && f <= 690) ? 0x01 : 0) | ((f >= 460 && f <= 463) ? 0x80 : 0));
 
     /// <summary>
     /// Compact per-frame trace of the $D517 entry fall for one world (G28): the golden is
     /// seeded on f328, the first frame that shows $50=$09, and only Y/vy/$0460/state are
     /// printed so the whole 700-frame capture still fits in the tool output.
     /// </summary>
-    public static string WorldEntryTrace() => TraceEntry(0, 335, 385);
+    public static string WorldEntryTrace() => TraceEntry(0, 505, 600);
+
+    /// <summary>w03 starts falling on its own at f568 — the release-window trace for it.</summary>
+    public static string ReleaseTraceW03() => TraceEntry(3, 540, 600);
 
     public static string TraceEntry(int world, int from, int to)
     {
-        var full = Compare($"w{world:X2}", 360, f => (byte)0,
+        var full = Compare($"w{world:X2}", 360, WorldInput,
             seedFrame: 328, camera: true, enemies: true, world: world, entryFreeze: 16, trace: true);
         var lines = full.Split('\n');
         var keep = new System.Text.StringBuilder();
