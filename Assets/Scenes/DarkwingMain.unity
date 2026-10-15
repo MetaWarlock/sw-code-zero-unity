@@ -304,6 +304,7 @@ MonoBehaviour:
   Bank5Data: {fileID: 4900000, guid: bbe378033145aea479d6f5f778924d82, type: 3}
   Bank3Data: {fileID: 4900000, guid: a70eaf87f4e7f874187d994c77e5744f, type: 3}
   Bank6Data: {fileID: 4900000, guid: 61f57bd9af14eb444a9e02d6051ae1d9, type: 3}
+  Bank2Data: {fileID: 4900000, guid: a91fe0e23df8c064cb3bc2bf2ba4305e, type: 3}
   ObjectTypesData: {fileID: 4900000, guid: 7c838b6c6e86b9e49a3064c1344cd950, type: 3}
   MapNametableData: {fileID: 4900000, guid: 308fd2761f76e834b9830f3812440664, type: 3}
   MapPaletteData: {fileID: 4900000, guid: b9e66c8e14421aa4a9334830e6d1741b, type: 3}

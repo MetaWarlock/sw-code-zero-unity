@@ -27,6 +27,26 @@ namespace Darkwing.Core
         /// </summary>
         public const byte MapChrBank = 26;
 
+        // --- GAME OVER outro ($D46C) ---
+        // gold_gameover/chr_map.csv latches chr0=$1F / chr1=$19 from f265 (the frame the
+        // card's palette lands) to the end of the capture, and ppu_writes.csv f300 shows
+        // PPUCTRL $90 ($2000=144) — BG pattern table at $1000, so the font tiles
+        // ($DA + letter) come from 4K bank 25 while bank 31 covers the unused $0000 half.
+        public const byte GameOverChrBank0 = 31;
+        public const byte GameOverChrBank1 = 25;
+
+        /// <summary>Bank 2 ($8000-$BFFF) screen-record stream the outro draws ($D49A-$D4A4
+        /// switch in bank 2, run its task 3, then $8D00): [addrHi][addrLo][len] followed by
+        /// len nametable tiles, ended by a record with bit7 of addrHi set. Decoded from the
+        /// ROM: "GAME" @ $20AE, "OVER" @ $20EE, "CONTINUE     A BUTTON" @ $2165,
+        /// "STAGE SELECT B BUTTON" @ $21A5 — matching gold_gameover/frame_000300.png.</summary>
+        public const int GameOverRecords = 0x8789;
+
+        /// <summary>Bank 2 $8D00 copies these 16 bytes to $0300/$0320 and flags the $C059 NMI
+        /// palette upload ($18/$1B=$99): the card's BG palette, byte-identical to
+        /// gold_gameover/palette_frames.bin f264-f399.</summary>
+        public const int GameOverPalette = 0x8D15;
+
         public byte CurrentWorld;       // $31
         public byte CompletedCount;     // $38 (INC at $D95B per cleared mission; 0..6)
         public byte CompletedMask;      // $69 (bit N = mission N cleared, set at $A5D1+)

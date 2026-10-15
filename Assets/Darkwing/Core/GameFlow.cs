@@ -36,6 +36,7 @@ namespace Darkwing.Core
             MapBriefing,    // $D46C tail + $9900 prompt (flight arrived at the node)
             Mission,        // $31 world running on the bank-5 engine
             MissionCleared, // $D838/$D8D1: cutscene, INC $38, map rebuild
+            GameOver,       // $D46C card + $9900 prompt: A=$D4E9 continue, B=$D4B3 stage select
             Ending,         // $D838 with $31 >= 6: post-final cutscene
         }
 
@@ -140,6 +141,39 @@ namespace Darkwing.Core
                     // The gameplay frame itself is stepped by the host; the flow only
                     // watches for the end-of-mission events raised by the world engines.
                     if (_game.MissionCleared) SetPhase(Phase.MissionCleared);
+                    else if (_game.Player.GameOverRequest)     // $D41D with $64 != 0
+                    {
+                        _game.Player.GameOverRequest = false;
+                        SetPhase(Phase.GameOver);
+                        _game.LoadGameOverScreen();            // $D46C-$D4A9
+                        _game.PlaySound(0x0C);                   // $D4A7 LDA #$0C / JSR $F84E
+                    }
+                    break;
+
+                case Phase.GameOver:
+                    // $D4AC JSR $9900 then $D4AF LDA $F8 / BPL $D4E9. A/Start leave $F8 clear
+                    // and take $D4E9 = CONTINUE (reload world $31, which still holds the
+                    // mission id); B reaches $998C with $F8=$FF and falls into $D4B3 = STAGE
+                    // SELECT. gold_gameover_continue (A @ f300) ends on the mission,
+                    // gold_gameover_select (B @ f300) on the city map — both from the
+                    // original ROM, so the pairing is evidence, not a guess.
+                    if ((pressed & 0x90) != 0)                 // $D4E9
+                    {
+                        _game.PlaySound(0xF0);                   // $D4BE LDA #$F0 / JSR $F84E
+                        World.LastOutcome = 0x00;
+                        SetPhase(Phase.Mission);
+                        _game.LoadWorld(_decoder, World.CurrentWorld);   // $D4FD JSR $C8B5
+                        _game.PlayMusic(World.MusicId(World.CurrentWorld));
+                    }
+                    else if ((pressed & 0x40) != 0)            // $D4B3
+                    {
+                        World.LastOutcome = 0xFF;              // $998C STA $F8
+                        World.StreamId = 0x07;                 // $D4CD LDA #$07 / STA $62
+                        SetPhase(Phase.MapCursor);
+                        _game.LoadMapScreen();                 // $D95D → $C8B5 with the map built
+                        _game.PlaySound(0x01);                   // $D95F LDA #$01 / JSR $F84E
+                        _game.PlaySfx(0x23);                   // $D974 LDA #$23 / JSR $F850
+                    }
                     break;
 
                 case Phase.MissionCleared:

@@ -328,6 +328,9 @@ namespace Darkwing.Core
         /// and its 32-entry palette ($map_palette.bin, verified against a live PPU read).</summary>
         public byte[] MapNametable { get; set; }
         public byte[] MapPalette { get; set; }
+        /// <summary>PRG bank 2 mapped at $8000-$BFFF: the GAME OVER card's nametable records
+        /// and palette (see WorldState.GameOver* for the addresses and their evidence).</summary>
+        public byte[] Bank2 { get; set; }
 
         /// <summary>CHR banks the map screen selects. $C8B5 drives them through the same
         /// $1A/$1B request bytes as LoadWorld, so these are set from the bank-7 descriptor
@@ -368,6 +371,36 @@ namespace Darkwing.Core
             WorldRunning = false;
         }
 
+        /// <summary>
+        /// $D46C-$D4A9, the GAME OVER card the ROM draws after $D41D sees a non-zero
+        /// death counter: $C838 clears object RAM, $C1BA ($2000=&amp;$FE) clears the nametable
+        /// and attributes, bank 2 task 3 streams its screen records and $8D00 stages the
+        /// palette. Verified against gold_gameover/frame_000300.png + vram_frames.bin f300.
+        /// </summary>
+        public void LoadGameOverScreen()
+        {
+            Ppu.WriteRegister(0x2000, 0x90);   // $C1CA: NMI off, BG pattern table $1000
+            for (int i = 0; i < 0x400; i++) Ppu.NametableRam[i] = 0;   // $C1BA tiles + attrs
+            Ppu.Chr0Bank = WorldState.GameOverChrBank0;
+            Ppu.Chr1Bank = WorldState.GameOverChrBank1;
+            for (int i = 0; i < 16; i++)
+                Ppu.PaletteRam[i] = Bank2[WorldState.GameOverPalette - 0x8000 + i];
+            int p = WorldState.GameOverRecords - 0x8000;
+            while ((Bank2[p] & 0x80) == 0)
+            {
+                int addr = ((Bank2[p] << 8) | Bank2[p + 1]) & 0x0FFF;
+                int len = Bank2[p + 2];
+                for (int i = 0; i < len; i++) Ppu.NametableRam[addr + i] = Bank2[p + 3 + i];
+                p += 3 + len;
+            }
+            for (int i = 0; i < 256; i += 4) Ppu.Oam[i] = 0xFF;   // the card has no sprites
+            Ppu.ScrollX = 0; Ppu.ScrollY = 0;
+            Ppu.WriteRegister(0x2001, 0x1E);   // ppu_writes.csv f300: $2001=30 every frame
+            Objects?.ClearForSectionLoad();    // $D47C JSR $C838
+            MissionCleared = false;
+            WorldRunning = false;
+        }
+
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
         public const int SfxJump = 0x21;        public const int SfxLand = 0x10;
         public const int SfxHurt = 0x15;
@@ -378,6 +411,11 @@ namespace Darkwing.Core
 
         public void PlaySfx(int id) => Audio?.PlaySfx(id);
         public void PlayMusic(int id) => Audio?.PlayMusic(id);
+
+        /// <summary>The generic $F84E enqueue: the ROM passes the raw id through, so it covers
+        /// sound-table entries ($10-$3F), music-table ids ($00-$0F) and the special engine
+        /// tasks ($F0-$F7) — e.g. $D4BE's #$F0 stop and $D4A7's #$0C.</summary>
+        public void PlaySound(int id) => Audio?.Task(id);
 
         /// <summary>Load a room's nametable directly (test fixture path; the level
         /// loader normally streams it via the VRAM queue).</summary>

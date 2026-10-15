@@ -59,7 +59,7 @@ Special-casing inside `$DD57`: `$31 < 7` → world init (`$04D0=$80,$0400=$D0`, 
 ## 2. City map loop (`$C9AC` … `$CAD8`, bank 7)
 
 Per frame (`$C9AC`):
-1. `$65` bit7 set → spin at `$CAD8` (yield loop) until map rebuild done (rebuild = `$D46C`).
+1. `$65` bit7 set → spin at `$CAD8` (yield loop) until map rebuild done (rebuild = `$D95D`).
 2. **Select** (`$14&$20`) on states not in {7,9,$12,$15} and `$61!=0`: sound `$1B`; toggle `$98`;
    help-bubble select logic (`$5F`, `$05BE/$05C0`, `$54==2 → $CAE7`).
 3. **Start** (`$14&$10`) on enterable state: sound `$1C`; `bank4 $8F00` (save map objects to
@@ -78,7 +78,9 @@ Per frame (`$C9AC`):
 
 **Pending-load processor `$D41B`** (called from `$CAFC` tail `$CB3E`):
 - `$6D!=0` → `X=$6D&$1F; JSR $E388` (load map sub-scene: HELP text, interiors).
-- `$64!=0` → `$D46C` full **map rebuild** (fade, `$C838/$C92A`, palette `$20`, bank2 …).
+- `$64!=0` → `$D46C` **GAME OVER card** (fade `$C276`, `$C838/$C92A`, `$C1BA` clears `$2000-$23FF`,
+  bank2 task 3 draws its screen records, `$8D00` stages the palette, `$9900` waits for input).
+  Not a map rebuild — the map rebuild is `$D95D` (corrected 2026-10-16, evidence below).
 - else → `JSR $DD57` with `$31` = **world id 0-6 → mission load!** After load, `$1A=$D589[$31]`.
 
 ### Mission selection (bank 2 `$A400-$A607`, the YES/NO + tier chooser)
@@ -149,6 +151,38 @@ Outcome flag `$F8` (bit7 set = mission completed, cleared = died):
   checkpoint found; checkpoints = level start. Open question Q6 covers mid-level flags).
 - After return, master continues in map loop `$C9AC` (`$65=$FF` set by `$D8D0` path keeps the
   loop spinning while the map rebuilds).
+
+### GAME OVER card + prompt (`$D46C` … `$D4AF`, ported 2026-10-16)
+
+Reached from `$D41D` when the death counter `$64` is non-zero (`$CB27` INCs it only once both HUD
+energy columns `$05E6`/`$05E4` are empty). Sequence: `$C276` fade → `$FF06` yield → `$C14E` →
+`$97=$04` → `$C21E` → `$C838` (clear `$0400-$05FF`) → `$C92A` (38 B from `$C936` → `$05C2`) → zero
+`$FC/$FA/$FD/$FB/$95` → `$C1BA` with `A=$20` (`$2000 &= $FE`, clear 1024 tiles + 64 attributes at
+`$23C0`) → `$C21E` → `LDA #$02 JSR $FF55` (PRG bank 2) → `LDX #$03 JSR $8000` (draws bank-2 screen
+records) → `JSR $8D00` (stages palette) → `LDA #$0C JSR $F84E` → `JSR $9900` → `$D4AF LDA $F8`.
+
+Card content, read straight out of the ROM (`prg_bank2.bytes`, ROM SHA-256 `1271dce8…abb0a00`):
+records at `$8789`, `[addrHi][addrLo][len]` + tiles, ended by `addrHi & $80` —
+`$20AE`/`$20EE` = "GAME"/"OVER" (rows 5,7 col 14), `$2165`/`$21A5` = "CONTINUE     A BUTTON"/
+"STAGE SELECT B BUTTON" (rows 11,13 col 5); font tile = `$DA + letter − 'A'`, space `$03`;
+BG palette = 16 B at `$8D15`. MMC1 latches chr0=`$1F`/chr1=`$19` (gold `chr_map.csv`), `$2000=$90`
+⇒ BG pattern table `$1000` = 4K CHR bank 25. No sprites.
+
+Branch (both directions captured from the original ROM):
+- **A/Start** → `$F8` stays clear → `$D4E9` = **CONTINUE**: `$C235`, `$0400=0`, `$04D0=0`, `$6D=0`,
+  yield, `$97=$04`, `JSR $C8B5` (= bank `$04` + `JSR $DD57` on world `$31`, which still holds the
+  mission id) → same mission restarts; `$DD57` zeroes `$64` at `$DE4C`.
+- **B** → `$998C` sets `$F8=$FF` → falls into `$D4B3` = **STAGE SELECT**: `$C276`, yield, `$C14E`,
+  `LDA #$F0 JSR $F84E`, `$C1BA`, `$C95C`, `$62=$07`, `$97=$04`, `$C21E`, zero
+  `$5D/$54/$60/$61/$6B/$6D`, `JMP $D95D` (map rebuild; `INC $38` at `$D95B` is jumped past, so the
+  tier counter does NOT advance).
+- Evidence: `reference/gold_gameover` (600 f card), `gold_gameover_continue` (`0:a@300-303`,
+  ends in the mission), `gold_gameover_select` (`0:b@300-303`, ends on the city map). Port check:
+  `AgentScripts/GameOverVerify.cs` → nametable `$2000-$23FF` 0 mismatches vs `vram_frames.bin` f300,
+  BG palette 0/16, and the rendered frame is **0/61440 differing pixels** vs `frame_000300.png`.
+- Open: the exact `$9900` input gate (how many frames the card ignores pad) was not measured —
+  the capture seeded with A at f266 produced no `ram_frames.bin`, so the port accepts input from
+  the first GameOver frame (GAPS G27-note).
 
 ## 5. Progression & completion flags
 

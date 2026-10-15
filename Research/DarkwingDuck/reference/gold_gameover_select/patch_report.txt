@@ -1,0 +1,3 @@
+0050 <- 07  ok=true readback=07
+05E6 <- 70  ok=true readback=70
+05E4 <- 70  ok=true readback=70
