@@ -95,14 +95,28 @@ namespace Darkwing.Core
             XFrac = (byte)(acc & 0xFF);
         }
 
-        /// <summary>Integrate Y by the up-positive velocity: Y -= v ($F5A4 semantics).</summary>
+        /// <summary>
+        /// $F5A4 byte-exact: $0460 -= $0550, then $0510 -= $0560 WITH the fraction borrow, and
+        /// the borrow OUT of $0510 is discarded — the row byte $0520 only ever changes through
+        /// the 240 px wrap ($F5B7 CMP #$F0, $F5BB ADC #$0F with C=1 i.e. +$10, $F5C3 ADC #$00
+        /// carries that overflow into $0520). A plain 16.8 accumulator loses the wrap: at
+        /// gold_w05 f656 the ROM goes $00EE → $0105 (+$17, not +$7) and that extra row is what
+        /// makes $8057 see a row difference of 1 and kill the player on that exact frame.
+        /// </summary>
         private void IntegrateY()
         {
-            int v = (YVelInt << 8) | YVelFrac;          // signed 8.8, up-positive
-            int acc = (Y << 8) | YFrac;
-            acc -= v;                                   // original subtracts velocity
-            Y = (ushort)((acc >> 8) & 0xFFFF);
-            YFrac = (byte)(acc & 0xFF);
+            int frac = YFrac - YVelFrac;                            // $F5A4-$F5AB
+            bool borrow = frac < 0;
+            YFrac = (byte)frac;
+            int lo = ((Y & 0xFF) - (YVelInt & 0xFF) - (borrow ? 1 : 0)) & 0xFF;  // $F5AE-$F5B4
+            int hi = Y & 0xFF00;
+            if (lo >= 0xF0)
+            {
+                int wrapped = lo + 0x0F + 1;                        // $F5BB (C=1 from the CMP)
+                if ((wrapped & 0x100) != 0) hi = (hi + 0x100) & 0xFFFF;   // $F5C0-$F5C5
+                lo = wrapped & 0xFF;
+            }
+            Y = (ushort)(hi | lo);
         }
 
         /// <summary>Gravity $F5DA: velocity -= $99 (0.25 px/frame), then the fall saturates.</summary>
@@ -438,7 +452,8 @@ namespace Darkwing.Core
                 s0.AnimNumber = 0x2C;                       // $0420 ($FA78, A=$2C)
                 s0.AnimTimer = 0;                           // $0430
                 s0.AnimFrame = 0;                           // $0410
-                s0.Active = true;                           // $04D0=$80 ($E3F5)
+                s0.StateLow = 0x80;                         // $04D0=$80 ($E3F5) — arms the $CAFC gate
+                s0.Active = true;
             }
             CutVelocity();                                  // $F5FC → FF,AB ($E401)
             State = 0x12;                                   // $50 ($E406)
@@ -566,7 +581,7 @@ namespace Darkwing.Core
                 case 0x0C: HangState(held, pressed); break;
                 case 0x0A: ForcedHopState(); break;
                 case 0x07: DeathThroesState(); break;
-                case 0x08: DeathResolveState(); break;
+                case 0x08: ResolveDeath(); break;              // $08 → $D41B through the $CB5F/$CB75 table
                 case 0x12: MaterializeState(); break;
                 default: break; // remaining states wired during M4/M7
             }
@@ -714,7 +729,9 @@ namespace Darkwing.Core
             _deathPhase = 0;
             _deathTimer = 0x0F;
             YVelInt = 2; YVelFrac = 0;
-            DeathFlag = 1;
+            // $64 is NOT set here: the ROM only increments it at $CB39/$D407, i.e. when the
+            // spare energy column $05E4 is already empty. Setting it made every death take
+            // the $D41D game-over branch.
         }
 
         private void DeathThroesState()
@@ -737,25 +754,77 @@ namespace Darkwing.Core
             if (_deathPhase == 2 && _deathTimer >= 2) State = 8;
         }
 
-        // ---------- State 8: death resolve ($D41B) ----------
-        private void DeathResolveState()
+        // ---------- State 8 / death resolve ($D41B) ----------
+        /// <summary>Set when $D41B asks for the whole world ($DD57); consumed by DarkwingGame.</summary>
+        public bool WorldReloadRequest;
+        /// <summary>Set when $D453 asks for the checkpoint section ($E388 with $6D &amp; $1F).</summary>
+        public byte SectionReloadRequest = 0xFF;
+        /// <summary>Set when $64 is non-zero, i.e. the $D46C game-over outro (M7).</summary>
+        public bool GameOverRequest;
+
+        /// <summary>
+        /// $CB01-$CB3E, the service $CAFC runs while slot 0's $04D0 bit 7 is CLEAR. It drains
+        /// the two HUD energy columns ($05E6, then $05E4 once $05E6 is empty; when $05E4 is
+        /// empty too it increments the death counter $64) and then TAIL-CALLS the resolve
+        /// through $CB3B/$CB3E. $D41B ends in JMP $FF06, never RTS-ing back to $CA43, so the
+        /// rest of the world frame ($DA70 scroll, $8090 spawner, $E388 door, $8000 anim) is
+        /// skipped — that, not any special meaning of state $07, is what freezes gold_w05
+        /// f656-$04D0=00 → f674 while $50 stays $07 and only $05E6 counts down.
+        /// ($CB03's $9B gate selects the SFX $25 variant; $9B is not modelled yet.)
+        /// </summary>
+        public void DeathService()
         {
-            // Checkpoint respawn (doc §6): reload section at $6D, spawn pose at
-            // X=$30, Y=$06, state $12 walk-out. Game-over path ($64) is M7.
-            RespawnAtCheckpoint();
+            if ((sbyte)PendingMissionFlag >= 0)            // $CB0A: negative $66 skips the drain
+            {
+                if (EnergyColRight == 0x70)                 // $CB11
+                    SecondEnergyColumn();
+                else
+                {
+                    EnergyColRight--;                       // $CB15
+                    if (EnergyColRight == 0x6F)             // $CB1B
+                        SecondEnergyColumn();
+                }
+            }
+            ResolveDeath();
         }
 
-        public void RespawnAtCheckpoint()
+        private void SecondEnergyColumn()
         {
-            X = 0x30; XFrac = 0;
-            Y = 0x06; YFrac = 0;
-            YVelInt = 0; YVelFrac = 0;
-            Flags = 0xD0;
-            State = 0x12; // walk-out transition
-            _matLanded = 0;
-            _cardWait = 0;
-            DeathFlag = 0;
-            InvulnFrames = 0;
+            if (EnergyColLeft == 0x70) DeathFlag++;                          // $CB27 → $CB39
+            else { EnergyColLeft--; EnergyColRight = 0x79; }                 // $CB29/$CB32
+        }
+
+        /// <summary>
+        /// $D41B: three-way fork on the death counter ($64) and the checkpoint id ($6D).
+        /// w05 f656 has both zero, so it takes the full $DD57 world reload.
+        /// </summary>
+        public void ResolveDeath()
+        {
+            if (DeathFlag != 0)                              // $D41D
+            {
+                GameOverRequest = true;                      // $D46C outro is M7 (not ported)
+                return;
+            }
+            if (CheckpointId != 0)                           // $D421 → $D453
+            {
+                if ((sbyte)PendingMissionFlag < 0)           // $D453-$D45B
+                {
+                    PendingMissionFlag = 0;
+                    ContinueCount = 0;
+                }
+                else ContinueCount++;                        // $D45F
+                SectionReloadRequest = (byte)(CheckpointId & 0x1F);   // $D461-$D466
+                return;
+            }
+            Objects?.ClearForSectionLoad();                  // $D42A JSR $C235
+            if (Objects != null)
+            {
+                Objects.Slots[0].StateLow = 0;               // $D42F STA $04D0
+                Objects.Slots[0].Active = false;
+            }
+            Flags = 0;                                       // $D432 STA $0400
+            WeaponActive = 0;                                // $D435 STA $53
+            WorldReloadRequest = true;                       // $D437 JSR $DD57
         }
 
         // ---------- State 0: ground ($CB8B) ----------

@@ -116,8 +116,12 @@ namespace Darkwing.Core
             // is exactly 1 (the original PLA/CMP #$01), otherwise it stays active.
             s.Flags = (byte)(s.Flags & 0x7F);
             if (yHi != 1) return;
-            _player.InvulnFrames = 0;                                    // $7C = 0
-            _player.State = 7;                                           // pit death
+            _player.InvulnFrames = 0;                                    // $806A STA $7C
+            _player.State = 7;                                           // $806E STA $50
+            // $8072 D0 00 / BNE $807A: the last LDA wrote #$07, so Z is always clear and
+            // slot 0 ALWAYS takes the deactivate payload. Without it $CAFC would keep
+            // running the state machine instead of the death service $CB01.
+            Deactivate(s);
         }
 
         /// <summary>$807A-$808A: the four writes a culled slot gets. Behavior ($04E0)

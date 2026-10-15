@@ -128,6 +128,17 @@ namespace Darkwing.Core
 
         private SectionTable _sections;
 
+        private RoomDecoder _worldDecoder;                  // $DD57 arguments, kept for the death reload
+        private byte _worldId;
+
+        /// <summary>Records the $DD57 arguments so the death resolve ($D437) can re-run the
+        /// world load. The scene normally reaches this through <see cref="LoadWorld"/>.</summary>
+        public void SetWorldSource(RoomDecoder decoder, byte worldId)
+        {
+            _worldDecoder = decoder;
+            _worldId = worldId;
+        }
+
         /// <summary>
         /// $DD57 world load with $31 = world id (0-6 = missions 1-7, reached from the city
         /// map bubbles; ids 7+ are dialog scenes). Builds the tile map from the descriptor,
@@ -138,6 +149,7 @@ namespace Darkwing.Core
         /// </summary>
         public void LoadWorld(RoomDecoder decoder, byte worldId)
         {
+            _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
             var w = decoder.GetWorld(worldId);
             Objects?.ClearForSectionLoad();                 // $DD57 → $C248 → $C235
             TileMap = new LevelTileMap(decoder, Ppu, w);
@@ -354,7 +366,32 @@ namespace Darkwing.Core
                 Paused = true; // TODO(M7): SFX $1C + status screen via VRAM queue
                 return;
             }
-            Player.Step(held, pressed);
+            // $CA40 JSR $CAFC: the state table $CB41 runs only while slot 0's $04D0 bit 7 is
+            // set. Once the death payload clears it ($807A from the cull, $D42F from the
+            // resolve), the frame belongs to the death service $CB01 → resolve $D41B, whose
+            // tail is JMP $FF06 — it never RTS-es back to $CA43, so the scroll service,
+            // spawner, door check and animation engine are all skipped for that frame.
+            if ((Objects.Slots[0].StateLow & 0x80) != 0)
+            {
+                Player.Step(held, pressed);
+            }
+            else
+            {
+                Player.DeathService();                      // $CB01-$CB3E, tail-calls $D41B
+                if (Player.WorldReloadRequest && _worldDecoder != null)
+                {
+                    Player.WorldReloadRequest = false;      // $D437 JSR $DD57
+                    LoadWorld(_worldDecoder, _worldId);
+                }
+                else if (Player.SectionReloadRequest != 0xFF)
+                {
+                    byte id = Player.SectionReloadRequest;  // $D466 JSR $E388
+                    Player.SectionReloadRequest = 0xFF;
+                    LoadSection(id);
+                }
+                Frame++;
+                return;
+            }
             // Hook/peg column service ($DAFD) is the fallthrough of the scroll service
             // ($CA59 → $DA70), so both run AFTER the player state machine: the grab frame
             // leaves $0460/$0510 untouched (gold_hook_ride2 f1) and the ride's row wrap only
@@ -403,7 +440,10 @@ namespace Darkwing.Core
             // player-state driven (walk/fire/... in PlayerCore) and advanced
             // by the dispatcher each frame.
             var s0 = Objects.Slots[0];
-            s0.Active = true;
+            // $CAFC gates on $04D0 bit 7 and the loader re-arms it, so the slot must mirror
+            // the real flag byte. Force-arming it every frame kept the player composited
+            // through the death freeze (gold_w05 f656 has $04D0 = $00).
+            s0.Active = (s0.StateLow & 0x80) != 0;
             s0.Flags = (byte)(0x90 | (Player.FacingRight != 0 ? 0x40 : 0) | 0x10);
             s0.X = Player.X;
             s0.Y = Player.Y;

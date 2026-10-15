@@ -29,6 +29,7 @@ public static class PhysCompare
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"));
         var world0 = decoder.GetWorld((byte)world);
+        game.SetWorldSource(decoder, (byte)world);   // $D437 re-runs $DD57 from the death resolve
         var map = new Darkwing.Core.LevelTileMap(decoder, game.Ppu, world0);
         map.StreamColumns(0);
         game.Player.TileMap = map;
@@ -130,6 +131,10 @@ public static class PhysCompare
         }
         else
         {
+            // $CAFC gates the whole player state machine on $04D0 bit 7, so the light seed
+            // path has to carry the real flag byte too (ROM keeps $04D0=$81 while walking).
+            s0.StateLow = ram0[0x4D0];
+            s0.Active = (ram0[0x4D0] & 0x80) != 0;
             s0.AnimNumber = ram0[0x420];
             s0.AnimFrame = ram0[0x410];
             s0.AnimTimer = ram0[0x430];
@@ -179,7 +184,8 @@ public static class PhysCompare
                 for (int b = 0x600; b < 0x680; b++) win.Append(g[b].ToString("X2"));
                 sb.Append($"DUMP cell={p.X >> 8} row={(py & 0xFF) >> 4} probes={tm.TypeAt(p.X - 11, py):X}{tm.TypeAt(p.X, py):X}{tm.TypeAt(p.X + 11, py):X} strip={strip} ROM600={win}\n");
             }
-            if (!trace && (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366)))
+            if (!trace && (f - seedFrame <= 2 || (f >= 238 && f <= 262) || (f >= 348 && f <= 366)
+                           || (f >= _enemyDumpLo && f <= _enemyDumpHi)))
             {
                 byte[] pr = PackedSlots(game);
                 // Spawner diagnostic ($80DA/$80FC): the placement records near the
@@ -204,7 +210,7 @@ public static class PhysCompare
                     if (!game.Objects.Slots[sl].Active) { freeSlot = sl; break; }
                 sp.Append($" mask0={game.Objects.SpawnedBitmask(0):X2} free={freeSlot:X2}]");
                 sb.Append(sp.ToString() + " ");
-                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={s0.XFrac:X2} at={s0.AnimTimer:X2} pf={s0.AnimFrame:X2} dur={(game.Oam == null ? 0 : game.Oam.AnimHeader(s0.AnimNumber).duration)} iv={p.InvulnFrames:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} at={g[0x430]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} ivc={g[0x7C]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {ListSlots(pr)}| {ListSlots(g)}] ");
+                sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={s0.XFrac:X2} at={s0.AnimTimer:X2} pf={s0.AnimFrame:X2} dur={(game.Oam == null ? 0 : game.Oam.AnimHeader(s0.AnimNumber).duration)} iv={p.InvulnFrames:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} d0={pr[0x4D0]:X2} e6={p.EnergyColRight:X2} e4={p.EnergyColLeft:X2} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} at={g[0x430]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} ivc={g[0x7C]:X2} d0={g[0x4D0]:X2} e6={g[0x5E6]:X2} e4={g[0x5E4]:X2} 64={g[0x64]:X2} 6d={g[0x6D]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {ListSlots(pr)}| {ListSlots(g)}] ");
             }
             bool pos = p.X == gx && p.Y == gy;
             bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
@@ -415,6 +421,17 @@ public static class PhysCompare
     }
 
     public static string WorldEntryTrace() => TraceEntry(0, 505, 600);
+
+    /// <summary>G33: the pit-death frame of gold_w05 (f656, $04D0→$00) plus the death-service
+    /// frames that follow, where $D41B tail-calls $DD57 and the world stays frozen. Prints
+    /// $04D0/$05E6/$05E4/$64/$6D on both sides.</summary>
+    public static string DeathTraceW05()
+    {
+        _enemyDumpLo = 648; _enemyDumpHi = 700;
+        try { return Compare("w05", 360, WorldInput, seedFrame: 328,
+                             camera: true, enemies: true, world: 5, entryFreeze: 16); }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
 
     /// <summary>Inclusive frame window for the per-frame active-slot dump inside the trace
     /// (-1 disables it). G31 needs the w03 landing frames 575-592.</summary>
@@ -797,6 +814,7 @@ public static class PhysCompare
         slot0.AnimFrame = ram0[0x410];
         slot0.AnimTimer = ram0[0x430];
         slot0.Active = (ram0[0x4D0] & 0x80) != 0;
+        slot0.StateLow = ram0[0x4D0];   // $CAFC gates on this byte, so the seed must carry it
         map.LoadRow(p.ScrollYRow);
         map.StreamColumns(p.ScrollX);
         // $E388 was already entered 16 frames earlier (the capture's $5B patch at f5), so
