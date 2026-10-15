@@ -79,6 +79,10 @@ namespace Darkwing.Core
         public System.Action<int> Sfx; // wired to DarkwingGame.PlaySfx ($F84E/$F850 sites)
         private readonly byte[] _probeX = new byte[64];  // $06 = last sampled X ($EB52 uses $06/$07)
         private readonly byte[] _probeY = new byte[64];
+        // $43 = the class of the MIDDLE probe point of the last $EB52 scan ($EB6B
+        // STA $0042,Y with $41 counting 2,1,0, so $44/$43/$42 = probes $40/$40+1/$40+2).
+        // The rising branch's $F44C/$F461 gates read it; every probe service rewrites it.
+        private byte _probe43;
 
         public PlayerCore(ITileMap tiles) { _tiles = tiles; }
 
@@ -156,7 +160,9 @@ namespace Darkwing.Core
             {
                 int px = (short)(X + FloorXOff[i]);
                 int py = (short)(Y + 12);
-                result = Math.Max(result, TileTypeAt(px, py));
+                byte t = TileTypeAt(px, py);
+                if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
+                result = Math.Max(result, t);
             }
             HandleProbeType(result);   // $EBAA tail
             return result;
@@ -169,7 +175,9 @@ namespace Darkwing.Core
             {
                 int px = (short)(X + FloorXOff[i]);
                 int py = (short)(Y - 12);
-                result = Math.Max(result, TileTypeAt(px, py));
+                byte t = TileTypeAt(px, py);
+                if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
+                result = Math.Max(result, t);
             }
             HandleProbeType(result);   // $EBAA tail
             return result;
@@ -183,7 +191,9 @@ namespace Darkwing.Core
             {
                 int px = (short)(X + dx);
                 int py = (short)(Y + SideYOff[i]);
-                result = Math.Max(result, TileTypeAt(px, py));
+                byte t = TileTypeAt(px, py);
+                if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
+                result = Math.Max(result, t);
             }
             HandleProbeType(result);   // $EBAA tail
             return result;
@@ -1006,7 +1016,10 @@ namespace Darkwing.Core
 
         // ---------- Shared vertical physics ($CD0E/$F2D7) ----------
         /// <returns>true if landed this frame</returns>
-        private bool VerticalPhysics(byte held, byte pressed, bool cutOnLand = true)
+        /// <param name="f2d7">true when the caller runs the full service $F2D7 (states 0/1/2/6,
+        /// $CD63/$D0C8/$D31C/$D9A3); false for $F5C9 (state $0B/$10, $D650), which is integrate
+        /// plus gravity ONLY — it never reaches the $F430 ceiling dispatch.</param>
+        private bool VerticalPhysics(byte held, byte pressed, bool cutOnLand = true, bool f2d7 = true)
         {
             // $EB62: $10 is cleared on entry to every probe service, so a hazard code only
             // ever survives the frame whose $EB52 actually sampled it. Without the reset a
@@ -1074,15 +1087,67 @@ namespace Darkwing.Core
                 ApplyGravity();
                 byte ceil = ProbeCeiling();
                 _probeResult = ceil;                // $10 as left by $EB52
-                if (ceil >= 3)
+                // $F430-$F471: the rising branch dispatches on the CLASS found above the head,
+                // not on "solid or not". Type 0 leaves the frame untouched; types 1 and 2 react
+                // only when the middle sample ($43, directly over the head) is itself non-zero;
+                // type 4 is the damage tile; 3/5/6/7 (and the hook type 8) just snap and fall.
+                if (!f2d7)
                 {
-                    CutVelocity(); // head bonk: cancel ascent ($F607)
-                    int py = Y - 12;
-                    py = py + (0x0F - (py & 0x0F)) + 1 + 12;
-                    Y = (ushort)(py & 0xFFFF);
+                    // $F5C9 integrates and adds gravity, nothing else — the $D653/$D656 probe
+                    // that follows it in state $0B/$10 is still unported (G39), so the pre-
+                    // existing "solid only" snap keeps the passing goldens unchanged here.
+                    if (ceil >= 3) { SnapBelowHead(); CutVelocity(); }
+                    return false;
                 }
-                return false;
+                switch (ceil)
+                {
+                    case 0:                                        // $F434 BCC $F474
+                        return false;
+                    case 1:                                        // $F43C → $F45B
+                        if (State == 4) { CutVelocity(); return false; }   // $F45F BEQ $F471
+                        if (_probe43 == 0) return false;                   // $F463 BEQ $F474
+                        State = 4;                                         // $F467
+                        Sfx?.Invoke(0x12);                                 // $F46B
+                        SnapBelowHead();                                   // $F46E ($EDB3)
+                        CutVelocity();                                     // $F471 ($F5FC)
+                        return false;
+                    case 2:                                        // $F444 → $F446
+                        if (State == 0x0D) { CutVelocity(); return false; }  // $F44A BEQ $F471
+                        if (_probe43 == 0) return false;                   // $F44E BEQ $F474
+                        Sfx?.Invoke(0x12);                                 // $F452
+                        State = 0x0D;                                      // $F457
+                        CutVelocity();                                     // $F459 → $F471, no snap
+                        return false;
+                    case 4:                                        // $F440 → $F476
+                        if (InvulnFrames != 0)
+                        {
+                            SnapBelowHead();                                   // $F494 ($EDB3)
+                            CutVelocity();                                     // $F497 ($F5FC)
+                            return false;
+                        }
+                        State = 6;                                         // $F47C
+                        StateTimer = 0x0F;                                 // $F480
+                        SetAnimPlayer(0x09);                               // $F484 ($FA78)
+                        Sfx?.Invoke(0x15);                                 // $F489
+                        InvulnFrames = 0x3C;                               // $F48E
+                        TakeHit(Objects != null ? Objects.Slots[0].AnimNumber : 0);  // $F490 ($F9C2)
+                        return false;
+                    default:                                       // 3, 5, 6, 7, 8 → $F46E
+                        SnapBelowHead();
+                        CutVelocity();
+                        return false;
+                }
             }
+        }
+
+        /// <summary>$EDB3 as the rising branch uses it: push the body down onto the top of
+        /// the tile row the head sample ($07 = Y - 12) last touched, i.e. Y += 16 - (sample
+        /// and $0F). Capture-verified: m1_longroute f1081 head bonk Y 034A → 034C.</summary>
+        private void SnapBelowHead()
+        {
+            int py = Y - 12;
+            py = py + (0x0F - (py & 0x0F)) + 1 + 12;
+            Y = (ushort)(py & 0xFFFF);
         }
 
         // ---------- State 0B/10: full airborne control ($D626) ----------
@@ -1094,7 +1159,7 @@ namespace Darkwing.Core
             // moved this frame. The port had the order reversed, which cost one frame of wall
             // stop: m1_longroute f438 Y=0374 → ROM X 01D4→01D6 (bottom point 037F leaves the
             // solid row 0380), port 01D4 (it still probed from 0375, point 0380).
-            bool landed = VerticalPhysics(held, pressed, cutOnLand: false);
+            bool landed = VerticalPhysics(held, pressed, cutOnLand: false, f2d7: false);
             if (landed) { State = 0; AirSubState = 0; return; }   // $D711-$D715 ($56 → 0 too)
             AirborneControl(held);
         }
