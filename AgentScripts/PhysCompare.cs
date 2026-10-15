@@ -166,7 +166,7 @@ public static class PhysCompare
             if (trace)
             {
                 sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}");
-                sb.Append($" H pre={p.PrevState:X2} ho={p.HurtOrigin:X2} p10={p.ProbeResultForTest:X2} iv={p.InvulnFrames:X2} hl={p.HitLadder:X2} | O10={g[0x10]:X2} O7C={g[0x7C]:X2} Ohl={g[0x5B2]:X2},{g[0x5B4]:X2},{g[0x5B6]:X2},{g[0x5B8]:X2}");
+                sb.Append($" H pre={p.PrevState:X2} ho={p.HurtOrigin:X2} p10={p.ProbeResultForTest:X2} iv={p.InvulnFrames:X2} hl={p.HitLadder:X2} | O10={g[0x10]:X2} O7C={g[0x7C]:X2} Ohl={g[0x5B2]:X2},{g[0x5B4]:X2},{g[0x5B6]:X2},{g[0x5B8]:X2}{DeathDiag(g, s0)}");
                 var hs = game.Enemies != null && game.Enemies.HurtSlot >= 0
                     ? game.Objects.Slots[game.Enemies.HurtSlot] : null;
                 if (hs != null)
@@ -498,6 +498,55 @@ public static class PhysCompare
             pr[0x550 + sl] = s.YVelFrac; pr[0x560 + sl] = (byte)s.YVelInt;
         }
         return pr;
+    }
+
+    /// <summary>G36 step 6: ROM slot-0 death counters vs the port's, so the $D353 timer
+    /// ladder is read from the capture instead of guessed.</summary>
+    private static string DeathDiag(byte[] r, Darkwing.Core.ObjectSystem.Slot s0) =>
+        $" | D d0={r[0x4D0]:X2}/{s0.StateLow:X2} t80={r[0x480]:X2}/{s0.T480:X2} t90={r[0x490]:X2}/{s0.T490:X2} f00={r[0x400]:X2}/{s0.Flags:X2} hp={r[0x5A0]:X2}/{s0.Health:X2}";
+
+    /// <summary>G36 step 6: read the m1_longroute golden directly — death-window zero-page
+    /// bytes plus the full changed-address list per frame, so the f814 respawn transition is
+    /// identified by RAM address instead of guessed.</summary>
+    public static string DeathDump()
+    {
+        string root = "D:/Art/SW Code Zero Unity";
+        byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_m1_longroute/ram_frames.bin");
+        int avail = ramAll.Length / 2048;
+        var sb = new System.Text.StringBuilder();
+        int[] keys = { 0x14, 0x31, 0x3B, 0x50, 0x51, 0x53, 0x54, 0x58, 0x5F, 0x60, 0x61, 0x64, 0x65, 0x66,
+                       0x6D, 0x7C, 0x97, 0x98, 0x9A, 0x9B,
+                       0x400, 0x420, 0x4D0, 0x4F0, 0x500, 0x510, 0x520, 0x5E4, 0x5E6, 0xFA, 0xFB, 0xFC, 0xFD };
+        sb.Append($"frames={avail}\nKEYS\n");
+        for (int f = 770; f <= 830 && f < avail; f++)
+        {
+            byte[] g = new byte[2048];
+            System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
+            sb.Append($"f{f} ");
+            for (int k = 0; k < keys.Length; k++) sb.Append($"{keys[k]:X3}={g[keys[k]]:X2} ");
+            sb.Append('\n');
+        }
+        sb.Append("\nDIFFS\n");
+        byte[] prev = new byte[2048];
+        System.Array.Copy(ramAll, 770 * 2048, prev, 0, 2048);
+        for (int f = 771; f <= 830 && f < avail; f++)
+        {
+            byte[] g = new byte[2048];
+            System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
+            sb.Append($"f{f}: ");
+            int shown = 0;
+            for (int a = 0; a < 2048; a++)
+            {
+                if (g[a] == prev[a]) continue;
+                if (a > 0xFF && !(a >= 0x400 && a <= 0x600)) continue;
+                sb.Append($"{a:X3}={prev[a]:X2}>{g[a]:X2} ");
+                if (++shown >= 90) { sb.Append("+more "); break; }
+            }
+            sb.Append('\n');
+            System.Array.Copy(g, prev, 2048);
+        }
+        File.WriteAllText(root + "/Temp/death_dump.txt", sb.ToString());
+        return $"death_dump.txt written: {sb.Length} chars";
     }
 
     private static string ListSlots(byte[] r, bool inactive = false)
