@@ -316,3 +316,16 @@
 - Комманды: `unity recompile` exit=0 → `PhysCompare.M1LongRoute` → `PhysCompare.Suite`
   (`Temp/suite_summary.txt`, `Temp/m1_longroute_trace.txt`).
 - СЛЕДУЮЩИЙ ШАГ: w05 f683 (единственный кадр, boundary/arm `$23`), затем G39 (`$D653/$D656`→`$F5C9`).
+
+## Смена 28b (2026-10-15) — M6: диспетчер банка 6 стал ROM frame-exact
+- `PhysCompare.Compare` дополнен scored-сравнением слотов врага (`scoreEnemies`): на каждом кадре
+  каждый ROM-активный слот сверяется по X/Y/state/behavior/anim. `Compare` получил параметр
+  `goldenDir` (для probe-захватов без префикса `gold_`).
+- Новая точка входа `PhysCompare.EnemyVerify` — прогон `probe_enemy_verify` (600 кадров БЕЗ ввода,
+  из сейв-стейта `m1_gameplay`; игрок простаивает, все bank-6 враги движутся сами).
+- **Результат: ENEMIES MATCH 599/599** — активные слоты 01–04 (вкл. walker) побайтово совпадают с
+  ROM. Это повышает M6 dispatch с «doc trajectories» на «frame-exact vs ROM» (для этого захвата;
+  область — 1 multi-enemy прогон, НЕ все 47 поведений/7 боссов).
+- Регрессий нет: longroute 2499/2499, contact 399/399, m1route 399/399 (Suite после правки харнесса).
+  Игрок в этом захвате расходится с f1 — ожидаемо: сейв-стейт пойман в прыжке под зажатой A, а
+  прогон без ввода не его цель (враги здесь от игрока не зависят).

@@ -640,3 +640,10 @@ AgentScripts/PhysCompare.cs --entry PhysCompare.Door`.
    `$9B`/`$24` не смоделированы; G36.2 (`$D1AE` вход в `$0E`), G36.3 (`$CE39` спавн снаряда); M7
    (текст/диалоги, карта города `$38/$69/$F8`, game-over/continue/финал `$D838`); M8 (свежий
    standalone-билд + ACCEPTANCE_REPORT).
+
+- [x] **M6 frame-exact (смена 28b): scored-сравнение слотов врага + `PhysCompare.EnemyVerify`.**
+      Добавлен per-frame скоринг bank-6 слотов (`scoreEnemies`/`goldenDir` в `Compare`) и прогон
+      `probe_enemy_verify` (600 кадров, без ввода, сейв-стейт `m1_gameplay`). **ENEMIES MATCH 599/599**
+      (слоты 01–04 вкл. walker побайтово по X/Y/state/beh/anim). Доказательство:
+      `run_script --entry PhysCompare.EnemyVerify` → `Temp/enemy_verify_trace.txt`; Suite без регрессий.
+      Область: 1 multi-enemy ROM-захват, не все поведения/боссы.

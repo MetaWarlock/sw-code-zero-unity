@@ -9,12 +9,14 @@ public static class PhysCompare
     /// </summary>
     private static string Compare(string name, int frames, System.Func<int, byte> input,
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
-        int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false)
+        int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false,
+        string goldenDir = null, bool scoreEnemies = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
-        byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
+        string gdir = goldenDir ?? $"gold_{name}";
+        byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/ram_frames.bin");
         byte[] palAll = palette
-            ? File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/palette_frames.bin")
+            ? File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/palette_frames.bin")
             : System.Array.Empty<byte>();
         int avail = ramAll.Length / 2048;
 
@@ -170,6 +172,11 @@ public static class PhysCompare
         sb.Append($"[player_mechanics] {name}: ");
         int firstDiv = -1;
         int matchFrames = 0;
+        // Enemy-trajectory scoring: per frame, every slot that the ROM has active must match
+        // the port on position (X/Y) and identity/state (behavior, state, anim). This is what
+        // proves the bank-6 dispatcher deterministically, not just the player.
+        int enemyMatchFrames = 0, enemyTotalFrames = 0, enemyFirstDiv = -1, enemyDivSlot = -1;
+        string enemyDivField = null; int enemyDivPort = 0, enemyDivOrig = 0;
         int palOk = 0, palFirstBad = -1, winOk = 0, winTotal = 0;   // $3F00 byte compare
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
@@ -179,6 +186,35 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
+            if (scoreEnemies)
+            {
+                byte[] prE = PackedSlots(game);
+                enemyTotalFrames++;
+                bool allMatch = true;
+                for (int s = 1; s < 16 && allMatch; s++)
+                {
+                    if ((g[0x4D0 + s] & 0x80) == 0) continue;   // only slots the ROM has active
+                    int[] addrs = { 0x4F0, 0x500, 0x4D0, 0x4E0, 0x420 };
+                    string[] fld = { "Xlo", "Xhi", "state", "beh", "anim" };
+                    for (int k = 0; k < addrs.Length; k++)
+                        if (prE[addrs[k] + s] != g[addrs[k] + s])
+                        {
+                            allMatch = false;
+                            if (enemyFirstDiv < 0)
+                            { enemyFirstDiv = f; enemyDivSlot = s; enemyDivField = fld[k];
+                              enemyDivPort = prE[addrs[k] + s]; enemyDivOrig = g[addrs[k] + s]; }
+                            break;
+                        }
+                    if (!allMatch) break;
+                    if (((prE[0x4D0 + s] & 0x80) == 0))   // ROM active but port culled it
+                    {
+                        allMatch = false;
+                        if (enemyFirstDiv < 0) { enemyFirstDiv = f; enemyDivSlot = s; enemyDivField = "active"; enemyDivPort = 0; enemyDivOrig = 1; }
+                        break;
+                    }
+                }
+                if (allMatch) enemyMatchFrames++;
+            }
             if (trace)
             {
                 sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} p95={game.FrameParity:X2}/{g[0x95]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}");
@@ -273,6 +309,10 @@ public static class PhysCompare
         sb.Append(firstDiv < 0
             ? $"RESULT: MATCH {matchFrames}/{span} frames (seed {seedFrame})"
             : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{span}, seed {seedFrame})");
+        if (scoreEnemies)
+            sb.Append(enemyFirstDiv < 0
+                ? $"  ENEMIES: MATCH {enemyMatchFrames}/{enemyTotalFrames} frames (all ROM-active slots X/Y/state/beh/anim identical)"
+                : $"  ENEMIES: first divergence f{enemyFirstDiv} slot {enemyDivSlot:X2} field {enemyDivField} port={enemyDivPort:X2} orig={enemyDivOrig:X2} (matched {enemyMatchFrames}/{enemyTotalFrames})");
         File.WriteAllText(root + $"/Temp/{name}_trace.txt", sb.ToString());   // the run_script console truncates
         return sb.ToString();
     }
@@ -354,6 +394,15 @@ public static class PhysCompare
     /// (first ridden frame) and every later frame is compared, camera state included.
     /// </summary>
     public static string Hook() => Compare("hook_ride2", 300, f => 0, seedFrame: 1, camera: true);
+
+    /// <summary>
+    /// M6 enemy-dispatcher determinism: replays the probe_enemy_verify capture (600 frames from
+    /// the mid-mission m1_gameplay save state, NO input — the player idles and every bank-6 enemy
+    /// self-moves). Every slot the ROM holds active must match the port on X/Y/state/behavior/anim,
+    /// so this scores the dispatcher trajectory rather than only printing it.
+    /// </summary>
+    public static string EnemyVerify() => Compare("enemy_verify", 600, f => 0,
+        enemies: true, world: 0, goldenDir: "probe_enemy_verify", scoreEnemies: true, trace: false);
 
     /// <summary>Per-world `$DD57` seeding. `reference/gold_wNN` are original-ROM captures made
     /// with `probe_run --patch 31=NN --patch-frame 314`: $31 is only READ by the level entry
