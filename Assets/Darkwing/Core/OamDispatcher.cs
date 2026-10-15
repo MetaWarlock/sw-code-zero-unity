@@ -16,6 +16,8 @@ namespace Darkwing.Core
         private readonly PlayerCore _player;
 
         private byte _oamCursor = 4;        // $97
+        private readonly byte[] _shadow = new byte[256];   // $0200-$02FF sprite buffer
+        private int _walkEndCursor = 4;     // $97 as the last published walk left it
         private byte _relX, _relY;          // $13/$12 scratch
         private byte _flipBits;             // $10 (flags&0x40)
         private byte _prioBits;             // $11 (flags&0x20)
@@ -36,12 +38,41 @@ namespace Darkwing.Core
         /// <summary>Late binding for the bank-5 tables (constructed before data load completes).</summary>
         public void SetBank5(byte[] bank5) => _bank5 = bank5;
 
-        /// <summary>Full per-frame pass: advance + compose for all slots in parity order.
-        /// startCursor: OAM entries already used by earlier layers (hidden entry 0 +
-        /// 8 HUD sprites in gameplay = 36).</summary>
-        public void RunFrame(byte parity, int startCursor = 4)
+        /// <summary>Byte offset of the next free $0200 shadow slot after the frame's walk
+        /// ($97 as the ROM leaves it). The HUD of the NEXT frame appends after it when
+        /// ($95 &amp; 1) is set.</summary>
+        public int OamCursorBytes => _oamCursor;
+
+        /// <summary>Entry index the published buffer's object block ends at — the slot the HUD
+        /// writes into on ($95 &amp; 1) == 1 frames. One walk behind RunFrame.</summary>
+        public int PreviousWalkEndEntry => _walkEndCursor >> 2;
+
+        /// <summary>The NMI DMA: copy the $0200 shadow the last walk composed into the live
+        /// sprite buffer. Called once per frame, before the HUD is laid out.</summary>
+        public void PublishToOam() => System.Array.Copy(_shadow, _ppu.Oam, 256);
+
+        /// <summary>Seed the shadow from a golden capture frame so a resumed run starts with the
+        /// buffer the previous ROM walk left behind (harness only).</summary>
+        public void SeedShadow(byte[] oam, int offset)
         {
-            _oamCursor = (byte)startCursor;
+            System.Array.Copy(oam, offset, _shadow, 0, 256);
+            System.Array.Copy(oam, offset, _ppu.Oam, 0, 256);
+        }
+
+        /// <summary>One frame of the bank-5 walk at its ROM place ($CABB, after the player,
+        /// scroll, spawner, door and behaviour services). $802F-$80C6 is one fallthrough chain
+        /// per slot — cull/relative update, then the blink/flip scratch, then the animation
+        /// advance ($8100-$8141) and the compose ($8143-$81F7) — so a slot's $0450/$0440 and its
+        /// advanced $0410 are the values its own composition reads.
+        ///
+        /// The capture pairs OAM[f] with RAM[f] for the walk parity but with RAM[f-1] for the
+        /// record content, because the NMI publishes the shadow one frame after the walk wrote
+        /// it; PublishToOam models that. Proven by a hypothesis scan over gold_contact and
+        /// gold_jump (Temp/oam_lag.js): 622/622 and 631/631 object records byte-exact with
+        /// content=f-1 plus HUD placement from RAM[f].$95, and 0 for every other pairing.</summary>
+        public void RunFrame(byte parity)
+        {
+            _oamCursor = 4;                       // $CAB6 LDA #$04 / STA $97
             // Player invulnerability blink runs first ($80E1-$80F1 side effects).
             bool playerBlinkSkip = false;
             if (_player.InvulnFrames > 0)
@@ -62,6 +93,7 @@ namespace Darkwing.Core
                 AnimAdvance(s);
                 OamCompose(slot, s);
             }
+            _walkEndCursor = _oamCursor;
         }
 
         // ---------- $802F-$80C6: relative update + culling ----------
@@ -80,11 +112,12 @@ namespace Darkwing.Core
                 s.Flags = (byte)(flags | 0x80);
                 return;
             }
-            // $8039-$8047: SEC + LDA $04F0 / SBC $FC gives the screen X byte, and the
-            // SAME subtraction's borrow feeds the high-byte SBC $FD, so the page
-            // difference is (Xhi - ScrollXhi - borrow), not a plain byte delta.
+            // $8039-$8047 byte-exact: $803C SEC makes SBC subtract only M (A−M−1+C with C=1),
+            // so the screen byte is a plain low-byte difference — no extra −1. The borrow it
+            // leaves feeds the high-byte SBC $FD, so the page difference is
+            // (Xhi − ScrollXhi − borrow), not a plain byte delta.
             ushort sx = _player.ScrollX;
-            int dxLo = (s.X & 0xFF) - (sx & 0xFF) - 1;       // $0450,X ($8039/$803D)
+            int dxLo = (s.X & 0xFF) - (sx & 0xFF);          // $0450,X ($8039/$803D)
             s.ScreenX = (byte)dxLo;
             int dxHi = (s.X >> 8) - (sx >> 8) - (dxLo < 0 ? 1 : 0);
             bool xNoBorrow = dxHi >= 0;                      // C after the SBC at $8045
@@ -190,19 +223,19 @@ namespace Darkwing.Core
             {
                 y++;                                   // $81AF: tile index
                 if (x + 4 > 256) break;                // OAM full ($97 wrap guard)
-                _ppu.Oam[x + 1] = _bank5[_partPtr + y];
+                _shadow[x + 1] = _bank5[_partPtr + y];
                 int cy = _bank5[_coordPtr + y];
                 int sumY = _relY + cy;                    // 6502 ADC semantics
                 // $81BD-$81C5: positive coord hides on carry-out (>255), negative
                 // hides when no carry (sum stayed < 256 → wrapped negative).
                 bool hideY = (cy & 0x80) != 0 ? sumY < 256 : sumY > 255;
-                _ppu.Oam[x] = hideY ? (byte)0xF8 : (byte)(sumY & 0xFF);
+                _shadow[x] = hideY ? (byte)0xF8 : (byte)(sumY & 0xFF);
                 y++;                                   // $81C7: attribute index
-                _ppu.Oam[x + 2] = (byte)((_bank5[_partPtr + y] ^ _flipBits) | _prioBits);
+                _shadow[x + 2] = (byte)((_bank5[_partPtr + y] ^ _flipBits) | _prioBits);
                 int cx = _bank5[_coordPtr + y];
                 int sumX = _relX + cx;
                 bool hideX = (cx & 0x80) != 0 ? sumX < 256 : sumX > 255;
-                _ppu.Oam[x + 3] = hideX ? (byte)0xF8 : (byte)(sumX & 0xFF);
+                _shadow[x + 3] = hideX ? (byte)0xF8 : (byte)(sumX & 0xFF);
                 x += 4;
                 if (_partCount-- == 0) break;   // $81EB: DEC; BPL → count+1 iterations
             }

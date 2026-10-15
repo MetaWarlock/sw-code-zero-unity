@@ -322,7 +322,7 @@
   with the low-byte table at `$CB5F` and the high-byte table at `$CB75` (only the first `$10`
   entries are used, so `y` indexes `$CB5F+y` and `$CB75+y`). Reproduced entries: y=4 → `$D1A4`
   (the parked/pause state), y=7 → `$D353` (death throes: low `$CB66=$53`, high `$CB7C=$D3`),
-  y=$0B → `$D626` (full airborne), y=$0E... — the table is therefore the reliable way to name a
+  y=$0B → `$D626` (full airborne), y=$0E... — the table is следовательно the reliable way to name a
   `$50` handler without guessing. `$D353` runs on the PLAYER's slot-0 bytes, not on `$50` alone:
   it uses `$04D0` low nibble (init guard, `INC $04D0` after the hop), `$0490` (15-frame hop,
   `JMP $F55E`), `$0480` (hold phase, `$3C` down, with SFX `$25` + `$9B=$FF` at `$1E`),
@@ -557,3 +557,14 @@
   ФАКТ. Следствие: жёсткая раскладка порта в `HudComposer` на записях e1–e8 структурно неверна —
   это конкретная первопричина плато OamVerify (~101/256, рассогласование HUD-блока), а НЕ
   геометрия тайлов. Числа тайлов сердца/маркера в порту корректны.
+
+## Тень спрайт-буфера и покадровая пара RAM↔OAM (смена 30)
+
+| Факт | Доказательство | Уверенность |
+|---|---|---|
+| Обход банка 5 (`$CABB JSR $8000`) пишет тень `$0200–$02FF`; живую sprite-RAM публикует следующий NMI, поэтому `OAM[f]` = композиция обхода `f-1`, а позиция HUD-блока следует `RAM[f].$95` | Дизасм `bank7_C9AC.txt` (`$CAB4`/`$CABE LDA #$04 / STA $97` с обеих сторон `$CABB`), `reference/gold_contact/capture.lua` читает `emu.memType.nesSpriteRam` (живую страницу) в хуке `endFrame`; скан гипотез `Temp/oam_lag.js`: content=`RAM[f-1]`+order=`RAM[f].$95` → 622/622 (gold_contact f9..60) и 631/631 (gold_jump) побайтово точных объектов, content=`RAM[f]` → 36/621 и 288/631, ВСЕ варианты order=`f-1` → 0 | Подтверждено |
+| Направление обхода слотов (`($95 & 1)`: 0→15 или 15→0) НЕ наблюдаемо в этих захватах: обе гипотезы дают 622/622; наблюдаема только курсорная вставка HUD | `Temp/oam_lag.js` (второй скан: dir×cursor) | Подтверждено |
+| `$97` в RAM захвата = `$04` во всех кадрах (399/399 `gold_contact`, 119/119 `gold_jump`) — ROM сбрасывает курсор ПОСЛЕ обхода (`$CABE`), следовательно значение курсора в конце кадра не наблюдаемо; вывод обхода можно мерить только по опубликованному буферу | `Temp/hud_pos.js` | Подтверждено |
+| Composition и выборка/продвижение анимации — ОДНА цепочка на слот (`$802F` cull → `$8100` anim → `$8143` compose). Разнесение на два прохода ломает RAM-физику: `X`/`$0470 Xfrac`+`$25 streamcursor` расходятся на `m1route` f358, `w03` f604, `longroute` f652 | Эксперимент смены 30: два порядка прохода (обход в начале кадра и в конце) дают одинаковые три отказа; возврат к единой цепочке → все три снова MATCH | Подтверждено |
+| `$8039/$803D` = `LDA $04F0,X / SEC / SBC $FC` → байт экрана E = Xlo − $FC БЕЗ дополнительного −1 (SEC восстанавливает занятой при SBC borrow); заём уходит в `$8045 SBC $FD` | Дизасм `bank5_start.txt` строки 28–33 | Подтверждено |
+

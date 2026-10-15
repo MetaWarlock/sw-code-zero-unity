@@ -561,14 +561,18 @@ namespace Darkwing.Core
             _chrPending = false;
         }
 
+        /// <summary>
+        /// The tail of the main loop, in ROM order ($CA59 scroll → $CA6B spawner → $CA6E door →
+        /// $CA84 bank-6 behaviours → $CABB bank-5 frame engine → render). The bank-5 engine
+        /// ($8000-$81F7) composes the $0200 sprite shadow, which the NMI of the NEXT frame
+        /// publishes: the captured OAM[f] therefore holds the object records of the walk in frame
+        /// f-1 while its HUD placement follows RAM[f].$95. PublishToOam + the HUD below model that
+        /// pairing (Temp/oam_lag.js: byte-exact for 622/622 and 631/631 object records over
+        /// gold_contact/gold_jump; every other pairing scores 0).
+        /// </summary>
         private void RunWorldServices()
         {
-            // Audio advances via AudioSequencer.RenderFrame (Tick inside) once per
-            // presented frame — SFX/music events queue at trigger time.
             if (Oam == null) return;
-            // Slot 0 mirrors the player position/facing; the anim state is
-            // player-state driven (walk/fire/... in PlayerCore) and advanced
-            // by the dispatcher each frame.
             var s0 = Objects.Slots[0];
             // $CAFC gates on $04D0 bit 7 and the loader re-arms it, so the slot must mirror
             // the real flag byte. Force-arming it every frame kept the player composited
@@ -577,7 +581,6 @@ namespace Darkwing.Core
             s0.Flags = (byte)(0x90 | (Player.FacingRight != 0 ? 0x40 : 0) | 0x10);
             s0.X = Player.X;
             s0.Y = Player.Y;
-            Hud.Compose(3);
             // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
             TileMap?.StreamColumns(Player.ScrollX);
             if (Objects?.Placements != null)
@@ -591,7 +594,17 @@ namespace Darkwing.Core
             // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
             // the blink/iteration-order tests read is the one this frame's pass produced.
             FrameParity++;                                     // $8000-$8002
-            Oam.RunFrame(FrameParity, 36); // 36 = hidden entry 0 + 8 HUD sprites
+            // NMI DMA: the buffer this frame displays is the shadow of the previous walk.
+            Oam.PublishToOam();
+            // ($95 & 1) picks where the HUD block goes: every gameplay frame of gold_contact,
+            // gold_hurt_a41, gold_jump and gold_m1_longroute has the 8-sprite block at entry 1
+            // when the bit is clear and directly after the last object sprite when it is set
+            // (3260 frames, zero gaps — GAPS G44.1). $97 is primed to $04 on both sides of the
+            // walk ($CAB6/$CABE), so "after the objects" is the previous walk's end cursor.
+            // Health stays 3: the captures never show a damaged heart and the tile rule
+            // that selects $80/$81 vs $82 is still unrecovered (GAPS G44.2).
+            Hud.Compose(3, (FrameParity & 1) == 0 ? 1 : Oam.PreviousWalkEndEntry);
+            Oam.RunFrame(FrameParity);
             Ppu.Render(Framebuffer);
         }
 

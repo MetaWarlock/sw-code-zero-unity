@@ -62,7 +62,11 @@ public static class OamVerify
         var disp = new Darkwing.Core.OamDispatcher(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank5.bytes"),
             objects, ppu, player);
-        disp.RunFrame(ram[0x95], 36); // entries 0-8: hidden marker + HUD heart/energy sprites
+        // Single-frame probe: compose the shadow from the RAM state seeded above and publish it
+        // immediately (the game loop publishes the PREVIOUS walk, which is what the captures pair
+        // with the frame index).
+        disp.RunFrame(ram[0x95]);
+        disp.PublishToOam();
         sb0.Append(" oam4..15=" + ppu.Oam[4].ToString("X2") + ppu.Oam[5].ToString("X2") + ppu.Oam[6].ToString("X2") + ppu.Oam[7].ToString("X2") + ppu.Oam[8].ToString("X2"));
         return sb0.ToString() + "|" + resultJson(ppu, oam);
 

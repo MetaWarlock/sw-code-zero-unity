@@ -10,13 +10,16 @@ public static class PhysCompare
     private static string Compare(string name, int frames, System.Func<int, byte> input,
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
         int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false,
-        string goldenDir = null, bool scoreEnemies = false)
+        string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         string gdir = goldenDir ?? $"gold_{name}";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/ram_frames.bin");
         byte[] palAll = palette
             ? File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/palette_frames.bin")
+            : System.Array.Empty<byte>();
+        byte[] oamAll = scoreOam
+            ? File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/oam_frames.bin")
             : System.Array.Empty<byte>();
         int avail = ramAll.Length / 2048;
 
@@ -178,6 +181,19 @@ public static class PhysCompare
         int enemyMatchFrames = 0, enemyTotalFrames = 0, enemyFirstDiv = -1, enemyDivSlot = -1;
         string enemyDivField = null; int enemyDivPort = 0, enemyDivOrig = 0;
         int palOk = 0, palFirstBad = -1, winOk = 0, winTotal = 0;   // $3F00 byte compare
+        int oamFrameOk = 0, oamTotal = 0, oamFirstBad = -1, oamByteSum = 0;
+        int[] oamEntryBad = new int[64];
+        string oamFirstDetail = "";
+        const int OamLag = 0;
+        int oamFramesAvail = oamAll.Length / 256;
+        if (scoreOam)
+            // The golden pairs OAM[f] with RAM[f] for the HUD placement but with RAM[f-1] for the
+            // object records: the capture reads the live sprite buffer, which the NMI of frame f
+            // filled from the shadow the walk of frame f-1 composed (Temp/oam_lag.js: 622/622 and
+            // 631/631 object records byte-exact with that pairing, 0 with any other). The port
+            // reproduces it with a shadow + PublishToOam, so the comparison stays same-index and
+            // the seed has to fill the SHADOW, not the live buffer.
+            game.Oam.SeedShadow(oamAll, seedFrame * 256);
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
             var pad = Darkwing.Core.NesButtons.FromByte(input(f));
@@ -286,6 +302,34 @@ public static class PhysCompare
                 else if (palFirstBad < 0) palFirstBad = f;
                 if (f >= 795 && f <= 841) { winTotal++; if (same) winOk++; }
             }
+            if (scoreOam && f + OamLag < oamFramesAvail)
+            {
+                int o = (f + OamLag) * 256;
+                int ok = 0, badByte = -1;
+                for (int i = 0; i < 256; i++)
+                {
+                    if (game.Ppu.Oam[i] == oamAll[o + i]) ok++;
+                    else if (badByte < 0) badByte = i;
+                }
+                oamTotal++; oamByteSum += ok;
+                for (int e = 0; e < 64; e++)
+                    if (game.Ppu.Oam[e * 4] != oamAll[o + e * 4] || game.Ppu.Oam[e * 4 + 1] != oamAll[o + e * 4 + 1] ||
+                        game.Ppu.Oam[e * 4 + 2] != oamAll[o + e * 4 + 2] || game.Ppu.Oam[e * 4 + 3] != oamAll[o + e * 4 + 3])
+                        oamEntryBad[e]++;
+                if (ok == 256) oamFrameOk++;
+                else if (oamFirstBad < 0)
+                {
+                    oamFirstBad = f;
+                    int e = badByte >> 2;
+                    var detail = new System.Text.StringBuilder();
+                    for (int k = 0; k < 64 && detail.Length < 700; k++)
+                        if (game.Ppu.Oam[k * 4] != oamAll[o + k * 4] || game.Ppu.Oam[k * 4 + 1] != oamAll[o + k * 4 + 1] ||
+                            game.Ppu.Oam[k * 4 + 2] != oamAll[o + k * 4 + 2] || game.Ppu.Oam[k * 4 + 3] != oamAll[o + k * 4 + 3])
+                            detail.Append($"e{k}:{game.Ppu.Oam[k*4]:X2},{game.Ppu.Oam[k*4+1]:X2},{game.Ppu.Oam[k*4+2]:X2},{game.Ppu.Oam[k*4+3]:X2}/" +
+                                          $"{oamAll[o + k * 4]:X2},{oamAll[o + k * 4 + 1]:X2},{oamAll[o + k * 4 + 2]:X2},{oamAll[o + k * 4 + 3]:X2} ");
+                    oamFirstDetail = $" f{oamFirstBad}: {ok}/256 bytes, first diff b{badByte} (entry {e})" + detail;
+                }
+            }
             if (pos && cam) matchFrames++;
             else
             {
@@ -309,6 +353,14 @@ public static class PhysCompare
         sb.Append(firstDiv < 0
             ? $"RESULT: MATCH {matchFrames}/{span} frames (seed {seedFrame})"
             : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{span}, seed {seedFrame})");
+        if (scoreOam)
+        {
+            sb.Append($"  OAM: exact {oamFrameOk}/{oamTotal} frames, mean {(oamTotal == 0 ? 0 : oamByteSum / oamTotal)}/256 bytes,{oamFirstDetail}");
+            var hist = new System.Text.StringBuilder();
+            for (int e = 0; e < 64 && hist.Length < 420; e++)
+                if (oamEntryBad[e] > 0) hist.Append($"e{e}:{oamEntryBad[e]} ");
+            sb.Append($"  OAM-BAD-ENTRIES(of {oamTotal}): {hist}");
+        }
         if (scoreEnemies)
             sb.Append(enemyFirstDiv < 0
                 ? $"  ENEMIES: MATCH {enemyMatchFrames}/{enemyTotalFrames} frames (all ROM-active slots X/Y/state/beh/anim identical)"
@@ -361,6 +413,43 @@ public static class PhysCompare
     public static string Contact() => Compare("contact", 400,
         f => (byte)(f >= 10 && f <= 360 ? 0x01 : 0x00),
         camera: true, enemies: true);
+
+    /// <summary>
+    /// M7 HUD (G44): full 256-byte OAM compare against gameplay goldens, frame by frame.
+    /// This is the instrument that measures where the 8-sprite HUD block lands; before the
+    /// $95-driven cursor it sat at a fixed entries 1-8 and the score plateaued near
+    /// OamVerify's ~101/256.
+    /// </summary>
+    public static string HudOam()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.Append(Compare("hud_oam_contact", 400,
+            f => (byte)(f >= 10 && f <= 360 ? 0x01 : 0x00),
+            camera: true, enemies: true, goldenDir: "gold_contact", scoreOam: true));
+        sb.Append(" ||| ");
+        sb.Append(Compare("hud_oam_jump", 120, f =>
+        {
+            byte b = 0;
+            if (f >= 10 && f <= 40) b |= 0x01;
+            if (f >= 20 && f <= 22) b |= 0x80;
+            return b;
+        }, goldenDir: "gold_jump", scoreOam: true));
+        sb.Append(" ||| ");
+        sb.Append(Compare("hud_oam_longroute", 2500,
+            f =>
+            {
+                byte b = (f >= 2 && f <= 2490) ? (byte)0x01 : (byte)0x00;
+                for (int k = 0; k < 18; k++)
+                {
+                    int s = 160 + 130 * k;
+                    if (f >= s && f <= s + 25) b |= 0x80;
+                }
+                return b;
+            },
+            camera: true, enemies: true, goldenDir: "gold_m1_longroute", scoreOam: true));
+        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/hud_oam_sweep.txt", sb.ToString());
+        return sb.ToString();
+    }
 
     /// <summary>
     /// G36 step 1 — the long mission-1 route `gold_m1_longroute` (2500 frames from
