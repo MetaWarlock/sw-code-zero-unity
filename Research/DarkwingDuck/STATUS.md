@@ -135,9 +135,17 @@
 - Визуальное доказательство геймплея: `Docs/DarkwingPort/evidence/runtime_captures/mission1_play.png`
   (корректная миссия 1). Вывод: чёрный `capture_game_view` смены 15 был состоянием Title,
   а не дырой дисплея; wiring (`Main Camera` ortho 7.5 + quad 16×15 URP Unlit tex 256×240) исправен.
-- НОВАЯ ДЫРА G34: `city_map.png` nonzero, но визуальный мусор вместо карты города →
-  `WorldState.MapChrBank=$26` остаётся score-fit, кандидат №2 — тайминг захвата
-  `map_nametable/map_palette`. COVERAGE: `render,runtime_display_chain … PASS` и
-  `hud,map_screen … FAIL`.
+- G34 ЗАКРЫТ в той же смене 16 (причина оказалась не та, что предполагалось сначала):
+  `MapChrSearch` перепрогнан → банк 26 = 58509/61440 (95.2 %, лучший из всех), кандидат «CHR
+  не подтверждён» отвергнут. `ScreenProbe.MapDiff` показал `mismatches=989/1024` при верных
+  `ctrl=$16 mask=$1E chr=(26,26)` ⇒ копирование VRAM карты не выполнялось вовсе. Корень:
+  `Assets/Scenes/DarkwingMain.unity` сериализовал 11 из 13 слотов лаунчера
+  (`MapNametableData`/`MapPaletteData` = `null`), а `LoadMapScreen` защищён
+  `if (MapNametable != null)` — карта рисовалась поверх nametable мира. Фикс: прогон
+  существующего Editor-API `WireData.Assign()` (без ручного YAML, правок ядра не потребовалось).
+  После: `mismatches=0/1024`, `city_map.png` — читаемые небо/кроны/город/мост + плашка текста.
+  Остаток карты = спрайты (`LoadMapScreen` паркует OAM в `$FF`: нет HELP-пузырей и портретов)
+  → это G32.1, не G34; строка текста у нас из другой итерации печатного цикла карты.
+  COVERAGE: `hud,map_screen … FAIL` помечен superseded, добавлен PASS `city_map_background`.
 - Стоящая цель НЕ достигнута:missions 2-7, боссы, секреты, финал `$D838`, тайтл, сквозной
   standalone-проход и ACCEPTANCE_REPORT по-прежнему открыты.

@@ -112,16 +112,26 @@ public static class ScreenProbe
             var hist = new System.Collections.Generic.SortedDictionary<int, int>();
             for (int i = 0; i < fb.Length; i++) hist[fb[i]] = hist.TryGetValue(fb[i], out int v) ? v + 1 : 1;
             sb.AppendLine($"{label}: stage={(flow == null ? "n/a" : flow.Stage.ToString())} " +
-                          $"mask=$ {game.Ppu.Mask:X2} WorldRunning={game.WorldRunning} frame={game.Frame} " +
+                          $"ctrl=$ {game.Ppu.Ctrl:X2} mask=$ {game.Ppu.Mask:X2} " +
+                          $"chr=({game.Ppu.Chr0Bank},{game.Ppu.Chr1Bank}) " +
+                          $"WorldRunning={game.WorldRunning} frame={game.Frame} " +
                           $"distinct={hist.Count} " +
                           $"player=$ {game.Player.State:X2}/X={game.Player.X:X4}");
             sb.Append("  indices: ");
             foreach (var kv in hist) sb.Append($"{kv.Key:X2}={kv.Value} ");
+            sb.Append("| nt[0..7]: ");
+            for (int i = 0; i < 8; i++) sb.Append($"{game.Ppu.NametableRam[i]:X2} ");
+            var map = launcher.GetType().GetField("MapNametable", flags)?.GetValue(launcher) as byte[]
+                      ?? game.GetType().GetField("MapNametable", System.Reflection.BindingFlags.Public |
+                             System.Reflection.BindingFlags.Instance)?.GetValue(game) as byte[];
+            if (map != null) { sb.Append("| mapNT[0..7]: "); for (int i = 0; i < 8; i++) sb.Append($"{map[i]:X2} "); }
             sb.AppendLine($"-> {path}");
         }
 
         Shot("before-input", "D:/Art/SW Code Zero Unity/Temp/adv_title.png");
-        Run(1, 0x10); Run(60, 0);                       // Start → map
+        Run(1, 0x10);                                       // Start → map
+        Shot("map-f0", "D:/Art/SW Code Zero Unity/Temp/adv_map_f0.png");
+        Run(60, 0);
         Shot("after-Start", "D:/Art/SW Code Zero Unity/Temp/adv_map.png");
         Run(1, 0x40); Run(30, 0);                       // B → confirm bubble 0
         Shot("after-B", "D:/Art/SW Code Zero Unity/Temp/adv_briefing.png");
@@ -130,6 +140,56 @@ public static class ScreenProbe
         Shot("after-A", "D:/Art/SW Code Zero Unity/Temp/adv_enter.png");
         Run(240, 0x01);                                 // hold Right through the entry fall
         Shot("in-mission", "D:/Art/SW Code Zero Unity/Temp/adv_mission.png");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Byte-diff the LIVE nametable against the exported map screen: says whether the
+    /// map picture is wrong because VRAM got clobbered after LoadMapScreen or not.
+    /// </summary>
+    public static string MapDiff()
+    {
+        const string Root = "D:/Art/SW Code Zero Unity";
+        var sb = new StringBuilder();
+        var launcher = Object.FindAnyObjectByType<Darkwing.UnityApp.DarkwingLauncher>();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var game = launcher?.GetType().GetField("_game", flags)?.GetValue(launcher) as Darkwing.Core.DarkwingGame;
+        if (game == null) return "no live launcher/_game";
+
+        // Get to the map screen first: the launcher boots at Title and Title is black.
+        var flow = launcher.GetType().GetField("_flow", flags)?.GetValue(launcher) as Darkwing.Core.GameFlow;
+        if (flow != null && flow.Stage.ToString() == "Title")
+        {
+            var start = new Darkwing.Core.NesButtons { Start = true };
+            flow.Step(in start); game.Step(in start);
+            var none = default(Darkwing.Core.NesButtons);
+            for (int i = 0; i < 60; i++) { flow.Step(in none); game.Step(in none); }
+        }
+        sb.AppendLine($"stage={(flow == null ? "n/a" : flow.Stage.ToString())}");
+
+        byte[] want = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/map_nametable.bytes");
+        byte[] nt = game.Ppu.NametableRam;
+        sb.AppendLine($"stage-check: ctrl=$ {game.Ppu.Ctrl:X2} mask=$ {game.Ppu.Mask:X2} " +
+                      $"chr=({game.Ppu.Chr0Bank},{game.Ppu.Chr1Bank}) frame={game.Frame}");
+        sb.AppendLine($"map_nametable.bytes={want.Length} B, nt[0..0x800] diff:");
+        int bad = 0, first = -1, last = -1;
+        var badRows = new System.Collections.Generic.SortedDictionary<int, int>();
+        for (int i = 0; i < System.Math.Min(want.Length, 0x800); i++)
+        {
+            if (want[i] == nt[i]) continue;
+            bad++;
+            if (first < 0) first = i;
+            last = i;
+            int row = i / 32;
+            badRows[row] = badRows.TryGetValue(row, out int c) ? c + 1 : 1;
+        }
+        sb.AppendLine($"  mismatches={bad}/{System.Math.Min(want.Length, 0x800)} " +
+                      $"first=$ {first:X3} last=$ {last:X3} rows affected={badRows.Count}");
+        if (first >= 0)
+            sb.AppendLine($"  first: want=$ {want[first]:X2} live=$ {nt[first]:X2} (row {first / 32}, col {first % 32})");
+        foreach (var kv in badRows)
+            if (kv.Value >= 16) sb.Append($"row{kv.Key}={kv.Value} ");
+        sb.AppendLine();
         return sb.ToString();
     }
 

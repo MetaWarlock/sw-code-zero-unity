@@ -892,17 +892,36 @@ G31 ЗАКРЫТ с поправкой формулировки: f583 в w03 —
    Честный статус build-столба: «собран + бутится + рендерит геймплей (проверено на framebuffer'е
    живого лаунчера)»; прогон того же в самом exe пока НЕ делался.
 
-2. **Карта города: подтвердить CHR-банк вместо подборки (одно конкретное действие).**
-   `city_map.png` (смена 16) — мусор, значит `WorldState.MapChrBank` (выведен из
-   «probe_flow latch + MapChrSearch screenshot score») неверен. Действие: найти в банке 7
-   (`flat_bank7.txt`, участок `$A4xx` инициализации карты вокруг `$A452`) реальные записи
-   `$8000` (MMC1 CHR latch) при входе в карту и перенести их в `WorldState`/`LoadMapScreen`
-   как факт с адресом, а не как score. Если latch действительно `$26` (GAPS смена 12 так и
-   утверждает), то кандидат №2 — тайминг захвата `map_nametable.bytes`/`map_palette.bytes`
-   (могли быть сняты не в окне карты). Проверка: повторить
-   `unity command run_script --file AgentScripts/ScreenProbe.cs --entry ScreenProbe.Advance --project-path "D:/Art/SW Code Zero Unity" --timeout 300`
-   и сравнить `Temp/adv_map.png` с кадром ROM; правки ядра → ОБЯЗАТЕЛЬНО `unity recompile`
-   (память проекта: `run_script` пересобирает только harness-сборку).
+2. **[x] ЗАКРЫТО (смена 16): фон карты города рендерится побайтово правильно. Причина была
+   НЕ в CHR и НЕ в тайминге захвата — обе гипотезы опровергнуты измерением.**
+   • `MapChrSearch` перепрогнан: банк 26 = 58509/61440 (95.2 %), следующий лучший 23 = 34690
+     ⇒ `WorldState.MapChrBank=$26` верен, кандидат №1 отвергнут данными.
+   • `ScreenProbe.MapDiff` на `stage=MapCursor` показал `ctrl=$16 mask=$1E chr=(26,26)`, но
+     `mismatches=989/1024 first=$000 live=$11` — живой VRAM всё ещё был nametable мира, т.е.
+     копирование карты вообще не выполнялось.
+   • Корень: в `Assets/Scenes/DarkwingMain.unity` у лаунчера сериализовалось 11 из 13
+     `TextAsset`-полей; `MapNametableData`/`MapPaletteData` = `null`, а
+     `DarkwingGame.LoadMapScreen` обёрнут в `if (MapNametable != null)` → молчаливый пропуск.
+     Поля добавили в код, но ни разу не перегнали проводку сцены.
+   • Фикс — существующий Editor-API `WireData.Assign()` (`run_script --file
+     AgentScripts/WireData.cs --entry WireData.Assign`, `result: 0`); сцена теперь содержит
+     `MapNametableData` guid `308fd276…` и `MapPaletteData` guid `b9e66c8e…`. Никакого ручного
+     YAML. Правки ядра не потребовались ⇒ `unity recompile` не нужен.
+   • Доказательство после фикса (тот же прогон): `MapDiff` → `mismatches=0/1024
+     rows affected=0`; `city_map.png` перечитан — небо, кроны, город, мост и нижняя плашка
+     текста читаются, кадр совпадает по структуре с `reference/probe_flow/final.png`.
+   • Остаток (уже зарегистрирован, это НЕ G34): HELP-пузыри и портреты Darkwing/Launchpad
+     отсутствуют, т.к. `LoadMapScreen` паркует OAM в `$FF` — в ROM это спрайты (поправка к
+     примечанию смены 12 «текст пузыря — часть nametable»: не часть). Строка текста у нас из
+     другой итерации печатного цикла карты — захват `map_nametable.bytes` снят в ином кадре.
+     Всё это — G32.1. GAPS G34 и строка `hud,map_screen,city_map_render,FAIL` в COVERAGE
+     закрыты/помечены superseded новой PASS-строкой `city_map_background`.
+
+2b. **Спрайты карты (G32.1) — одно конкретное действие.** В `probe_flow` есть
+   `oam_frames.bin` покадровых дампов OAM для маршрута Title→карта: разобрать кадры окна карты
+   (сколько записей, тайлы, координаты HELP-пузырей и портретов) и перенести в
+   `LoadMapScreen`/`GameFlow` как реальный список спрайтов вместо парковки `$FF`. Проверка —
+   тот же `ScreenProbe.MapDiff`/`Advance` + попиксельное сравнение с `final.png`.
 
 3. **Дальнобойный traversal-проб миссии 1.** Тот же `ScreenProbe.Advance` — единственный
    инструмент, который уже гоняет живой лаунчер синтетическим вводом; расширить до длинного
