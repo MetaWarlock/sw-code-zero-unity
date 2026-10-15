@@ -122,3 +122,22 @@
    порт держит Y=`$0374` с анимом `$43` → урон на f337 вместо f375; править `$8C34…$8D60`.
    Регрессий нет: Walk 119/119, Jump 119/119, Hook 298/298, Traverse 599/599,
    Door 15×98/98, Hurt 16×66/66.
+
+## Смена 16 (2026-10-15): рантайм-рендер порта доказан, карта города — новый зазор G34
+
+- Новый harness `AgentScripts/ScreenProbe.cs` читает framebuffer **живого** `DarkwingLauncher`
+  в Play-режиме (вместо захвата вкладки Game) и гоняет бут-маршрут через настоящий
+  `GameFlow.Step` синтетическими геймпадами: Title → Start → MapCursor → B → briefing →
+  A → Mission → 240×Right.
+- Измерено: `frame=10842` (симуляция крутится), Title — `mask=$00`, fb=`0F`×61440 (намеренно,
+  `GameFlow.cs:66`: nametable `$C792` не экспортирован); MapCursor — `mask=$1E`, 11 палитр;
+  Mission — `WorldRunning=True`, игрок `$09/$002C` → `$00/$0079`, 13 палитр.
+- Визуальное доказательство геймплея: `Docs/DarkwingPort/evidence/runtime_captures/mission1_play.png`
+  (корректная миссия 1). Вывод: чёрный `capture_game_view` смены 15 был состоянием Title,
+  а не дырой дисплея; wiring (`Main Camera` ortho 7.5 + quad 16×15 URP Unlit tex 256×240) исправен.
+- НОВАЯ ДЫРА G34: `city_map.png` nonzero, но визуальный мусор вместо карты города →
+  `WorldState.MapChrBank=$26` остаётся score-fit, кандидат №2 — тайминг захвата
+  `map_nametable/map_palette`. COVERAGE: `render,runtime_display_chain … PASS` и
+  `hud,map_screen … FAIL`.
+- Стоящая цель НЕ достигнута:missions 2-7, боссы, секреты, финал `$D838`, тайтл, сквозной
+  standalone-проход и ACCEPTANCE_REPORT по-прежнему открыты.
