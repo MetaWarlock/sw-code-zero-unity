@@ -193,6 +193,131 @@ public static class ScreenProbe
         return sb.ToString();
     }
 
+    /// <summary>
+    /// Long live-launcher traversal of mission 1: drives the real flow with a synthetic
+    /// route and reports every place forward progress stops, so the next hole is chosen
+    /// by evidence instead of guesswork.
+    /// frame budget, so the probe is resumable: call it repeatedly and each call
+    /// continues the same live mission.
+    /// </summary>
+    public static string Traverse(int frames = 1500)
+    {
+        const string Root = "D:/Art/SW Code Zero Unity/Temp";
+        var sb = new StringBuilder();
+        var launcher = Object.FindAnyObjectByType<Darkwing.UnityApp.DarkwingLauncher>();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var game = launcher?.GetType().GetField("_game", flags)?.GetValue(launcher) as Darkwing.Core.DarkwingGame;
+        var flow = launcher?.GetType().GetField("_flow", flags)?.GetValue(launcher) as Darkwing.Core.GameFlow;
+        if (game == null) return "no live launcher/_game (enter Play first)";
+
+        void Step(byte bits)
+        {
+            var pad = new Darkwing.Core.NesButtons
+            {
+                A = (bits & 0x80) != 0, B = (bits & 0x40) != 0, Select = (bits & 0x20) != 0,
+                Start = (bits & 0x10) != 0, Up = (bits & 0x08) != 0, Down = (bits & 0x04) != 0,
+                Left = (bits & 0x02) != 0, Right = (bits & 0x01) != 0,
+            };
+            flow?.Step(in pad); game.Step(in pad);
+        }
+
+        // Bootstrap: Title → map → bubble 0 → briefing → mission, skipping done stages.
+        for (int guard = 0; guard < 8 && flow != null && flow.Stage.ToString() != "Mission"; guard++)
+        {
+            switch (flow.Stage.ToString())
+            {
+                case "Title": Step(0x10); for (int i = 0; i < 60; i++) Step(0); break;
+                case "MapCursor": Step(0x40); for (int i = 0; i < 60; i++) Step(0); break;
+                case "MapBriefing":
+                    for (int i = 0; i < Darkwing.Core.GameFlow.PromptFrames + 5; i++) Step(0);
+                    Step(0x80); for (int i = 0; i < 60; i++) Step(0); break;
+                default: Step(0); break;
+            }
+            sb.AppendLine($"bootstrap: stage={flow.Stage} frame={game.Frame}");
+        }
+        if (flow == null || flow.Stage.ToString() != "Mission") return "could not reach Mission stage";
+
+        int lastX = game.Player.X, stalledSince = 0, maxX = lastX;
+        for (int f = 1; f <= frames; f++)
+        {
+            byte bits = 0x01;                                   // hold Right
+            if (f % 30 < 4) bits |= 0x80;                       // jump every 30 frames
+            if (f % 200 < 6) bits |= 0x40;                      // fire/hook probe
+            Step(bits);
+
+            if (game.Player.X > maxX) maxX = game.Player.X;
+            if (game.Player.X == lastX) { if (stalledSince == 0) stalledSince = f; }
+            else stalledSince = 0;
+            lastX = game.Player.X;
+            if (f % 500 == 0)
+                sb.AppendLine($"  f={f} X=$ {game.Player.X:X4} Y=$ {game.Player.Y:X4} state=$ {game.Player.State:X2} " +
+                              $"stage={flow.Stage} cleared={game.MissionCleared}");
+
+            bool cleared = game.MissionCleared || flow.Stage.ToString() != "Mission";
+            if (stalledSince != 0 && f - stalledSince == 400 || cleared && f > 1)
+            {
+                string why = cleared ? $"stage->{flow.Stage} cleared={game.MissionCleared}"
+                                    : $"STALL x={game.Player.X:X4} for {f - stalledSince}f";
+                var shot = $"{Root}/traverse_{(cleared ? "end" : "stall")}_{f}.png";
+                launcher.DumpFramebuffer(shot);
+                sb.AppendLine($"f={f} {why} state=$ {game.Player.State:X2} Y=$ {game.Player.Y:X4} " +
+                              $"wall=$ {game.Player.WallBlocked:X2} sect={game.SectionLoading} " +
+                              $"WorldRunning={game.WorldRunning} -> {System.IO.Path.GetFileName(shot)}");
+                if (cleared) return sb.ToString();
+                stalledSince = 0;
+            }
+        }
+        launcher.DumpFramebuffer($"{Root}/traverse_final.png");
+        sb.AppendLine($"end: frame={game.Frame} stage={flow.Stage} X=$ {game.Player.X:X4} maxX=$ {maxX:X4} " +
+                      $"Y=$ {game.Player.Y:X4} state=$ {game.Player.State:X2} cleared={game.MissionCleared} " +
+                      $"WorldRunning={game.WorldRunning} -> traverse_final.png");
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Why does the live route stop at the pylon? Watches the $DAFD hook-column
+    /// preconditions ($DB29 ScrollX alignment, $DB31 script nibble) while walking right.
+    /// </summary>
+    public static string HookProbe(int frames = 900)
+    {
+        var sb = new StringBuilder();
+        var launcher = Object.FindAnyObjectByType<Darkwing.UnityApp.DarkwingLauncher>();
+        var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+        var game = launcher?.GetType().GetField("_game", flags)?.GetValue(launcher) as Darkwing.Core.DarkwingGame;
+        if (game == null) return "no live launcher/_game (enter Play first)";
+        var p = game.Player;
+
+        var seenNibble = new System.Collections.Generic.SortedDictionary<int, int>();
+        int aligned = 0, grabWindow = 0, air = 0, maxAirY = p.Y;
+        for (int f = 1; f <= frames; f++)
+        {
+            byte bits = 0x01;
+            if (f % 24 < 6) bits |= 0x80;                     // jump higher/more often
+            var pad = new Darkwing.Core.NesButtons
+            {
+                A = (bits & 0x80) != 0, Start = false, Right = true,
+            };
+            game.Step(in pad);
+
+            int nib = p.CellScriptByte & 0x0F;
+            seenNibble[nib] = seenNibble.TryGetValue(nib, out int c) ? c + 1 : 1;
+            bool al = (byte)(p.ScrollX & 0xFF) == 0;
+            if (al) aligned++;
+            if (al && nib == 1) grabWindow++;
+            if (p.State == 0x01) { air++; if (p.Y > maxAirY) maxAirY = p.Y; }
+            if (f % 100 == 0)
+                sb.AppendLine($"  f={f} X=$ {p.X:X4} Y=$ {p.Y:X4} st=$ {p.State:X2} wall=$ {p.WallBlocked:X2} " +
+                              $"cell={p.CellIndex} room=$ {p.CellGridByte:X2} script=$ {p.CellScriptByte:X2} " +
+                              $"scrollX=$ {p.ScrollX:X4} mode=$ {p.ScrollMode:X2} peg=$ {(p.OnHookTileFlag ? 1 : 0)}");
+        }
+        sb.Append("script nibbles seen: ");
+        foreach (var kv in seenNibble) sb.Append($"n{kv.Key}={kv.Value} ");
+        sb.AppendLine();
+        sb.AppendLine($"frames={frames} scrollX-aligned($DB29 pass)={aligned} hook-column frames(nibble1+aligned)={grabWindow} " +
+                      $"airborne={air} maxY=$ {maxAirY:X4} pegFlagEver={p.OnHookTileFlag}");
+        return sb.ToString();
+    }
+
     /// <summary>Encodes the launcher's DumpFramebuffer output and measures it.</summary>
     private static byte[] Encode(Darkwing.UnityApp.DarkwingLauncher launcher, string path)
     {
