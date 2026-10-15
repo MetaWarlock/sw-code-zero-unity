@@ -1494,20 +1494,24 @@ namespace Darkwing.Core
             s.StateLow = 0x80; s.T480 = 0;
         }
 
-        /// <summary>$9265 behavior 12: sewer pipe popper — probe up ($F2AF $40,$01),
-        /// burst anim $2A/$33, spawn 2 behavior-0B droplets ($929A).</summary>
+        /// <summary>$9265 behavior 12: the object a carrier releases. It falls through
+        /// $F2AF's own $F539 integration until the floor probe answers solid, then bursts
+        /// (anim $2A/$33, $0570 $87/$8E, SFX $26) and spawns 2 behavior-0B droplets.</summary>
         private static void PipePopper(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if ((s.StateLow & 0x0F) == 0) return;
-            if ((s.StateLow & 0x0F) != 0 && s.StateLow != 1) return;
-            // $926C: probe up
-            s.YVelFrac = 0x40;
-            byte hit = ProbeUp(ctx, s, 0x40, 1);
-            if (hit < 3) return;
+            if ((s.StateLow & 0x0F) != 0) return;                            // $926A BNE $92E3 (RTS)
+            // $926C LDA #$40 / LDY #$01 / JSR $F2AF. The helper integrates BEFORE probing
+            // ($F2B3 JSR $F539), so the fall is part of the call, not a separate step —
+            // gold_m1_longroute slot 0E moves 0390→0397→039F at $07.$80 and $EDD2 writes
+            // $051E = $B0 over $F54C's $B5 at f335 (Temp/watch0e/writes.csv).
+            IntegrateYRideSlot(s);                                           // $F2B3 JSR $F539
+            byte hit = Probe(ctx, s, 0x40, 1);                               // $F2B6 JSR $EB52
+            if (hit >= 3) SnapToFloor(ctx, s);                               // $F2BD/$F2BF JSR $EDD2
+            if (hit < 3) return;                                             // $9277 BCC $92E3
             if (s.AnimNumber == 0x33) { s.BehaviorParam = 0x8E; }
             else { SetAnim(s, 0x2A); s.BehaviorParam = 0x87; }
-            ctx.Sfx?.Invoke(0x26);
-            s.StateLow = 1;
+            ctx.Sfx?.Invoke(0x26);                                           // $9290 JSR $F850 #$26
+            s.StateLow++;                                                    // $9293 INC $04D0,X
             int n = 1;
             while (n >= 0)
             {
@@ -1525,11 +1529,6 @@ namespace Darkwing.Core
         }
 
         private static readonly byte[] PipePopperDirs = { 0x01, 0x02 }; // $92E4
-
-        private static byte ProbeUp(EnemyDispatcher ctx, ObjectSystem.Slot s, int setX, int setY)
-        {
-            return Probe(ctx, s, setX, setY); // $F2AF uses the same probe tables
-        }
 
         private static void PipeHopTail(ObjectSystem.Slot s, EnemyDispatcher ctx) { /* shared hop tail */ }
 

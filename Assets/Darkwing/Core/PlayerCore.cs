@@ -575,7 +575,7 @@ namespace Darkwing.Core
                 case 0x01: AirState(held, pressed); break;
                 case 0x02: CrouchState(held, pressed); break;
                 case 0x03: LookUpState(held, pressed); break;
-                case 0x06: HurtGroundState(held, pressed); break;
+                case 0x06: HurtState(held, pressed); break;
                 case 0x04: case 0x0D: HurtAirState(held, pressed); break;
                 case 0x0B: case 0x10: AirborneFullState(held, pressed); break;
                 case 0x09: case 0x18: WorldEntryFallState(); break;
@@ -1160,7 +1160,27 @@ namespace Darkwing.Core
             }
         }
 
-        // ---------- State 6: hurt ground/knockback ($D2C3) ----------
+        // ---------- State 6: $D29A gate, then hurt ground/knockback ($D2C3) ----------
+        /// <summary>
+        /// $D29A: the state-$06 table entry first looks at the player's own animation.
+        /// While it is $0B or $0C the player is being held, so only the $51 timer counts
+        /// down and, at zero, $58 is restored — nothing is moved and no velocity is
+        /// touched. Every other animation falls through to the knockback body at $D2C3.
+        /// Evidence: gold_m1_longroute f331-f346 keeps $0400-frame values X=$01C1,
+        /// Y=$03A6, xv=$01,$80 and vy=$03,$A5 byte-identical while $50 = $06, then $50
+        /// returns to $04 at f347 ($51 counted $0F down to 0).
+        /// </summary>
+        private void HurtState(byte held, byte pressed)
+        {
+            byte anim = Objects?.Slots[0].AnimNumber ?? 0;        // $D29A LDA $0420
+            if (anim != 0x0B && anim != 0x0C) goto knockback;     // $D29F/$D2A3
+            if (StateTimer != 0) { StateTimer--; return; }        // $D2AA/$D2C0
+            State = SavedState;                                   // $D2B6/$D2B8
+            return;
+        knockback:
+            HurtGroundState(held, pressed);
+        }
+
         private void HurtGroundState(byte held, byte pressed)
         {
             // $D2C3-$D2CA: the knockback velocity is a fixed 0.5 px/frame; its sign comes

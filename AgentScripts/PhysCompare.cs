@@ -298,18 +298,26 @@ public static class PhysCompare
     /// (f795, $50=$07) — so the live port's death at X=$01CF is a port divergence, not input
     /// policy. First chunk compares f1..f620 (the run_script main-thread budget is 30 s).
     /// </summary>
-    public static string M1LongRoute() => Compare("m1_longroute", 2500,
-        f =>
+    public static string M1LongRoute()
+    {
+        _enemyDumpLo = 290; _enemyDumpHi = 340;
+        try
         {
-            byte b = (f >= 2 && f <= 2490) ? (byte)0x01 : (byte)0x00;
-            for (int k = 0; k < 18; k++)
-            {
-                int s = 160 + 130 * k;
-                if (f >= s && f <= s + 25) b |= 0x80;
-            }
-            return b;
-        },
-        camera: true, enemies: true, trace: true, limit: 620);
+            return Compare("m1_longroute", 2500,
+                f =>
+                {
+                    byte b = (f >= 2 && f <= 2490) ? (byte)0x01 : (byte)0x00;
+                    for (int k = 0; k < 18; k++)
+                    {
+                        int s = 160 + 130 * k;
+                        if (f >= s && f <= s + 25) b |= 0x80;
+                    }
+                    return b;
+                },
+                camera: true, enemies: true, trace: true, limit: 620);
+        }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
 
     /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
@@ -489,6 +497,8 @@ public static class PhysCompare
             pr[0x4F0 + sl] = (byte)(s.X & 0xFF); pr[0x500 + sl] = (byte)(s.X >> 8);
             pr[0x510 + sl] = (byte)(s.Y & 0xFF); pr[0x520 + sl] = (byte)(s.Y >> 8);
             pr[0x420 + sl] = s.AnimNumber;
+            pr[0x530 + sl] = s.XVelFrac; pr[0x540 + sl] = (byte)s.XVelInt;
+            pr[0x550 + sl] = s.YVelFrac; pr[0x560 + sl] = (byte)s.YVelInt;
         }
         return pr;
     }
@@ -502,7 +512,7 @@ public static class PhysCompare
             if (!active && !inactive) continue;
             // An inactive slot is only interesting while it still carries a template.
             if (!active && r[0x4E0 + sl] == 0 && r[0x420 + sl] == 0) continue;
-            s.Append($"{(active ? "" : "-")}{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2}p{r[0x570 + sl]:X2}f{r[0x400 + sl]:X2} ");
+            s.Append($"{(active ? "" : "-")}{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2}p{r[0x570 + sl]:X2}f{r[0x400 + sl]:X2}vy{r[0x560 + sl]:X2},{r[0x550 + sl]:X2} ");
         }
         return s.ToString();
     }
