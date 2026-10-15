@@ -196,6 +196,10 @@ namespace Darkwing.Core
         /// <summary>0 = not loading, 1 = $DE24 staging loop, 2 = the $E3ED yield frame,
         /// 3 = the $C270-$C2BF palette fade service.</summary>
         private int _sectionStage;
+        /// <summary>Frames left in the $DD57 world-reload staging after a full-world death
+        /// resolve ($0 = idle). Mirrors $FF06 ProcessYield: the world stays frozen and the death
+        /// service is not re-entered until the loader returns and re-applies the entry pose.</summary>
+        private int _worldReloadDelay;
         private bool _chrPending;
         private byte _fadeLevel;    // $0F fade level ($30 → $20 → $10 → $00)
         private byte _fadeDelta;    // $0D per-step delta ($F0 = fade in from black)
@@ -377,11 +381,25 @@ namespace Darkwing.Core
             }
             else
             {
+                // $DD57 does not return inline: the death service drains $05E6 once, tail-calls
+                // $D41B → $DD57, and $DD57 then stays resident for ~28 frames through $FF06
+                // ProcessYield (gold_w05 f658→f684). During those frames $CB01 is NOT re-entered
+                // (hence the single $05E6 drop) and the world is frozen; the entry ($50=09 at
+                // X=002C/Y=0006) only appears when the loader returns.
+                if (_worldReloadDelay > 0)
+                {
+                    _worldReloadDelay--;
+                    if (_worldReloadDelay == 0) LoadWorld(_worldDecoder, _worldId);
+                    // $95/FrameParity was already bumped at the top of Step for this frame;
+                    // the frozen staging frame only advances the frame counter.
+                    Frame++;
+                    return;
+                }
                 Player.DeathService();                      // $CB01-$CB3E, tail-calls $D41B
                 if (Player.WorldReloadRequest && _worldDecoder != null)
                 {
-                    Player.WorldReloadRequest = false;      // $D437 JSR $DD57
-                    LoadWorld(_worldDecoder, _worldId);
+                    Player.WorldReloadRequest = false;      // $D437 JSR $DD57 (staged)
+                    _worldReloadDelay = 28;                 // reload becomes visible on f685
                 }
                 else if (Player.SectionReloadRequest != 0xFF)
                 {
