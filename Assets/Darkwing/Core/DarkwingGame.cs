@@ -695,6 +695,13 @@ namespace Darkwing.Core
                     _reloadStage = 4;
                     return false;
                 case 4:                                    // $C270 fade-in, $30/$20/$10/$00
+                    // G43: the fade-in's first NMI is the first frame where bank5's $8000
+                    // engine is resident again, and its very first instruction is `INC $95`
+                    // (gold f825: $94→$95). The engine then stays gated off for the rest of
+                    // the fade (f826-f841 frozen at $95), so exactly one tick lands here —
+                    // missing it leaves the port's parity a constant golden-1 and shifts the
+                    // $80EB anim-tick phase, which is what makes f1824 X/frac diverge.
+                    if (_fadeFrame == 0) FrameParity++;
                     if (!StepFade()) return false;
                     // $C2BF RTS → $D43A/$D450 JMP $FF06: the frame that leaves the fade is
                     // spent inside the scheduler, so it serves no service at all
