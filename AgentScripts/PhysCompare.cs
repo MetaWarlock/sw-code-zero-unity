@@ -183,6 +183,7 @@ public static class PhysCompare
             {
                 sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} p95={game.FrameParity:X2}/{g[0x95]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}");
                 sb.Append($" H pre={p.PrevState:X2} ho={p.HurtOrigin:X2} p10={p.ProbeResultForTest:X2} iv={p.InvulnFrames:X2} hl={p.HitLadder:X2} | O10={g[0x10]:X2} O7C={g[0x7C]:X2} Ohl={g[0x5B2]:X2},{g[0x5B4]:X2},{g[0x5B6]:X2},{g[0x5B8]:X2}{DeathDiag(g, s0)}");
+                sb.Append($" | S 22={p.CellIndex:X2}/{g[0x22]:X2} 23={p.CellIndexNext:X2}/{g[0x23]:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 2F={p.ScrollMode:X2}/{g[0x2F]:X2} FC={p.ScrollX & 0xFF:X2}/{g[0xFC]:X2}");
                 var hs = game.Enemies != null && game.Enemies.HurtSlot >= 0
                     ? game.Objects.Slots[game.Enemies.HurtSlot] : null;
                 if (hs != null)

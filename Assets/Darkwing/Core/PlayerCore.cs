@@ -264,6 +264,13 @@ namespace Darkwing.Core
             DirBits = 1;                                    // $52 ($DE2C)
             ScrollState = 1;                                // $2B ($DE30)
             ScrollMode = 1;                                 // $2F ($DE32)
+            PrevScrollMode = 1;                             // $20 ($DE2E, LDA #$01 — keeps the
+                                                            // $E670 flip block out of the first
+                                                            // scroll pass after a reload)
+            LastRedrawScroll = 0;                           // $28 ($DE3E) — without this a reload
+                                                            // keeps the death frame's redraw mark,
+                                                            // inflating the first $E650 pass count
+                                                            // and arming $23 early (G42)
             StateTimer = 0;                                 // $51 ($DE5A clears $50)
             AirSubState = 0;                                // $56
             SavedState = 0;                                 // $58
