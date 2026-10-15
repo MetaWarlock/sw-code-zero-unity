@@ -297,12 +297,23 @@ namespace Darkwing.Core
         /// </summary>
         public void ApplyWorldLoad(RoomDecoder.World w)
         {
+            ApplyWorldPrelude(w);       // $DD5F-$DDC8, ends with the $DDCB yield
+            ApplyWorldSpawn(w);         // $DDCE-$DDFE + $DE00 render-on
+        }
+
+        /// <summary>$DD5F-$DDC8: descriptor reads, palettes, CHR requests and the $DE24
+        /// render-off/streamer restart — everything $DD57 does BEFORE its $DDCB yield. The
+        /// position is only half re-anchored here: the $DE24 block zeroes $0500 (X high) and
+        /// $DEC8 writes $0520 (Y high), so a reload frame keeps the death frame's low bytes
+        /// (gold_m1_longroute f814: X=$0094/Y=$0305 out of X=$0394/Y=$0405).</summary>
+        public void ApplyWorldPrelude(RoomDecoder.World w)
+        {
             TilesetBank = w.SetBank;                        // $36 ($DD76)
             CellIndex = CellIndexNext = w.StartCell;        // $22/$23 ($DD7B)
             ScrollYRow = w.StartRow;                        // $FB ($DD82)
             ScrollX = 0;                                    // $FC/$FD = 0 ($DD84/$DD89)
-            X = 0x2C;                                       // $0500=0 ($DD8B), $04F0=$2C ($DDDB LDA #$2C/STA $04F0,X)
-            Y = (ushort)((w.StartRow << 8) | 0x06);         // $0520 ($DD82), $0510=$06 ($DDE3)
+            X = (ushort)(X & 0xFF);                         // $0500 = 0 ($DE24 zero block)
+            Y = (ushort)((w.StartRow << 8) | (Y & 0xFF));   // $0520 ($DEC8,X), $0510 still old
             ChrLatch0 = w.ChrReq0;                          // $1A ($DD99)
             ChrLatch1 = w.ChrReq1;                          // $1B ($DD9E)
             SectionFlag3D = w.Flag3D;                       // $3D ($DDB6)
@@ -310,6 +321,8 @@ namespace Darkwing.Core
             // non-zero, so the ring event stays with the caller — see DarkwingGame.LoadWorld.
             RowStride = (byte)w.RowWidth;                   // $2E ($DD94)
             BottomRow = w.TopRow;                           // $2D ($DDB1)
+            WorldId = w.Id;                                 // $31 (the $D589/$9636 index)
+            State = 0;                                      // $50 ($DE24 zero block)
             ResetLoaderState(0);                            // $DDC8 JSR $DE24, $FD = 0
 
             // $DE86-$DE91: the loader walks its own $25 cursor to $0F and steps $23 with
@@ -318,7 +331,15 @@ namespace Darkwing.Core
             // f328); the port runs it inline so the incoming cell is armed from the load
             // frame instead of lagging two cells behind until the first scroll.
             for (int guard = 0; guard < 256 && !StageSectionPass(); guard++) { }
+        }
 
+        /// <summary>$DDCE-$DDFE (after the $DDCB yield): the slot-0 seed, the entry pose and
+        /// the state-$09 release. $31 &gt;= 7 (dialog scenes) jumps to $DE09 and keeps
+        /// $0400=$D8 without arming the object.</summary>
+        public void ApplyWorldSpawn(RoomDecoder.World w)
+        {
+            X = 0x2C;                                       // $04F0 ($DDDB LDA #$2C)
+            Y = (ushort)((ScrollYRow << 8) | 0x06);         // $0510 ($DDE3 LDA #$06)
             if (Objects != null)
             {
                 var s0 = Objects.Slots[0];
@@ -334,7 +355,6 @@ namespace Darkwing.Core
             State = 0x09;                                   // $50 ($DDFE) — map entry, not the $12 exit
             _matLanded = 0;                                 // $04D0 & $0F ($DDF1 seeds $80)
             _cardWait = 0;                                  // $9600 has not run yet
-            WorldId = w.Id;                                 // $31 (the $D589/$9636 index)
             // $DE03 JSR $FF06 (1 frame) + $DE06 JMP $C254 → $C270 palette fade: $0F=$30
             // stepped by $0D=$F0 with $0E=$04 yields per round ($C2A4-$C2B0) = 30/20/10/00,
             // exiting when $0F goes negative (it reads $F0 from the release frame on).

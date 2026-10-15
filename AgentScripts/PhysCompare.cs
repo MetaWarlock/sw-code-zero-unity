@@ -9,10 +9,13 @@ public static class PhysCompare
     /// </summary>
     private static string Compare(string name, int frames, System.Func<int, byte> input,
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
-        int entryFreeze = 0, bool trace = false, int limit = 0)
+        int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/ram_frames.bin");
+        byte[] palAll = palette
+            ? File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/gold_{name}/palette_frames.bin")
+            : System.Array.Empty<byte>();
         int avail = ramAll.Length / 2048;
 
         var data = Darkwing.Core.DataLoader.Load(
@@ -84,6 +87,14 @@ public static class PhysCompare
         // $DDFE STA $50 runs during the load frame itself, so a capture seeded on the first
         // frame that shows $50=$09 still owes 16 of the 17 fade frames ($DE03/$C270).
         p.EntryFreezeFrames = entryFreeze;
+        // $0320/$0300/$3F00 are loader state the RAM-seeded start point does not carry: without
+        // this the first fade ramps from zeros instead of from the live world table.
+        if (palette)
+        {
+            var seedPal = new byte[32];
+            System.Array.Copy(palAll, 0, seedPal, 0, 32);
+            game.SeedPaletteTables(seedPal);
+        }
         var s0 = game.Objects.Slots[0];
         if (enemies)
         {
@@ -155,6 +166,7 @@ public static class PhysCompare
         sb.Append($"[player_mechanics] {name}: ");
         int firstDiv = -1;
         int matchFrames = 0;
+        int palOk = 0, palFirstBad = -1, winOk = 0, winTotal = 0;   // $3F00 byte compare
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
             var pad = Darkwing.Core.NesButtons.FromByte(input(f));
@@ -224,6 +236,15 @@ public static class PhysCompare
                          g[0x460], g[0x470], g[0x560], g[0x550] };
             for (int i = 0; i < pv.Length; i++)
                 if (pv[i] != ov[i] && firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
+            if (palette)
+            {
+                bool same = true;
+                for (int i = 0; i < 32; i++)
+                    if (game.Ppu.PaletteRam[i] != palAll[f * 32 + i]) { same = false; break; }
+                if (same) palOk++;
+                else if (palFirstBad < 0) palFirstBad = f;
+                if (f >= 795 && f <= 841) { winTotal++; if (same) winOk++; }
+            }
             if (pos && cam) matchFrames++;
             else
             {
@@ -235,6 +256,10 @@ public static class PhysCompare
         }
         int span = avail - 1 - seedFrame;
         if (limit > 0) span = System.Math.Min(limit, span);
+        if (palette)
+            sb.Append(palFirstBad < 0
+                ? $"PAL $3F00: MATCH {palOk}/{span} "
+                : $"PAL $3F00: {palOk}/{span} (first bad f{palFirstBad}, death window f795-f841 {winOk}/{winTotal}) ");
         sb.Append("FIELDS[");
         for (int i = 0; i < fieldNames.Length; i++)
             if (firstBad[i] >= 0)
@@ -313,7 +338,7 @@ public static class PhysCompare
             }
             return b;
         },
-        camera: true, enemies: true, trace: true, limit: 0);
+        camera: true, enemies: true, trace: true, limit: 0, palette: true);
 
     /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
@@ -950,5 +975,35 @@ public static class PhysCompare
         for (int i = 0; i < names.Length; i++)
             sb.Append($"{names[i]}={ok[i]}/{span} (first bad {(firstBad[i] < 0 ? "-" : firstBad[i].ToString())}) ");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// ROM palette ($3F00-$3F1F) per frame across the death→reload window of
+    /// gold_m1_longroute, side by side with the port's own Ppu.PaletteRam. The golden
+    /// artifact is 32 bytes/frame written by the same endFrame callback as ram_frames.bin,
+    /// so the harness frame index maps identically.
+    /// </summary>
+    public static string PaletteDeath() => PaletteWindow(786, 860);
+
+    public static string PaletteWindow(int lo, int hi, string golden = "m1_longroute", bool runPort = false)
+    {
+        string root = "D:/Art/SW Code Zero Unity";
+        string dir = root + $"/Research/DarkwingDuck/reference/gold_{golden}";
+        byte[] palAll = File.ReadAllBytes(dir + "/palette_frames.bin");
+        byte[] ramAll = File.ReadAllBytes(dir + "/ram_frames.bin");
+        var sb = new System.Text.StringBuilder($"[PaletteWindow {golden} f{lo}..f{hi}]\n");
+        for (int f = lo; f <= hi && f * 32 < palAll.Length; f++)
+        {
+            byte[] g = new byte[2048];
+            System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
+            sb.Append($"f{f} st={g[0x50]:X2} d0={g[0x4D0]:X2} x={g[0x500]:X2}{g[0x4F0]:X2} y={g[0x520]:X2}{g[0x510]:X2} " +
+                      $"w31={g[0x31]:X2} 64={g[0x64]:X2} 66={g[0x66]:X2} 0F={g[0x0F]:X2} 0D={g[0x0D]:X2} 0E={g[0x0E]:X2} FE={g[0xFE]:X2} F0={g[0xF0]:X2} " +
+                      $"src320={g[0x320]:X2}{g[0x321]:X2}{g[0x322]:X2} mir300={g[0x300]:X2}{g[0x301]:X2}{g[0x302]:X2} ");
+            for (int i = 0; i < 32; i++) sb.Append(palAll[f * 32 + i].ToString("X2"));
+            sb.Append('\n');
+        }
+        string text = sb.ToString();
+        File.WriteAllText(root + "/Temp/palette_window.txt", text);
+        return $"wrote Temp/palette_window.txt ({text.Length} chars)";
     }
 }

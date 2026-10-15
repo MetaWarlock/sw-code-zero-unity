@@ -150,38 +150,63 @@ namespace Darkwing.Core
         public void LoadWorld(RoomDecoder decoder, byte worldId)
         {
             _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
-            var w = decoder.GetWorld(worldId);
+            WorldPrelude();
+            WorldSpawn();
+            // $C2F9/$C319 never flag $18 — the PPU only sees a new table through a fade step's
+            // $C2A2 STY $18. Inside the staged loader that is the $DE06/$C270 fade-in; this
+            // entry point is the host's inline first load, so push the table once here.
+            _palDirty = 0xFF;
+            _sectionStage = 0;                              // $DD57 finishes inline (DE06 JMP $C254)
+            SectionUsesInternalEngine = false;
+            MissionCleared = false;
+            WorldRunning = true;
+        }
+
+        /// <summary>$DD5F-$DDC8 plus the $DE24 render-off/staging restart — the half of
+        /// $DD57 that runs before its $DDCB yield.</summary>
+        private void WorldPrelude()
+        {
+            var w = _worldDecoder.GetWorld(_worldId);
+            _world = w;
             Objects?.ClearForSectionLoad();                 // $DD57 → $C248 → $C235
-            TileMap = new LevelTileMap(decoder, Ppu, w);
+            TileMap = new LevelTileMap(_worldDecoder, Ppu, w);
             Player.TileMap = TileMap;
             _gridByte = null; _flagByte = null;             // ($32)/($34) now point at this world
-            Player.ApplyWorldLoad(w);
+            RenderOff();                                    // $DE24 → $C14E: blank while it streams
+            Player.ApplyWorldPrelude(w);
             if (Bank7 != null)
-                Player.CardReleaseChr = RoomDecoder.DescByte(Bank7, 0xD589, worldId);  // $D562 ($1A on $9600 release)
+                Player.CardReleaseChr = RoomDecoder.DescByte(Bank7, 0xD589, _worldId);  // $D562 ($1A on $9600 release)
             WireWorldFeed();
-            if (_data != null && _data.Levels != null && worldId < _data.Levels.Length)
-                CurrentLevel = _data.Levels[worldId];
+            if (_data != null && _data.Levels != null && _worldId < _data.Levels.Length)
+                CurrentLevel = _data.Levels[_worldId];
             AnchorAndSpawnPlacements();                     // $DE93-$DEA1, tail of $DE24
 
             var t = Sections;
             if (t != null)
             {
-                t.ReadBgPaletteByIndex(w.BgPalIdx, _paletteSrc);            // $DDC2 → $C2F9
+                var bg = new byte[16];
                 var sp = new byte[16];
-                t.ReadSpritePaletteByIndex(w.SpPalIdx, sp);                 // $DDC5 → $C319
-                for (int i = 0; i < 16; i++) _paletteSrc[16 + i] = sp[i];
-                for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = _paletteSrc[i];
+                t.ReadBgPaletteByIndex(w.BgPalIdx, bg);     // $DDB8 → $C2F9
+                t.ReadSpritePaletteByIndex(w.SpPalIdx, sp); // $DDC2 → $C319
+                SetPaletteSource(bg, 0);
+                SetPaletteSource(sp, 16);
             }
             Ppu.Chr0Bank = (byte)(w.ChrReq0 & 0x7F);        // $FF21 applies the $1A request
             Ppu.Chr1Bank = (byte)(w.ChrReq1 & 0x7F);        // $FF3B applies the $1B request
             Player.ChrLatch0 = 0; Player.ChrLatch1 = 0;
             // $DDA0-$DDAA: the ring event is only re-queued when $D9 was still non-zero.
             if (Player.SectionRingEvent != 0) PlaySfx(Player.SectionRingEvent);
-            _sectionStage = 0;                              // $DD57 finishes inline (DE06 JMP $C254)
-            SectionUsesInternalEngine = false;
-            MissionCleared = false;
-            WorldRunning = true;
         }
+
+        /// <summary>$DDCE-$DDFE + $DE00: the slot-0 seed, the entry pose and rendering
+        /// back on. Only the state-$09 release makes the player visible, one
+        /// $FF06-yield after the prelude (gold_m1_longroute: prelude f814, spawn f824).</summary>
+        private void WorldSpawn()
+        {
+            Player.ApplyWorldSpawn(_world);
+            RenderOn();                                     // $DE00 JSR $C158
+        }
+        private RoomDecoder.World _world;
 
         /// <summary>$E388 section/door descriptor tables, read from bank 7.</summary>
         public SectionTable Sections
@@ -196,16 +221,68 @@ namespace Darkwing.Core
         /// <summary>0 = not loading, 1 = $DE24 staging loop, 2 = the $E3ED yield frame,
         /// 3 = the $C270-$C2BF palette fade service.</summary>
         private int _sectionStage;
-        /// <summary>Frames left in the $DD57 world-reload staging after a full-world death
-        /// resolve ($0 = idle). Mirrors $FF06 ProcessYield: the world stays frozen and the death
-        /// service is not re-entered until the loader returns and re-applies the entry pose.</summary>
-        private int _worldReloadDelay;
+        /// <summary>Death-reload staging ($CB01 → $D41B → $C248/$C276 fade-out, then $DD57).
+        /// 0 = idle, 1 = $C276 fade-out ($0F=$10 step $10, exit at $0F==$50), 2 = $DE24 render-off
+        /// prelude + the black streaming window, 3 = $DDD6-$DDFE spawn + $C158 render-on,
+        /// 4 = the $C270 fade-in, 5 = the $D450 $FF06 yield that spends the fade-exit frame.</summary>
+        private int _reloadStage;
+        /// <summary>Frames left in the current <see cref="_reloadStage"/> hold (the $C248 tail and
+        /// the black streaming window; see GAPS G37 for why the window is a measured constant).</summary>
+        private int _reloadHold;
         private bool _chrPending;
         private byte _fadeLevel;    // $0F fade level ($30 → $20 → $10 → $00)
         private byte _fadeDelta;    // $0D per-step delta ($F0 = fade in from black)
         private byte _fadeFrame;    // frames served inside the $C270 loop ($0E = 4 per step)
-        private readonly byte[] _paletteSrc = new byte[32]; // $0320/$0330 un-faded palette
+        /// <summary>True while the fade was entered through $C276 ($0D=$10): $C2B7 tests
+        /// <code>CMP #$50</code> and RTS-es there, whereas the $C270 fade-in only leaves through
+        /// $C2BB <code>BPL</code> once $0F goes negative.</summary>
+        private bool _fadeExitAt50;
+        private readonly byte[] _paletteSrc = new byte[32]; // $0320 un-faded palette
+        private readonly byte[] _palMirror = new byte[32];  // $0300 faded palette mirror
+        private byte _palDirty;     // $18: set by $C2A2 STY $18, consumed by the NMI $C059 upload
         public bool SectionLoading => _sectionStage != 0;
+
+        /// <summary>$C2F9/$C319: a palette table load writes BOTH $0300 and $0320 and does not
+        /// flag $18, so the PPU keeps showing whatever the last fade step uploaded.</summary>
+        private void SetPaletteSource(byte[] src, int offset)
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                _paletteSrc[offset + i] = src[i];
+                _palMirror[offset + i] = src[i];
+            }
+        }
+
+        /// <summary>$C059-$C077: the NMI uploads $0300→$3F00 only when $18 is non-zero, which is
+        /// why a fade step's ramp is visible on the NEXT frame (gold_m1_longroute: $0F=$10 is
+        /// stored on f796 while $3F00 still holds the un-faded table).</summary>
+        private void NmiPaletteUpload()
+        {
+            if (_palDirty == 0) return;
+            for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = _palMirror[i];
+            _palDirty = 0;
+        }
+
+        /// <summary>$C14E: <code>INC $F0 / LDA #$00 / STA $FE / STA $2001</code>. The port keeps
+        /// the mask only in the PPU register, so the black window comes from
+        /// <see cref="Ppu.Render"/> filling with $3F00 while bit3-4 of $2001 are clear.</summary>
+        private void RenderOff() => Ppu.WriteRegister(0x2001, 0x00);
+
+        /// <summary>$C158: <code>DEC $F0 / LDA #$1E / STA $FE / STA $2001</code>.</summary>
+        private void RenderOn() => Ppu.WriteRegister(0x2001, 0x1E);
+
+        /// <summary>Host/harness boot palette: writes $0320, $0300 and $3F00 at once. A staged
+        /// load never touches $3F00 directly (only the NMI $C059 upload does), but the very first
+        /// table has no preceding fade, so the host has to place it itself.</summary>
+        public void SeedPaletteTables(byte[] pal32)
+        {
+            for (int i = 0; i < 32; i++)
+            {
+                _paletteSrc[i] = pal32[i];
+                _palMirror[i] = pal32[i];
+                Ppu.PaletteRam[i] = pal32[i];
+            }
+        }
 
         /// <summary>$E388 with X = section id ($CA6E calls it from the $5B door
         /// request, $D461 for the respawn after death). The loader does not return
@@ -227,9 +304,8 @@ namespace Darkwing.Core
             var sp = new byte[16];
             t.ReadBgPalette(sectionId, bg);               // $C2F9 → $0300/$0320
             t.ReadSpritePalette(sectionId, sp);           // $C319 → $0310/$0330
-            for (int i = 0; i < 16; i++) _paletteSrc[i] = bg[i];
-            for (int i = 0; i < 16; i++) _paletteSrc[16 + i] = sp[i];
-            for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = _paletteSrc[i];
+            SetPaletteSource(bg, 0);
+            SetPaletteSource(sp, 16);
             // $E454-$E476: checkpoint ids $02,$04,$06,$08,$0A,$0C,$0E set the $3B intro
             // hold, which redirects the state-$12 exit to $50=$0F instead of $50=$00.
             Player.IntroHoldFlag =
@@ -319,6 +395,7 @@ namespace Darkwing.Core
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
+            NmiPaletteUpload();            // $C059: $18-flagged $0300 → $3F00, every frame
             // $DE03 JSR $FF06 + $DE06 JMP $C254 → $C270: the world loader stays in its
             // palette fade for 17 NMIs, so neither the input read nor $CAFC/$CB41 runs
             // (gold_w00: $50=$09 from f328, first dispatch tick f345, $95 parked at 01).
@@ -344,6 +421,17 @@ namespace Darkwing.Core
                 // $E388 RTS-ed into $CA75: the player dispatcher ($CAFC → $CB41) already
                 // ran its pass of this frame, only the world services are left.
                 RunWorldServices();
+                Frame++;
+                return;
+            }
+            // $D41B → $C248/$C276 → $DD57: the death reload is resident across the fade-out,
+            // the black streaming window and the fade-in, so these frames take no input and
+            // run no dispatcher either ($FF06 ProcessYield only).
+            if (_reloadStage != 0)
+            {
+                ConsumeChrLatch();
+                bool returned = AdvanceReloadStage();
+                if (returned) RunWorldServices();
                 Frame++;
                 return;
             }
@@ -382,24 +470,19 @@ namespace Darkwing.Core
             else
             {
                 // $DD57 does not return inline: the death service drains $05E6 once, tail-calls
-                // $D41B → $DD57, and $DD57 then stays resident for ~28 frames through $FF06
-                // ProcessYield (gold_w05 f658→f684). During those frames $CB01 is NOT re-entered
-                // (hence the single $05E6 drop) and the world is frozen; the entry ($50=09 at
-                // X=002C/Y=0006) only appears when the loader returns.
-                if (_worldReloadDelay > 0)
-                {
-                    _worldReloadDelay--;
-                    if (_worldReloadDelay == 0) LoadWorld(_worldDecoder, _worldId);
-                    // $95/FrameParity was already bumped at the top of Step for this frame;
-                    // the frozen staging frame only advances the frame counter.
-                    Frame++;
-                    return;
-                }
+                // $D41B → $DD57, and the loader then stays resident through $FF06 yields until
+                // its fade-in RTS-es back into $D43A.
                 Player.DeathService();                      // $CB01-$CB3E, tail-calls $D41B
                 if (Player.WorldReloadRequest && _worldDecoder != null)
                 {
-                    Player.WorldReloadRequest = false;      // $D437 JSR $DD57 (staged)
-                    _worldReloadDelay = 28;                 // reload becomes visible on f685
+                    // $D437 JSR $DD57 is reached through $CB01's JSR $C248, whose first action is
+                    // the $C276 fade-out ($0F=$10, $0D=$10, exit at $0F==$50). gold_m1_longroute:
+                    // resolve on f795, $0F=$10 stored on f796, $50 on f812.
+                    Player.WorldReloadRequest = false;
+                    _reloadStage = 1;
+                    _fadeLevel = 0x00; _fadeDelta = 0x10; _fadeFrame = 0; _fadeExitAt50 = true;
+                    StepFade();     // $C276 STA $0F falls straight into $C285: the first ramp is
+                                    // applied in the frame that enters the fade (f796 reads $10).
                 }
                 else if (Player.SectionReloadRequest != 0xFF)
                 {
@@ -508,21 +591,84 @@ namespace Darkwing.Core
                     _fadeLevel = 0x40;
                     _fadeDelta = 0xF0;
                     _fadeFrame = 0;                      // $C283 LDY #$04 / STY $0E
+                    _fadeExitAt50 = false;               // $C270 enters through $C2BB BPL
                     _sectionStage = 3;
                     return false;
                 default:
-                    if ((_fadeFrame & 3) == 0)
+                    if (!StepFade()) return false;
+                    _sectionStage = 0;
+                    return true;
+            }
+        }
+
+        /// <summary>One frame of the shared $C285-$C2BF fade loop. Each step applies its ramp and
+        /// then yields four NMIs ($C2A4-$C2AE with $0E=$04); on the frame the fourth yield returns,
+        /// $C2B0-$C2B5 adds $0D to $0F and either RTS-es ($C2B7 CMP #$50 for a $C276 fade-out) or
+        /// loops back to $C285 ($C2BB BPL, i.e. until $0F goes negative for a $C270 fade-in). The
+        /// exit level is never applied. Returns true on the frame the fade RTS-es.</summary>
+        private bool StepFade()
+        {
+            if ((_fadeFrame & 3) == 0)
+            {
+                _fadeLevel = (byte)(_fadeLevel + _fadeDelta);           // $C2B0-$C2B5
+                if (_fadeExitAt50 ? _fadeLevel == 0x50                  // $C2B7/$C2B9
+                                  : (_fadeLevel & 0x80) != 0)           // $C2BB BPL $C285
+                    return true;
+                ApplyFadeRamp();                                        // $C285-$C2A0
+            }
+            _fadeFrame++;
+            return false;
+        }
+
+        /// <summary>
+        /// One frame of the death reload: $CB01 → $C248/$C276 fade-out, the $C24B/$C24E/$C251 tail,
+        /// $D437 JSR $DD57's render-off prelude plus its black streaming window, the $DDD6-$DDFE
+        /// spawn with $DE00 render-on, and the $DE06/$C254/$C270 fade-in. Timeline measured on
+        /// gold_m1_longroute: fade-out f796-f812, prelude f814, window f815-f823, spawn f824,
+        /// fade-in f825-f841. Returns true on the frame $C2BF RTS-es back into $D43A, where only
+        /// the world services run (the player dispatcher is still inside the loader).
+        /// </summary>
+        private bool AdvanceReloadStage()
+        {
+            switch (_reloadStage)
+            {
+                case 1:                                     // $C276 fade-out, $10/$20/$30/$40→$50
+                    if (StepFade())
                     {
-                        _fadeLevel = (byte)(_fadeLevel + _fadeDelta);   // $C2B0-$C2B5
-                        if ((_fadeLevel & 0x80) != 0)                   // $C2BB BPL $C285
-                        {
-                            _sectionStage = 0;
-                            return true;
-                        }
-                        ApplyFadeRamp();                                // $C285-$C2A0
+                        _reloadStage = 2;
+                        _reloadHold = 1;                   // $C24B JSR $C235 + the $C251 $FF06 yield
                     }
-                    _fadeFrame++;
                     return false;
+                case 2:
+                    if (_reloadHold > 0) { _reloadHold--; return false; }
+                    WorldPrelude();                         // $DD5F-$DDCB, $DE24 render-off
+                    _reloadStage = 3;
+                    // G37: the ROM keeps streaming columns through $E63C until its $25 cursor
+                    // reaches $0F; the per-frame pass budget is not derived yet, so the window
+                    // f815-f823 is the measured constant (rendering is off, nothing is visible).
+                    _reloadHold = 9;
+                    return false;
+                case 3:
+                    if (_reloadHold > 0) { _reloadHold--; return false; }
+                    WorldSpawn();                           // $DDD6-$DDFE + $DE00 render-on
+                    // $DE03 JSR $FF06 spends the spawn frame, so $DE06/$C270 primes one frame
+                    // later (f825 holds $0F=$30, f824 still the prelude's $88).
+                    Player.EntryFreezeFrames = 0;           // stage 4 supplies the frozen frames
+                    _fadeLevel = 0x40; _fadeDelta = 0xF0; _fadeFrame = 0; _fadeExitAt50 = false;
+                    _reloadStage = 4;
+                    return false;
+                case 4:                                    // $C270 fade-in, $30/$20/$10/$00
+                    if (!StepFade()) return false;
+                    // $C2BF RTS → $D43A/$D450 JMP $FF06: the frame that leaves the fade is
+                    // spent inside the scheduler, so it serves no service at all
+                    // (gold f841 changes only $0F; $430/$97 tick on f842, $0460/$0550 on f843).
+                    _reloadStage = 5;
+                    return false;
+                default:                                   // the yield unwinds back into $CA43
+                    _reloadStage = 0;
+                    // Only the frame tail runs here; the player dispatcher takes the NEXT
+                    // frame (gold f842 = anim tick + $97 clear, first fall tick f843).
+                    return true;
             }
         }
 
@@ -538,14 +684,18 @@ namespace Darkwing.Core
                 (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
         }
 
-        /// <summary>$C285-$C2A0: palette = $0320 source − fade level, clamped to $0F.</summary>
+        /// <summary>$C285-$C2A2: $0320 → $0300, then $0300[i] = max($0300[i] − $0F, $0F), then
+        /// <code>STY $18</code> flags the table for the next NMI upload — which is why a fade
+        /// step is only visible on the following frame. $0F is the port's <see cref="_fadeLevel"/>;
+        /// the $0300/$0320 pair lives in <see cref="_palMirror"/>/<see cref="_paletteSrc"/>.</summary>
         private void ApplyFadeRamp()
         {
             for (int i = 0; i < 32; i++)
             {
                 int v = _paletteSrc[i] - _fadeLevel;
-                Ppu.PaletteRam[i] = (byte)(v < 0x0F ? 0x0F : v);
+                _palMirror[i] = (byte)(v < 0x0F ? 0x0F : v);
             }
+            _palDirty = 0xFF;
         }
 
         /// <summary>Serialize all future-affecting state. Version-tagged.</summary>
