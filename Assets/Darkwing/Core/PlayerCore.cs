@@ -79,6 +79,13 @@ namespace Darkwing.Core
         public ITileMap TileMap { get => _tiles; set => _tiles = value; }
         public ObjectSystem Objects;  // slot 0 shares the player's anim state (original RAM model)
         public System.Action<int> Sfx; // wired to DarkwingGame.PlaySfx ($F84E/$F850 sites)
+        /// <summary>$9605: the mission intro card owns the OAM page while it is on screen, so the
+        /// card's blit ($961D JSR $9636) and the cursor prime ($9607 STY $97 / JSR $F89A) both act
+        /// on the dispatcher. Null until the host wires it.</summary>
+        public OamDispatcher Oam;
+        /// <summary>Raw PRG bank 2, mapped at $8000. <see cref="OamDispatcher.BlitMissionCard"/> reads
+        /// the card's table quartets from it, so a missing bank disables the blit rather than faulting.</summary>
+        public byte[] PrgBank2;
         private readonly byte[] _probeX = new byte[64];  // $06 = last sampled X ($EB52 uses $06/$07)
         private readonly byte[] _probeY = new byte[64];
         // $43 = the class of the MIDDLE probe point of the last $EB52 scan ($EB6B
@@ -748,11 +755,23 @@ namespace Darkwing.Core
                     return;
                 }
                 if (s0.AnimFrame == 0x11 ||
-                    (s0.AnimFrame == 0x0F && s0.AnimTimer == 0x04)) _cardWait = 0x3C;   // $960C-$9632
+                    (s0.AnimFrame == 0x0F && s0.AnimTimer == 0x04))
+                {
+                    _cardWait = 0x3C;   // $9632 JSR $FEFF
+                    // $9605 primed $97 = $A0 and published, then $961D JSR $9636 filled the
+                    // card's 40 OAM records below the cursor; the dispatcher holds that layout
+                    // for the whole $3C-frame yield because its cursor starts at $A0.
+                    if (Oam != null && PrgBank2 != null)
+                    {
+                        Oam.MissionCardHold = true;
+                        Oam.BlitMissionCard(PrgBank2, WorldId);
+                    }
+                }
                 return;
             }
             if (--_cardWait != 0) return;                   // $FEFF-$FF03
             _cardPhase = false;                             // $D554 RTS back to $CA43
+            if (Oam != null) Oam.MissionCardHold = false;   // gameplay resumes the cursor=4 walk
             State = 0;                                      // $D556
             SetAnimPlayer(0x01);                            // $D558/$D55A
             ChrLatch0 = CardReleaseChr;                     // $D560-$D565 ($1A = $D589[$31])

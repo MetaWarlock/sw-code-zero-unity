@@ -44,6 +44,7 @@ namespace Darkwing.Core
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
                 : null;
             Oam?.SetHud(Hud);
+            Player.Oam = Oam;   // $9605 mission-card composition reaches the dispatcher
         }
 
         /// <summary>Raw PRG bank 5 (anim/frame/coord tables) for the OAM dispatcher.</summary>
@@ -351,8 +352,14 @@ namespace Darkwing.Core
         public byte[] MapNametable { get; set; }
         public byte[] MapPalette { get; set; }
         /// <summary>PRG bank 2 mapped at $8000-$BFFF: the GAME OVER card's nametable records
-        /// and palette (see WorldState.GameOver* for the addresses and their evidence).</summary>
-        public byte[] Bank2 { get; set; }
+        /// and palette (see WorldState.GameOver* for the addresses and their evidence), plus the
+        /// mission intro card's OAM quartets read by <see cref="PlayerCore"/>'s $9636 blit.</summary>
+        public byte[] Bank2
+        {
+            get => _bank2;
+            set { _bank2 = value; Player.PrgBank2 = value; }
+        }
+        private byte[] _bank2;
 
         /// <summary>The bank-2 dialog coroutine ($AA00) — streams $0E/$0F are the intro lines
         /// Darkwing speaks over the night scene ($C606/$C617). Built on first use because the
