@@ -88,9 +88,6 @@ namespace Darkwing.Core
             return m >= 0 && (World.CompletedMask & (1 << m)) == 0;
         }
 
-        /// <summary>All seven missions done → the ending path ($D838 with $31 >= 6).</summary>
-        public bool AllMissionsComplete => World.CompletedMask == 0x7F;
-
         /// <summary>
         /// One frame of flow logic. Pad bits are the NES strobe byte ($14):
         /// A=$80, B=$40, Select=$20, Start=$10, Up=$08, Down=$04, Left=$02, Right=$01
@@ -186,14 +183,14 @@ namespace Darkwing.Core
                     if (PhaseFrames == 1)
                     {
                         int mission = World.CurrentWorld;
+                        // $D838 LDA $31 / CMP #$06 / BCS $D841 — the ending branch is gated on the
+                        // world id just cleared, not on the $69 mask. $D95B INC $38 and the $A100
+                        // map rebuild live in the $D8D1 tail, so the ending path takes neither.
+                        if (mission >= 6) { SetPhase(Phase.Ending); break; }
                         World.CompletedCount++;                 // $D95B INC $38
-                        if (AllMissionsComplete) SetPhase(Phase.Ending);   // $D838 with $31 >= 6
-                        else
-                        {
-                            EnterMap();
-                            // $A1D0/$A5AB: counted at map init, only when $F8 bit7 is clear
-                            if ((World.LastOutcome & 0x80) == 0) World.CompletedMask |= (byte)(1 << mission);
-                        }
+                        EnterMap();
+                        // $A1D0/$A5AB: counted at map init, only when $F8 bit7 is clear
+                        if ((World.LastOutcome & 0x80) == 0) World.CompletedMask |= (byte)(1 << mission);
                     }
                     break;
 

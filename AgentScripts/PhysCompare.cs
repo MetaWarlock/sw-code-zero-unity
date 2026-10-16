@@ -200,9 +200,9 @@ public static class PhysCompare
             s0.AnimTimer = ram0[0x430];
         }
 
-        // Per-field first-divergence report. The strict RESULT below is unchanged; this
-        // only localises WHICH field breaks first, so a known rendering-cadence residual
-        // (e.g. $23) cannot hide a real physics divergence further down the same capture.
+        // Per-field first-divergence report, and the input to the STRICT verdict below. RESULT
+        // itself only gates X/Y (plus the camera fields when asked), so this table is what makes
+        // a "$25 drifts but RESULT says MATCH" run legible instead of misleading.
         var fieldNames = new[] { "X", "Y", "$50 state", "$FA scrollY", "$FB row",
                                  "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor",
                                  "$0460 Yfrac", "$0470 Xfrac", "$0560 YvelI", "$0550 YvelF",
@@ -216,11 +216,15 @@ public static class PhysCompare
         sb.Append($"[player_mechanics] {name}: ");
         int firstDiv = -1;
         int matchFrames = 0;
-        // Enemy-trajectory scoring: per frame, every slot that the ROM has active must match
-        // the port on position (X/Y) and identity/state (behavior, state, anim). This is what
-        // proves the bank-6 dispatcher deterministically, not just the player.
+        // Enemy-trajectory scoring: per frame, EVERY slot (active in either side) must match on
+        // position (X/Y), the state/active byte, behavior and anim number. This is what proves the
+        // bank-6 dispatcher deterministically, not just the player.
         int enemyMatchFrames = 0, enemyTotalFrames = 0, enemyFirstDiv = -1, enemyDivSlot = -1;
         string enemyDivField = null; int enemyDivPort = 0, enemyDivOrig = 0;
+        // Per-frame outcomes of every clause STRICT is allowed to fail on (see the verdict block).
+        bool fEnemies = true, fPal = true, fOam = true;
+        int fieldBadIdx = -1, strictMatch = 0, strictFirstDiv = -1, strictNoOam = 0;
+        string strictFirstDetail = null;
         int palOk = 0, palFirstBad = -1, winOk = 0, winTotal = 0;   // $3F00 byte compare
         // $3F00 can only diverge through the $0300 content or the $18 upload timing, so score the
         // port's two internal palette states against the captured RAM to localise which one is wrong.
@@ -245,6 +249,7 @@ public static class PhysCompare
             game.Oam.SeedShadow(oamAll, seedFrame * 256);
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
+            fEnemies = fPal = fOam = true; fieldBadIdx = -1;
             var pad = Darkwing.Core.NesButtons.FromByte(input(f));
             game.Step(pad);
             byte[] g = new byte[2048];
@@ -266,9 +271,23 @@ public static class PhysCompare
                 bool allMatch = true;
                 for (int s = 1; s < 16 && allMatch; s++)
                 {
-                    if ((g[0x4D0 + s] & 0x80) == 0) continue;   // only slots the ROM has active
-                    int[] addrs = { 0x4F0, 0x500, 0x4D0, 0x4E0, 0x420 };
-                    string[] fld = { "Xlo", "Xhi", "state", "beh", "anim" };
+                    // The active bit is a COMPARED field, not a filter. Scanning only the slots the
+                    // ROM happens to hold alive silently accepted the opposite error: a slot the
+                    // port spawns and the ROM does not.
+                    bool romOn = (g[0x4D0 + s] & 0x80) != 0;
+                    bool portOn = (prE[0x4D0 + s] & 0x80) != 0;
+                    if (romOn != portOn)
+                    {
+                        allMatch = false;
+                        if (enemyFirstDiv < 0)
+                        { enemyFirstDiv = f; enemyDivSlot = s; enemyDivField = "active";
+                          enemyDivPort = portOn ? 1 : 0; enemyDivOrig = romOn ? 1 : 0; }
+                        break;
+                    }
+                    if (!romOn) continue;
+                    // $0510/$0520 are the Y pair: the verdict below claims Y, so Y has to be read.
+                    int[] addrs = { 0x4F0, 0x500, 0x510, 0x520, 0x4D0, 0x4E0, 0x420 };
+                    string[] fld = { "Xlo", "Xhi", "Ylo", "Yhi", "state", "beh", "anim" };
                     for (int k = 0; k < addrs.Length; k++)
                         if (prE[addrs[k] + s] != g[addrs[k] + s])
                         {
@@ -278,15 +297,9 @@ public static class PhysCompare
                               enemyDivPort = prE[addrs[k] + s]; enemyDivOrig = g[addrs[k] + s]; }
                             break;
                         }
-                    if (!allMatch) break;
-                    if (((prE[0x4D0 + s] & 0x80) == 0))   // ROM active but port culled it
-                    {
-                        allMatch = false;
-                        if (enemyFirstDiv < 0) { enemyFirstDiv = f; enemyDivSlot = s; enemyDivField = "active"; enemyDivPort = 0; enemyDivOrig = 1; }
-                        break;
-                    }
                 }
                 if (allMatch) enemyMatchFrames++;
+                fEnemies = allMatch;
             }
             if (pause)
             {
@@ -380,12 +393,17 @@ public static class PhysCompare
                          g[0x5B2] != 0x80 ? 4 : (g[0x5B4] != 0x80 ? 1 : 0) +
                              (g[0x5B8] != 0x81 ? 1 : 0) + (g[0x5B6] != 0x81 ? 1 : 0) };
             for (int i = 0; i < pv.Length; i++)
-                if (pv[i] != ov[i] && firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
+                if (pv[i] != ov[i])
+                {
+                    if (fieldBadIdx < 0) fieldBadIdx = i;
+                    if (firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
+                }
             if (palette)
             {
                 bool same = true;
                 for (int i = 0; i < 32; i++)
                     if (game.Ppu.PaletteRam[i] != palAll[f * 32 + i]) { same = false; break; }
+                fPal = same;
                 if (same) palOk++;
                 else if (palFirstBad < 0) palFirstBad = f;
                 if (f >= 795 && f <= 841) { winTotal++; if (same) winOk++; }
@@ -434,6 +452,7 @@ public static class PhysCompare
                     if (game.Ppu.Oam[e * 4] != oamAll[o + e * 4] || game.Ppu.Oam[e * 4 + 1] != oamAll[o + e * 4 + 1] ||
                         game.Ppu.Oam[e * 4 + 2] != oamAll[o + e * 4 + 2] || game.Ppu.Oam[e * 4 + 3] != oamAll[o + e * 4 + 3])
                         oamEntryBad[e]++;
+                fOam = ok == 256;
                 if (ok == 256) oamFrameOk++;
                 else if (oamFirstBad < 0)
                 {
@@ -448,6 +467,7 @@ public static class PhysCompare
                     oamFirstDetail = $" f{oamFirstBad}: {ok}/256 bytes, first diff b{badByte} (entry {e})" + detail;
                 }
             }
+            else if (scoreOam) strictNoOam++;
             if (pos && cam) matchFrames++;
             else
             {
@@ -456,9 +476,36 @@ public static class PhysCompare
                     sb.Append($"f{f}: port=({p.X:X4},{p.Y:X4} st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}) " +
                               $"orig=({gx:X4},{gy:X4} st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2}) ");
             }
+            // STRICT = every field this comparison actually reads, so a match here — and only here —
+            // means "frame-identical on all scored state", not "the two position bytes agree".
+            bool strict = pos && cam && fieldBadIdx < 0 && fEnemies && fPal && fOam && (!pause || panelOk);
+            if (strict) strictMatch++;
+            else if (strictFirstDiv < 0)
+            {
+                strictFirstDiv = f;
+                strictFirstDetail =
+                    !pos ? $"player X/Y port=({p.X:X4},{p.Y:X4}) rom=({gx:X4},{gy:X4})"
+                  : !cam ? $"cam $50 {p.State:X2}!={g[0x50]:X2} $FA {p.ScrollY:X2}!={g[0xFA]:X2} $FB {p.ScrollYRow:X2}!={g[0xFB]:X2} " +
+                         $"$22 {p.CellIndex:X2}!={g[0x22]:X2} $23 {p.CellIndexNext:X2}!={g[0x23]:X2} $2B {p.ScrollState:X2}!={g[0x2B]:X2}"
+                  : fieldBadIdx >= 0 ? $"{fieldNames[fieldBadIdx]} port={pv[fieldBadIdx]:X4} rom={ov[fieldBadIdx]:X4}"
+                  : !fEnemies ? "ENEMIES (see ENEMIES clause)"
+                  : !fPal ? "PAL $3F00"
+                  : !fOam ? "OAM"
+                  : !panelOk ? "PANEL" : "?";
+            }
         }
         int span = avail - 1 - seedFrame;
         if (limit > 0) span = System.Math.Min(limit, span);
+        // Which fields each verdict is allowed to certify. Printed inline so a RESULT match cannot
+        // be read as full-frame identity: RESULT covers 2 (or 8, with camera) fields, STRICT covers
+        // every field this comparison reads, including the per-slot enemy state.
+        string resultOf = camera
+            ? string.Join(",", new[] { fieldNames[0], fieldNames[1], fieldNames[2], fieldNames[3],
+                                       fieldNames[4], fieldNames[5], fieldNames[6], fieldNames[7] })
+            : fieldNames[0] + "," + fieldNames[1];
+        string strictOf = string.Join(",", fieldNames)
+            + (scoreEnemies ? ",ENEMIES" : "") + (palette ? ",PAL$3F00" : "")
+            + (scoreOam ? ",OAM" : "") + (pause ? ",PANEL" : "");
         if (palette)
         {
             sb.Append(palFirstBad < 0
@@ -472,8 +519,12 @@ public static class PhysCompare
                 sb.Append($"{fieldNames[i]}:f{firstBad[i]} {badPort[i]:X4}!={badOrig[i]:X4} ");
         sb.Append("] ");
         sb.Append(firstDiv < 0
-            ? $"RESULT: MATCH {matchFrames}/{span} frames (seed {seedFrame})"
-            : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{span}, seed {seedFrame})");
+            ? $"RESULT: MATCH {matchFrames}/{span} frames (seed {seedFrame}) [of {resultOf}]"
+            : $"RESULT: first divergence frame {firstDiv} (matched {matchFrames}/{span}, seed {seedFrame}) [of {resultOf}]");
+        sb.Append(strictFirstDiv < 0
+            ? $"  STRICT: MATCH {strictMatch}/{span} [of {strictOf}]"
+            : $"  STRICT: first divergence f{strictFirstDiv} {strictFirstDetail} (matched {strictMatch}/{span}) [of {strictOf}]");
+        if (strictNoOam > 0) sb.Append($" [OAM data absent on {strictNoOam} frames: not scored]");
         if (scoreOam)
         {
             sb.Append($"  OAM: exact {oamFrameOk}/{oamTotal} frames, mean {(oamTotal == 0 ? 0 : oamByteSum / oamTotal)}/256 bytes,{oamFirstDetail}");
@@ -484,7 +535,7 @@ public static class PhysCompare
         }
         if (scoreEnemies)
             sb.Append(enemyFirstDiv < 0
-                ? $"  ENEMIES: MATCH {enemyMatchFrames}/{enemyTotalFrames} frames (all ROM-active slots X/Y/state/beh/anim identical)"
+                ? $"  ENEMIES: MATCH {enemyMatchFrames}/{enemyTotalFrames} frames (slots 01-0F: X/Y/state+active/beh/anim identical both ways)"
                 : $"  ENEMIES: first divergence f{enemyFirstDiv} slot {enemyDivSlot:X2} field {enemyDivField} port={enemyDivPort:X2} orig={enemyDivOrig:X2} (matched {enemyMatchFrames}/{enemyTotalFrames})");
         if (pause)
             sb.Append(pauseFirstBad < 0
@@ -712,7 +763,7 @@ public static class PhysCompare
             catch (System.Exception e) { sb.Append(label).Append(": ERROR ").Append(e.Message).Append('\n'); return; }
             int i = full.LastIndexOf("RESULT:");
             sb.Append(label).Append(": ")
-              .Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(92, full.Length - i)))
+              .Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(500, full.Length - i)))
               .Append('\n');
         }
         One("m2(w01)", M2Route);
@@ -1141,6 +1192,23 @@ public static class PhysCompare
              ? (byte)0x40 : (byte)0x00,
         seedFrame: 29, camera: true, enemies: true, goldenDir: "gold_b_attack", scoreEnemies: true);
 
+    /// <summary>The corrected ENEMIES check (Y + the active bit both ways) found a class the old
+    /// ROM-active filter could not see: b_attack f79 holds slot 04 alive in the port and dead in
+    /// the ROM. Same run with both slot lists printed around that frame.</summary>
+    public static string BAttackSlotDump()
+    {
+        _enemyDumpLo = 74; _enemyDumpHi = 84;
+        try
+        {
+            return Compare("b_attack_dump", 200,
+                f => (f >= 30 && f <= 33) || (f >= 100 && f <= 103) || (f >= 160 && f <= 163)
+                     ? (byte)0x40 : (byte)0x00,
+                seedFrame: 29, camera: true, enemies: true, goldenDir: "gold_b_attack",
+                scoreEnemies: true, trace: true);
+        }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
+
     /// <summary>Runs the whole player-physics suite and returns only the RESULT lines.</summary>
     public static string Suite()
     {
@@ -1148,7 +1216,7 @@ public static class PhysCompare
         void One(string label, string full)
         {
             int i = full.LastIndexOf("RESULT:");
-            sb.Append(label).Append(": ").Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(60, full.Length - i))).Append('\n');
+            sb.Append(label).Append(": ").Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(500, full.Length - i))).Append('\n');
         }
         One("walk", Walk());
         One("jump", Jump());
@@ -1166,7 +1234,7 @@ public static class PhysCompare
             int j = line.IndexOf("] w");
             if (i < 0 || j < 0) continue;
             sb.Append(line.Substring(j + 3, 3)).Append("fall: ")
-              .Append(line.Substring(i, System.Math.Min(58, line.Length - i))).Append('\n');
+              .Append(line.Substring(i, System.Math.Min(500, line.Length - i))).Append('\n');
         }
         // the run_script console truncates, so keep the scoreboard on disk too
         One("longroute", M1LongRoute());

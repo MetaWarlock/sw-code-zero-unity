@@ -109,6 +109,9 @@ namespace Darkwing.UnityApp
                 // world engine gets this frame (WorldRunning) before the core steps.
                 if (_flow != null) _flow.Step(in pad);
                 _game.Step(in pad);
+                // One audio frame per simulation frame: the sequencer's tempo is the 60 Hz clock
+                // above, never the render rate of Update().
+                if (_audioOut != null) _audioOut.PushFrame();
             }
         }
 

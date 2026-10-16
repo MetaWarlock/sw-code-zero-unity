@@ -88,19 +88,40 @@ public static class FlowVerify
                       $"Y=$ {game.Player.Y:X4} $51={game.Player.StateTimer:X2}");
 
         // --- $B315: the boss's 16th damage point kills it and raises the event ---
-        var boss = game.Objects.Slots[3];
-        boss.Active = true; boss.Behavior = 0x62; boss.Health = 0x80;
-        BossBehaviors.DamageAccum = 0x10; BossBehaviors.InvulnTimer = 16;
-        BossBehaviors.HitFlash(game.Enemies, boss);
-        sb.AppendLine($"BossDefeat fired: MissionCleared={game.MissionCleared} bossBehavior=$ {boss.Behavior:X2}");
+        ClearMission(game);
+        sb.AppendLine($"BossDefeat fired: MissionCleared={game.MissionCleared} bossBehavior=$ {game.Objects.Slots[3].Behavior:X2}");
         Run(game, flow, 2, Pad(0));
         sb.AppendLine($"stage={flow.Stage} $38={flow.World.CompletedCount} $69=$ {flow.World.CompletedMask:X2} " +
                       $"WorldRunning={game.WorldRunning}");
 
-        // --- the $A4B0 rule: with $38=1 bubble 0 is still mission 0, and all 7 bits end the game ---
+        // --- the $A4B0 rule: with $38=1 bubble 0 is still mission 0 ---
         sb.AppendLine($"MissionForBubble(0) at $38={flow.World.CompletedCount} -> {flow.MissionForBubble(0)}");
-        flow.World.CompletedMask = 0x7F;
-        sb.AppendLine($"all seven cleared: AllMissionsComplete={flow.AllMissionsComplete}");
+
+        // --- the NATURAL seven-win transition. Clearing the mask by hand proves nothing about the
+        // branch, and $D838 gates on $31, not on $69: the bubbles run 0,1,2 (missions 0,1,2), then
+        // 3,4,5, and at $38=6 $A46E/$A48B freeze the cursor on bubble 0, which $A4EB maps to
+        // mission 6. That seventh clear must take BCS $D841 = Phase.Ending, and $69 bit 6 stays
+        // clear because the $A5AB write lives in the $D8D1 map-return tail the ending path skips.
+        var sweep = new GameFlow(game, decoder);
+        Run(game, sweep, 1, Pad(0x10));
+        UntilMap(game, sweep, null);
+        for (int i = 0; i < 7; i++)
+        {
+            int bubble = i % 3;
+            while (sweep.Stage == GameFlow.Phase.MapCursor && sweep.World.CursorBubble != bubble)
+            { Run(game, sweep, 1, Pad(0x01)); Run(game, sweep, 2, Pad(0)); }   // $A46E Right, edge-per-press
+            if (sweep.Stage != GameFlow.Phase.MapCursor) { sb.AppendLine($"win {i + 1}: map not reached, stage={sweep.Stage}"); break; }
+            Run(game, sweep, 1, Pad(0x40));                        // confirm the bubble under $6C
+            int cleared = sweep.World.CurrentWorld;
+            Run(game, sweep, GameFlow.PromptFrames + 5, Pad(0));   // $C970 fade + $9900 settle
+            Run(game, sweep, 1, Pad(0x80));                        // A → $995E flight → $D4E9 load
+            if (sweep.Stage != GameFlow.Phase.Mission) { sb.AppendLine($"win {i + 1}: enter gave {sweep.Stage}"); break; }
+            ClearMission(game);
+            Run(game, sweep, 2, Pad(0));
+            sb.AppendLine($"win {i + 1}: cleared $31={cleared} -> stage={sweep.Stage} $38={sweep.World.CompletedCount} $69=${sweep.World.CompletedMask:X2}");
+        }
+        sb.AppendLine($"NATURAL ENDING TRANSITION: reached={sweep.Stage == GameFlow.Phase.Ending} " +
+                      $"stage={sweep.Stage} $38={sweep.World.CompletedCount} $69=${sweep.World.CompletedMask:X2}");
 
         // --- the B branch of the prompt ($998C) goes back to the map without counting ---
         flow.World.CompletedMask = 0x01;
@@ -114,6 +135,17 @@ public static class FlowVerify
         sb.AppendLine($"B branch: stage={flow2.Stage} $F8=$ {flow2.World.LastOutcome:X2} " +
                       $"$38={flow2.World.CompletedCount} WorldRunning={game.WorldRunning}");
         return sb.ToString();
+    }
+
+    /// <summary>$B315: the boss's 16th damage point kills it, which raises
+    /// <c>Enemies.BossDefeated</c> and so <c>DarkwingGame.MissionCleared</c> — the same event the
+    /// world engine sets when the real boss dies.</summary>
+    private static void ClearMission(DarkwingGame game)
+    {
+        var boss = game.Objects.Slots[3];
+        boss.Active = true; boss.Behavior = 0x62; boss.Health = 0x80;
+        BossBehaviors.DamageAccum = 0x10; BossBehaviors.InvulnTimer = 16;
+        BossBehaviors.HitFlash(game.Enemies, boss);
     }
 
     /// <summary>$C5F7 plays two $AA00 dialog streams ($0E then $0F, $C612 delays 30 frames
