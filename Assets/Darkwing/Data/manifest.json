@@ -56,6 +56,10 @@
       "bytes": 16384,
       "source": "PRG bank 1 raw (room blocks for set_bank>=6 / FOWL)"
     },
+    "prg_bank4.bytes": {
+      "bytes": 16384,
+      "source": "PRG bank 4 raw (ROM 0x10010..0x1400F): title/map frame engine $9800, pause/status routine $8F00-$9025 with helpers $904E/$90E1/$9148; byte-checked against disasm/flat_bank4.txt 12189/12189 lines, 0 mismatches"
+    },
     "prg_bank5.bytes": {
       "bytes": 16384,
       "source": "PRG bank 5 raw (anim tables $B429/$B4F0, frame tables $9B0B/$9C45 + $9C0B/$9D45, coord pointers $AE53/$AF23)"
