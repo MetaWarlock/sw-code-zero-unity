@@ -1,0 +1,31 @@
+{
+  "ok": true,
+  "summary": {
+    "event": "summary",
+    "ok": true,
+    "reason": "frame_limit",
+    "start_frame": 3961,
+    "final_frame": 4161,
+    "frames_executed": 200,
+    "stop_code": 0
+  },
+  "audio": {
+    "rate": 48000,
+    "channels": 2,
+    "sample_width": 2,
+    "frames": 159653
+  },
+  "sha256": {
+    "apu_writes.csv": "d491fa736a637dd37ee686904ab3e51f69a59b1a7a9c785d4cea24ae727b8c4d",
+    "audio.wav": "a3745a613d2e3845683fbcd462ac8735bcc4db9b21bfc5af7f128bb023d1dff0",
+    "coverage.cdl": "c7c67d152f8fb09a36bee9fac7cd0718284fe2b781fbbeffe58b6b61cc55ae10",
+    "final.mss": "dd5352bb2cf319d5d9dee9a6d711bd0f90ef2a2a89601aa0f7d0d81a195fd646",
+    "final.png": "c479f3b8ad1f78a55161fac08045a2042a48577061f070c6c095df56f366eda6",
+    "frames.csv": "37f53a166063003e6bdec908783aab5b16ea4af4fcc0ce1de21f28e891ae401b",
+    "oam_frames.bin": "1fb0d9194f43339e4f290726a545d6a3bd7d97ea3058e6e8aae8eae3e6a5f6aa",
+    "palette_frames.bin": "aa0d56125b3ebc14cc6547b4029f350a05756af0b923cb38e9dfcae044e27291",
+    "ram_frames.bin": "a2c7d24d63d765600aad0b10eb1b8b44de0da78c5f1580ad2d9f8b9cda880f75",
+    "state.json": "f61cc0aa521c7b4f2cdaf0787033658ee9be46732486cf7ae0e23a749de61d27"
+  },
+  "scope": "Instrumentation smoke test. Not proof of game/port equivalence."
+}
