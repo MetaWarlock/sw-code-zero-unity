@@ -498,7 +498,10 @@ namespace Darkwing.Core
         /// $E3F0-$E406, written on the frame after the staging loop exits: the $FA78
         /// anim seed ($0420=$2C, $0430/$0410=0), $04D0=$80, $0400=$D0, the $F5FC
         /// velocity cut and the spawn state $50=$12. $E408's $C850 seed-array branch is
-        /// not taken because $5D is 0 in a normal door load.
+        /// gated by $5D: $E40A BEQ $E43D skips $C850 when ContinueCount is 0 (a normal
+        /// door load does NOT heal); when ContinueCount is non-zero the door load is a
+        /// continue after game over and the ROM's $C850 full-heal runs. $54's sub-branch
+        /// into $05BA/$05BC seeds is not yet derived, so only the heal is ported.
         /// </summary>
         public void FinishSectionLoad()
         {
@@ -517,6 +520,7 @@ namespace Darkwing.Core
             }
             CutVelocity();                                  // $F5FC → FF,AB ($E401)
             State = 0x12;                                   // $50 ($E406)
+            if (ContinueCount != 0) HitLadder = 0;          // $E40A BEQ $E43D / $E40C JSR $C850
         }
 
         // ---------- Camera ($DA70/$DC19/$DBCE) ----------
