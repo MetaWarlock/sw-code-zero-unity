@@ -524,6 +524,18 @@ public static class PhysCompare
     public static string M3RouteTrace() => Route("m3_route", 2, trace: true);
     public static string M4RouteTrace() => Route("m4_route", 3, trace: true);
 
+    /// <summary>G52: m3 f1314 is the ROM's post-death world reload ($D41B -> $D423), not a
+    /// fourth heart-ladder hit - f1305..f1313 match byte-for-byte with a frozen death
+    /// snapshot and a FULL ladder on both sides. Dumps the full per-frame line for
+    /// f1240-f1320 (ladders, $64/$6D branch counters, slot lists) so the reload transition
+    /// itself is visible. Pair with Tools/DarkwingResearch/frame_diff.py for the byte list.</summary>
+    public static string M3ReloadDump()
+    {
+        _enemyDumpLo = 1240; _enemyDumpHi = 1320;
+        try { return Route("m3_route", 2, trace: true); }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
+
     /// <summary>Missions 2-7 traversal scoreboard: one RESULT line each (Compare keeps the
     /// full per-frame detail in Temp/{name}_trace.txt because the console truncates).</summary>
     public static string Routes()
