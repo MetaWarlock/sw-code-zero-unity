@@ -648,7 +648,16 @@ public static class PhysCompare
             }
             return b;
         },
-        camera: true, enemies: true, world: world, palette: true, trace: trace);
+        camera: true, enemies: true, world: world, palette: true, trace: trace,
+        // G51 root cause, measured in the golden itself: `gold_m6_route` is the only route captured
+        // while the world loader is still resident. f0…f2 hold $50=$09, $10=$40, $95=$FE, $97=$70,
+        // $0460/$0550/$0560 and slot $0F byte-identical, and only $92 ticks. $97 goes to $04 and
+        // $95 to $FF on f3, but $0460/$0550 stay at 9E/AB on f3 and only move to F3/6B on f4 —
+        // so m6's release frame ticks the engine (parity + anim) one frame BEFORE the player pass
+        // runs, unlike gold_w05 f345 where they coincide. The three frozen iterations reproduce
+        // the tail of `$DE03 JSR $FF06 + $DE06 JMP $C254→$C270`; the parity catch-up fires on
+        // iteration 3 (port f3 $95=FF matches golden), and gravity starts on iteration 4.
+        entryFreeze: world == 5 ? 3 : 0);
 
     public static string M2Route() => Route("m2_route", 1);
     public static string M3Route() => Route("m3_route", 2);
@@ -667,6 +676,17 @@ public static class PhysCompare
     }
     public static string M3RouteTrace() => Route("m3_route", 2, trace: true);
     public static string M4RouteTrace() => Route("m4_route", 3, trace: true);
+
+    /// <summary>G51: `gold_m6_route` diverges on the SECOND frame, so the diff has to start at the
+    /// seed. Full per-frame lines plus the ROM/port slot lists for f0…f12 → Temp/m6_route_trace.txt.
+    /// Known so far: the seed is already `$50=$09` with `$10=$40` (the port gives `$10=$01`) and slot
+    /// `$0F` is live with `beh=$69`, which the bank-6 dispatcher never has to serve in m1…m5.</summary>
+    public static string M6EntryDump()
+    {
+        _enemyDumpLo = 0; _enemyDumpHi = 12;
+        try { return Route("m6_route", 5, trace: true); }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
 
     /// <summary>G52: m3 f1314 is the ROM's post-death world reload ($D41B -> $D423), not a
     /// fourth heart-ladder hit - f1305..f1313 match byte-for-byte with a frozen death
