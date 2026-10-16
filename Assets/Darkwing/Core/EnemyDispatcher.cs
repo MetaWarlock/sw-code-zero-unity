@@ -63,6 +63,31 @@ namespace Darkwing.Core
             BossBehaviors.Reset();
         }
 
+        /// <summary>
+        /// $CE39 commit, called by DarkwingGame.Step immediately after the player's state
+        /// machine (the original writes the slot there, before the bank-6 dispatch — see
+        /// gold_b_attack f30). The $CE48 scan takes the $CF29 preference and walks DOWN
+        /// while a slot is live; $CE4E-$CE52 aborts the whole shot at slot 1, so slot 1 is
+        /// never used for a weapon.
+        /// </summary>
+        public void SpawnWeapon(PlayerCore.FireSpawn spawn)
+        {
+            int slot = spawn.SlotPref;
+            while (slot >= 2 && Objects.Slots[slot].Active) slot--;
+            if (slot < 2) return;
+            var s = Objects.Slots[slot];
+            s.StateLow = 0x80;                         // $CE57 LDA #$80 / STA $04D0,X
+            s.Active = true;
+            s.Flags = spawn.Flags;                     // $CE5D $0400,X = $0400
+            s.X = spawn.X;                             // $CE81
+            s.Y = spawn.Y;                             // $CEB6/$CECA, $0520 copied at $CECD
+            s.Direction = spawn.Direction;             // $CED5 $0580,X = $52
+            s.Behavior = spawn.Behavior;               // $CEDD $CF2E[$53]
+            EnemyBehaviors.SetAnim(s, spawn.Template); // $CEE3 $FA6C with $CF32[$53]
+            s.BehaviorParam = 0x01;                    // $CEEE $0570,X = #1
+            Sfx?.Invoke(spawn.SfxId);                  // $CEE9 $F850 with $CF36[$53]
+        }
+
         /// <summary>Per-frame pass (the master loop's bank-6 task; bank 7 $F8A7).</summary>
         public void RunFrame()
         {

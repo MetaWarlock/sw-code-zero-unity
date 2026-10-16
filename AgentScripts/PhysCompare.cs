@@ -118,6 +118,11 @@ public static class PhysCompare
                                  : (ram0[0x5B4] != 0x80 ? 1 : 0) + (ram0[0x5B8] != 0x81 ? 1 : 0) +
                                    (ram0[0x5B6] != 0x81 ? 1 : 0));
             p.DirBits = ram0[0x52];
+            // The $CE39 path is indexed by the EQUIPPED weapon ($53) and the kind 1/2/3
+            // gate reads the live meter $05BE/$05C0, so a projectile golden has to carry them.
+            p.WeaponActive = ram0[0x53];
+            p.ActiveGasEnergyHi = ram0[0x5BE];
+            p.ActiveGasEnergyLo = ram0[0x5C0];
             game.FrameParity = ram0[0x95];
             for (int s = 0; s < 16; s++)
             {
@@ -930,6 +935,21 @@ public static class PhysCompare
         return sb.ToString();
     }
 
+    /// <summary>
+    /// $CE39 weapon-spawn golden `gold_b_attack`: mission 1 standing still, B held for four
+    /// frames at f30-33, f100-103 and f160-163 ($16 = $40 there, $14 = $40 only on the first
+    /// frame of each window). Slot 4 must appear on the PRESS frame already initialized
+    /// ($04D0=$81, $0540=$04, X = player $2C + $0F + one 4 px step = $3F), travel 4 px/frame
+    /// to the right edge kill, and the player must hold the fire pose $05 until the anim
+    /// reaches frame 2 / timer 4, where $CBF6-$CC02 releases it back to idle $01.
+    /// Slot 1 is live for the whole capture (beh $00, anim $1B) and $CE48 never tests it,
+    /// so this also proves the projectile scan is restricted to slots 4..2.
+    /// </summary>
+    public static string BAttack() => Compare("b_attack", 200,
+        f => (f >= 30 && f <= 33) || (f >= 100 && f <= 103) || (f >= 160 && f <= 163)
+             ? (byte)0x40 : (byte)0x00,
+        seedFrame: 29, camera: true, enemies: true, goldenDir: "gold_b_attack", scoreEnemies: true);
+
     /// <summary>Runs the whole player-physics suite and returns only the RESULT lines.</summary>
     public static string Suite()
     {
@@ -941,6 +961,7 @@ public static class PhysCompare
         }
         One("walk", Walk());
         One("jump", Jump());
+        One("b_attack", BAttack());
         One("hook", Hook());
         One("traverse", Traverse());
         One("contact", Contact());

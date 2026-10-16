@@ -1022,6 +1022,21 @@ namespace Darkwing.Core
 
             if ((held & 0x03) != 0) // Left/Right held → walk ($CBB7/$CC53)
             {
+                // $CC53-$CC6D: the B edge is read BEFORE the walk anim and the $CCB4 move,
+                // so a shot frame latches the spawn and RTS-es without walking. When $CF3A
+                // refuses, $CC5C falls through to the walk — unless the pose is still the
+                // fire anim $05, whose $CC71-$CC75 detour lands back on $CC16 → $CC52.
+                if ((pressed & 0x40) != 0)
+                {
+                    var sw = Objects?.Slots[0];
+                    if (CanFire())
+                    {
+                        if (sw != null && sw.AnimNumber != 5) SetAnimPlayer(5);   // $CC61/$CC65
+                        TryLatchFire();                                           // $CC6A
+                        return;                                                   // $CC6D
+                    }
+                    if (sw != null && sw.AnimNumber == 5) return;                 // $CC6E/$CC75
+                }
                 // Walk anim ($CC6E-$CCB1): anim 3 is set when it isn't already the anim,
                 // the only manual frame edit here is the $CC84 wrap (frame 4 + timer 6 →
                 // frame 1, timer 0). Frame 0 with timer < 4 is the footstep dust and pins
@@ -1075,11 +1090,26 @@ namespace Darkwing.Core
                 return;
             }
 
-            // $CBEF-$CC14: with no direction held, the ground handler restores the idle
-            // anim whenever it isn't already 1 (anim 5 keeps its own frame timing).
-            // This is what drops the hurt anim ($09) after state 6 exits.
+            // $CBE6: a B edge jumps straight into the fire block, skipping the idle
+            // normalization; $CC1C vetoes the crouch anim $04 and $CC23 the $CF3A budget.
             var s = Objects?.Slots[0];
-            if (s != null && s.AnimNumber != 5 && s.AnimNumber != 1)
+            if ((pressed & 0x40) != 0)
+            {
+                if (s != null && s.AnimNumber != 0x04 && CanFire())
+                {
+                    if (s.AnimNumber != 5) SetAnimPlayer(5);   // $CC2B/$CC2F
+                    TryLatchFire();                            // $CC34
+                }
+                return;                                        // $CC37 → $CC52
+            }
+
+            // $CBEF-$CC14: with no direction held, the ground handler restores the idle
+            // anim whenever it isn't already 1. The fire pose $05 is the exception while it
+            // has not reached frame 2 / timer 4 ($CBF6-$CC02 only falls through to $CC04
+            // once it does). This is what drops the hurt anim ($09) after state 6 exits.
+            bool keepFirePose = s != null && s.AnimNumber == 5
+                                && !(s.AnimFrame == 2 && s.AnimTimer == 4);
+            if (s != null && !keepFirePose && s.AnimNumber != 1)
             {
                 SetAnimPlayer(0x01);                     // $CC0B
                 State = 0;                               // $CC12
@@ -1269,6 +1299,13 @@ namespace Darkwing.Core
             bool landed = VerticalPhysics(held, pressed, cutOnLand: false, f2d7: false);
             if (landed) { State = 0; AirSubState = 0; return; }   // $D711-$D715 ($56 → 0 too)
             AirborneControl(held);
+            // $D79A-$D7B3: the airborne shot picks the pose from the POST-service velocity
+            // sign ($0E rising, $0F falling) and calls $FA78 unconditionally before $CE39.
+            if ((pressed & 0x40) != 0 && CanFire())
+            {
+                SetAnimPlayer(YVelInt >= 0 ? (byte)0x0E : (byte)0x0F);
+                TryLatchFire();
+            }
         }
 
         // ---------- State 1: air ($CD0E path) ----------
@@ -1282,6 +1319,15 @@ namespace Darkwing.Core
             // $0510 1F→20, $0460 D5→2A, velocity 00,80 → FF,AB → FF,6B).
             if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
             AirborneControl(held);                        // $CD18: steering runs FIRST
+            // $CD25-$CD3B: the reach pose $0D vetoes the shot; a firing frame arms $56 = 2
+            // (no $FA78 here — $CDBE rewrites the air anim from the velocity sign anyway)
+            // and latches $CE39 BEFORE the vertical service.
+            var sa = Objects?.Slots[0];
+            if (sa != null && sa.AnimNumber != 0x0D && (pressed & 0x40) != 0 && CanFire())
+            {
+                AirSubState = 2;
+                TryLatchFire();
+            }
             bool landed = VerticalPhysics(held, pressed); // $CD63: then the vertical service
             SelectAirAnim();                              // $CD82-$CDBE
             if (landed)
@@ -1326,9 +1372,21 @@ namespace Darkwing.Core
         {
             if ((held & 0x04) == 0) { State = 0; return; } // Down released → stand
 
-            if ((pressed & 0x40) != 0)
+            // $CFE0-$D00E: the crouch shot needs the pose on its first frame. $CFF1-$CFF8
+            // re-arms $0410 = 1 and clears $0430 for that pose, then the pad test is an
+            // EXACT $14 == #$40 compare — any other edge bit cancels the shot and falls to
+            // the $D00F A-hop path. ($CFE7 sends the already-fired pose $07 to $D08C, which
+            // the port models through state $0A rather than here.)
+            var c0 = Objects?.Slots[0];
+            if (c0 != null && c0.AnimNumber != 0x07 && c0.AnimFrame == 1)
             {
-                // crouch fire ($CFFB): spawns via weapon system (M4)
+                c0.AnimTimer = 0;                                       // $CFF8
+                if (pressed == 0x40 && CanFire())
+                {
+                    SetAnimPlayer(0x07);                                // $D006/$D008
+                    TryLatchFire();                                     // $D00B
+                    return;                                             // $D00E
+                }
             }
             if ((pressed & 0x80) != 0) // A in crouch ($D00F)
             {
@@ -1461,11 +1519,13 @@ namespace Darkwing.Core
                 FacingRight = (dir & 1) != 0 ? (byte)0x40 : (byte)0x00;   // $D1DD-$D1F1
                 Flags = (byte)((Flags & ~0x40) | FacingRight);
             }
-            // $D1F4-$D20B: B pressed this frame AND $CF3A's per-weapon max-active gate open
-            // → the $0C pose plus $CE39's weapon spawn. $CE39 itself is not wired into the
-            // world yet (nothing calls TryGetFireSpawn), so only the anim side runs.
-            if ((pressed & 0x40) != 0 && CanFire(ProjectileCount) && s0 != null && s0.AnimNumber != 0x0C)
-                SetAnimPlayer(0x0C);
+            // $D1F4-$D20B: a B edge with the $CF3A budget open sets the $0C hang pose and
+            // commits the $CE39 spawn in the same frame.
+            if ((pressed & 0x40) != 0 && CanFire())
+            {
+                if (s0 != null && s0.AnimNumber != 0x0C) SetAnimPlayer(0x0C);
+                TryLatchFire();
+            }
             if ((pressed & 0x04) != 0)                              // $D20E-$D212: Down ($14)
             {
                 State = 0;                                          // $D214-$D216
@@ -1655,44 +1715,130 @@ namespace Darkwing.Core
                 DeathFlag = 1; // → death sequence (world handles state change)
         }
 
-        // ---------- Gas gun (doc §7, $CF3A/$CE39) ----------
+        // ---------- Gas gun: $CE39 spawn, $CF3A budget, $CEF2 meter gate ----------
         public byte ActiveGasEnergyHi;  // $05BE
         public byte ActiveGasEnergyLo;  // $05C0
-        public byte GasToggleFlag;      // $98
-        public int ProjectileCount;     // active projectile slots (set by world)
 
-        private static readonly byte[] WeaponMaxActive = { 3, 1, 2, 1 };       // $CFD3
-        private static readonly byte[] WeaponSlotPref = { 4, 2, 3, 2 };        // $CF29
-        private static readonly byte[] WeaponBehavior = { 1, 2, 3, 4 };        // $CF2E
-        private static readonly byte[] WeaponTemplate = { 0x13, 0x16, 0x14, 0x14 }; // $CF32
-        private static readonly byte[] WeaponSfx = { 0x11, 0x13, 0x11, 0x14 }; // $CF36
+        private static readonly byte[] WeaponMaxActive = { 3, 1, 2, 1 };              // $CFD3
+        private static readonly byte[] WeaponSlotPref = { 4, 2, 3, 2, 0xFF };         // $CF29
+        private static readonly byte[] WeaponBehavior = { 1, 2, 3, 4 };               // $CF2E
+        private static readonly byte[] WeaponTemplate = { 0x13, 0x16, 0x14, 0x14 };   // $CF32
+        private static readonly byte[] WeaponSfx = { 0x11, 0x13, 0x11, 0x14 };        // $CF36
+        // 16-bit (lo,hi) X offsets, right at index 0 and left at index 2 — the side comes
+        // from $52 bit 1 ($CE6C/$CE89). Kinds 2/3 take the far $CF25 pair ($CE62-$CE68).
+        private static readonly byte[] WeaponOffsetNear = { 0x0F, 0x00, 0xF1, 0xFF }; // $CF21
+        private static readonly byte[] WeaponOffsetFar = { 0x16, 0x00, 0xEA, 0xFF };  // $CF25
+        // The $CF60 anim sets whose live slots consume the weapon's budget: $CFCF[0] for
+        // kind 0, $CF7A/$CF9B/$CFB5 for kinds 1/2/3.
+        private static readonly byte[][] WeaponCountedAnims =
+        {
+            new byte[] { 0x13 },
+            new byte[] { 0x16, 0x18, 0x14 },
+            new byte[] { 0x14, 0x19, 0x1A },
+            new byte[] { 0x14, 0x17, 0x29 },
+        };
 
-        /// <summary>True when the current weapon may fire ($CF3A gate: max active).</summary>
-        public bool CanFire(int activeProjectiles) => activeProjectiles < WeaponMaxActive[WeaponActive & 3];
+        /// <summary>What $CE39 writes into the projectile slot: the $CF29 preference, the
+        /// player-relative world position and the four table bytes.</summary>
+        public struct FireSpawn
+        {
+            public int SlotPref;     // $CF29[$53]
+            public ushort X, Y;      // $04F0/$0500 and $0510/$0520
+            public byte Flags;       // $0400,X = $0400
+            public byte Direction;   // $0580,X = $52
+            public byte Behavior;    // $CF2E[$53]
+            public byte Template;    // $CF32[$53] through $FA6C
+            public byte SfxId;       // $CF36[$53] through $F850
+        }
 
-        /// <summary>Fire request returns spawn parameters ($CE39); the world performs the spawn.</summary>
+        public FireSpawn PendingFire;
+        public bool HasPendingFire;
+
+        /// <summary>$CF3A: the per-weapon live-projectile budget. Slots 4..2 are walked
+        /// ($CF47, with $CF4D's <c>CPY #$01</c> excluding slot 1 entirely) and only anims
+        /// from the weapon's own set count toward it.</summary>
+        public bool CanFire()
+        {
+            int w = WeaponActive;
+            if (w > 4) return false;
+            int count = 0;
+            if (Objects != null)
+            {
+                for (int y = 4; y >= 2; y--)
+                {
+                    var t = Objects.Slots[y];
+                    if (!t.Active) continue;
+                    foreach (byte a in WeaponCountedAnims[w])
+                        if (t.AnimNumber == a) { count++; break; }
+                }
+            }
+            return count < WeaponMaxActive[w];
+        }
+
+        /// <summary>$CEF2: the meter has reached its last unit. Kinds 1/3 fire down to
+        /// $05C0 = $71, kind 2 to $72; anything but $70 in $05BE leaves the meter open.</summary>
+        private bool GasMeterEmpty(int kind)
+            => ActiveGasEnergyHi == 0x70 && ActiveGasEnergyLo < (kind == 2 ? 0x73 : 0x72);
+
+        /// <summary>
+        /// $CE39. Three exits leave every slot untouched: the $FF entry at $CE43, which
+        /// $CEF2 reaches by re-arming Y = 4 when the meter is empty (kind 0 never calls it,
+        /// $CE3B), and the $CE52 abort when slots 4..2 are all live (the downward scan
+        /// $CE4D-$CE50 stops before testing slot 1).
+        /// </summary>
         public bool TryGetFireSpawn(out FireSpawn spawn)
         {
             spawn = default;
-            if (!CanFire(ProjectileCount)) return false;
-            bool left = (DirBits & 2) != 0 || ((DirBits & 1) == 0 && FacingRight == 0);
-            int w = WeaponActive & 3;
-            int off = w is 0 or 1 ? 15 : 22;
+            int w = WeaponActive;
+            if (w > 4) return false;
+            int idx = (w != 0 && GasMeterEmpty(w)) ? 4 : w;
+            if (WeaponSlotPref[idx] == 0xFF) return false;
+
+            int side = (DirBits & 2) == 0 ? 0 : 2;
+            byte[] off = w is 2 or 3 ? WeaponOffsetFar : WeaponOffsetNear;
+            ushort x = (ushort)(X + (short)(off[side] | (off[side + 1] << 8)));
+
+            // $CEA1 branches on the PLAYER anim; only the low byte is adjusted, $0520 is
+            // copied plain at $CECD (the $CEB4 subtract never borrows from the page).
+            byte anim = Objects != null ? Objects.Slots[0].AnimNumber : (byte)0;
+            int ylo = Y & 0xFF;
+            if (anim == 0x07)
+            {
+                int raised = (ylo + 8) & 0xFF;
+                // $CEC5 falls to $CEC7 on zero, which re-reads the PLAYER's $0510 and
+                // stores it unchanged — the +8 is lost exactly on that wrap.
+                ylo = raised == 0 ? ylo : raised;
+            }
+            else if (anim != 0x0E && anim != 0x0F) ylo = (ylo - 3) & 0xFF;
+
             spawn = new FireSpawn
             {
-                OffsetX = left ? -off : off,
-                OffsetY = -3,
+                SlotPref = WeaponSlotPref[idx],
+                X = x,
+                Y = (ushort)((Y & 0xFF00) | ylo),
+                Flags = Flags,
+                Direction = DirBits,
                 Behavior = WeaponBehavior[w],
                 Template = WeaponTemplate[w],
                 SfxId = WeaponSfx[w],
-                Direction = DirBits,
             };
             return true;
         }
 
-        public struct FireSpawn
+        /// <summary>
+        /// The six $CE39 sites all sit in the player's state machine, and the original
+        /// commits the slot there and then — before the bank-6 dispatch, in the same frame
+        /// (gold_b_attack f30: $04D0 = $81 with $0540 = $04, so $82F0's init ran, and X is
+        /// the $3B spawn plus exactly one 4 px move). The port latches here and
+        /// DarkwingGame.Step commits immediately after Player.Step.
+        /// </summary>
+        private void TryLatchFire()
         {
-            public int OffsetX, OffsetY, Behavior, Template, SfxId, Direction;
+            if (TryGetFireSpawn(out FireSpawn sp))
+            {
+                PendingFire = sp;
+                HasPendingFire = true;
+            }
         }
 
         // ---------- Damage ($F9C2) ----------

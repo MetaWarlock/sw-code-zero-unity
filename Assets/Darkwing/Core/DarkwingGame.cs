@@ -530,6 +530,16 @@ namespace Darkwing.Core
             if ((Objects.Slots[0].StateLow & 0x80) != 0)
             {
                 Player.Step(held, pressed);
+                // $CE39 is called from inside the player's state machine and writes the
+                // projectile slot there, so the bank-6 dispatch finds it live in the SAME
+                // frame: gold_b_attack f30 has $04D0 = $81 and $0540 = $04 (the $82F0 init
+                // ran) plus X = $3B + one 4 px step. Committing after RunWorldServices
+                // would put every bullet one frame behind.
+                if (Player.HasPendingFire)
+                {
+                    Player.HasPendingFire = false;
+                    Enemies?.SpawnWeapon(Player.PendingFire);
+                }
             }
             else
             {

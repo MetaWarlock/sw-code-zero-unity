@@ -719,7 +719,9 @@ namespace Darkwing.Core
             {
                 s.XVelFrac = 0;
                 s.XVelInt = (byte)(s.AnimNumber == 0x18 ? 6 : 4);
-                s.StateLow = 1;
+                // $830A is INC $04D0,X, not a store: the $CE39 bullet arrives with bit 7 set
+                // and must keep it (gold_b_attack f30 reads $04D0 = $81).
+                s.StateLow++;
             }
             if (s.AnimNumber == 0x14) return; // burst: static
             bool right = (s.Direction & 1) != 0;
