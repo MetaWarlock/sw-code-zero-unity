@@ -648,6 +648,9 @@ namespace Darkwing.Core
                 Objects.SpawnFromPlacements(Player.ScrollX,
                     (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
             }
+            // $CA75/$CA79: LDA $66 / BMI $CA7C — the zone service is skipped while a door
+            // has flagged $66 negative, and it runs before the bank-6 task dispatch ($CA84).
+            if ((sbyte)Player.PendingMissionFlag >= 0) RunZoneService();
             Enemies?.RunFrame();
             // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
             // the blink/iteration-order tests read is the one this frame's pass produced.
@@ -661,6 +664,253 @@ namespace Darkwing.Core
             Oam.RunFrame(FrameParity);
             Ppu.Render(Framebuffer);
         }
+
+        // ==================================================================
+        // G25: the per-mission zone service ($CA79 JSR $EDF1, bank 7 $EDF1-$EFBD)
+        // ==================================================================
+
+        /// <summary>$EDF1: <code>LDA $31 / CMP #$08 / BCS $EE15</code> then the two vector tables
+        /// $EE07 (low) / $EE0E (high) indexed by <code>$31 &amp; $0F</code> through
+        /// <code>JMP ($0000)</code>. Seven handlers exist (missions 1-7); ids 8 and up are steered
+        /// straight into the $EE15 handler. Every handler reads the current cell id
+        /// <code>($32),Y</code> with <code>Y = $22</code>, the scroll row <code>$FA</code> and the
+        /// scroll low byte <code>$FC</code>, and ends either in a plain RTS or through
+        /// <code>$EE5C: LDA #$FF / STA $18</code> (flag the palette table for the NMI upload).
+        /// Two handlers also relocate the spawner entry cursors <code>$70/$71</code>, which is how
+        /// a zone jump re-enters the placement list mid-level.</summary>
+        private void RunZoneService()
+        {
+            if (Sections == null || TileMap == null || Objects == null) return;
+            byte cell = Player.CellGridByte;          // ($32),$22
+            byte yLo = (byte)(Player.ScrollY & 0xFF);  // $FA
+            byte xLo = (byte)(Player.ScrollX & 0xFF);  // $FC
+            switch (_worldId < 8 ? _worldId : (byte)0)
+            {
+                case 0: ZoneEE15(cell, yLo, xLo); break;
+                case 1: ZoneEE2D(cell, yLo, xLo); break;
+                case 2: ZoneEE71(cell, yLo, xLo); break;
+                case 3: ZoneEEB8(cell, yLo, xLo); break;
+                case 4: ZoneEEEA(cell, yLo, xLo); break;
+                case 5: ZoneEF5C(cell, yLo, xLo); break;
+                default: ZoneEF76(cell, yLo, xLo); break;
+            }
+        }
+
+        /// <summary>$EE15 (mission 1): cells $0F..$13 switch to sprite palette 1 and CHR request
+        /// $81; $14 and everything below $0F leave the tables alone.</summary>
+        private void ZoneEE15(byte cell, byte yLo, byte xLo)
+        {
+            if (cell < 0x0F || cell == 0x14) return;      // $EE19/$EE1B, $EE1D/$EE1F
+            ZoneSpritePalette(1);                         // $EE21-$EE23
+            Player.ChrLatch0 = 0x81;                      // $EE26/$EE28 STA $1A
+            ZoneFlagPalette();                            // $EE2A JMP $EE5C
+        }
+
+        /// <summary>$EE2D (mission 2): bg palettes 1/2/3 by cell band and the $FC &gt;= $E9 test,
+        /// then CHR $82 + sprite palette 2 from cell $2A up ($34 excluded).</summary>
+        private void ZoneEE2D(byte cell, byte yLo, byte xLo)
+        {
+            if (cell < 0x25)                              // $EE31/$EE33 BCC $EE35
+            {
+                ZoneBgPalette(1);                         // $EE35/$EE37
+                ZoneFlagPalette();                        // $EE3A JMP $EE5C
+                return;
+            }
+            if (cell >= 0x2A)                             // $EE55 BCS $EE61
+            {
+                if (cell == 0x34) return;                 // $EE61/$EE63 RTS without $18
+                Player.ChrLatch0 = 0x82;                  // $EE65/$EE67
+                ZoneSpritePalette(2);                     // $EE69/$EE6B
+                ZoneFlagPalette();                        // $EE6E JMP $EE5C
+                return;
+            }
+            // $EE3D/$EE51: cells $25..$27 re-enter the $FC test, $28/$29 fall into $EE57.
+            if (cell < 0x28 && xLo < 0xE9)                // $EE41/$EE43/$EE45
+            {
+                ZoneBgPalette(2);                         // $EE47/$EE49
+                ZoneFlagPalette();                        // $EE4C JMP $EE5C
+                return;
+            }
+            ZoneBgPalette(3);                             // $EE57/$EE59
+            ZoneFlagPalette();                            // $EE5C
+        }
+
+        /// <summary>$EE71 (mission 3): cell $47 at scroll X 0 sets $70/$71 = $15/$14 plus bg $11
+        /// and CHR $83 + sprite 3; cells $43 and $4B past row $58 take the shared $EEA4 tail
+        /// (CHR $85, bg 4, sprite 5, and for $4B also the $6D checkpoint $05).</summary>
+        private void ZoneEE71(byte cell, byte yLo, byte xLo)
+        {
+            if (cell == 0x43)                             // $EE75/$EE77 → $EEB1
+            {
+                if (yLo >= 0x58) ZoneEEA4();               // $EEB3/$EEB5
+                return;                                   // $EEB7 RTS
+            }
+            if (cell == 0x47)
+            {
+                if (xLo != 0) return;                     // $EE7D/$EE7F BNE $EE60
+                Objects.CursorFwd = 0x15; Objects.CursorRev = 0x14;    // $EE81-$EE87 STA $70/$71
+                ZoneBgPalette(0x11);                      // $EE89/$EE8B
+                Player.ChrLatch0 = 0x83;                  // $EE8E/$EE90
+                ZoneSpritePalette(3);                     // $EE92/$EE94 BNE $EE6B
+                ZoneFlagPalette();                        // $EE6E JMP $EE5C
+                return;
+            }
+            if (cell != 0x4B) return;                     // $EE96/$EE98
+            if (yLo < 0x58) return;                       // $EE9A-$EE9E
+            Player.CheckpointId = 0x05;                   // $EEA0/$EEA2 STA $6D
+            ZoneEEA4();                                   // $EEA4 fallthrough
+        }
+
+        /// <summary>$EEA4-$EEB0: CHR request $85, bg palette 4, sprite palette 5, then $EE5C.
+        /// Reached from both the $43 and the $4B branch of the mission-3 handler.</summary>
+        private void ZoneEEA4()
+        {
+            Player.ChrLatch0 = 0x85;                      // $EEA4/$EEA6
+            ZoneBgPalette(4);                             // $EEA8/$EEAA
+            ZoneSpritePalette(5);                         // $EEAD/$EAAF → $EE6B
+            ZoneFlagPalette();                            // $EE6E JMP $EE5C
+        }
+
+        /// <summary>$EEB8 (mission 4): bg 5 below cell $69, bg 6 for $69/$6A, and from $6B up only
+        /// past row $58 the sprite palette 2 + CHR $82 + checkpoint $6D = $07.</summary>
+        private void ZoneEEB8(byte cell, byte yLo, byte xLo)
+        {
+            if (cell < 0x69)                              // $EEBC/$EEBE
+            {
+                ZoneBgPalette(5);                         // $EEC0/$EEC2
+                ZoneFlagPalette();                        // $EEC5 JMP $EE5C
+                return;
+            }
+            if (cell < 0x6B)                              // $EEC8/$EECA
+            {
+                ZoneBgPalette(6);                         // $EECC/$EECE
+                ZoneFlagPalette();                        // $EED1 JMP $EE5C
+                return;
+            }
+            if (yLo < 0x58) return;                       // $EED4-$EED8 RTS
+            Player.CheckpointId = 0x07;                   // $EEDA/$EEDC STA $6D
+            ZoneSpritePalette(2);                         // $EEDE/$EEE0
+            Player.ChrLatch0 = 0x82;                      // $EEE3/$EEE5
+            ZoneFlagPalette();                            // $EEE7 JMP $EE5C
+        }
+
+        /// <summary>$EF3F: the cell-$8A zone patch shared by the mission-5 and mission-6
+        /// handlers — three BG palette entries at $030D/$030E/$030F, only at $FC == $9C.</summary>
+        private bool ZoneEF3F(byte cell, byte xLo)
+        {
+            if (cell != 0x8A) return false;               // $EF3F/$EF41
+            if (xLo != 0x9C) return false;                // $EF43/$EF45/$EF47
+            ZoneBgPaletteOverride(0x30, 0x2C, 0x21);      // $EF49-$EF56
+            ZoneFlagPalette();                            // $EF58 JMP $EE5C
+            return true;
+        }
+
+        /// <summary>$EEEA (mission 5): bg 7 below cell $88, the $8F/$93/$94/$8A ladder above it.</summary>
+        private void ZoneEEEA(byte cell, byte yLo, byte xLo)
+        {
+            if (cell < 0x88)                              // $EEEE/$EEF0
+            {
+                ZoneBgPalette(7);                         // $EEF2/$EEF4 → $EECE JSR $C2F9
+                ZoneFlagPalette();                        // $EED1 JMP $EE5C
+                return;
+            }
+            if (cell == 0x8F && yLo >= 0x58)              // $EEF6-$EEFE
+            {
+                Player.ChrLatch0 = 0x80;                  // $EF00/$EF02
+                ZoneBgPaletteOverride(0x30, 0x2C, 0x21);  // $EF04-$EF12
+                ZoneSpritePalette(0);                     // $EF13/$EF15
+                ZoneFlagPalette();                        // $EF18 JMP $EE5C
+                return;
+            }
+            if (cell == 0x93 && xLo == 0)                 // $EF1B-$EF21
+            {
+                Objects.CursorFwd = 0x43; Objects.CursorRev = 0x42;    // $EF23-$EF29 STA $70/$71
+                Player.ChrLatch0 = 0x87;                  // $EF2B/$EF2D
+                ZoneSpritePalette(7);                     // $EF2F/$EF31 → $EF15 JSR $C319
+                ZoneFlagPalette();                        // $EF18 JMP $EE5C
+                return;
+            }
+            if (cell == 0x94)                             // $EF33/$EF35
+            {
+                ZoneBgPalette(7);                         // $EF37/$EF39
+                ZoneFlagPalette();                        // $EF3C JMP $EE5C
+                return;
+            }
+            ZoneEF3F(cell, xLo);                          // $EF3F/$EF5B
+        }
+
+        /// <summary>$EF5C (mission 6): cell $A4 past row $58 gives CHR $88 + sprite palette 8,
+        /// otherwise the handler shares the mission-5 $EF3F tail.</summary>
+        private void ZoneEF5C(byte cell, byte yLo, byte xLo)
+        {
+            if (cell == 0xA4 && yLo >= 0x58)              // $EF60-$EF68
+            {
+                Player.ChrLatch0 = 0x88;                  // $EF6A/$EF6C
+                ZoneSpritePalette(8);                     // $EF6E/$EF70
+                ZoneFlagPalette();                        // $EF73 JMP $EE5C
+                return;
+            }
+            ZoneEF3F(cell, xLo);                          // $EF3F
+        }
+
+        /// <summary>$EF76 (mission 7): cells $05/$04 gate on $FA &gt;= $5A and $FC &gt;= $A0,
+        /// $0B..$97 give sprite palette 7 + CHR $87, cell $98 does nothing, and the
+        /// $0B-and-above path also sets the $6D checkpoint $0D.</summary>
+        private void ZoneEF76(byte cell, byte yLo, byte xLo)
+        {
+            if (cell == 0x05)                             // $EF7A/$EF7C → $EFA4
+            {
+                if (yLo >= 0x5A) ZoneEF87();              // $EFA6/$EFA8
+                return;                                   // $EFAA RTS
+            }
+            if (cell == 0x04)                             // $EF7E/$EF80 → $EFAB
+            {
+                ZoneBgPalette(xLo >= 0xA0 ? (byte)0x17 : (byte)9);   // $EFAD-$EFBB
+                ZoneFlagPalette();                        // $EFB6 JMP $EE5C
+                return;
+            }
+            if (cell < 0x0B) return;                      // $EF82/$EF86 RTS
+            if (cell == 0x98) return;                     // $EF93/$EF95 → $EFBD RTS
+            Player.CheckpointId = 0x0D;                   // $EF97/$EF99 STA $6D
+            ZoneSpritePalette(9);                         // $EF9B/$EF9D
+            Player.ChrLatch0 = 0x89;                      // $EFA0/$EFA2 → $EF8E STA $1A
+            ZoneFlagPalette();                            // $EF90 JMP $EE5C
+        }
+
+        /// <summary>$EF87-$EF90: sprite palette 7 then CHR request $87 (the mission-7 cell $05
+        /// branch at $FA &gt;= $5A).</summary>
+        private void ZoneEF87()
+        {
+            ZoneSpritePalette(7);                         // $EF87/$EF89
+            Player.ChrLatch0 = 0x87;                      // $EF8C/$EF8E
+            ZoneFlagPalette();                            // $EF90 JMP $EE5C
+        }
+
+        /// <summary>$C2F9: reload the 16 BG entries into $0300 AND $0320.</summary>
+        private void ZoneBgPalette(byte index)
+        {
+            var bg = new byte[16];
+            Sections.ReadBgPaletteByIndex(index, bg);
+            SetPaletteSource(bg, 0);
+        }
+
+        /// <summary>$C319: reload the 16 sprite entries into $0310 AND $0330.</summary>
+        private void ZoneSpritePalette(byte index)
+        {
+            var sp = new byte[16];
+            Sections.ReadSpritePaletteByIndex(index, sp);
+            SetPaletteSource(sp, 16);
+        }
+
+        /// <summary>$EF04-$EF12 / $EF49-$EF56: patch $030D-$030F (the faded mirror only — these
+        /// writes deliberately skip $032D-$032F, so a later fade step overwrites them).</summary>
+        private void ZoneBgPaletteOverride(byte a, byte b, byte c)
+        {
+            _palMirror[13] = a; _palMirror[14] = b; _palMirror[15] = c;
+        }
+
+        /// <summary>$EE5C: <code>LDA #$FF / STA $18</code> — the NMI $C059 upload flag.</summary>
+        private void ZoneFlagPalette() => _palDirty = 0xFF;
 
         /// <summary>
         /// One frame inside $E388: a batch of $DE86/$E698 staging passes ($DE8A) until the

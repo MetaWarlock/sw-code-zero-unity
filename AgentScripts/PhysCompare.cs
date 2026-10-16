@@ -566,6 +566,38 @@ public static class PhysCompare
         return sb.ToString();
     }
 
+    /// <summary>G25 acceptance: the per-frame PPU-palette verdict ($3F00-$3F1F, 32 bytes) of the
+    /// captures whose route runs the zone service $EDF1. Of the zone handlers' outputs, the ones
+    /// these fixtures record frame by frame are the $C2F9/$C319 palette reload and the $18 upload
+    /// flag ($1A/$6D/$70 are zero on every frame of all seven — see the note in GAPS), so this is
+    /// the metric that decides whether a handler's cell bands and palette indices are right.
+    /// `Routes()` truncates at RESULT:, which drops the PAL clause that precedes it.</summary>
+    public static string ZoneScore()
+    {
+        var sb = new System.Text.StringBuilder();
+        void One(string label, System.Func<string> run)
+        {
+            string full;
+            try { full = run(); }
+            catch (System.Exception e) { sb.Append(label).Append(": ERROR ").Append(e.Message).Append('\n'); return; }
+            int i = full.IndexOf("PAL $3F00:");
+            int j = full.IndexOf("RESULT:");
+            sb.Append(label).Append(": ")
+              .Append(i < 0 ? "PAL NOT SCORED " : full.Substring(i, j > i ? j - i : full.Length - i))
+              .Append(j < 0 ? "(no result)" : full.Substring(j, System.Math.Min(58, full.Length - j)))
+              .Append('\n');
+        }
+        One("w0(m1_longroute)", M1LongRoute);
+        One("w1(m2_route)", M2Route);
+        One("w2(m3_route)", M3Route);
+        One("w3(m4_route)", M4Route);
+        One("w4(m5_route)", M5Route);
+        One("w5(m6_route)", M6Route);
+        One("w6(m7_route)", M7Route);
+        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/zone_score.txt", sb.ToString());
+        return sb.ToString();
+    }
+
     /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
     /// seeded by probe_run --patch into cell $22=$1C (row 1, col 11, script byte $41 =
