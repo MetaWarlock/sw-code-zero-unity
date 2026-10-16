@@ -393,6 +393,7 @@ namespace Darkwing.Core
             State = 0x09;                                   // $50 ($DDFE) — map entry, not the $12 exit
             _matLanded = 0;                                 // $04D0 & $0F ($DDF1 seeds $80)
             _cardWait = 0;                                  // $9600 has not run yet
+            _cardPhase = false;
             // $DE03 JSR $FF06 (1 frame) + $DE06 JMP $C254 → $C270 palette fade: $0F=$30
             // stepped by $0D=$F0 with $0E=$04 yields per round ($C2A4-$C2B0) = 30/20/10/00,
             // exiting when $0F goes negative (it reads $F0 from the release frame on).
@@ -503,6 +504,7 @@ namespace Darkwing.Core
         {
             _matLanded = 0;                                 // $04D0 = $80 ($E3F5): low nibble clear
             _cardWait = 0;                                  // a $12 entry never runs $9600
+            _cardPhase = false;
             Flags = 0xD0;                                   // $0400 ($E3FA)
             if (Objects != null)
             {
@@ -710,6 +712,14 @@ namespace Darkwing.Core
         /// (and therefore $95) are skipped for the whole wait.</summary>
         public bool YieldOnlyFrame => _cardWait != 0;
 
+        /// <summary>True from the first $9600 visit until the $D554 release: the whole
+        /// $9605-$9640 phase loop owns the process, so $CAFC never RTS-es back to the
+        /// $CA75/$CA7C tail and the zone service ($EDF1) plus the palette script ($EFBE)
+        /// are skipped. The engine tick still happens — each iteration ends inside $F89A —
+        /// which is why this is NOT the same window as <see cref="YieldOnlyFrame"/>.</summary>
+        public bool IntroCardPhase => _cardPhase;
+        private bool _cardPhase;
+
         /// <summary>
         /// $D53F/$9600 — the mission intro card, a coroutine: one $9605 iteration per
         /// frame, each ending inside $F89A (audio service, bank 5, $8000 frame engine,
@@ -727,6 +737,7 @@ namespace Darkwing.Core
             if (_cardWait == 0)
             {
                 if (s0 == null) return;
+                _cardPhase = true;                          // $9605 owns the process from here
                 if (s0.AnimNumber != 0x2B)                  // $9600/$9602 first visit
                 {
                     SetAnimPlayer(0x2B);
@@ -737,6 +748,7 @@ namespace Darkwing.Core
                 return;
             }
             if (--_cardWait != 0) return;                   // $FEFF-$FF03
+            _cardPhase = false;                             // $D554 RTS back to $CA43
             State = 0;                                      // $D556
             SetAnimPlayer(0x01);                            // $D558/$D55A
             ChrLatch0 = CardReleaseChr;                     // $D560-$D565 ($1A = $D589[$31])

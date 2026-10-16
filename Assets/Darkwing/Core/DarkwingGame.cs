@@ -672,8 +672,16 @@ namespace Darkwing.Core
             // $CA75/$CA79: LDA $66 / BMI $CA7C — the zone service is skipped while a door
             // has flagged $66 negative, but $CA7C JSR $EFBE is the FALL-THROUGH of that same
             // block, so the palette-patch service runs on every world frame either way.
-            if ((sbyte)Player.PendingMissionFlag >= 0) RunZoneService();
-            RunPaletteScript();
+            // Exception: both are the tail of $CAFC, and while the $9605 intro-card loop owns
+            // the process it never RTS-es back to $CA43 — the engine tick still happens (each
+            // iteration ends inside $F89A), only the tail is lost. That is why gold_m1_longroute
+            // parks $3D/$3E/$3F for the f872..f1010 phase while $95 keeps counting, and why m2
+            // and m7 — the only captures with no such phase — are the only palette MATCHes.
+            if (!Player.IntroCardPhase)
+            {
+                if ((sbyte)Player.PendingMissionFlag >= 0) RunZoneService();
+                RunPaletteScript();
+            }
             Enemies?.RunFrame();
             // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
             // the blink/iteration-order tests read is the one this frame's pass produced.
