@@ -30,7 +30,7 @@ unity,renderer,background,pixel-compare,yes,partial,FAIL(11.7%),BackgroundCompos
 
 enemies,catalog,105_types,static_tables,yes,no,no,object_catalog.csv + bank4 $8AB3/$8C57 exported to object_types.bytes
 enemies,behaviors,bank6_dispatch,disasm,yes,no,no,docs/enemies_bosses.md §1: $8000 tables $825F/$82A7
-enemies,bosses,7_bosses,disasm,yes,no,no,docs/enemies_bosses.md §2: Quackerjack/Wolfduck/Liquidator/Moliarty/Bushroot/Megavolt/Steelbeak
+enemies,bosses,7_bosses,disasm,yes,yes,no,2026-10-16 shift 37 audit: this row was stale. The boss code IS ported - class BossBehaviors in Assets/Darkwing/Core/EnemyBehaviors.cs:3489+ with the bank-1 $8802 table: Quackerjack $9736/$9836/$97E6, Wolfduck $9D4C/$9971/$9BEC, Liquidator $9DA7, Megavolt $A977/$AC90/$ACF2, Moliarty $A12C, Bushroot $A5F7, Steelbeak $AD6F/$AD23/$AF91/$B1D4, plus BossTakeProjectileHit $B39E, hit flash $B36A, BossDefeat $B315 and the bank-1 dispatch hook in EnemyDispatcher.cs:88. What is still missing is frame-exact GOLDEN CAPTURES of boss fights (compared=no stays), and the player weapon spawn $CE39 (G36.3) that is needed to actually damage a boss in play. implemented column corrected from no to yes; criterion not loosened: compared remains no.
 enemies,rng,4_counters,disasm,yes,no,no,$E4-$E7 counters, per-site formulas documented
 enemies,contact,hitboxes,tables,yes,no,no,§5.4 hitbox tables $FB39/$FB59/$FBE9/$FC09
 enemies,hp,semantics,verified,yes,no,no,$05A0: 128=gas-immune, 0=one-hit, 1-15 normal
