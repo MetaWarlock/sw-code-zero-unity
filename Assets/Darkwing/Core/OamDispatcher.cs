@@ -30,6 +30,14 @@ namespace Darkwing.Core
         /// $8FCD… saves and restores those six fields around the mission screens.</summary>
         public bool HudActive = true;
 
+        /// <summary>Mission-card phase: bank 2 $9600…$9635 primes OAM cursor to $A0
+        /// and $9636/$967A blits 40 sprite records at $0200..$029F that must survive
+        /// $3C frames while $F51B animates their X offsets. When this flag is set,
+        /// RunFrame skips the $C21E wipe below $A0 and starts composition at $A0.
+        /// Never set by the current flow — shift 45 wires it in
+        /// <see cref="PlayerCore.MissionIntroCard"/>.</summary>
+        public bool MissionCardHold;
+
         public OamDispatcher(byte[] bank5, ObjectSystem objects, Ppu ppu, PlayerCore player)
         {
             _bank5 = bank5;
@@ -66,6 +74,55 @@ namespace Darkwing.Core
             System.Array.Copy(oam, offset, _ppu.Oam, 0, 256);
         }
 
+        /// <summary>Transcription of bank 2 $9636/$967A: mission-card OAM blit.
+        /// 40 groups of 4 bytes at $0200,Y (Y=0,4,…,$9C). Per world ($31) the Y byte
+        /// source differs — $973F,Y for world 0 (no INX, jumps to $965D),
+        /// $9807,X for worlds 5 and 6, $97DF,X otherwise (with INX each pass).
+        /// Tile/attr/X come from $9740/41/42,Y always. World 7 takes $967A which
+        /// reads $969F/A0/A1/A2,Y instead and skips the per-world selector.
+        /// Bank 2 file indexed by cpu address − $8000 (see <c>TextEngine.cs:42</c>).
+        /// Not wired yet — shift 45's <see cref="PlayerCore.MissionIntroCard"/> calls
+        /// this on the _cardWait 0 → $3C transition.</summary>
+        public void BlitMissionCard(byte[] bank2, int world)
+        {
+            if (world == 7)
+            {
+                for (int y = 0; y < 0xA0; y += 4)
+                {
+                    _shadow[y]      = bank2[0x169F + y];   // $969F,Y
+                    _shadow[y + 1]  = bank2[0x16A0 + y];   // $96A0,Y
+                    _shadow[y + 2]  = bank2[0x16A1 + y];   // $96A1,Y
+                    _shadow[y + 3]  = bank2[0x16A2 + y];   // $96A2,Y
+                }
+                return;
+            }
+            int x = 0;
+            for (int y = 0; y < 0xA0; y += 4)
+            {
+                byte yb;
+                if (world == 0)
+                {
+                    yb = bank2[0x173F + y];                 // $973F,Y
+                    _shadow[y] = yb;
+                    if (yb != 0) goto rows;                 // $9644 BNE $965D
+                }
+                else if (world == 5 || world == 6)
+                {
+                    _shadow[y] = bank2[0x1807 + x];         // $9807,X
+                    x++;
+                }
+                else
+                {
+                    _shadow[y] = bank2[0x17DF + x];         // $97DF,X
+                    x++;
+                }
+            rows:
+                _shadow[y + 1] = bank2[0x1740 + y];         // $9740,Y
+                _shadow[y + 2] = bank2[0x1741 + y];         // $9741,Y
+                _shadow[y + 3] = bank2[0x1742 + y];         // $9742,Y
+            }
+        }
+
         /// <summary>One frame of the bank-5 walk at its ROM place ($CABB, after the player,
         /// scroll, spawner, door and behaviour services). $802F-$80C6 is one fallthrough chain
         /// per slot — cull/relative update, then the blink/flip scratch, then the animation
@@ -79,10 +136,13 @@ namespace Darkwing.Core
         /// content=f-1 plus HUD placement from RAM[f].$95, and 0 for every other pairing.</summary>
         public void RunFrame(byte parity)
         {
-            _oamCursor = 4;                       // $CAB6 LDA #$04 / STA $97
+            _oamCursor = MissionCardHold ? (byte)0xA0 : (byte)4;   // $CAB6 / $9607
             // $C21E, called just before the walk: hides every record from the cursor to the end
             // of the page, so each frame's unused tail is F8 plus last frame's tile/attr/X bytes.
-            for (int i = 0; i < 256; i += 4) _shadow[i] = 0xF8;
+            // During the mission-card phase the front 160 bytes hold the $9636 blit — $C21E's
+            // wipe starts at the cursor, so only $02A0..$02FF is reset.
+            int wipeStart = MissionCardHold ? 0xA0 : 0;
+            for (int i = wipeStart; i < 256; i += 4) _shadow[i] = 0xF8;
             // Player invulnerability blink runs first ($80E1-$80F1 side effects).
             bool playerBlinkSkip = false;
             if (_player.InvulnFrames > 0)
