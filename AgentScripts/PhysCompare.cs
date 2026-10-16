@@ -10,7 +10,7 @@ public static class PhysCompare
     private static string Compare(string name, int frames, System.Func<int, byte> input,
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
         int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false,
-        string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false)
+        string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false, bool pause = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         string gdir = goldenDir ?? $"gold_{name}";
@@ -35,6 +35,9 @@ public static class PhysCompare
         // tables all live in bank 7: a boot without Bank7 leaves Sections == null, so those services
         // are silently skipped and the $3E/$3F cursors never move.
         game.Bank7 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes");
+        // The pause phase ($8F00…$9025) installs its panel from the bank-4 tables, so a boot
+        // without Bank4 leaves the install reading a null array.
+        game.Bank4 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank4.bytes");
         var decoder = new Darkwing.Core.RoomDecoder(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank0.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank1.bytes"),
@@ -117,6 +120,18 @@ public static class PhysCompare
         p.PalStep3E = ram0[0x3E];
         p.PalIndex3F = ram0[0x3F];
         p.PendingMissionFlag = ram0[0x66];
+        // $54 picks the panel's weapon name ($904E) and the slot-3 anim override, $60/$61 are
+        // the two gas digits the panel draws — pause goldens have to carry them as captured.
+        if (pause)
+        {
+            p.WeaponSelected = ram0[0x54];
+            p.GasEnergyHi = ram0[0x60];
+            p.GasEnergyLo = ram0[0x61];
+            // $FE is the live $2001 mirror. Gameplay never writes it in the port (the ROM's
+            // per-frame $2001 writes are not modelled), so the pause phase would otherwise start
+            // from 0 and score $8FB1's AND/$901C's OR against a mask the ROM never held.
+            game.Ppu.Mask = ram0[0xFE];
+        }
         var s0 = game.Objects.Slots[0];
         if (enemies)
         {
@@ -213,6 +228,9 @@ public static class PhysCompare
         string mirFirstDetail = "", srcFirstDetail = "", flagFirstDetail = "";
         var mirP = new byte[32]; var srcP = new byte[32];
         int oamFrameOk = 0, oamTotal = 0, oamFirstBad = -1, oamByteSum = 0;
+        int pauseOk = 0, pauseTotal = 0, pauseFirstBad = -1;
+        bool panelOk = true;
+        string pauseFirstDetail = "";
         int[] oamEntryBad = new int[64];
         string oamFirstDetail = "";
         const int OamLag = 0;
@@ -233,6 +251,14 @@ public static class PhysCompare
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
             int gy = g[0x510] | (g[0x520] << 8);
+            // $8F2A/$8F24 save slot 0's X/Y LOW bytes to $0378/$0372 and the install at
+            // $8F78/$8F72 overwrites only $04F0/$0510, so while $8F00 owns the frame the ROM's
+            // live player position is the page byte still in $0500/$0520 plus the saved low byte.
+            if (pause && game.Paused)
+            {
+                gx = (g[0x500] << 8) | g[0x378];
+                gy = (g[0x520] << 8) | g[0x372];
+            }
             if (scoreEnemies)
             {
                 byte[] prE = PackedSlots(game);
@@ -261,6 +287,35 @@ public static class PhysCompare
                     }
                 }
                 if (allMatch) enemyMatchFrames++;
+            }
+            if (pause)
+            {
+                // The panel is six re-installed slots plus the $05C2 block, so this is the field
+                // list $8F12…$8F7B writes — save/restore included, because a resume golden scores
+                // the frames AFTER $8FCD too.
+                pauseTotal++;
+                byte[] prP = PackedSlots(game);
+                string bad = null;
+                int[] pAddrs = { 0x4D0, 0x400, 0x420, 0x4F0, 0x500, 0x510, 0x520 };
+                for (int s = 0; s <= 5 && bad == null; s++)
+                    for (int k = 0; k < pAddrs.Length && bad == null; k++)
+                        if (prP[pAddrs[k] + s] != g[pAddrs[k] + s])
+                            bad = $"slot{s} ${pAddrs[k]:X3} port={prP[pAddrs[k] + s]:X2} rom={g[pAddrs[k] + s]:X2}";
+                var blk = game.PauseBlockForTest;
+                for (int i = 0; i < 38 && bad == null; i++)
+                    if (blk[i] != g[0x5C2 + i]) bad = $"${0x5C2 + i:X3} port={blk[i]:X2} rom={g[0x5C2 + i]:X2}";
+                if (bad == null && p.InvulnFrames != g[0x7C]) bad = $"$7C port={p.InvulnFrames:X2} rom={g[0x7C]:X2}";
+                if (bad == null && game.Ppu.Mask != g[0xFE]) bad = $"$FE port={game.Ppu.Mask:X2} rom={g[0xFE]:X2}";
+                // PackedSlots does not carry $0410/$0430, so read the two anim bytes off the slots.
+                for (int s = 0; s <= 5 && bad == null; s++)
+                {
+                    var sl = game.Objects.Slots[s];
+                    if (sl.AnimFrame != g[0x410 + s]) bad = $"slot{s} $410 port={sl.AnimFrame:X2} rom={g[0x410 + s]:X2}";
+                    else if (sl.AnimTimer != g[0x430 + s]) bad = $"slot{s} $430 port={sl.AnimTimer:X2} rom={g[0x430 + s]:X2}";
+                }
+                panelOk = bad == null;
+                if (bad == null) pauseOk++;
+                else if (pauseFirstBad < 0) { pauseFirstBad = f; pauseFirstDetail = $"f{f} {bad}"; }
             }
             if (trace)
             {
@@ -366,6 +421,15 @@ public static class PhysCompare
                     else if (badByte < 0) badByte = i;
                 }
                 oamTotal++; oamByteSum += ok;
+                if (trace && scoreOam)
+                {
+                    var od = new System.Text.StringBuilder($" [OAM f{f} ok={ok}/256 P:");
+                    for (int k = 0; k < 64; k++) od.Append($"{game.Ppu.Oam[k * 4]:X2}{game.Ppu.Oam[k * 4 + 1]:X2}{game.Ppu.Oam[k * 4 + 2]:X2}{game.Ppu.Oam[k * 4 + 3]:X2} ");
+                    od.Append("| O:");
+                    for (int k = 0; k < 64; k++) od.Append($"{oamAll[o + k * 4]:X2}{oamAll[o + k * 4 + 1]:X2}{oamAll[o + k * 4 + 2]:X2}{oamAll[o + k * 4 + 3]:X2} ");
+                    od.Append(']');
+                    sb.Append(od);
+                }
                 for (int e = 0; e < 64; e++)
                     if (game.Ppu.Oam[e * 4] != oamAll[o + e * 4] || game.Ppu.Oam[e * 4 + 1] != oamAll[o + e * 4 + 1] ||
                         game.Ppu.Oam[e * 4 + 2] != oamAll[o + e * 4 + 2] || game.Ppu.Oam[e * 4 + 3] != oamAll[o + e * 4 + 3])
@@ -422,6 +486,10 @@ public static class PhysCompare
             sb.Append(enemyFirstDiv < 0
                 ? $"  ENEMIES: MATCH {enemyMatchFrames}/{enemyTotalFrames} frames (all ROM-active slots X/Y/state/beh/anim identical)"
                 : $"  ENEMIES: first divergence f{enemyFirstDiv} slot {enemyDivSlot:X2} field {enemyDivField} port={enemyDivPort:X2} orig={enemyDivOrig:X2} (matched {enemyMatchFrames}/{enemyTotalFrames})");
+        if (pause)
+            sb.Append(pauseFirstBad < 0
+                ? $"  PANEL: MATCH {pauseOk}/{pauseTotal} frames (slots 0-5 $04D0/$0400/$0410/$0420/$0430/$04F0/$0500/$0510/$0520 + $05C2 block + $7C + $FE)"
+                : $"  PANEL: first divergence {pauseFirstDetail} (matched {pauseOk}/{pauseTotal})");
         File.WriteAllText(root + $"/Temp/{name}_trace.txt", sb.ToString());   // the run_script console truncates
         return sb.ToString();
     }
@@ -436,6 +504,35 @@ public static class PhysCompare
         if (f >= 20 && f <= 22) b |= 0x80;
         return b;
     });
+
+    /// <summary>G58 pause golden: mission 1 resumed from `gold_w00/gameplay.mss` with Start
+    /// pressed at f20 and held to f23, so f20…69 are the bank-4 $8F00 phase. `$14` is an
+    /// edge byte, so the held press cannot resume — the resume needs the second capture.</summary>
+    public static string PauseHold() => Compare("pause_hold", 70,
+        f => (f >= 20 && f < 24) ? (byte)0x10 : (byte)0x00,
+        camera: true, enemies: true, palette: true, scoreEnemies: true, scoreOam: true,
+        goldenDir: "gold_pause_m1", pause: true);
+
+    /// <summary>The resume path $8FCD…$9025: a second Start edge at f45 closes the phase,
+    /// so the same six slots, block, palette and mask have to come back byte-exactly.</summary>
+    public static string PauseResume() => Compare("pause_resume", 80,
+        f => ((f >= 20 && f < 24) || (f >= 45 && f < 49)) ? (byte)0x10 : (byte)0x00,
+        camera: true, enemies: true, palette: true, scoreEnemies: true, scoreOam: true,
+        goldenDir: "gold_pause_resume", pause: true);
+
+    /// <summary>Same run as <see cref="PauseHold"/> but with the full per-frame trace plus the
+    /// 64-entry port/ROM OAM dump, written to Temp/pause_trace_trace.txt.</summary>
+    public static string PauseTrace() => Compare("pause_trace", 70,
+        f => (f >= 20 && f < 24) ? (byte)0x10 : (byte)0x00,
+        camera: true, enemies: true, palette: true, scoreEnemies: true, scoreOam: true,
+        goldenDir: "gold_pause_m1", pause: true, trace: true);
+
+    /// <summary><see cref="PauseResume"/> with the per-frame OAM dump, used to attribute which
+    /// frames still diverge: Temp/pause_res_trace_trace.txt.</summary>
+    public static string PauseResumeTrace() => Compare("pause_res_trace", 80,
+        f => ((f >= 20 && f < 24) || (f >= 45 && f < 49)) ? (byte)0x10 : (byte)0x00,
+        camera: true, enemies: true, palette: true, scoreEnemies: true, scoreOam: true,
+        goldenDir: "gold_pause_resume", pause: true, trace: true);
 
     /// <summary>
     /// Mission-1 traversal golden `gold_traverse_m1`: the original resumed from

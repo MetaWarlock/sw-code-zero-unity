@@ -20,6 +20,7 @@ public static class WireData
         launcher.Bank3Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/audio_bank3.bytes");
         launcher.Bank6Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank6.bytes");
         launcher.Bank2Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank2.bytes");
+        launcher.Bank4Data = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/prg_bank4.bytes");
         launcher.ObjectTypesData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/object_types.bytes");
         launcher.MapNametableData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/map_nametable.bytes");
         launcher.MapPaletteData = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Darkwing/Data/map_palette.bytes");

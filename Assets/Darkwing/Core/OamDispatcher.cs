@@ -58,6 +58,29 @@ namespace Darkwing.Core
         /// <summary>Late binding for the HUD's $05B0…$05C1 block (slot 1's part table).</summary>
         public void SetHud(HudComposer hud) => _hud = hud;
 
+        /// <summary>
+        /// Part blocks that live in RAM. A bank-5 frame pointer is just a 16-bit address, so
+        /// an animation whose frames name $05B0/$05C2 composes from RAM through the same
+        /// $8143 service — the pause panel (anim $2E → $05C2) is the case that needs it.
+        /// </summary>
+        private readonly System.Collections.Generic.List<(int cpu, byte[] data)> _ramBlocks
+            = new System.Collections.Generic.List<(int, byte[])>();
+
+        public void MapRamPartBlock(int cpuAddress, byte[] data) => _ramBlocks.Add((cpuAddress, data));
+
+        private bool TryRamPartBlock(int cpu, out byte[] data, out int baseIndex)
+        {
+            for (int i = 0; i < _ramBlocks.Count; i++)
+            {
+                int off = cpu - _ramBlocks[i].cpu;
+                if (off >= 0 && off < _ramBlocks[i].data.Length)
+                {
+                    data = _ramBlocks[i].data; baseIndex = off; return true;
+                }
+            }
+            data = null; baseIndex = 0; return false;
+        }
+
         /// <summary>Byte offset of the next free $0200 shadow slot after the frame's walk
         /// ($97 as the ROM leaves it; 0 once the sprite page has been filled).</summary>
         public int OamCursorBytes => _oamCursor;
@@ -162,7 +185,14 @@ namespace Darkwing.Core
                 int slot = start + step * i;
                 if (slot == HudComposer.Slot && HudActive && _hud != null)
                 {
-                    ComposeHud();                     // $C887 made slot 1 the HUD block
+                    var hs = _objects.Slots[slot];
+                    // $C887 makes slot 1 the HUD block, so its RECORDS come from the HUD's own
+                    // param block — but the ROM still walks the slot, so its anim timer keeps
+                    // counting (gold_pause_m1: $0430[1] = 08,00,01,… under anim $1B, entry $B064
+                    // duration 8, single frame). Advancing it here keeps $0430/$0410 faithful;
+                    // $0410 never leaves 0 because entry[0]=$00 declares one frame.
+                    if (hs.Active && hs.AnimNumber != 0) AnimAdvance(hs);
+                    ComposeHud();
                     continue;
                 }
                 var s = _objects.Slots[slot];
@@ -170,6 +200,9 @@ namespace Darkwing.Core
                 if (slot == 0 && playerBlinkSkip) continue;
                 UpdateSlotCull(slot, s);
                 if (!s.Active) continue;
+                if (s.AnimNumber == 0) continue;      // $80DB/$80DE/$80E0: RTS before $8100, so an
+                // anim number of $00 advances no timer and composes no record — the pause panel's
+                // slot 3 carries $00 while no weapon is selected ($902C, $54 = 0).
                 AnimAdvance(s);
                 OamCompose(slot, s);
             }
@@ -282,21 +315,27 @@ namespace Darkwing.Core
             if ((_bank5[entry] & 0x80) != 0) { lo = 0x9C0B; hi = 0x9D45; }
             else { lo = 0x9B0B; hi = 0x9C45; }
             int partCpu = _bank5[B5(lo) + frameId] | (_bank5[B5(hi) + frameId] << 8);
-            _partPtr = B5(partCpu);
-            if (_partPtr < 0 || _partPtr >= 0x4000 - 64)
-                return; // dynamic RAM frame ($05B0/$05C2/$05E8 template path — separate mechanism)
+            byte[] parts;
+            if (partCpu >= 0x8000)
+            {
+                parts = _bank5;
+                _partPtr = B5(partCpu);
+                if (_partPtr < 0 || _partPtr >= 0x4000 - 64) return;
+            }
+            else if (!TryRamPartBlock(partCpu, out parts, out _partPtr))
+                return; // a RAM frame no phase registered ($05E8 template path)
             _relY = s.ScreenY;
             _relX = s.ScreenX;
             int dirOffset = (s.Flags & 0x40) != 0 ? 1 : 0;
-            int coordId = _bank5[_partPtr + 1] + dirOffset;
+            int coordId = parts[_partPtr + 1] + dirOffset;
             int coordCpu = _bank5[B5(0xAE53) + coordId] | (_bank5[B5(0xAF23) + coordId] << 8);
             _coordPtr = B5(coordCpu) - 2;
             if (_coordPtr < 0 || _coordPtr >= 0x4000 - 64)
                 return;
             _flipBits = (byte)(s.Flags & 0x40);
             _prioBits = (byte)(s.Flags & 0x20);
-            _partCount = _bank5[_partPtr];
-            ComposeParts(_bank5, _partPtr, _coordPtr, _relX, _relY, _flipBits, _prioBits, _partCount);
+            _partCount = parts[_partPtr];
+            ComposeParts(parts, _partPtr, _coordPtr, _relX, _relY, _flipBits, _prioBits, _partCount);
         }
 
         /// <summary>Slot 1's part table is the RAM block $05B0…$05C1, so the HUD reaches the same

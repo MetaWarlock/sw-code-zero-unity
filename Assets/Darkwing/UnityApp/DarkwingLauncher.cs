@@ -23,6 +23,7 @@ namespace Darkwing.UnityApp
 
         public TextAsset ChrData, LevelSetsData, ScreensData, LevelsData, AnimsData;
         public TextAsset Bank0Data, Bank1Data, Bank7Data, Bank5Data, Bank3Data, Bank6Data, Bank2Data;
+        public TextAsset Bank4Data;
         public TextAsset ObjectTypesData;
         public TextAsset MapNametableData, MapPaletteData;
 
@@ -54,6 +55,7 @@ namespace Darkwing.UnityApp
             if (Bank3Data != null) _game.Bank3 = Bank3Data.bytes;
             if (Bank6Data != null) _game.Bank6 = Bank6Data.bytes;
             if (Bank2Data != null) _game.Bank2 = Bank2Data.bytes;
+            if (Bank4Data != null) _game.Bank4 = Bank4Data.bytes;
             _game.ObjectTypeTable = ObjectTypesData.bytes;
             _game.MapNametable = MapNametableData != null ? MapNametableData.bytes : null;
             _game.MapPalette = MapPaletteData != null ? MapPaletteData.bytes : null;

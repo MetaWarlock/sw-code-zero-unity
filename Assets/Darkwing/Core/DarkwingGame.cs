@@ -9,7 +9,7 @@ namespace Darkwing.Core
     /// the game-visible cadence is 60.098814 frames/sec. The host feeds Steps
     /// from an accumulator; Step count is the game clock (never host wall time).
     /// </summary>
-    public sealed class DarkwingGame
+    public sealed partial class DarkwingGame
     {
         public const int ScreenWidth = 256;
         public const int ScreenHeight = 240;
@@ -94,8 +94,15 @@ namespace Darkwing.Core
         private byte[] _bank3;
         private byte[] _bank7;
 
-        /// <summary>Late-bound bank 7 (world/music data) for the sequencer.</summary>
-        public byte[] Bank7 { get => _bank7; set { _bank7 = value; } }
+        /// <summary>Late-bound bank 7 (world/music data) for the sequencer. Setting it also runs
+        /// the boot-time $C92A copy, because the ROM seeds $05C2 long before any mission.</summary>
+        public byte[] Bank7 { get => _bank7; set { _bank7 = value; EnsurePauseBlock(); } }
+
+        /// <summary>
+        /// Raw PRG bank 4 (ROM $8000–$BFFF window while gameplay is paused): the
+        /// pause/status routine $8F00–$9025 and its tables. Index with <c>addr - $8000</c>.
+        /// </summary>
+        public byte[] Bank4 { get; set; }
 
         /// <summary>The loaded mission's placement data (spawner source).</summary>
         public GameData.LevelDef CurrentLevel { get; set; }
@@ -574,11 +581,38 @@ namespace Darkwing.Core
 
         private byte _prevHeld;
         private System.Func<int, byte> _gridByte, _flagByte;   // cached ($32)/($34) lookups for $DA70
-        public bool Paused; // Start toggles in gameplay ($CA33 flow: SFX $1C, freeze, status screen)
+        // The pause phase lives in DarkwingGame.Pause.cs (bank 4 $8F00…$9025).
+        private bool _parityStepped;
+        private bool _oamPublished;
+
+        /// <summary>The NMI's <c>$0200→OAM</c> DMA: exactly once per frame. The resume frame
+        /// reaches it twice (the pause loop's tail and the $CA43 tail), and a second copy would
+        /// expose the pause-loop composition as the displayed frame instead of the pre-frame
+        /// shadow (gold_pause_resume f45: 79/256 bytes).</summary>
+        private void PublishToOamOnce()
+        {
+            if (_oamPublished) return;
+            _oamPublished = true;
+            Oam.PublishToOam();
+        }
+
+        /// <summary>$8000 <c>INC $95</c> — once per frame, not once per walk. The resume frame
+        /// reaches $F89A twice (the pause loop's iteration and the $CA43 tail), and a second
+        /// increment leaves $95 one ahead of the ROM from that frame on and flips the walk
+        /// direction for every later frame (gold_pause_resume: port 57 vs ROM 56 at f45,
+        /// then 64/256 OAM bytes to the end of the capture).</summary>
+        private void StepFrameParity()
+        {
+            if (_parityStepped) return;
+            _parityStepped = true;
+            FrameParity++;
+        }
 
         /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
+            _parityStepped = false;
+            _oamPublished = false;
             NmiPaletteUpload();            // $C059: $18-flagged $0300 → $3F00, every frame
             // $DE03 JSR $FF06 + $DE06 JMP $C254 → $C270: the world loader stays in its
             // palette fade for 17 NMIs, so neither the input read nor $CAFC/$CB41 runs
@@ -649,14 +683,25 @@ namespace Darkwing.Core
                 Frame++;
                 return;
             }
-            if (Paused)
+            // $CA17…$CA3D: a fresh Start outside the four guarded $50 states plays SFX $1C and
+            // calls JSR $8F00, which holds the process. Its loop ($8FB7) re-reads $14 each frame
+            // after passing through $F89A's JSR $FF06 yield, so the press that OPENED the screen
+            // is consumed by the entry frame and the resume needs a new edge.
+            if (_pauseActive)
             {
-                if ((pressed & 0x10) != 0) Paused = false; // Start resumes
-                return; // world frozen during pause
+                // $8FCD is read at the head of the $8FB7 loop, BEFORE its JSR $F89A, so the frame
+                // that leaves the pause screen composes no pause records at all. The hidden OAM
+                // tail proves it: gold_pause_resume f46 keeps F8+61,02,6C … F8+6D,03,68 in entries
+                // 41..53, the panel block of the last real pause walk (f45's publish already showed
+                // it), where one more pause frame would have left the player+plate block
+                // F8+7B,00,70 … F8+CA,03,50 instead.
+                if ((pressed & 0x10) == 0) { PauseFrame(); return; }
+                PauseRestore();                     // $8FCD…$9025, then RTS back to $CA40
             }
-            if ((pressed & 0x10) != 0 && Player.LevelActive >= 0)
+            else if ((pressed & 0x10) != 0 && PauseGuardAllows(Player.State))
             {
-                Paused = true; // TODO(M7): SFX $1C + status screen via VRAM queue
+                PauseEnter();
+                PauseFrame();                       // $8FB7 runs inside the entry frame too
                 return;
             }
             // $CA40 JSR $CAFC: the state table $CB41 runs only while slot 0's $04D0 bit 7 is
@@ -800,9 +845,9 @@ namespace Darkwing.Core
             Enemies?.RunFrame();
             // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
             // the blink/iteration-order tests read is the one this frame's pass produced.
-            FrameParity++;                                     // $8000-$8002
+            StepFrameParity();                                   // $8000-$8002
             // NMI DMA: the buffer this frame displays is the shadow of the previous walk.
-            Oam.PublishToOam();
+            PublishToOamOnce();
             // The HUD is object slot 1 ($C850/$C887), so the walk composes its 8 records at
             // whatever cursor position the parity order reaches slot 1 in — no separate writer
             // and no hard-coded entry (GAPS G44.1 closed).
