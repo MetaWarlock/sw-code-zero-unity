@@ -622,6 +622,11 @@ namespace Darkwing.Core
             OnHookTileFlag = false;
             PrevState = State;
             HurtOrigin = 0;
+            // $CB41-$CB4A runs before every state handler and rewrites the player's X velocity
+            // to +1.50 px/frame, so a state that moves sideways must set $0530/$0540 itself
+            // (the death float's +0.0625 at $D39B is the clearest case).
+            XVelFrac = 0x80;                                  // $CB43-$CB45
+            XVelInt = 1;                                      // $CB48-$CB4A
 
             switch (State & 0x1F)
             {
@@ -780,16 +785,16 @@ namespace Darkwing.Core
         }
 
         // ---------- State 7: death throes ($D353) ----------
-        // Launch up 2.0 px/frame for $0F frames, pause $3C (SFX $25 at $1E), then fall.
-        private byte _deathPhase; // 0 rise, 1 pause, 2 fall
-        private byte _deathTimer;
-
+        // $D353 keeps its phase in slot 0's own object bytes, which is why it survives a
+        // mid-mission reload and why a pit death (bit7 set, low nibble ≠ 0) skips the launch:
+        //   $0490 ≠ 0 → Y -= vy only ($F55E), no gravity, no X          (15 frames after init)
+        //   $0480 ≠ 0 → re-write vy=1.8E / vx=0.10 and NOTHING else     (60 frames, frozen)
+        //   $0480 = 0 → $F5C9 (integrate + gravity) then $F4FD (X add), until vy reaches $FC,
+        //               where $D3D1 keeps only $F5A4 → constant 3.83 px/frame fall, no X.
+        // $D3B4's STA $9B (audio blip gate) is not modelled; $9B is on the open-gap list.
         public void StartDeath()
         {
             State = 7;
-            _deathPhase = 0;
-            _deathTimer = 0x0F;
-            YVelInt = 2; YVelFrac = 0;
             // $64 is NOT set here: the ROM only increments it at $CB39/$D407, i.e. when the
             // spare energy column $05E4 is already empty. Setting it made every death take
             // the $D41D game-over branch.
@@ -797,22 +802,85 @@ namespace Darkwing.Core
 
         private void DeathThroesState()
         {
-            switch (_deathPhase)
+            var s = Objects?.Slots[0];
+            if (s == null) return;                            // $D353 reads $04D0/$0480/$0490
+            if ((s.StateLow & 0x0F) == 0)                     // $D353-$D358
             {
-                case 0:
-                    IntegrateY();
-                    if (--_deathTimer == 0) { _deathPhase = 1; _deathTimer = 0x3C; }
-                    break;
-                case 1:
-                    if (--_deathTimer == 0) { _deathPhase = 2; _deathTimer = 0; }
-                    break;
-                case 2:
-                    IntegrateY();
-                    ApplyGravity();
-                    break;
+                YVelFrac = 0;                                 // $D35A, A is the AND #$0F result
+                YVelInt = 2;                                  // $D35D-$D35F
+                s.T480 = 0x3C;                                // $D362-$D364
+                s.T490 = 0x0F;                                // $D367-$D369
+                Sfx?.Invoke(0x16);                            // $D36C JSR $F850 #$16
+                s.StateLow++;                                 // $D371
+                SetAnimPlayer(0x09);                          // $D374-$D376
+                Flags &= 0xDF;                                // $D379-$D37E
             }
-            if (_deathPhase == 2 && _deathTimer < 0xFF) _deathTimer++;
-            if (_deathPhase == 2 && _deathTimer >= 2) State = 8;
+            if (s.T490 != 0)                                  // $D381
+            {
+                s.T490--;                                     // $D386
+                IntegrateYRise();                             // $F55E
+                return;                                       // $D389 JMP $F55E
+            }
+            if (s.T480 != 0)                                  // $D38C
+            {
+                YVelFrac = 0x8E; YVelInt = 1;                 // $D391-$D398
+                XVelFrac = 0x10; XVelInt = 0;                 // $D39B-$D3A2
+                s.T480--;                                     // $D3A5
+                if (s.T480 == 0x1E) Sfx?.Invoke(0x25);         // $D3AB-$D3B1
+                return;                                       // $D3B8: the float moves nothing
+            }
+            if (Flags == 0x50 || Flags == 0x10)               // $D3BC-$D3C2
+            {
+                DrainEnergyAndResolve();
+                return;
+            }
+            if (YVelInt == unchecked((sbyte)0xFC))            // $D3C4
+            {
+                IntegrateY();                                 // $D3D1 JSR $F5A4 (no gravity/X)
+                if ((s.StateLow & 0x80) != 0) return;         // $D3D4-$D3D7 BMI $D41A
+                DrainEnergyAndResolve();                      // $D3D9
+                return;
+            }
+            if (YVelInt >= 0) IntegrateYRise();               // $F5C9 → $F581
+            else IntegrateY();                                // $F5C9 → $F5A4
+            ApplyGravity();                                   // $F5DA
+            IntegrateX(1);                                    // $D3CE JMP $F4FD
+        }
+
+        /// <summary>$D3D9-$D40E: one rung of the HUD energy ladder, then $50 = $08 with both
+        /// death timers cleared. Same ladder as $CB0E-$CB3B (<see cref="DeathService"/>), but
+        /// $D40E only arms state 8, so the resolve itself runs on the NEXT frame.</summary>
+        private void DrainEnergyAndResolve()
+        {
+            if (EnergyColRight == 0x70)                       // $D3DF-$D3E1
+                SecondEnergyColumn();                         // $D3F0
+            else
+            {
+                EnergyColRight--;                             // $D3E3
+                if (EnergyColRight == 0x6F) SecondEnergyColumn();  // $D3E6-$D3EB
+            }
+            State = 8;                                        // $D40E-$D410
+            if (Objects != null) { Objects.Slots[0].T480 = 0; Objects.Slots[0].T490 = 0; } // $D412-$D417
+        }
+
+        /// <summary>$F55E/$F581: Y -= vy with the borrow handled the other way round from
+        /// $F5A4 — a borrow out of $0510 takes a further $10 off $0510 and 1 (or 2, when that
+        /// wrap borrows again) off $0520, so crossing below $00 lands on $EE/$F0 of the
+        /// PREVIOUS page instead of $09 of the next one.</summary>
+        private void IntegrateYRise()
+        {
+            int acc = YFrac - YVelFrac;                                    // $F55E-$F565
+            bool borrow = acc < 0;
+            YFrac = (byte)acc;
+            int raw = (Y & 0xFF) - (YVelInt & 0xFF) - (borrow ? 1 : 0);    // $F568-$F56E
+            if (raw >= 0)                                                  // $F571 BCS $F580
+            {
+                Y = (ushort)((Y & 0xFF00) | (raw & 0xFF));
+                return;
+            }
+            int lo = (raw & 0xFF) - 0x0F - 1;                              // $F573 SBC #$0F, C=0
+            int hi = (Y >> 8) - 1 - (lo >= 0 ? 0 : 1);                     // $F578 SBC #$01
+            Y = (ushort)(((hi & 0xFF) << 8) | (lo & 0xFF));
         }
 
         // ---------- State 8 / death resolve ($D41B) ----------

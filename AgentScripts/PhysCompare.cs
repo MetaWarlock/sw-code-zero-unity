@@ -110,6 +110,13 @@ public static class PhysCompare
             p.StateTimer = ram0[0x51];
             p.SavedState = ram0[0x58];
             p.InvulnFrames = ram0[0x7C];
+            // Mid-mission route seeds (gold_m*_route) start with up to 3 hearts already spent,
+            // and the ROM keeps that count in the player's RAM metasprite tile bytes, not a counter:
+            // $F9C2 marks $05B4 ($80→$82), $05B8/$05B6 ($81→$83), then $05B2 plus the death write.
+            // Without this the port reads the ROM's 4th (lethal) hit as a 1st and stays in $06.
+            p.HitLadder = (byte)(ram0[0x5B2] != 0x80 ? 4
+                                 : (ram0[0x5B4] != 0x80 ? 1 : 0) + (ram0[0x5B8] != 0x81 ? 1 : 0) +
+                                   (ram0[0x5B6] != 0x81 ? 1 : 0));
             p.DirBits = ram0[0x52];
             game.FrameParity = ram0[0x95];
             for (int s = 0; s < 16; s++)
@@ -165,7 +172,8 @@ public static class PhysCompare
         // (e.g. $23) cannot hide a real physics divergence further down the same capture.
         var fieldNames = new[] { "X", "Y", "$50 state", "$FA scrollY", "$FB row",
                                  "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor",
-                                 "$0460 Yfrac", "$0470 Xfrac", "$0560 YvelI", "$0550 YvelF" };
+                                 "$0460 Yfrac", "$0470 Xfrac", "$0560 YvelI", "$0550 YvelF",
+                                 "ladder($05B2-B8)" };
         var firstBad = new int[fieldNames.Length];
         var badPort = new int[fieldNames.Length];
         var badOrig = new int[fieldNames.Length];
@@ -287,10 +295,12 @@ public static class PhysCompare
                                    && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
             int[] pv = { p.X, p.Y, p.State, p.ScrollY, p.ScrollYRow,
                          p.CellIndex, p.CellIndexNext, p.ScrollState, p.StageCursor,
-                         p.YFrac, p.XFrac, p.YVelInt & 0xFF, p.YVelFrac };
+                         p.YFrac, p.XFrac, p.YVelInt & 0xFF, p.YVelFrac, p.HitLadder };
             int[] ov = { gx, gy, g[0x50], g[0xFA], g[0xFB],
                          g[0x22], g[0x23], g[0x2B], g[0x25],
-                         g[0x460], g[0x470], g[0x560], g[0x550] };
+                         g[0x460], g[0x470], g[0x560], g[0x550],
+                         g[0x5B2] != 0x80 ? 4 : (g[0x5B4] != 0x80 ? 1 : 0) +
+                             (g[0x5B8] != 0x81 ? 1 : 0) + (g[0x5B6] != 0x81 ? 1 : 0) };
             for (int i = 0; i < pv.Length; i++)
                 if (pv[i] != ov[i] && firstBad[i] < 0) { firstBad[i] = f; badPort[i] = pv[i]; badOrig[i] = ov[i]; }
             if (palette)
@@ -473,6 +483,71 @@ public static class PhysCompare
             return b;
         },
         camera: true, enemies: true, trace: true, limit: 0, palette: true);
+
+    /// <summary>
+    /// Shared schedule for the mission route goldens `gold_m2_route` … `gold_m7_route`:
+    /// 1500 frames captured from each `gold_wNN/gameplay.mss` — the state probe_run saves at
+    /// the END of that world's entry capture, so the port seeds mid-mission (no $DDFE entry
+    /// handover, hence seedFrame 0 and no entryFreeze). Rhythm is the m1 long route: Right held
+    /// f2-1490 plus 26-frame A-holds every 130 frames from f120, and NO B so the unported
+    /// $CE39 weapon spawn cannot pollute the diff. First traversal comparison per mission
+    /// beyond the 371-frame entry fall.
+    /// </summary>
+    private static string Route(string name, int world, bool trace = false) => Compare(name, 1500,
+        f =>
+        {
+            byte b = (f >= 2 && f <= 1490) ? (byte)0x01 : (byte)0x00;
+            for (int k = 0; k < 11; k++)
+            {
+                int s = 120 + 130 * k;
+                if (f >= s && f <= s + 25) b |= 0x80;
+            }
+            return b;
+        },
+        camera: true, enemies: true, world: world, palette: true, trace: trace);
+
+    public static string M2Route() => Route("m2_route", 1);
+    public static string M3Route() => Route("m3_route", 2);
+    public static string M4Route() => Route("m4_route", 3);
+    public static string M5Route() => Route("m5_route", 4);
+    public static string M6Route() => Route("m6_route", 5);
+    public static string M7Route() => Route("m7_route", 6);
+
+    /// <summary>Per-frame dumps for the two diverging routes, written to
+    /// Temp/{name}_trace.txt (m3 diverges at f31 on Y/$0550/$0560, m4 at f63 on
+    /// state $06-vs-$07 plus the whole gravity vector).</summary>
+    public static string RouteTraces()
+    {
+        M3RouteTrace(); M4RouteTrace();
+        return "wrote Temp/m3_route_trace.txt and Temp/m4_route_trace.txt";
+    }
+    public static string M3RouteTrace() => Route("m3_route", 2, trace: true);
+    public static string M4RouteTrace() => Route("m4_route", 3, trace: true);
+
+    /// <summary>Missions 2-7 traversal scoreboard: one RESULT line each (Compare keeps the
+    /// full per-frame detail in Temp/{name}_trace.txt because the console truncates).</summary>
+    public static string Routes()
+    {
+        var sb = new System.Text.StringBuilder();
+        void One(string label, System.Func<string> run)
+        {
+            string full;
+            try { full = run(); }
+            catch (System.Exception e) { sb.Append(label).Append(": ERROR ").Append(e.Message).Append('\n'); return; }
+            int i = full.LastIndexOf("RESULT:");
+            sb.Append(label).Append(": ")
+              .Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(92, full.Length - i)))
+              .Append('\n');
+        }
+        One("m2(w01)", M2Route);
+        One("m3(w02)", M3Route);
+        One("m4(w03)", M4Route);
+        One("m5(w04)", M5Route);
+        One("m6(w05)", M6Route);
+        One("m7(w06)", M7Route);
+        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/routes_summary.txt", sb.ToString());
+        return sb.ToString();
+    }
 
     /// <summary>
     /// Hook ride golden: `gold_hook_ride2` is mission 1 (world 0) with the original
@@ -871,6 +946,7 @@ public static class PhysCompare
         }
         // the run_script console truncates, so keep the scoreboard on disk too
         One("longroute", M1LongRoute());
+        sb.Append(Routes());     // missions 2-7 traversal, one line each
         File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/suite_summary.txt", sb.ToString());
         return sb.ToString();
     }
@@ -926,6 +1002,14 @@ public static class PhysCompare
         p.StateTimer = ram0[0x51];
         p.SavedState = ram0[0x58];
         p.InvulnFrames = ram0[0x7C];
+        // $F9C2's heart ladder is not a counter but the player's own RAM metasprite tile bytes:
+        // the $C8CF template leaves $05B2=$80, $05B4=$80, $05B6=$81, $05B8=$81, and each survived
+        // hit marks the next one ($05B4→$82, $05B8→$83, $05B6→$83); the 4th marks $05B2→$82 and
+        // writes $50=$07. Mid-mission seeds (gold_m*_route) start at up to 3 marks, so without
+        // this the port takes the 4th hit as a 1st and stays in state $06 where the ROM dies.
+        p.HitLadder = (byte)(ram0[0x5B2] != 0x80 ? 4                       // $FA11: lethal hit landed
+                             : (ram0[0x5B4] != 0x80 ? 1 : 0) + (ram0[0x5B8] != 0x81 ? 1 : 0) +
+                               (ram0[0x5B6] != 0x81 ? 1 : 0));
         p.DirBits = ram0[0x52];
         // $95 increments in the NMI before the frame's logic, so the pre-Step value
         // is the seed frame's capture and Step() produces frame f's value.
