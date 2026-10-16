@@ -75,14 +75,15 @@ namespace Darkwing.Core
         }
 
         /// <summary>Transcription of bank 2 $9636/$967A: mission-card OAM blit.
-        /// 40 groups of 4 bytes at $0200,Y (Y=0,4,…,$9C). Per world ($31) the Y byte
-        /// source differs — $973F,Y for world 0 (no INX, jumps to $965D),
-        /// $9807,X for worlds 5 and 6, $97DF,X otherwise (with INX each pass).
-        /// Tile/attr/X come from $9740/41/42,Y always. World 7 takes $967A which
-        /// reads $969F/A0/A1/A2,Y instead and skips the per-world selector.
+        /// 40 groups of 4 bytes at $0200,Y (Y=0,4,…,$9C). The X byte counter is advanced per
+        /// branch, not once per row (flat_bank2.txt:4325-4355): world 0 reads $973F,Y and only
+        /// INX-es on the $9644-not-taken path (a zero Y byte falls through $9646/$9652 to
+        /// $97DF,X + INX); worlds 5/6 read $9807,X and INX only while it is non-zero ($9650);
+        /// the rest read $97DF,X with an unconditional INX. Tile/attr/X come from $9740/41/42,Y
+        /// always. World 7 takes $967A which reads $969F/A0/A1/A2,Y and skips the selector.
         /// Bank 2 file indexed by cpu address − $8000 (see <c>TextEngine.cs:42</c>).
-        /// Not wired yet — shift 45's <see cref="PlayerCore.MissionIntroCard"/> calls
-        /// this on the _cardWait 0 → $3C transition.</summary>
+        /// Wired by <see cref="PlayerCore.MissionIntroCard"/> on the _cardWait 0 → $3C transition;
+        /// verified byte-exact against every world's original OAM by MissionCardVerify.Suite.</summary>
         public void BlitMissionCard(byte[] bank2, int world)
         {
             if (world == 7)
@@ -99,27 +100,31 @@ namespace Darkwing.Core
             int x = 0;
             for (int y = 0; y < 0xA0; y += 4)
             {
-                byte yb;
+                // $963A is one fall-through chain per OAM record, and the X byte counter is
+                // advanced per branch, not once per row, so a zero Y source can either consume
+                // the $97DF,X fallback or repeat the current X depending on the world.
+                bool inx;
                 if (world == 0)
                 {
-                    yb = bank2[0x173F + y];                 // $973F,Y
-                    _shadow[y] = yb;
-                    if (yb != 0) goto rows;                 // $9644 BNE $965D
+                    byte yb = bank2[0x173F + y];           // $963E LDA $973F,Y / $9641 STA $0200,Y
+                    if (yb != 0) { _shadow[y] = yb; inx = false; }   // $9644 BNE $965D (no INX)
+                    else { _shadow[y] = bank2[0x17DF + x]; inx = true; } // A=0 → $9646/$9652/$9656 + $965C INX
                 }
                 else if (world == 5 || world == 6)
                 {
-                    _shadow[y] = bank2[0x1807 + x];         // $9807,X
-                    x++;
+                    byte yb = bank2[0x1807 + x];           // $964A LDA $9807,X / STA $0200,Y
+                    _shadow[y] = yb;
+                    inx = yb != 0;                         // $9650 BNE $965C
                 }
                 else
                 {
-                    _shadow[y] = bank2[0x17DF + x];         // $97DF,X
-                    x++;
+                    _shadow[y] = bank2[0x17DF + x];        // $9656 LDA $97DF,X / STA $0200,Y
+                    inx = true;                            // $965C INX
                 }
-            rows:
-                _shadow[y + 1] = bank2[0x1740 + y];         // $9740,Y
-                _shadow[y + 2] = bank2[0x1741 + y];         // $9741,Y
-                _shadow[y + 3] = bank2[0x1742 + y];         // $9742,Y
+                if (inx) x++;
+                _shadow[y + 1] = bank2[0x1740 + y];         // $965D LDA $9740,Y / STA $0201,Y
+                _shadow[y + 2] = bank2[0x1741 + y];         // $9663 LDA $9741,Y / STA $0202,Y
+                _shadow[y + 3] = bank2[0x1742 + y];         // $9669 LDA $9742,Y / STA $0203,Y
             }
         }
 
