@@ -163,6 +163,9 @@ namespace Darkwing.Core
             SectionUsesInternalEngine = false;
             MissionCleared = false;
             WorldRunning = true;
+            MapScreen = false;
+            MapChooser = false;
+            if (Oam != null) Oam.HudActive = true;   // $C887: slot 1 is the HUD block in a world
         }
 
         /// <summary>$DD5F-$DDC8 plus the $DE24 render-off/staging restart — the half of
@@ -381,14 +384,33 @@ namespace Darkwing.Core
         /// the host keeps presenting the nametable it was given.</summary>
         public bool WorldRunning = true;
 
+        /// <summary>True while the city-map screen owns the frame (set by
+        /// <see cref="LoadMapScreen"/>, cleared by <see cref="LoadWorld"/> and the GAME OVER
+        /// card). The map runs bank 2's own sprite service instead of the world engine.</summary>
+        public bool MapScreen;
+
+        /// <summary>True while the $A448 bubble chooser owns the frame. On confirm bank 2 drops
+        /// into the $A402 idle loop, which still parks the caret but no longer re-seeds the
+        /// bubbles, so <see cref="GameFlow"/> clears this flag when it leaves the chooser.</summary>
+        public bool MapChooser;
+
+        /// <summary>$6C: the bubble under the cursor — slot <c>2 + $6C</c> carries the $BB blink
+        /// ($A4C8/$A51D/$A554).</summary>
+        public byte MapCursorBubble;
+
+        /// <summary>$38: completed-mission count. $A102 picks the bubble geometry from it, and
+        /// $A475/$A492 freeze the cursor at 6.</summary>
+        public byte MapTier;
+
         /// <summary>Raised by $B315 (<see cref="BossBehaviors.BossDefeat"/>) when the world's
         /// boss dies — the end-of-mission event that <see cref="GameFlow"/> watches.</summary>
         public bool MissionCleared;
 
         /// <summary>Loads the city-map screen (the $C8B5 world-31 path: nametable + palette +
-        /// CHR from the descriptor, rendering re-enabled, scroll zeroed, world objects cleared).
-        /// The HELP-bubble/cursor sprites are composed by the bank-7 map task, still unported
-        /// (GAPS G27), so this paints the background layer only.</summary>
+        /// CHR from the descriptor, rendering re-enabled, scroll zeroed, world objects cleared)
+        /// and seeds the five object slots its sprites live in — see <see cref="SeedMapSlots"/>.
+        /// The bubble BODY text ($A6A5 through the $0360 VRAM queue) is still open (GAPS G32.2),
+        /// so the HELP letters are the only map layer the screen does not draw.</summary>
         public void LoadMapScreen()
         {
             if (MapNametable != null)
@@ -399,14 +421,93 @@ namespace Darkwing.Core
             Ppu.Chr0Bank = MapChrBank0;
             Ppu.Chr1Bank = MapChrBank1;
             Ppu.ScrollX = 0; Ppu.ScrollY = 0;
-            // The map's own sprites (HELP bubbles + cursor, composed by the bank-7 map task)
-            // are not ported yet, so park OAM at the NES hidden line instead of leaving the
-            // last world's objects on screen.
-            for (int i = 0; i < 256; i += 4) Ppu.Oam[i] = 0xFF;
+            // $FA-$FD are $00 on every captured map frame. The walk culls against these RAM
+            // mirrors, not the PPU latches, so leaving the last world's values here sends the
+            // plate through the $8062 offscreen branch (bit 7 cleared) and every bubble
+            // through a page difference.
+            Player.ScrollX = 0; Player.ScrollY = 0; Player.ScrollYRow = 0;
             Ppu.WriteRegister(0x2001, 0x1E);    // $C158: rendering back on for the map screen
             Objects?.ClearForSectionLoad();
             MissionCleared = false;
             WorldRunning = false;
+            MapScreen = true;
+            MapChooser = true;
+            MapCursorBubble = 0;                // $A193/$A1C8 LDA #0 / STA $6C
+            if (Oam != null) Oam.HudActive = false;   // $C887 never claims slot 1 on the map
+            SeedMapSlots();
+        }
+
+        /// <summary>Bank 2's map-init seeds: $8E21 puts the city plate (anim $36) in slot 0 and
+        /// the dialog caret (anim $39) in slot 1, $A100 puts the three HELP bubbles in slots
+        /// 2-4. All positions are absolute with the scroll parked at 0, which is what the four
+        /// map captures measure ($FA-$FD = $00 on every map frame). At $38 == 6 only slot 2
+        /// lives and starts as the $BB cursor ($A172); at $38 3-5 the bubbles sit on the upper
+        /// row ($A13D).</summary>
+        private void SeedMapSlots()
+        {
+            if (Objects == null) return;
+            MapSlot(0, 0x36, 0x90, 0x00D0, 0x00B7);   // $8E21/$8E28/$8E38/$8E40
+            MapSlot(1, 0x39, 0x90, 0x0010, 0x00B7);   // $8E2B/$8E3B/$8E55/$8E5A
+            if (MapTier == 6) { MapSlot(2, 0xBB, 0x80, 0x00D0, 0x0050); return; }   // $A172
+            if (MapTier >= 3)
+            {
+                MapSlot(2, 0x73, 0x80, 0x00A8, 0x0054);   // $A141/$A146/$A14B
+                MapSlot(3, 0x73, 0x80, 0x0028, 0x0050);   // $A151/$A156/$A15B
+                MapSlot(4, 0x73, 0x80, 0x0084, 0x0070);   // $A161/$A166/$A16B
+                return;
+            }
+            MapSlot(2, 0x73, 0x80, 0x0030, 0x0088);       // $A10B/$A110/$A115
+            MapSlot(3, 0x73, 0x80, 0x0098, 0x00A0);       // $A11B/$A120/$A125
+            MapSlot(4, 0x73, 0x80, 0x00E0, 0x0088);       // $A12B/$A130/$A135
+        }
+
+        private void MapSlot(int index, byte anim, byte flags, ushort x, ushort y)
+        {
+            var s = Objects.Slots[index];
+            s.Active = true;                     // $8E30/$A1A0 STA $04D0 = $80
+            s.StateLow = 0x80;
+            s.Flags = flags;                     // $8E28/$A1A9 STA $0400
+            s.Behavior = 0;
+            s.X = x; s.Y = y;                    // $04F0/$0500 and $0510/$0520 ($A19B/$A1B4)
+            s.ScreenX = (byte)x; s.ScreenY = (byte)y;
+            EnemyBehaviors.SetAnim(s, anim);     // $FA6C/$FA78: number, timer and frame to 0
+        }
+
+        /// <summary>One map frame: the chooser's per-frame seed ($A4AE/$A503/$A53A), then the
+        /// bank-5 walk that ticks the clocks and composes the $0200 shadow — the service $F89A
+        /// drives from inside both map loops.</summary>
+        private void StepMapFrame(byte pressed)
+        {
+            // $A448 reads held $14: a frame spent on A($80, $A44E → $A43F) or on Right($01)/
+            // Left($02) tails into JSR $FF06 / JMP $A448 and never reaches $A4F1, so NEITHER the
+            // bubble seed NOR the caret parking runs — probe_map2 f602 samples $0431 = $02 from
+            // exactly such a frame while every idle frame reads $01.
+            bool chooserIdle = MapChooser && (pressed & 0x83) != 0;
+            if (!chooserIdle)
+            {
+                var caret = Objects.Slots[1];
+                caret.AnimTimer = 0;             // $A4FA/$A404: STA $0431 / STA $0411
+                caret.AnimFrame = 0;
+            }
+            if (MapChooser && !chooserIdle)
+            {
+                // The two bubbles the cursor is NOT on are re-seeded to $73 every frame, which
+                // is why their $0430 reads $01 (the seed's 0 plus the walk's INC) while the
+                // plate and the cursor run their own clocks.
+                int cursor = 2 + MapCursorBubble;
+                for (int slot = 2; slot <= 4; slot++)
+                    if (slot != cursor) EnemyBehaviors.SetAnim(Objects.Slots[slot], 0x73);
+                // $A4C8/$A51D/$A554: the cursor bubble takes the $BB blink ONCE — a slot that
+                // already holds $BB is left alone, so its blink keeps phase while the cursor
+                // rests on it and restarts when the cursor comes back from a $73 re-seed.
+                var cur = Objects.Slots[cursor];
+                if (cur.AnimNumber != 0xBB) EnemyBehaviors.SetAnim(cur, 0xBB);
+            }
+            FrameParity++;                                     // $8000-$8002
+            Oam.PublishToOam();
+            Oam.RunFrame(FrameParity);                         // $A4F1 STA $97=#$04 + $F89A
+            Ppu.Render(Framebuffer);
+            Frame++;
         }
 
         /// <summary>
@@ -437,6 +538,8 @@ namespace Darkwing.Core
             Objects?.ClearForSectionLoad();    // $D47C JSR $C838
             MissionCleared = false;
             WorldRunning = false;
+            MapScreen = false;                 // $D46C replaces the map: no bubble seed, no walk
+            MapChooser = false;
         }
 
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
@@ -529,18 +632,23 @@ namespace Darkwing.Core
                 return;
             }
             byte held = pad1.ToByte();
+            byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
+            _prevHeld = held;
             if (!WorldRunning)
             {
                 // The title/map/briefing phase is bank 7's own loop ($C792/$C9AC): no player
-                // dispatcher, no bank-6 task — just the NMI frame counter and the nametable
-                // the phase handler wrote into PPU memory.
-                FrameParity++;
-                Ppu.Render(Framebuffer);
+                // dispatcher, no bank-6 task. On the city map the frame still belongs to bank 2
+                // ($A448 chooser + the $F89A walk); the title and the GAME OVER card are pure
+                // nametable, so they only take the NMI counter and the renderer.
+                if (MapScreen && Oam != null) StepMapFrame(pressed);
+                else
+                {
+                    FrameParity++;
+                    Ppu.Render(Framebuffer);
+                }
                 Frame++;
                 return;
             }
-            byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
-            _prevHeld = held;
             if (Paused)
             {
                 if ((pressed & 0x10) != 0) Paused = false; // Start resumes

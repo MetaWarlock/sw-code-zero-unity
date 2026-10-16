@@ -122,6 +122,7 @@ namespace Darkwing.Core
 
                 case Phase.MapCursor:
                     StepBubbleChooser(pressed);
+                    _game.MapCursorBubble = World.CursorBubble;   // $6C feeds the $A4AE/$51D/$554 seed
                     break;
 
                 case Phase.MapBriefing:
@@ -139,8 +140,7 @@ namespace Darkwing.Core
                     else if ((pressed & 0x40) != 0)   // $998C: B → $F8=$FF, back to the map
                     {
                         World.LastOutcome = 0xFF;
-                        SetPhase(Phase.MapCursor);
-                        _game.LoadMapScreen();
+                        EnterMap();
                     }
                     break;
 
@@ -176,8 +176,7 @@ namespace Darkwing.Core
                     {
                         World.LastOutcome = 0xFF;              // $998C STA $F8
                         World.StreamId = 0x07;                 // $D4CD LDA #$07 / STA $62
-                        SetPhase(Phase.MapCursor);
-                        _game.LoadMapScreen();                 // $D95D → $C8B5 with the map built
+                        EnterMap();                            // $D95D → $C8B5 with the map built
                         _game.PlaySound(0x01);                   // $D95F LDA #$01 / JSR $F84E
                         _game.PlaySfx(0x23);                   // $D974 LDA #$23 / JSR $F850
                     }
@@ -188,10 +187,10 @@ namespace Darkwing.Core
                     {
                         int mission = World.CurrentWorld;
                         World.CompletedCount++;                 // $D95B INC $38
-                        SetPhase(AllMissionsComplete ? Phase.Ending : Phase.MapCursor);
-                        if (Stage == Phase.MapCursor)
+                        if (AllMissionsComplete) SetPhase(Phase.Ending);   // $D838 with $31 >= 6
+                        else
                         {
-                            _game.LoadMapScreen();
+                            EnterMap();
                             // $A1D0/$A5AB: counted at map init, only when $F8 bit7 is clear
                             if ((World.LastOutcome & 0x80) == 0) World.CompletedMask |= (byte)(1 << mission);
                         }
@@ -218,8 +217,7 @@ namespace Darkwing.Core
             var text = _game.Text;
             if (text == null)                       // the host did not wire prg_bank2
             {
-                SetPhase(Phase.MapCursor);
-                _game.LoadMapScreen();
+                EnterMap();
                 return;
             }
             switch (_introStage)
@@ -235,10 +233,7 @@ namespace Darkwing.Core
                     break;
                 case 2:
                     if (!text.Running)
-                    {
-                        SetPhase(Phase.MapCursor);  // $C61E flight loop: still open
-                        _game.LoadMapScreen();
-                    }
+                        EnterMap();                             // $C61E flight loop: still open
                     else StepText(text, held);
                     break;
             }
@@ -278,6 +273,20 @@ namespace Darkwing.Core
             World.StreamId = (byte)mission;         // $62 = the briefing text stream for this node
             World.LastOutcome = 0x00;               // $DE66 clears $F8 on the next world load
             SetPhase(Phase.MapBriefing);
+            // $A43F → $A402: the map loop becomes the idle queue, which still parks the caret
+            // ($A404) but never re-seeds the bubbles ($A4AE/$A503/$A53A are chooser-only).
+            _game.MapChooser = false;
+        }
+
+        /// <summary>Entering the city map: $6C restarts at bubble 0 ($A193/$A1C8 LDA #$00 /
+        /// STA $6C) and $38 picks which of the two bubble layouts $A100 seeds, so both are
+        /// handed to the screen before it fills its slots.</summary>
+        private void EnterMap()
+        {
+            SetPhase(Phase.MapCursor);
+            World.CursorBubble = 0;
+            _game.MapTier = World.CompletedCount;
+            _game.LoadMapScreen();
         }
 
         private void SetPhase(Phase next)

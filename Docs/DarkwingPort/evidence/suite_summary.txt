@@ -1,0 +1,25 @@
+walk: RESULT: MATCH 119/119 frames (seed 0)
+jump: RESULT: MATCH 119/119 frames (seed 0)
+b_attack: RESULT: MATCH 170/170 frames (seed 29)  ENEMIES: MATCH 170/1
+hook: RESULT: MATCH 298/298 frames (seed 1)
+traverse: RESULT: MATCH 599/599 frames (seed 0)
+contact: RESULT: MATCH 399/399 frames (seed 0)
+m1route: RESULT: MATCH 399/399 frames (seed 0)
+hurt: RESULT: MATCH 1056/1056 field-frames (16 fields x 66 frames)
+door: RESULT: MATCH 1470/1470 field-frames (15 fields x 98 frames)
+worldseeds: RESULT: world seeds 133/133 fields over 7 captures
+
+00:fall: RESULT: MATCH 371/371 frames (seed 328)
+01:fall: RESULT: MATCH 371/371 frames (seed 328)
+02:fall: RESULT: MATCH 371/371 frames (seed 328)
+03:fall: RESULT: MATCH 371/371 frames (seed 328)
+04:fall: RESULT: MATCH 371/371 frames (seed 328)
+05:fall: RESULT: first divergence frame 683 (matched 370/371, seed 
+06:fall: RESULT: MATCH 371/371 frames (seed 328)
+longroute: RESULT: MATCH 2499/2499 frames (seed 0)
+m2(w01): RESULT: MATCH 1499/1499 frames (seed 0)
+m3(w02): RESULT: first divergence frame 1314 (matched 1313/1499, seed 0)
+m4(w03): RESULT: first divergence frame 198 (matched 1498/1499, seed 0)
+m5(w04): RESULT: first divergence frame 507 (matched 1497/1499, seed 0)
+m6(w05): RESULT: first divergence frame 2 (matched 244/1499, seed 0)
+m7(w06): RESULT: MATCH 1499/1499 frames (seed 0)

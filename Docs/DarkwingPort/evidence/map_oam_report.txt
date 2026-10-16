@@ -1,0 +1,44 @@
+probe_map2: 2400 map frames, idle run f1502..2400, compared 899
+  OAM exact 107/899, $97 mismatches 688 (f1505 ours=$E8 rom=$C8), slot-page mismatches vs f-1 899
+  first diff f1502(220): rec1.0:$00/$B7 rec1.1:$00/$5F rec1.2:$00/$02 rec1.3:$00/$D0 rec2.0:$00/$B7 rec2.1:$00/$60 rec2.2:$00/$02 rec2.3:$00/$D8 rec3.0:$00/$B7 rec3.1:$00/$61 
+  late diff  f1592(76): rec31.0:$84/$80 rec31.1:$00/$C5 rec31.2:$00/$01 rec31.3:$2C/$24 rec32.0:$98/$80 rec32.1:$C5/$C6 rec32.2:$03/$01 rec32.3:$8C/$2C rec33.0:$98/$80 
+  first page slot0 ours an=$36 fr=$00 tm=$01 xy=$D0,B7 fl=$90 st=$80 | rom an=$36 fr=$00 tm=$03 xy=$D0,B7 fl=$90 st=$80
+probe_map2: paired timer|0x80 (model G) exact 866/899, $97 mismatches 53
+  first f1508(4): rec19.1:$97/$83 rec20.1:$98/$84 rec23.1:$9B/$9E rec24.1:$9C/$86 
+  worst f1508 (4) rec19.1:$97/$83 rec20.1:$98/$84 rec23.1:$9B/$9E rec24.1:$9C/$86 
+probe_map2: paired plain timer exact 413/899, $97 mismatches 0
+  first f1505(139): rec19.0:$84/$80 rec19.1:$00/$C5 rec19.2:$00/$01 rec19.3:$2C/$24 rec20.0:$B7/$80 rec20.1:$6E/$C6 rec20.2:$00/$01 rec20.3:$18/$2C rec21.0:$B7/$80 
+  worst f1505 (139) rec19.0:$84/$80 rec19.1:$00/$C5 rec19.2:$00/$01 rec19.3:$2C/$24 rec20.0:$B7/$80 rec20.1:$6E/$C6 rec20.2:$00/$01 rec20.3:$18/$2C rec21.0:$B7/$80
+probe_map_b1: 300 map frames, idle run f122..300, compared 179
+  OAM exact 0/179, $97 mismatches 179 (f122 ours=$E8 rom=$AC), slot-page mismatches vs f-1 179
+  first diff f122(218): rec1.0:$00/$80 rec1.1:$00/$51 rec1.2:$00/$01 rec1.3:$00/$FF rec2.0:$00/$88 rec2.3:$00/$FF rec3.0:$00/$78 rec3.1:$00/$4D rec3.2:$00/$01 rec3.3:$00/$FF 
+  late diff  f212(208): rec1.0:$80/$06 rec1.1:$C5/$58 rec1.2:$03/$01 rec1.3:$D4/$00 rec2.0:$80/$06 rec2.1:$C6/$00 rec2.2:$03/$00 rec2.3:$DC/$08 rec3.0:$80/$0E rec3.1:$C7/$5A 
+  first page slot0 ours an=$36 fr=$00 tm=$01 xy=$D0,B7 fl=$90 st=$80 | rom an=$36 fr=$00 tm=$05 xy=$D0,B7 fl=$90 st=$80
+probe_map_b1: paired timer|0x80 (model G) exact 0/179, $97 mismatches 17
+  first f122(45): rec43.1:$00/$C2 rec43.2:$00/$83 rec43.3:$00/$8C rec44.1:$00/$91 rec44.2:$00/$03 rec44.3:$00/$94 rec45.1:$00/$C2 rec45.2:$00/$C3 rec45.3:$00/$9C 
+  worst f122 (45) rec43.1:$00/$C2 rec43.2:$00/$83 rec43.3:$00/$8C rec44.1:$00/$91 rec44.2:$00/$03 rec44.3:$00/$94 rec45.1:$00/$C2 rec45.2:$00/$C3 rec45.3:$00/$9C 
+probe_map_b1: paired plain timer exact 0/179, $97 mismatches 7
+  first f122(45): rec43.1:$00/$C2 rec43.2:$00/$83 rec43.3:$00/$8C rec44.1:$00/$91 rec44.2:$00/$03 rec44.3:$00/$94 rec45.1:$00/$C2 rec45.2:$00/$C3 rec45.3:$00/$9C 
+  worst f132 (146) rec17.0:$84/$80 rec17.1:$00/$C5 rec17.2:$00/$01 rec17.3:$2C/$24 rec18.0:$B7/$80 rec18.1:$6E/$C6 rec18.2:$00/$01 rec18.3:$18/$2C rec19.0:$B7/$80
+probe_map_nav: 400 map frames, idle run f142..400, compared 259
+  OAM exact 42/259, $97 mismatches 169 (f142 ours=$E8 rom=$C8), slot-page mismatches vs f-1 259
+  first diff f142(218): rec1.0:$00/$B7 rec1.1:$00/$5F rec1.2:$00/$02 rec1.3:$00/$D0 rec2.0:$00/$B7 rec2.1:$00/$60 rec2.2:$00/$02 rec2.3:$00/$D8 rec3.0:$00/$B7 rec3.1:$00/$61 
+  late diff  f232(76): rec31.0:$84/$80 rec31.1:$00/$C5 rec31.2:$00/$01 rec31.3:$2C/$24 rec32.0:$98/$80 rec32.1:$C5/$C6 rec32.2:$03/$01 rec32.3:$8C/$2C rec33.0:$98/$80 
+  first page slot0 ours an=$36 fr=$00 tm=$01 xy=$D0,B7 fl=$90 st=$80 | rom an=$36 fr=$00 tm=$04 xy=$D0,B7 fl=$90 st=$80
+probe_map_nav: paired timer|0x80 (model G) exact 228/259, $97 mismatches 15
+  first f142(24): rec50.1:$00/$66 rec50.2:$00/$02 rec50.3:$00/$E8 rec51.1:$00/$67 rec51.2:$00/$02 rec51.3:$00/$D8 rec52.1:$00/$68 rec52.2:$00/$02 rec52.3:$00/$E0 
+  worst f149 (28) rec23.1:$97/$83 rec24.1:$98/$84 rec27.1:$9B/$9E rec28.1:$9C/$86 rec50.1:$00/$66 rec50.2:$00/$02 rec50.3:$00/$E8 rec51.1:$00/$67 rec51.2:$00/$02 
+probe_map_nav: paired plain timer exact 106/259, $97 mismatches 0
+  first f142(24): rec50.1:$00/$66 rec50.2:$00/$02 rec50.3:$00/$E8 rec51.1:$00/$67 rec51.2:$00/$02 rec51.3:$00/$D8 rec52.1:$00/$68 rec52.2:$00/$02 rec52.3:$00/$E0 
+  worst f169 (139) rec19.0:$84/$80 rec19.1:$00/$C5 rec19.2:$00/$01 rec19.3:$2C/$24 rec20.0:$B7/$80 rec20.1:$6E/$C6 rec20.2:$00/$01 rec20.3:$18/$2C rec21.0:$B7/$80
+probe_flow: 582 map frames, idle run f1819..2400, compared 582
+  OAM exact 0/582, $97 mismatches 290 (f1819 ours=$E8 rom=$04), slot-page mismatches vs f-1 582
+  first diff f1819(204): rec1.0:$00/$7F rec1.1:$00/$F7 rec1.2:$00/$03 rec1.3:$00/$88 rec2.0:$00/$87 rec2.1:$00/$F8 rec2.2:$00/$03 rec2.3:$00/$88 rec3.0:$00/$57 rec3.1:$00/$F0 
+  late diff  f1909(223): rec1.0:$B7/$80 rec1.1:$5F/$C5 rec1.2:$02/$03 rec1.3:$D0/$D4 rec2.0:$B7/$80 rec2.1:$60/$C6 rec2.2:$02/$03 rec2.3:$D8/$DC rec3.0:$B7/$80 rec3.1:$61/$C7 
+  first page slot0 ours an=$36 fr=$00 tm=$01 xy=$D0,B7 fl=$90 st=$80 | rom an=$A3 fr=$00 tm=$03 xy=$28,9B fl=$00 st=$00
+probe_flow: paired timer|0x80 (model G) exact 0/582, $97 mismatches 0
+  first f1819(151): rec1.0:$F8/$7F rec1.1:$00/$F7 rec1.2:$00/$03 rec1.3:$00/$88 rec2.0:$F8/$87 rec2.1:$00/$F8 rec2.2:$00/$03 rec2.3:$00/$88 rec3.0:$F8/$57 rec3.1:$00/$F0 
+  worst f1820 (215) rec1.0:$80/$F8 rec1.1:$C5/$F7 rec1.3:$D4/$88 rec2.0:$80/$F8 rec2.1:$C6/$F8 rec2.3:$DC/$88 rec3.0:$80/$F8 rec3.1:$C7/$F0 rec3.2:$03/$02 rec3.3:$E4/$88 
+probe_flow: paired plain timer exact 0/582, $97 mismatches 0
+  first f1819(151): rec1.0:$F8/$7F rec1.1:$00/$F7 rec1.2:$00/$03 rec1.3:$00/$88 rec2.0:$F8/$87 rec2.1:$00/$F8 rec2.2:$00/$03 rec2.3:$00/$88 rec3.0:$F8/$57 rec3.1:$00/$F0 
+  worst f1820 (215) rec1.0:$80/$F8 rec1.1:$C5/$F7 rec1.3:$D4/$88 rec2.0:$80/$F8 rec2.1:$C6/$F8 rec2.3:$DC/$88 rec3.0:$80/$F8 rec3.1:$C7/$F0 rec3.2:$03/$02 rec3.3:$E4/$88
