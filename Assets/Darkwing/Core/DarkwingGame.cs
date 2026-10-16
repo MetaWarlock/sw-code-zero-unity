@@ -1095,16 +1095,19 @@ namespace Darkwing.Core
                 (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
         }
 
-        /// <summary>$C285-$C2A2: $0320 → $0300, then $0300[i] = max($0300[i] − $0F, $0F), then
-        /// <code>STY $18</code> flags the table for the next NMI upload — which is why a fade
-        /// step is only visible on the following frame. $0F is the port's <see cref="_fadeLevel"/>;
-        /// the $0300/$0320 pair lives in <see cref="_palMirror"/>/<see cref="_paletteSrc"/>.</summary>
+        /// <summary>$C285-$C2A2: $0320 → $0300, then $0300[i] = $0300[i] − $0F with the
+        /// <em>borrow</em> as the only clamp (<code>$C295 SEC / $C296 SBC $0F / $C298 BPL $C29C /
+        /// $C29A LDA #$0F</code>): a result of $00..$0E is stored as-is, $0F replaces only a
+        /// negative one. Clamping at &lt; $0F instead would darken the whole ramp one step early —
+        /// gold_m1_longroute f796 keeps $0300[3]=$07 ($17−$10) and gold_m3_route f32 keeps
+        /// $0300[2]=$00 ($10−$10). Then <code>STY $18</code> (Y=$FF after the loop's DEY) flags the
+        /// table for the next NMI upload, which is why a fade step shows one frame later.</summary>
         private void ApplyFadeRamp()
         {
             for (int i = 0; i < 32; i++)
             {
                 int v = _paletteSrc[i] - _fadeLevel;
-                _palMirror[i] = (byte)(v < 0x0F ? 0x0F : v);
+                _palMirror[i] = (byte)(v < 0 ? 0x0F : v);
             }
             _palDirty = 0xFF;
         }
