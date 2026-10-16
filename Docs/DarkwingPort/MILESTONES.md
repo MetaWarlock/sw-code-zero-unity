@@ -1242,6 +1242,16 @@ AgentScripts/PhysCompare.cs --entry PhysCompare.Door`.
 
 ## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 46)
 
+**Одна конкретная операция на вход смены 47:** перенести HELP-пузырёк/курсор карты как
+nametable-принтер по выведенному в смене 46.1 пути `$FA6C` (рамка = глиф `$73`, маркер = `$BB`,
+тело = `$A6A5`; выбор обработчика прыжок-таблицей `$A4A8/$A4AB` по `$6C`; `$A4F1` = `$97=4 /
+JSR $F89A`). Приёмка: diff `AgentScripts/MapChrSearch.cs` против `probe_flow/final.png` падает с
+2931 px к ~0; после правки `Assets/Darkwing/**` обязателен `unity recompile`, затем полный
+`PhysCompare.Suite` должен остаться побайтово на baseline смены 45.2. НЕ трогать `OamDispatcher`
+(спрайтов карты нет; `LoadMapScreen`→`$FF` верен). Альтернатива, если нужна сначала пауза
+(задача #5): сначала извлечь `prg_bank4.bytes` в `Assets/Darkwing/Data/` (сейчас отсутствует),
+затем переносить экран паузы `$8F00` банка 4 как новый `Phase`.
+
 ### Смена 45.2 (перенос + приёмка: `$9636`/`$967A` мисс-карт закрыт)
 - **Перенесено в рантайм.** `OamDispatcher.MissionCardHold` +
   `BlitMissionCard(bank2, world)` подключены к `PlayerCore.MissionIntroCard`: при переходе
