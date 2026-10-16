@@ -17,7 +17,6 @@ namespace Darkwing.Core
 
         private byte _oamCursor = 4;        // $97
         private readonly byte[] _shadow = new byte[256];   // $0200-$02FF sprite buffer
-        private int _walkEndCursor = 4;     // $97 as the last published walk left it
         private byte _relX, _relY;          // $13/$12 scratch
         private byte _flipBits;             // $10 (flags&0x40)
         private byte _prioBits;             // $11 (flags&0x20)
@@ -25,12 +24,22 @@ namespace Darkwing.Core
         private int _partPtr;               // $02/$03
         private byte _partCount;            // $04
 
+        private HudComposer _hud;
+
+        /// <summary>Slot 1 belongs to the HUD while the in-game layers are up; bank 4
+        /// $8FCD… saves and restores those six fields around the mission screens.</summary>
+        public bool HudActive = true;
+
         public OamDispatcher(byte[] bank5, ObjectSystem objects, Ppu ppu, PlayerCore player)
         {
             _bank5 = bank5;
             _objects = objects;
             _ppu = ppu;
             _player = player;
+            // Entry 0 is never composed ($97 starts at $04) and $C21E only resets its Y byte, so
+            // the tile/attr/X bytes below keep whatever an earlier screen left: gold captures show
+            // F8 C0 00 10 in all 3260 HUD frames.
+            _shadow[1] = 0xC0; _shadow[2] = 0x00; _shadow[3] = 0x10;
         }
 
         private static int B5(int cpu) => cpu - 0x8000;
@@ -38,14 +47,12 @@ namespace Darkwing.Core
         /// <summary>Late binding for the bank-5 tables (constructed before data load completes).</summary>
         public void SetBank5(byte[] bank5) => _bank5 = bank5;
 
-        /// <summary>Byte offset of the next free $0200 shadow slot after the frame's walk
-        /// ($97 as the ROM leaves it). The HUD of the NEXT frame appends after it when
-        /// ($95 &amp; 1) is set.</summary>
-        public int OamCursorBytes => _oamCursor;
+        /// <summary>Late binding for the HUD's $05B0…$05C1 block (slot 1's part table).</summary>
+        public void SetHud(HudComposer hud) => _hud = hud;
 
-        /// <summary>Entry index the published buffer's object block ends at — the slot the HUD
-        /// writes into on ($95 &amp; 1) == 1 frames. One walk behind RunFrame.</summary>
-        public int PreviousWalkEndEntry => _walkEndCursor >> 2;
+        /// <summary>Byte offset of the next free $0200 shadow slot after the frame's walk
+        /// ($97 as the ROM leaves it; 0 once the sprite page has been filled).</summary>
+        public int OamCursorBytes => _oamCursor;
 
         /// <summary>The NMI DMA: copy the $0200 shadow the last walk composed into the live
         /// sprite buffer. Called once per frame, before the HUD is laid out.</summary>
@@ -73,6 +80,9 @@ namespace Darkwing.Core
         public void RunFrame(byte parity)
         {
             _oamCursor = 4;                       // $CAB6 LDA #$04 / STA $97
+            // $C21E, called just before the walk: hides every record from the cursor to the end
+            // of the page, so each frame's unused tail is F8 plus last frame's tile/attr/X bytes.
+            for (int i = 0; i < 256; i += 4) _shadow[i] = 0xF8;
             // Player invulnerability blink runs first ($80E1-$80F1 side effects).
             bool playerBlinkSkip = false;
             if (_player.InvulnFrames > 0)
@@ -85,6 +95,11 @@ namespace Darkwing.Core
             for (int i = 0; i < ObjectSystem.SlotCount; i++)
             {
                 int slot = start + step * i;
+                if (slot == HudComposer.Slot && HudActive && _hud != null)
+                {
+                    ComposeHud();                     // $C887 made slot 1 the HUD block
+                    continue;
+                }
                 var s = _objects.Slots[slot];
                 if (!s.Active) continue;              // $04D0 bit7
                 if (slot == 0 && playerBlinkSkip) continue;
@@ -93,7 +108,6 @@ namespace Darkwing.Core
                 AnimAdvance(s);
                 OamCompose(slot, s);
             }
-            _walkEndCursor = _oamCursor;
         }
 
         // ---------- $802F-$80C6: relative update + culling ----------
@@ -217,30 +231,55 @@ namespace Darkwing.Core
             _flipBits = (byte)(s.Flags & 0x40);
             _prioBits = (byte)(s.Flags & 0x20);
             _partCount = _bank5[_partPtr];
+            ComposeParts(_bank5, _partPtr, _coordPtr, _relX, _relY, _flipBits, _prioBits, _partCount);
+        }
+
+        /// <summary>Slot 1's part table is the RAM block $05B0…$05C1, so the HUD reaches the same
+        /// composition service with a fixed position ($04F0/$0510) and no flip or priority bits
+        /// ($0400,1=$80, $0570,1=0 — $C887).</summary>
+        private void ComposeHud()
+        {
+            if (_oamCursor == 0) return;              // $81AD: a wrapped cursor stops composition
+            int coordId = _hud.Param[1];              // $05B1 = $24
+            int coordCpu = _bank5[B5(0xAE53) + coordId] | (_bank5[B5(0xAF23) + coordId] << 8);
+            int coordPtr = B5(coordCpu) - 2;
+            if (coordPtr < 0 || coordPtr >= 0x4000 - 64) return;
+            ComposeParts(_hud.Param, 0, coordPtr, HudComposer.RelX, HudComposer.RelY, 0, 0, _hud.Param[0]);
+        }
+
+        /// <summary>$81AB-$81EF, the record writer shared by every slot including the HUD.
+        /// Each iteration reloads X from $97 and stores it back, and a part whose Y or X
+        /// coordinate falls off-screen jumps to $81F0/$81F1, which writes $F8 over the Y byte
+        /// and skips the INX×4 — so a hidden part leaves no record and the next one reuses the
+        /// entry. That is why the HUD's start entry counts slot 0's VISIBLE records only.</summary>
+        private void ComposeParts(byte[] parts, int partsBase, int coordBase,
+                                  byte relX, byte relY, byte flipBits, byte prioBits, int count)
+        {
             int x = _oamCursor;
-            int y = 1;
-            while (true)
+            int y = 1;                                // $81AF INY → index 2 is the first tile
+            for (int n = 0; n <= count; n++)        // $81EB/$81ED: DEC $04, BPL → count+1 parts
             {
+                if (x == 0) return;                 // $81AB LDX $97 / BEQ $81EF
                 y++;                                   // $81AF: tile index
-                if (x + 4 > 256) break;                // OAM full ($97 wrap guard)
-                _shadow[x + 1] = _bank5[_partPtr + y];
-                int cy = _bank5[_coordPtr + y];
-                int sumY = _relY + cy;                    // 6502 ADC semantics
+                _shadow[x + 1] = parts[partsBase + y];
+                int cy = _bank5[coordBase + y];
+                int sumY = relY + cy;                    // 6502 ADC semantics
+                _shadow[x] = (byte)(sumY & 0xFF);        // $81BA
                 // $81BD-$81C5: positive coord hides on carry-out (>255), negative
                 // hides when no carry (sum stayed < 256 → wrapped negative).
                 bool hideY = (cy & 0x80) != 0 ? sumY < 256 : sumY > 255;
-                _shadow[x] = hideY ? (byte)0xF8 : (byte)(sumY & 0xFF);
+                if (hideY) { y++; _shadow[x] = 0xF8; continue; }   // $81F0-$81F3
                 y++;                                   // $81C7: attribute index
-                _shadow[x + 2] = (byte)((_bank5[_partPtr + y] ^ _flipBits) | _prioBits);
-                int cx = _bank5[_coordPtr + y];
-                int sumX = _relX + cx;
+                _shadow[x + 2] = (byte)((parts[partsBase + y] ^ flipBits) | prioBits);
+                int cx = _bank5[coordBase + y];
+                int sumX = relX + cx;
+                _shadow[x + 3] = (byte)(sumX & 0xFF);    // $81D6
                 bool hideX = (cx & 0x80) != 0 ? sumX < 256 : sumX > 255;
-                _shadow[x + 3] = hideX ? (byte)0xF8 : (byte)(sumX & 0xFF);
-                x += 4;
-                if (_partCount-- == 0) break;   // $81EB: DEC; BPL → count+1 iterations
+                if (hideX) { _shadow[x] = 0xF8; continue; }        // $81F1/$81F3
+                x += 4;                                  // $81E3-$81E6
+                if ((x & 0xFF) == 0) { _oamCursor = 0; return; }   // $81E7/$81E9: page full
             }
-            _oamCursor = (byte)(x & 0xFF);
-            if (_oamCursor == 0) _oamCursor = 4;       // $97 wrap: stop composing
+            _oamCursor = (byte)x;
         }
 
         /// <summary>Anim entry pointer (bank5 offset) from $B429/$B4F0 tables.</summary>

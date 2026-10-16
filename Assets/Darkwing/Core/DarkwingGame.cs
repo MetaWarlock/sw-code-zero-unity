@@ -39,10 +39,11 @@ namespace Darkwing.Core
             Objects = new ObjectSystem(data);
             Player.Objects = Objects;
             Player.Sfx = id => PlaySfx(id);
-            Hud = new HudComposer(Ppu);
+            Hud = new HudComposer();
             Oam = data != null
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
                 : null;
+            Oam?.SetHud(Hud);
         }
 
         /// <summary>Raw PRG bank 5 (anim/frame/coord tables) for the OAM dispatcher.</summary>
@@ -653,14 +654,10 @@ namespace Darkwing.Core
             FrameParity++;                                     // $8000-$8002
             // NMI DMA: the buffer this frame displays is the shadow of the previous walk.
             Oam.PublishToOam();
-            // ($95 & 1) picks where the HUD block goes: every gameplay frame of gold_contact,
-            // gold_hurt_a41, gold_jump and gold_m1_longroute has the 8-sprite block at entry 1
-            // when the bit is clear and directly after the last object sprite when it is set
-            // (3260 frames, zero gaps — GAPS G44.1). $97 is primed to $04 on both sides of the
-            // walk ($CAB6/$CABE), so "after the objects" is the previous walk's end cursor.
-            // Health stays 3: the captures never show a damaged heart and the tile rule
-            // that selects $80/$81 vs $82 is still unrecovered (GAPS G44.2).
-            Hud.Compose(3, (FrameParity & 1) == 0 ? 1 : Oam.PreviousWalkEndEntry);
+            // The HUD is object slot 1 ($C850/$C887), so the walk composes its 8 records at
+            // whatever cursor position the parity order reaches slot 1 in — no separate writer
+            // and no hard-coded entry (GAPS G44.1 closed).
+            Hud.Refresh(Player);
             Oam.RunFrame(FrameParity);
             Ppu.Render(Framebuffer);
         }
