@@ -201,6 +201,15 @@ namespace Darkwing.Core
 
         private byte TileTypeAt(int wx, int wy)
         {
+            // $EC4D-$EC62: the $0600 window is indexed by the Y LOW byte, so the service
+            // first requires hi(probeY - $FB/$FA) == 0 and returns type 0 for any point
+            // outside the camera's own 256 px page. Every observed player probe set is
+            // $40=$06 (floor/ceiling) or $40=$3A (hook), i.e. index >= 6, so the $EC65
+            // "clamp to the scroll row" branch is unreachable for the player and both
+            // out-of-page directions read 0. Without this bound gold_m3_route f31 lands the
+            // falling player on a real room tile at Y=$0111 (window byte = 3) instead of
+            // letting the bank-5 cull kill him on that page crossing.
+            if ((((wy - (((ScrollYRow << 8) | ScrollY))) & 0xFF00)) != 0) return 0;
             byte t = _tiles.TypeAt(wx, wy);
             if (t == 6) return 0; // $EBE3 clears 6
             return t;
