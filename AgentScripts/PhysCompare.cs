@@ -31,6 +31,10 @@ public static class PhysCompare
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/anims.bytes"));
         var game = new Darkwing.Core.DarkwingGame(data);
         game.Bank5 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank5.bytes");
+        // $E388's section descriptors, the $E5BD $3D column and the $EFBE/$F008/$F049 palette-patch
+        // tables all live in bank 7: a boot without Bank7 leaves Sections == null, so those services
+        // are silently skipped and the $3E/$3F cursors never move.
+        game.Bank7 = File.ReadAllBytes(root + "/Assets/Darkwing/Data/world_bank7.bytes");
         var decoder = new Darkwing.Core.RoomDecoder(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank0.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/prg_bank1.bytes"),
@@ -97,13 +101,22 @@ public static class PhysCompare
         // frame that shows $50=$09 still owes 16 of the 17 fade frames ($DE03/$C270).
         p.EntryFreezeFrames = entryFreeze;
         // $0320/$0300/$3F00 are loader state the RAM-seeded start point does not carry: without
-        // this the first fade ramps from zeros instead of from the live world table.
+        // this the first fade ramps from zeros instead of from the live world table. The three
+        // tables are seeded SEPARATELY (the ROM's own $0320/$0300/$3F00 values at seedFrame) —
+        // they are legitimately out of step, e.g. gold_m1_longroute f0 has $0300[13]=$0F while
+        // $3F00[13]=$05 is still on screen.
         if (palette)
         {
             var seedPal = new byte[32];
-            System.Array.Copy(palAll, 0, seedPal, 0, 32);
-            game.SeedPaletteTables(seedPal);
+            System.Array.Copy(palAll, seedFrame * 32, seedPal, 0, 32);
+            game.SeedPaletteTables(ram0, seedPal);
         }
+        // $3D/$3E/$3F: the $EFBE palette-patch script is mid-cycle in every route capture, so its
+        // cursor is captured state like $22 or $95. $66 gates the zone service ($CA75 BMI).
+        p.SectionFlag3D = ram0[0x3D];
+        p.PalStep3E = ram0[0x3E];
+        p.PalIndex3F = ram0[0x3F];
+        p.PendingMissionFlag = ram0[0x66];
         var s0 = game.Objects.Slots[0];
         if (enemies)
         {
@@ -194,6 +207,11 @@ public static class PhysCompare
         int enemyMatchFrames = 0, enemyTotalFrames = 0, enemyFirstDiv = -1, enemyDivSlot = -1;
         string enemyDivField = null; int enemyDivPort = 0, enemyDivOrig = 0;
         int palOk = 0, palFirstBad = -1, winOk = 0, winTotal = 0;   // $3F00 byte compare
+        // $3F00 can only diverge through the $0300 content or the $18 upload timing, so score the
+        // port's two internal palette states against the captured RAM to localise which one is wrong.
+        int mirOk = 0, srcOk = 0, flagOk = 0, mirFirstBad = -1, srcFirstBad = -1, flagFirstBad = -1;
+        string mirFirstDetail = "", srcFirstDetail = "", flagFirstDetail = "";
+        var mirP = new byte[32]; var srcP = new byte[32];
         int oamFrameOk = 0, oamTotal = 0, oamFirstBad = -1, oamByteSum = 0;
         int[] oamEntryBad = new int[64];
         string oamFirstDetail = "";
@@ -316,6 +334,27 @@ public static class PhysCompare
                 if (same) palOk++;
                 else if (palFirstBad < 0) palFirstBad = f;
                 if (f >= 795 && f <= 841) { winTotal++; if (same) winOk++; }
+                game.GetPaletteModel(mirP, srcP);
+                bool m = true, s2 = true;
+                for (int i = 0; i < 32; i++)
+                {
+                    if (m && mirP[i] != g[0x300 + i])
+                    {
+                        m = false;
+                        if (mirFirstBad < 0) { mirFirstBad = f; mirFirstDetail = $"f{f} i{i} port={mirP[i]:X2} rom={g[0x300 + i]:X2} 3D={p.SectionFlag3D:X2} 3E={p.PalStep3E:X2} 3F={p.PalIndex3F:X2}"; }
+                    }
+                    if (s2 && srcP[i] != g[0x320 + i])
+                    {
+                        s2 = false;
+                        if (srcFirstBad < 0) { srcFirstBad = f; srcFirstDetail = $"f{f} i{i} port={srcP[i]:X2} rom={g[0x320 + i]:X2}"; }
+                    }
+                }
+                if (m) mirOk++;
+                if (s2) srcOk++;
+                byte rom18 = g[0x18];
+                if (game.PaletteUploadFlag == rom18) flagOk++;
+                else if (flagFirstBad < 0) flagFirstDetail = $"f{f} port={game.PaletteUploadFlag:X2} rom={rom18:X2}";
+                if (flagFirstBad < 0 && game.PaletteUploadFlag != rom18) flagFirstBad = f;
             }
             if (scoreOam && f + OamLag < oamFramesAvail)
             {
@@ -357,9 +396,12 @@ public static class PhysCompare
         int span = avail - 1 - seedFrame;
         if (limit > 0) span = System.Math.Min(limit, span);
         if (palette)
+        {
             sb.Append(palFirstBad < 0
                 ? $"PAL $3F00: MATCH {palOk}/{span} "
                 : $"PAL $3F00: {palOk}/{span} (first bad f{palFirstBad}, death window f795-f841 {winOk}/{winTotal}) ");
+            sb.Append($"PALMODEL[$0300 {mirOk}/{span}{((mirFirstBad >= 0) ? " first " + mirFirstDetail : " MATCH")} | $0320 {srcOk}/{span}{((srcFirstBad >= 0) ? " first " + srcFirstDetail : " MATCH")} | $18 {flagOk}/{span}{((flagFirstBad >= 0) ? " first " + flagFirstDetail : " MATCH")}] ");
+        }
         sb.Append("FIELDS[");
         for (int i = 0; i < fieldNames.Length; i++)
             if (firstBad[i] >= 0)

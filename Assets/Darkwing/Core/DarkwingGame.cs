@@ -207,6 +207,7 @@ namespace Darkwing.Core
         private void WorldSpawn()
         {
             AnchorAndSpawnPlacements();                     // $DE93-$DEA1, after the $DE91 exit
+            Player.PalStep3E = 0; Player.PalIndex3F = 0;    // $DDCE-$DDD2
             Player.ApplyWorldSpawn(_world);
             RenderOn();                                     // $DE00 JSR $C158
         }
@@ -277,18 +278,38 @@ namespace Darkwing.Core
         /// <summary>$C158: <code>DEC $F0 / LDA #$1E / STA $FE / STA $2001</code>.</summary>
         private void RenderOn() => Ppu.WriteRegister(0x2001, 0x1E);
 
-        /// <summary>Host/harness boot palette: writes $0320, $0300 and $3F00 at once. A staged
-        /// load never touches $3F00 directly (only the NMI $C059 upload does), but the very first
-        /// table has no preceding fade, so the host has to place it itself.</summary>
-        public void SeedPaletteTables(byte[] pal32)
+        /// <summary>Host/harness boot palette: the ROM keeps THREE palette states — the un-faded
+        /// source $0320, the faded working copy $0300 and the PPU mirror $3F00 that only the NMI
+        /// $C059 uploads — and they are legitimately out of step (a $C2F9 table load rewrites
+        /// $0300/$0320 but leaves $3F00 until the next fade step or $EFBE patch flags $18). So the
+        /// seed takes $0300/$0320 from the captured RAM and $3F00 from the captured PPU window
+        /// instead of copying one onto the others.</summary>
+        public void SeedPaletteTables(byte[] ram2048, byte[] ppu32)
         {
             for (int i = 0; i < 32; i++)
             {
-                _paletteSrc[i] = pal32[i];
-                _palMirror[i] = pal32[i];
-                Ppu.PaletteRam[i] = pal32[i];
+                _palMirror[i] = ram2048[0x300 + i];
+                _paletteSrc[i] = ram2048[0x320 + i];
+                Ppu.PaletteRam[i] = ppu32[i];
             }
+            // $18 is part of the palette state: a capture seeded while it is $FF still owes the
+            // NMI $C059 upload, which is why gold_m1_longroute f0 shows $3F00[13]=$05 but f1
+            // already shows the $0300 value $0F. Without it the port keeps displaying f0's
+            // mirror for the whole run.
+            _palDirty = ram2048[0x18];
         }
+
+        /// <summary>Golden-comparison probe: the three palette states live independently in the
+        /// ROM, so a $3F00 divergence has exactly two causes — wrong $0300 content or wrong $18
+        /// upload timing. Exporting both lets a harness tell them apart instead of guessing.</summary>
+        public void GetPaletteModel(byte[] into0300, byte[] into0320)
+        {
+            System.Array.Copy(_palMirror, into0300, 32);
+            System.Array.Copy(_paletteSrc, into0320, 32);
+        }
+
+        /// <summary>$18, the pending NMI $C059 upload flag.</summary>
+        public byte PaletteUploadFlag => _palDirty;
 
         /// <summary>$E388 with X = section id ($CA6E calls it from the $5B door
         /// request, $D461 for the respawn after death). The loader does not return
@@ -649,8 +670,10 @@ namespace Darkwing.Core
                     (ushort)((Player.ScrollYRow << 8) | Player.ScrollY), Player.ScrollMode);
             }
             // $CA75/$CA79: LDA $66 / BMI $CA7C — the zone service is skipped while a door
-            // has flagged $66 negative, and it runs before the bank-6 task dispatch ($CA84).
+            // has flagged $66 negative, but $CA7C JSR $EFBE is the FALL-THROUGH of that same
+            // block, so the palette-patch service runs on every world frame either way.
             if ((sbyte)Player.PendingMissionFlag >= 0) RunZoneService();
+            RunPaletteScript();
             Enemies?.RunFrame();
             // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
             // the blink/iteration-order tests read is the one this frame's pass produced.
@@ -694,6 +717,33 @@ namespace Darkwing.Core
                 case 5: ZoneEF5C(cell, yLo, xLo); break;
                 default: ZoneEF76(cell, yLo, xLo); break;
             }
+        }
+
+        /// <summary>$CA7C/$EFBE: the palette-patch player driven by the section byte $3D.
+        /// Bit7 arms it (BPL $F007 otherwise); $3E counts frames until the script's period
+        /// byte, and on that frame $3F's record group is applied to the <em>faded</em> $0300
+        /// mirror only (never $0320), then the $FF terminator is stored into $18 so the next
+        /// NMI $C059 uploads it. <code>INC $3E</code>/<code>INC $3F</code> are memory-only
+        /// opcodes, so the CMP that follows still sees the pre-increment byte — which is what
+        /// makes the record index <code>base + $3F + 2</code> and the wrap fire on
+        /// <code>$3F == steps</code>.</summary>
+        private void RunPaletteScript()
+        {
+            byte s = Player.SectionFlag3D;                    // $EFBE LDA $3D
+            if ((sbyte)s >= 0 || Sections == null) return;    // $EFBE BPL $F007
+            int baseIdx = s & 0x7F;                           // $EFC2-$EFC6
+            byte step = Player.PalStep3E;                     // $EFCB LDA $3E
+            if (step != Sections.PaletteScriptPeriod(baseIdx)) // $EFCD-$EFD2
+            {
+                Player.PalStep3E = (byte)(step + 1);          // $EFCD INC $3E
+                return;
+            }
+            Player.PalStep3E = 0;                             // $EFD6 STX $3E
+            byte idx = Player.PalIndex3F;                     // $EFD8 LDA $3F
+            Player.PalIndex3F = (byte)(idx + 1);              // $EFDA INC $3F
+            if (idx == Sections.PaletteScriptSteps(baseIdx))
+                Player.PalIndex3F = 0;                        // $EFDF-$EFE1 STX $3F
+            _palDirty = (byte)Sections.ApplyPaletteScript(baseIdx, idx, _palMirror);  // $EFEC-$F005
         }
 
         /// <summary>$EE15 (mission 1): cells $0F..$13 switch to sprite palette 1 and CHR request

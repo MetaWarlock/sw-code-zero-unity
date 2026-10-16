@@ -18,8 +18,11 @@ namespace Darkwing.Core
         const int Chr1    = 0xE53F - 0xC000;  // $1B CHR request 1 ($FF3B)
         const int BgPal   = 0xE569 - 0xC000;  // index byte → $C2F9
         const int SpPal   = 0xE593 - 0xC000;  // index byte → $C319
-        const int Flag3DRow = 0xE5BD - 0xC000;  // $3D — semantics still unknown (G16)
+        const int Flag3DRow = 0xE5BD - 0xC000;  // $3D — palette-patch script id, bit7 = active (G16)
         const int RingEv  = 0xE611 - 0xC000;  // $D9 → JSR $F84E event/sound index
+
+        const int PalScript   = 0xF049 - 0xC000; // $F049: [steps, period, record offsets…]
+        const int PalRecords  = 0xF008 - 0xC000; // $F008: [idx,v0,v1,v2] groups, $FF terminated
 
         const int BgPalBlock1 = 0xC35D - 0xC000; // 16 records × 16 B
         const int BgPalBlock2 = 0xC45D - 0xC000; // selected when index bit4 is set
@@ -36,7 +39,7 @@ namespace Darkwing.Core
         public byte StartColumn(int id) => _b[Column + id];    // $FD/$0500
         public byte ChrRequest0(int id) => _b[Chr0 + id];      // $1A
         public byte ChrRequest1(int id) => _b[Chr1 + id];      // $1B
-        public byte Flag3D(int id) => _b[Flag3DRow + id];         // $3D
+        public byte Flag3D(int id) => _b[Flag3DRow + id];         // $3D palette-patch script
         public byte RingEvent(int id) => _b[RingEv + id];      // $D9
 
         /// <summary>$C2F9: four ASLs put index bit4 into carry (selects the $C45D
@@ -63,6 +66,29 @@ namespace Darkwing.Core
             int second = SpPalShift + ((v << 3) & 0xFF);
             for (int i = 0; i < 8; i++) out16[i] = _b[SpPalFixed + i];
             for (int i = 0; i < 8; i++) out16[8 + i] = _b[second + i];
+        }
+
+        /// <summary>$EFC2/$EFCD/$EFD8: the $3D low 7 bits index the $F049 script header —
+        /// entry 0 is the step count (the value $3F wraps on), entry 1 the frame period
+        /// (the value $3E fires on), entries 2… give the $F008 offset of each step's group.</summary>
+        public byte PaletteScriptSteps(int baseIdx) => _b[PalScript + baseIdx];
+        public byte PaletteScriptPeriod(int baseIdx) => _b[PalScript + 1 + baseIdx];
+
+        /// <summary>$EFEC-$F003: walk the step's record group <code>[idx,v0,v1,v2]</code>,
+        /// writing each triple into the faded $0300 mirror only (never $0320), until the
+        /// $FF terminator; the terminator byte is returned for the <code>STA $18</code> at $F005.</summary>
+        public int ApplyPaletteScript(int baseIdx, int step, byte[] pal300)
+        {
+            int p = PalRecords + _b[PalScript + baseIdx + step + 2];
+            while (true)
+            {
+                byte idx = _b[p];
+                if (idx >= 0x80) return idx;            // $EFEC BMI $F005
+                pal300[idx] = _b[p + 1];                // $EFF7-$EFFA
+                pal300[idx + 1] = _b[p + 2];
+                pal300[idx + 2] = _b[p + 3];
+                p += 4;
+            }
         }
 
         /// <summary>$E454: $6D ∈ {2,4,6,8,$A,$C,$E} → $3B=$78.</summary>

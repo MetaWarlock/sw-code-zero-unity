@@ -67,7 +67,9 @@ namespace Darkwing.Core
         public byte PendingMissionFlag; // $66 door mission flag ($FF/$F0)
         public byte BonusDigits;        // $05C4-$05CC pickup cascade (mod-10 accumulator)
         public byte TilesetBank;        // $36 section metatile-set bank ($E38F)
-        public byte SectionFlag3D;      // $3D section table byte — semantics unknown (G16)
+        public byte SectionFlag3D;      // $3D palette-patch script id, bit7 = active (was G16)
+        public byte PalStep3E;          // $3E frame counter inside the current $EFBE script step
+        public byte PalIndex3F;         // $3F step index inside the current $EFBE script
         public byte IntroHoldFlag;      // $3B intro hold ($E476 sets $78 for even checkpoint ids)
         public byte SectionRingEvent;   // $D9 section ring/event byte ($E3BA → JSR $F84E)
         public byte ChrLatch0;          // $1A CHR request ($E3AB, applied by NMI $FF21)
@@ -258,6 +260,7 @@ namespace Darkwing.Core
             ChrLatch1 = t.ChrRequest1(id);                  // $1B ($E3B0)
             SectionFlag3D = t.Flag3D(id);                   // $3D ($E3B5)
             SectionRingEvent = t.RingEvent(id);             // $D9 ($E3BA)
+            PalStep3E = 0; PalIndex3F = 0;                  // $E3C2-$E3C6
             ResetLoaderState(col);
         }
 
