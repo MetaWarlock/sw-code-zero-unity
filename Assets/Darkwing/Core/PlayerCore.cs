@@ -364,15 +364,18 @@ namespace Darkwing.Core
 
             // $DE86-$DE91: the loader walks its own $25 cursor to $0F and steps $23 with
             // it. One JSR $E698 = one pass ($05 = 1 at $DE86-$DE88), and $DE91 branches back
-            // until $25 == $0F, so the loop is drained by $StageSectionPass batches — the ROM
-            // only yields to the NMI inside a pass through the $E7A8/$F0 test, which makes the
-            // batch boundary a CPU-time artifact (gold_dd57 write log: ~1783 cycles per pass
-            // against a 29781-cycle frame ⇒ 11-17 passes per frame, cursor phase ±2).
+            // until $25 == $0F. The loop is INLINE inside $DE24 and never yields — $E7A8's
+            // $F0 test is the render-off nesting counter, so the pass leaves through the
+            // $C115 queue flush, not through a frame wait. The frame split that the reload
+            // captures show is CPU-time only (9-17 passes/frame), which $StageSectionPass
+            // approximates with a constant; see StagePassesPerFrame and G62.
             StageSectionPass();
         }
 
-        /// <summary>Drains the $DE86-$DE91 staging loop in one call. Only the host's inline
-        /// first load uses this; the death reload keeps the per-frame batches.</summary>
+        /// <summary>Drains the $DE86-$DE91 staging loop in one call — the ROM-faithful shape,
+        /// since the loop is inline in $DE24 with no yield. The host's inline first load uses
+        /// this; the death reload keeps per-frame batches only to match frame-stamped captures
+        /// (G62).</summary>
         public void StageSectionToEnd()
         {
             for (int guard = 0; guard < 256 && !StageSectionPass(); guard++) { }
@@ -427,11 +430,20 @@ namespace Darkwing.Core
         public sbyte StageStep;                             // $E7BE,X
 
         /// <summary>
-        /// $E698 passes per frame. The real loop only yields at $E7AC when $F0 says the
-        /// frame's CPU time is gone, so the split is time-based, not counted: gold_door_id1
-        /// spends 144 passes over 10 frames with per-frame counts 9-16 (13,13,15,15,16,16,
-        /// 15,16,16,9). 15 reproduces that capture's frame count and scales pass totals to
-        /// frames proportionally for other sections.
+        /// $E698 passes per frame — a CYCLE-RATE APPROXIMATION, not a ROM mechanism (G62).
+        /// $DE24 opens with `JSR $C14E` (INC $F0, $2001=0) and contains the whole
+        /// $DE86…$DE91 loop, so the staging window is ONE inline block that never yields:
+        /// $E698's tail (`$E7A1 DEC $05` / `BEQ $E7A8` / `$E7A8 LDA $F0` / `BEQ $E7AF` /
+        /// `JMP $C115`) always takes the JMP while $F0 is non-zero, so every staging pass
+        /// leaves through the VRAM-queue driver $C115, which RTS-es at $C139 and thereby
+        /// skips `INC $19` and the $E7B1/$E7B3 `STA $28`. $F0 is the render-off nesting
+        /// counter ($C14E INC / $C158 DEC), NOT a CPU-time flag — the previous note here
+        /// said the loop yields at $E7AC "when $F0 says the frame's CPU time is gone", and
+        /// that is wrong. The frame split is only how many passes fit in a frame's CPU time,
+        /// and a pass's cost is dominated by the $C115 flush length, which depends on the
+        /// column data just staged (gold: 9-17 passes/frame, and only the window's first
+        /// frame is short). 15 is fitted to gold_door_id1's frame count; the residual cursor
+        /// phase is tracked as G62.
         /// </summary>
         public const int StagePassesPerFrame = 15;
 

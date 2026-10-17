@@ -99,6 +99,7 @@ public static class PhysCompare
         p.StageCursor = ram0[0x25];
         p.LastRedrawScroll = ram0[0x28];
         p.PrevScrollMode = ram0[0x20];
+        p.ColsToStream = ram0[0x1F];   // $1F only changes through $E66C, so seed the captured value
         p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
         // $DDFE STA $50 runs during the load frame itself, so a capture seeded on the first
         // frame that shows $50=$09 still owes 16 of the 17 fade frames ($DE03/$C270).
@@ -207,7 +208,8 @@ public static class PhysCompare
                                  "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor",
                                  "$0460 Yfrac", "$0470 Xfrac", "$0560 YvelI", "$0550 YvelF",
                                  "ladder($05B2-B8)", "$2F scrollmode", "$10 colmask",
-                                 "$28 redrawscroll", "$FC scrollXlo" };
+                                 "$28 redrawscroll", "$FC scrollXlo",
+                                 "$1F passes", "$20 prevmode" };
         var firstBad = new int[fieldNames.Length];
         var badPort = new int[fieldNames.Length];
         var badOrig = new int[fieldNames.Length];
@@ -239,6 +241,10 @@ public static class PhysCompare
         int[] oamEntryBad = new int[64];
         string oamFirstDetail = "";
         const int OamLag = 0;
+        // Streamer observability ($E63C inputs/outputs). The RESULT-gated dump windows only cover
+        // frames where X/Y/$22/$23 differ, so a $25-only drift had no frame history at all; these
+        // lines print every frame where any streamer byte changed on either side.
+        int[] strPrev = null;
         int oamFramesAvail = oamAll.Length / 256;
         if (scoreOam)
             // The golden pairs OAM[f] with RAM[f] for the HUD placement but with RAM[f-1] for the
@@ -382,19 +388,34 @@ public static class PhysCompare
                 sb.Append(sp.ToString() + " ");
                 sb.Append($"[f{f} P({p.X:X4},{p.Y:X4}) st={p.State:X2} FA={p.ScrollY:X2} FB={p.ScrollYRow:X2} c={p.CellIndex:X2}/{p.CellIndexNext:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 23o={g[0x23]:X2} 2B={p.ScrollState:X2} 10={p.ScrollStep:X2} 2F={p.ScrollMode:X2} vx={p.XVelInt},{p.XVelFrac:X2} xfc={s0.XFrac:X2} at={s0.AnimTimer:X2} pf={s0.AnimFrame:X2} dur={(game.Oam == null ? 0 : game.Oam.AnimHeader(s0.AnimNumber).duration)} iv={p.InvulnFrames:X2} vy={p.YVelInt},{p.YVelFrac:X2} ffc={p.YFrac:X2} hl={p.HitLadder} D={p.DeathFlag} d0={pr[0x4D0]:X2} e6={p.EnergyColRight:X2} e4={p.EnergyColLeft:X2} scx={p.ScrollX:X4}/{g[0xFC]:X2},{g[0xFD]:X2} | O({gx:X4},{gy:X4}) st={g[0x50]:X2} FA={g[0xFA]:X2} FB={g[0xFB]:X2} c={g[0x22]:X2} 2B={g[0x2B]:X2} 10={g[0x10]:X2} 2F={g[0x2F]:X2} vx={(sbyte)g[0x540]},{g[0x530]:X2} xfc={g[0x470]:X2} at={g[0x430]:X2} vy={(sbyte)g[0x560]},{g[0x550]:X2} ffc={g[0x460]:X2} ivc={g[0x7C]:X2} d0={g[0x4D0]:X2} e6={g[0x5E6]:X2} e4={g[0x5E4]:X2} 64={g[0x64]:X2} 6d={g[0x6D]:X2} af={s0.AnimFrame}/{g[0x410]} an={s0.AnimNumber:X2}/{g[0x420]:X2}] [E {ListSlots(pr)}| {ListSlots(g)}] ");
             }
+            if (!trace)
+            {
+                int[] strNow = { p.StageCursor, g[0x25], p.CellIndexNext, g[0x23],
+                                 p.ScrollMode, g[0x2F], p.ColsToStream, g[0x1F],
+                                 p.PrevScrollMode, g[0x20], p.LastRedrawScroll, g[0x28],
+                                 p.ScrollX & 0xFF, g[0xFC], p.ScrollStep, g[0x10] };
+                bool strChanged = strPrev == null;
+                if (strPrev != null)
+                    for (int i = 0; i < strNow.Length; i++)
+                        if (strNow[i] != strPrev[i]) { strChanged = true; break; }
+                if (strChanged)
+                    sb.Append($"STR f{f} 25={p.StageCursor:X2}/{g[0x25]:X2} 23={p.CellIndexNext:X2}/{g[0x23]:X2} 2F={p.ScrollMode:X2}/{g[0x2F]:X2} 1F={p.ColsToStream:X2}/{g[0x1F]:X2} 20={p.PrevScrollMode:X2}/{g[0x20]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} FC={p.ScrollX & 0xFF:X2}/{g[0xFC]:X2} 10={p.ScrollStep:X2}/{g[0x10]:X2} 50={p.State:X2}/{g[0x50]:X2} 97={g[0x97]:X2} ");
+                strPrev = strNow;
+            }
             bool pos = p.X == gx && p.Y == gy;
             bool cam = !camera || (p.State == g[0x50] && p.ScrollY == g[0xFA] && p.ScrollYRow == g[0xFB]
                                    && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
             int[] pv = { p.X, p.Y, p.State, p.ScrollY, p.ScrollYRow,
                          p.CellIndex, p.CellIndexNext, p.ScrollState, p.StageCursor,
                          p.YFrac, p.XFrac, p.YVelInt & 0xFF, p.YVelFrac, p.HitLadder,
-                         p.ScrollMode, p.ScrollStep, p.LastRedrawScroll, p.ScrollX & 0xFF };
+                         p.ScrollMode, p.ScrollStep, p.LastRedrawScroll, p.ScrollX & 0xFF,
+                         p.ColsToStream, p.PrevScrollMode };
             int[] ov = { gx, gy, g[0x50], g[0xFA], g[0xFB],
                          g[0x22], g[0x23], g[0x2B], g[0x25],
                          g[0x460], g[0x470], g[0x560], g[0x550],
                          g[0x5B2] != 0x80 ? 4 : (g[0x5B4] != 0x80 ? 1 : 0) +
                              (g[0x5B8] != 0x81 ? 1 : 0) + (g[0x5B6] != 0x81 ? 1 : 0),
-                         g[0x2F], g[0x10], g[0x28], g[0xFC] };
+                         g[0x2F], g[0x10], g[0x28], g[0xFC], g[0x1F], g[0x20] };
             for (int i = 0; i < pv.Length; i++)
                 if (pv[i] != ov[i])
                 {
@@ -1335,6 +1356,7 @@ public static class PhysCompare
         p.StageCursor = ram0[0x25];
         p.LastRedrawScroll = ram0[0x28];
         p.PrevScrollMode = ram0[0x20];
+        p.ColsToStream = ram0[0x1F];   // $1F only changes through $E66C, so seed the captured value
         p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
         // Bulk-seed every object slot table the dispatcher reads ($0400..$05A0, 16 bytes/slot).
         for (int s = 0; s < 16; s++)
@@ -1509,6 +1531,7 @@ public static class PhysCompare
         p.StageCursor = ram0[0x25];
         p.LastRedrawScroll = ram0[0x28];
         p.PrevScrollMode = ram0[0x20];
+        p.ColsToStream = ram0[0x1F];   // $1F only changes through $E66C, so seed the captured value
         p.PrevPlayerX = (ushort)(ram0[0x6E] | (ram0[0x6F] << 8));
         byte doorId = ram0[0x5B];
         // Seed the player's object slot exactly as the capture has it at the seed frame:
