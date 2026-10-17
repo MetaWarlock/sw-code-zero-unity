@@ -3567,6 +3567,11 @@ namespace Darkwing.Core
             ctx.Sfx?.Invoke(0x1A);
         }
 
+        /// <summary>$F893 (ROM bytes at file 0x1F8A3): the anim $F880 hands the boss slot on the
+        /// frame $3B reaches 1, indexed by $31. Measured: pilot1 $31=00 → $9A (f165), and
+        /// pilot6_wolfduck $31=01 → $6B with anim frame $0A → $00, which proves the $FA6C call.</summary>
+        static readonly byte[] BossFightAnims = { 0x9A, 0x6B, 0x4C, 0x4A, 0x50, 0x6F, 0x61 };
+
         public static void Dispatch(int slot, ObjectSystem.Slot s, byte behavior, EnemyDispatcher ctx)
         {
             // $8836/$88B6: only these seven bodies read $3B ($984E/$99AE/$9DDA/$A166/$A626/
@@ -3575,7 +3580,11 @@ namespace Darkwing.Core
             if (DefeatTimer != 0 && behavior is 0x49 or 0x4A or 0x51 or 0x54 or 0x57 or 0x5A or 0x5F or 0x60 &&
                 (behavior is 0x5F or 0x60 || (s.StateLow & 0x0F) != 0))   // $AFB6 follows $AFA0 INC $04D0,X
             {
-                if (DefeatTimer == 1) ctx.RestorePlayerIdle();             // $F880: CMP #$01 branch only
+                if (DefeatTimer == 1)                                      // $F880: CMP #$01 branch only
+                {
+                    ctx.RestorePlayerIdle();                                // $F886 LDA #$00 / $F888 STA $50
+                    EnemyBehaviors.SetAnim(s, BossFightAnims[ctx.Player.AreaId]);   // $F88A LDY $31 / $F88C / $F88F JSR $FA6C
+                }
                 DefeatTimer--;                                              // $9855 DEC $3B
                 if (behavior is 0x51 or 0x57 or 0x5A or 0x5F or 0x60)
                 { s.AnimFrame = 0; s.AnimTimer = 0; }                        // $F869: STA $0410,X / $0430,X
@@ -3809,6 +3818,16 @@ namespace Darkwing.Core
         /// pairs ($9959/$9961/$9969), jump $F2D7 vel $28, probe $56/2 + floor snap.</summary>
         private static void QuackerjackBall(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
+            // $9836 LDA $04D0,X / AND #$0F / BNE $984E: on the frame that takes the slot from
+            // $80 to $81 only the init pass runs and $984D RTS-es, so no body and no physics.
+            // ($984A JSR $B454 zeroes the $0600 collision window, which the port probes directly.)
+            if ((s.StateLow & 0x0F) == 0)
+            {
+                s.XVelInt = 0x80;   // $983D LDA #$80 / $983F STA $0530,X
+                s.XVelFrac = 0x01;  // $9842 LDA #$01 / $9844 STA $0540,X
+                s.StateLow++;       // $9847 INC $04D0,X
+                return;             // $984D RTS
+            }
             EnemyBehaviors.HitFlashShared(ctx, s);
             if (TakeProjectileHit(ctx, s) && s.Health == 0)
             {
