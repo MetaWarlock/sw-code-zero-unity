@@ -52,7 +52,20 @@ namespace Darkwing.Core
         public byte CellIndexNext;      // $23 (incoming cell during horizontal scroll)
         public byte RowStride = 17;     // $2E (linear index step for one grid row)
         public byte BottomRow;          // $2D (lowest row the camera may scroll down into)
-        public byte ScrollStep;         // $10 (px/frame handed to $DC6E/$DCC4)
+        /// <summary>$10 — ONE shared scratch byte with several owners, so its value only
+        /// means something at the place that reads it: the bank-7 scroll services write the
+        /// px/frame here ($DB2F/$DB41/$DB4E/$DB64/$DBC5/$DBE7/$DC39) and read it back in the
+        /// same call ($DBF1/$DC3E/$DC8B/$DCE0), the column streamer masks it into the
+        /// attribute byte ($E754/$E759 AND $E7C2,Y), $E388 parks the section-table index in
+        /// it across JSR $C248, and the bank-5/4 object walk rewrites it as the flip bit of
+        /// the last slot it advanced ($80F4-$80F9 = $0400,X AND #$40, mirrored at $98F4).
+        /// The walk runs last in the frame ($CABB), so a golden shows $10 ∈ {00,40} at frame
+        /// end, and RunFrame now reproduces that write. Measured by PhysCompare.Suite: clean in
+        /// b_attack/contact/m1route/m2/m7, 59/119 walk, 149/298 hook, 547/599 traverse,
+        /// 199-303/371 falls, 977/1499 m6 — the leftovers are frames where the port advanced
+        /// no slot at all while the ROM advanced one with bit 6 set, so the field is now a
+        /// slot-table-agreement proxy rather than a scroll-step bug (see GAPS G61).</summary>
+        public byte ScrollStep;
         public byte ScrollMode;         // $2F (0 none, 4 down ride, 8 up ride)
         public byte ScrollState;        // $2B (bits 0-1 horizontal scroll from $20, bits 2-3 vertical armed)
 

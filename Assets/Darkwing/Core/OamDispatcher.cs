@@ -191,7 +191,11 @@ namespace Darkwing.Core
                     // counting (gold_pause_m1: $0430[1] = 08,00,01,… under anim $1B, entry $B064
                     // duration 8, single frame). Advancing it here keeps $0430/$0410 faithful;
                     // $0410 never leaves 0 because entry[0]=$00 declares one frame.
-                    if (hs.Active && hs.AnimNumber != 0) AnimAdvance(hs);
+                    if (hs.Active && hs.AnimNumber != 0)
+                    {
+                        _player.ScrollStep = (byte)(hs.Flags & 0x40);   // $80F2-$80F9
+                        AnimAdvance(hs);
+                    }
                     ComposeHud();
                     continue;
                 }
@@ -203,6 +207,7 @@ namespace Darkwing.Core
                 if (s.AnimNumber == 0) continue;      // $80DB/$80DE/$80E0: RTS before $8100, so an
                 // anim number of $00 advances no timer and composes no record — the pause panel's
                 // slot 3 carries $00 while no weapon is selected ($902C, $54 = 0).
+                _player.ScrollStep = (byte)(s.Flags & 0x40);        // $80F2-$80F9 STA $10
                 AnimAdvance(s);
                 OamCompose(slot, s);
             }
