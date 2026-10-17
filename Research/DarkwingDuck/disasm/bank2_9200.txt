@@ -1,0 +1,1064 @@
+9200  A2 01     LDX #$01                     ;
+9202  A9 BC     LDA #$BC                     ;
+9204  20 6C FA  JSR $FA6C                    ;
+9207  A9 80     LDA #$80                     ;
+9209  9D D0 04  STA $04D0,X                  ;
+920C  A9 A4     LDA #$A4                     ;
+920E  9D 00 04  STA $0400,X                  ;
+9211  A9 DC     LDA #$DC                     ;
+9213  9D 10 05  STA $0510,X                  ;
+9216  A9 00     LDA #$00                     ;
+9218  9D F0 04  STA $04F0,X                  ;
+921B  9D 00 05  STA $0500,X                  ;
+921E  9D 20 05  STA $0520,X                  ;
+9221  9D 30 05  STA $0530,X                  ;
+9224  A9 01     LDA #$01                     ;
+9226  9D 40 05  STA $0540,X                  ;
+9229  60        RTS                          ;
+922A  00        BRK                          ;
+922B  00        BRK                          ;
+922C  00        BRK                          ;
+922D  00        BRK                          ;
+922E  00        BRK                          ;
+922F  00        BRK                          ;
+9230  00        BRK                          ;
+9231  00        BRK                          ;
+9232  00        BRK                          ;
+9233  00        BRK                          ;
+9234  00        BRK                          ;
+9235  00        BRK                          ;
+9236  00        BRK                          ;
+9237  00        BRK                          ;
+9238  00        BRK                          ;
+9239  00        BRK                          ;
+923A  00        BRK                          ;
+923B  00        BRK                          ;
+923C  00        BRK                          ;
+923D  00        BRK                          ;
+923E  00        BRK                          ;
+923F  00        BRK                          ;
+9240  FF        ???
+9241  FF        ???
+9242  FF        ???
+9243  FF        ???
+9244  FF        ???
+9245  FF        ???
+9246  FF        ???
+9247  FF        ???
+9248  FF        ???
+9249  FF        ???
+924A  FF        ???
+924B  FF        ???
+924C  FF        ???
+924D  FF        ???
+924E  FF        ???
+924F  FF        ???
+9250  FF        ???
+9251  FF        ???
+9252  FF        ???
+9253  FF        ???
+9254  FF        ???
+9255  FF        ???
+9256  FF        ???
+9257  FF        ???
+9258  FF        ???
+9259  FF        ???
+925A  FF        ???
+925B  FF        ???
+925C  FF        ???
+925D  FF        ???
+925E  FF        ???
+925F  FF        ???
+9260  00        BRK                          ;
+9261  00        BRK                          ;
+9262  00        BRK                          ;
+9263  00        BRK                          ;
+9264  00        BRK                          ;
+9265  00        BRK                          ;
+9266  00        BRK                          ;
+9267  00        BRK                          ;
+9268  00        BRK                          ;
+9269  00        BRK                          ;
+926A  00        BRK                          ;
+926B  00        BRK                          ;
+926C  00        BRK                          ;
+926D  00        BRK                          ;
+926E  00        BRK                          ;
+926F  00        BRK                          ;
+9270  00        BRK                          ;
+9271  00        BRK                          ;
+9272  00        BRK                          ;
+9273  00        BRK                          ;
+9274  00        BRK                          ;
+9275  00        BRK                          ;
+9276  00        BRK                          ;
+9277  00        BRK                          ;
+9278  00        BRK                          ;
+9279  00        BRK                          ;
+927A  00        BRK                          ;
+927B  00        BRK                          ;
+927C  00        BRK                          ;
+927D  00        BRK                          ;
+927E  00        BRK                          ;
+927F  00        BRK                          ;
+9280  A2 F0     LDX #$F0                     ;
+9282  20 FF FE  JSR $FEFF                    ;
+9285  A2 01     LDX #$01                     ;
+9287  A9 2F     LDA #$2F                     ;
+9289  20 6C FA  JSR $FA6C                    ;
+928C  A9 80     LDA #$80                     ;
+928E  9D D0 04  STA $04D0,X                  ;
+9291  8D D2 04  STA $04D2                    ;
+9294  8D 02 04  STA $0402                    ;
+9297  8D D4 04  STA $04D4                    ;
+929A  8D 04 04  STA $0404                    ;
+929D  8D D5 04  STA $04D5                    ;
+92A0  A9 A0     LDA #$A0                     ;
+92A2  8D 05 04  STA $0405                    ;
+92A5  A9 90     LDA #$90                     ;
+92A7  9D 00 04  STA $0400,X                  ;
+92AA  A9 FF     LDA #$FF                     ;
+92AC  9D F0 04  STA $04F0,X                  ;
+92AF  A9 A4     LDA #$A4                     ;
+92B1  9D 10 05  STA $0510,X                  ;
+92B4  A9 00     LDA #$00                     ;
+92B6  9D 00 05  STA $0500,X                  ;
+92B9  8D 02 05  STA $0502                    ;
+92BC  8D 04 05  STA $0504                    ;
+92BF  8D 05 05  STA $0505                    ;
+92C2  9D 20 05  STA $0520,X                  ;
+92C5  9D 40 05  STA $0540,X                  ;
+92C8  8D 22 05  STA $0522                    ;
+92CB  8D 24 05  STA $0524                    ;
+92CE  8D 25 05  STA $0525                    ;
+92D1  8D 32 05  STA $0532                    ;
+92D4  8D 34 05  STA $0534                    ;
+92D7  8D F2 04  STA $04F2                    ;
+92DA  8D F4 04  STA $04F4                    ;
+92DD  A9 19     LDA #$19                     ;
+92DF  9D 30 05  STA $0530,X                  ;
+92E2  A9 03     LDA #$03                     ;
+92E4  8D 42 05  STA $0542                    ;
+92E7  A9 07     LDA #$07                     ;
+92E9  8D 44 05  STA $0544                    ;
+92EC  E8        INX                          ;
+92ED  A9 AE     LDA #$AE                     ;
+92EF  20 6C FA  JSR $FA6C                    ;
+92F2  A9 AC     LDA #$AC                     ;
+92F4  9D 10 05  STA $0510,X                  ;
+92F7  A2 04     LDX #$04                     ;
+92F9  A9 C6     LDA #$C6                     ;
+92FB  20 6C FA  JSR $FA6C                    ;
+92FE  A9 B7     LDA #$B7                     ;
+9300  8D 14 05  STA $0514                    ;
+9303  A2 05     LDX #$05                     ;
+9305  A9 C5     LDA #$C5                     ;
+9307  20 6C FA  JSR $FA6C                    ;
+930A  A9 A0     LDA #$A0                     ;
+930C  9D F0 04  STA $04F0,X                  ;
+930F  A9 D0     LDA #$D0                     ;
+9311  9D 10 05  STA $0510,X                  ;
+9314  A0 0F     LDY #$0F                     ;
+9316  B9 B8 93  LDA $93B8,Y                  ;
+9319  99 10 03  STA $0310,Y                  ;
+931C  99 30 03  STA $0330,Y                  ;
+931F  88        DEY                          ;
+9320  10 F4     BPL $9316                    ;
+9322  A9 FF     LDA #$FF                     ;
+9324  85 18     STA $18                      ;
+9326  AD D0 04  LDA $04D0                    ;
+9329  29 0F     AND #$0F                     ;
+932B  C9 02     CMP #$02                     ;
+932D  D0 1C     BNE $934B                    ;
+932F  A2 03     LDX #$03                     ;
+9331  20 5E F5  JSR $F55E                    ;
+9334  20 1B F5  JSR $F51B                    ;
+9337  AD F3 04  LDA $04F3                    ;
+933A  C9 40     CMP #$40                     ;
+933C  B0 05     BCS $9343                    ;
+933E  A9 80     LDA #$80                     ;
+9340  8D 05 04  STA $0405                    ;
+9343  AD F3 04  LDA $04F3                    ;
+9346  C9 3C     CMP #$3C                     ;
+9348  B0 01     BCS $934B                    ;
+934A  60        RTS                          ;
+934B  A0 04     LDY #$04                     ;
+934D  84 97     STY $97                      ;
+934F  20 9A F8  JSR $F89A                    ;
+9352  AD D0 04  LDA $04D0                    ;
+9355  29 0F     AND #$0F                     ;
+9357  D0 CD     BNE $9326                    ;
+9359  A2 04     LDX #$04                     ;
+935B  20 FD F4  JSR $F4FD                    ;
+935E  A2 01     LDX #$01                     ;
+9360  20 1B F5  JSR $F51B                    ;
+9363  AD F1 04  LDA $04F1                    ;
+9366  C9 80     CMP #$80                     ;
+9368  B0 BC     BCS $9326                    ;
+936A  A2 02     LDX #$02                     ;
+936C  20 FD F4  JSR $F4FD                    ;
+936F  AD F2 04  LDA $04F2                    ;
+9372  C9 6A     CMP #$6A                     ;
+9374  90 B0     BCC $9326                    ;
+9376  EE D0 04  INC $04D0                    ;
+9379  A2 01     LDX #$01                     ;
+937B  A9 B3     LDA #$B3                     ;
+937D  20 6C FA  JSR $FA6C                    ;
+9380  A9 80     LDA #$80                     ;
+9382  9D 10 05  STA $0510,X                  ;
+9385  A2 03     LDX #$03                     ;
+9387  A9 B4     LDA #$B4                     ;
+9389  20 6C FA  JSR $FA6C                    ;
+938C  A9 80     LDA #$80                     ;
+938E  8D D3 04  STA $04D3                    ;
+9391  8D 03 04  STA $0403                    ;
+9394  8D F3 04  STA $04F3                    ;
+9397  8D 13 05  STA $0513                    ;
+939A  A9 00     LDA #$00                     ;
+939C  8D 03 05  STA $0503                    ;
+939F  8D 23 05  STA $0523                    ;
+93A2  A9 D9     LDA #$D9                     ;
+93A4  8D 53 05  STA $0553                    ;
+93A7  8D 33 05  STA $0533                    ;
+93AA  A9 01     LDA #$01                     ;
+93AC  8D 63 05  STA $0563                    ;
+93AF  8D 43 05  STA $0543                    ;
+93B2  EE D0 04  INC $04D0                    ;
+93B5  4C 26 93  JMP $9326                    ;
+93B8  11 0F     ORA ($0F),Y                  ;
+93BA  30 00     BMI $93BC                    ;
+93BC  11 0F     ORA ($0F),Y                  ;
+93BE  00        BRK                          ;
+93BF  03        ???
+93C0  11 0F     ORA ($0F),Y                  ;
+93C2  13        ???
+93C3  03        ???
+93C4  11 0F     ORA ($0F),Y                  ;
+93C6  10 00     BPL $93C8                    ;
+93C8  FF        ???
+93C9  FF        ???
+93CA  FF        ???
+93CB  FF        ???
+93CC  FF        ???
+93CD  FF        ???
+93CE  FF        ???
+93CF  FF        ???
+93D0  FF        ???
+93D1  FF        ???
+93D2  FF        ???
+93D3  FF        ???
+93D4  FF        ???
+93D5  FF        ???
+93D6  FF        ???
+93D7  FF        ???
+93D8  FF        ???
+93D9  FF        ???
+93DA  FF        ???
+93DB  FF        ???
+93DC  FF        ???
+93DD  FF        ???
+93DE  FF        ???
+93DF  FF        ???
+93E0  00        BRK                          ;
+93E1  00        BRK                          ;
+93E2  00        BRK                          ;
+93E3  00        BRK                          ;
+93E4  00        BRK                          ;
+93E5  00        BRK                          ;
+93E6  00        BRK                          ;
+93E7  00        BRK                          ;
+93E8  00        BRK                          ;
+93E9  00        BRK                          ;
+93EA  00        BRK                          ;
+93EB  00        BRK                          ;
+93EC  00        BRK                          ;
+93ED  00        BRK                          ;
+93EE  00        BRK                          ;
+93EF  00        BRK                          ;
+93F0  00        BRK                          ;
+93F1  00        BRK                          ;
+93F2  00        BRK                          ;
+93F3  00        BRK                          ;
+93F4  00        BRK                          ;
+93F5  00        BRK                          ;
+93F6  00        BRK                          ;
+93F7  00        BRK                          ;
+93F8  00        BRK                          ;
+93F9  00        BRK                          ;
+93FA  00        BRK                          ;
+93FB  00        BRK                          ;
+93FC  00        BRK                          ;
+93FD  00        BRK                          ;
+93FE  00        BRK                          ;
+93FF  00        BRK                          ;
+9400  FF        ???
+9401  FF        ???
+9402  FF        ???
+9403  FF        ???
+9404  FF        ???
+9405  FF        ???
+9406  FF        ???
+9407  FF        ???
+9408  FF        ???
+9409  FF        ???
+940A  FF        ???
+940B  FF        ???
+940C  FF        ???
+940D  FF        ???
+940E  FF        ???
+940F  FF        ???
+9410  FF        ???
+9411  FF        ???
+9412  FF        ???
+9413  FF        ???
+9414  FF        ???
+9415  FF        ???
+9416  FF        ???
+9417  FF        ???
+9418  FF        ???
+9419  FF        ???
+941A  FF        ???
+941B  FF        ???
+941C  FF        ???
+941D  FF        ???
+941E  FF        ???
+941F  FF        ???
+9420  00        BRK                          ;
+9421  00        BRK                          ;
+9422  00        BRK                          ;
+9423  00        BRK                          ;
+9424  00        BRK                          ;
+9425  00        BRK                          ;
+9426  00        BRK                          ;
+9427  00        BRK                          ;
+9428  00        BRK                          ;
+9429  00        BRK                          ;
+942A  00        BRK                          ;
+942B  00        BRK                          ;
+942C  00        BRK                          ;
+942D  00        BRK                          ;
+942E  00        BRK                          ;
+942F  00        BRK                          ;
+9430  00        BRK                          ;
+9431  00        BRK                          ;
+9432  00        BRK                          ;
+9433  00        BRK                          ;
+9434  00        BRK                          ;
+9435  00        BRK                          ;
+9436  00        BRK                          ;
+9437  00        BRK                          ;
+9438  00        BRK                          ;
+9439  00        BRK                          ;
+943A  00        BRK                          ;
+943B  00        BRK                          ;
+943C  00        BRK                          ;
+943D  00        BRK                          ;
+943E  00        BRK                          ;
+943F  00        BRK                          ;
+9440  FF        ???
+9441  FF        ???
+9442  FF        ???
+9443  FF        ???
+9444  FF        ???
+9445  FF        ???
+9446  FF        ???
+9447  FF        ???
+9448  FF        ???
+9449  FF        ???
+944A  FF        ???
+944B  FF        ???
+944C  FF        ???
+944D  FF        ???
+944E  FF        ???
+944F  FF        ???
+9450  FF        ???
+9451  FF        ???
+9452  FF        ???
+9453  FF        ???
+9454  FF        ???
+9455  FF        ???
+9456  FF        ???
+9457  FF        ???
+9458  FF        ???
+9459  FF        ???
+945A  FF        ???
+945B  FF        ???
+945C  FF        ???
+945D  FF        ???
+945E  FF        ???
+945F  FF        ???
+9460  00        BRK                          ;
+9461  00        BRK                          ;
+9462  00        BRK                          ;
+9463  00        BRK                          ;
+9464  00        BRK                          ;
+9465  00        BRK                          ;
+9466  00        BRK                          ;
+9467  00        BRK                          ;
+9468  00        BRK                          ;
+9469  00        BRK                          ;
+946A  00        BRK                          ;
+946B  00        BRK                          ;
+946C  00        BRK                          ;
+946D  00        BRK                          ;
+946E  00        BRK                          ;
+946F  00        BRK                          ;
+9470  00        BRK                          ;
+9471  00        BRK                          ;
+9472  00        BRK                          ;
+9473  00        BRK                          ;
+9474  00        BRK                          ;
+9475  00        BRK                          ;
+9476  00        BRK                          ;
+9477  00        BRK                          ;
+9478  00        BRK                          ;
+9479  00        BRK                          ;
+947A  00        BRK                          ;
+947B  00        BRK                          ;
+947C  00        BRK                          ;
+947D  00        BRK                          ;
+947E  00        BRK                          ;
+947F  00        BRK                          ;
+9480  FF        ???
+9481  FF        ???
+9482  FF        ???
+9483  FF        ???
+9484  FF        ???
+9485  FF        ???
+9486  FF        ???
+9487  FF        ???
+9488  FF        ???
+9489  FF        ???
+948A  FF        ???
+948B  FF        ???
+948C  FF        ???
+948D  FF        ???
+948E  FF        ???
+948F  FF        ???
+9490  FF        ???
+9491  FF        ???
+9492  FF        ???
+9493  FF        ???
+9494  FF        ???
+9495  FF        ???
+9496  FF        ???
+9497  FF        ???
+9498  FF        ???
+9499  FF        ???
+949A  FF        ???
+949B  FF        ???
+949C  FF        ???
+949D  FF        ???
+949E  FF        ???
+949F  FF        ???
+94A0  00        BRK                          ;
+94A1  00        BRK                          ;
+94A2  00        BRK                          ;
+94A3  00        BRK                          ;
+94A4  00        BRK                          ;
+94A5  00        BRK                          ;
+94A6  00        BRK                          ;
+94A7  00        BRK                          ;
+94A8  00        BRK                          ;
+94A9  00        BRK                          ;
+94AA  00        BRK                          ;
+94AB  00        BRK                          ;
+94AC  00        BRK                          ;
+94AD  00        BRK                          ;
+94AE  00        BRK                          ;
+94AF  00        BRK                          ;
+94B0  00        BRK                          ;
+94B1  00        BRK                          ;
+94B2  00        BRK                          ;
+94B3  00        BRK                          ;
+94B4  00        BRK                          ;
+94B5  00        BRK                          ;
+94B6  00        BRK                          ;
+94B7  00        BRK                          ;
+94B8  00        BRK                          ;
+94B9  00        BRK                          ;
+94BA  00        BRK                          ;
+94BB  00        BRK                          ;
+94BC  00        BRK                          ;
+94BD  00        BRK                          ;
+94BE  00        BRK                          ;
+94BF  00        BRK                          ;
+94C0  FF        ???
+94C1  FF        ???
+94C2  FF        ???
+94C3  FF        ???
+94C4  FF        ???
+94C5  FF        ???
+94C6  FF        ???
+94C7  FF        ???
+94C8  FF        ???
+94C9  FF        ???
+94CA  FF        ???
+94CB  FF        ???
+94CC  FF        ???
+94CD  FF        ???
+94CE  FF        ???
+94CF  FF        ???
+94D0  FF        ???
+94D1  FF        ???
+94D2  FF        ???
+94D3  FF        ???
+94D4  FF        ???
+94D5  FF        ???
+94D6  FF        ???
+94D7  FF        ???
+94D8  FF        ???
+94D9  FF        ???
+94DA  FF        ???
+94DB  FF        ???
+94DC  FF        ???
+94DD  FF        ???
+94DE  FF        ???
+94DF  FF        ???
+94E0  00        BRK                          ;
+94E1  00        BRK                          ;
+94E2  00        BRK                          ;
+94E3  00        BRK                          ;
+94E4  00        BRK                          ;
+94E5  00        BRK                          ;
+94E6  00        BRK                          ;
+94E7  00        BRK                          ;
+94E8  00        BRK                          ;
+94E9  00        BRK                          ;
+94EA  00        BRK                          ;
+94EB  00        BRK                          ;
+94EC  00        BRK                          ;
+94ED  00        BRK                          ;
+94EE  00        BRK                          ;
+94EF  00        BRK                          ;
+94F0  00        BRK                          ;
+94F1  00        BRK                          ;
+94F2  00        BRK                          ;
+94F3  00        BRK                          ;
+94F4  00        BRK                          ;
+94F5  00        BRK                          ;
+94F6  00        BRK                          ;
+94F7  00        BRK                          ;
+94F8  00        BRK                          ;
+94F9  00        BRK                          ;
+94FA  00        BRK                          ;
+94FB  00        BRK                          ;
+94FC  00        BRK                          ;
+94FD  00        BRK                          ;
+94FE  00        BRK                          ;
+94FF  00        BRK                          ;
+9500  A0 0F     LDY #$0F                     ;
+9502  B9 3C 95  LDA $953C,Y                  ;
+9505  99 10 03  STA $0310,Y                  ;
+9508  99 30 03  STA $0330,Y                  ;
+950B  88        DEY                          ;
+950C  10 F4     BPL $9502                    ;
+950E  A9 0D     LDA #$0D                     ;
+9510  20 F9 C2  JSR $C2F9                    ;
+9513  A9 9F     LDA #$9F                     ;
+9515  85 1A     STA $1A                      ;
+9517  A9 99     LDA #$99                     ;
+9519  85 1B     STA $1B                      ;
+951B  85 18     STA $18                      ;
+951D  A2 00     LDX #$00                     ;
+951F  A9 A3     LDA #$A3                     ;
+9521  20 6C FA  JSR $FA6C                    ;
+9524  A9 80     LDA #$80                     ;
+9526  8D D0 04  STA $04D0                    ;
+9529  A9 9B     LDA #$9B                     ;
+952B  8D 10 05  STA $0510                    ;
+952E  A9 28     LDA #$28                     ;
+9530  8D F0 04  STA $04F0                    ;
+9533  A9 00     LDA #$00                     ;
+9535  8D 00 05  STA $0500                    ;
+9538  8D 20 05  STA $0520                    ;
+953B  60        RTS                          ;
+953C  0F        ???
+953D  0F        ???
+953E  30 27     BMI $9567                    ;
+9540  0F        ???
+9541  0F        ???
+9542  13        ???
+9543  24 0F     BIT $0F                      ;
+9545  0F        ???
+9546  13        ???
+9547  03        ???
+9548  0F        ???
+9549  0F        ???
+954A  2B        ???
+954B  27        ???
+954C  FF        ???
+954D  FF        ???
+954E  FF        ???
+954F  FF        ???
+9550  FF        ???
+9551  FF        ???
+9552  FF        ???
+9553  FF        ???
+9554  FF        ???
+9555  FF        ???
+9556  FF        ???
+9557  FF        ???
+9558  FF        ???
+9559  FF        ???
+955A  FF        ???
+955B  FF        ???
+955C  FF        ???
+955D  FF        ???
+955E  FF        ???
+955F  FF        ???
+9560  00        BRK                          ;
+9561  00        BRK                          ;
+9562  00        BRK                          ;
+9563  00        BRK                          ;
+9564  00        BRK                          ;
+9565  00        BRK                          ;
+9566  00        BRK                          ;
+9567  00        BRK                          ;
+9568  00        BRK                          ;
+9569  00        BRK                          ;
+956A  00        BRK                          ;
+956B  00        BRK                          ;
+956C  00        BRK                          ;
+956D  00        BRK                          ;
+956E  00        BRK                          ;
+956F  00        BRK                          ;
+9570  00        BRK                          ;
+9571  00        BRK                          ;
+9572  00        BRK                          ;
+9573  00        BRK                          ;
+9574  00        BRK                          ;
+9575  00        BRK                          ;
+9576  00        BRK                          ;
+9577  00        BRK                          ;
+9578  00        BRK                          ;
+9579  00        BRK                          ;
+957A  00        BRK                          ;
+957B  00        BRK                          ;
+957C  00        BRK                          ;
+957D  00        BRK                          ;
+957E  00        BRK                          ;
+957F  00        BRK                          ;
+9580  FF        ???
+9581  FF        ???
+9582  FF        ???
+9583  FF        ???
+9584  FF        ???
+9585  FF        ???
+9586  FF        ???
+9587  FF        ???
+9588  FF        ???
+9589  FF        ???
+958A  FF        ???
+958B  FF        ???
+958C  FF        ???
+958D  FF        ???
+958E  FF        ???
+958F  FF        ???
+9590  FF        ???
+9591  FF        ???
+9592  FF        ???
+9593  FF        ???
+9594  FF        ???
+9595  FF        ???
+9596  FF        ???
+9597  FF        ???
+9598  FF        ???
+9599  FF        ???
+959A  FF        ???
+959B  FF        ???
+959C  FF        ???
+959D  FF        ???
+959E  FF        ???
+959F  FF        ???
+95A0  00        BRK                          ;
+95A1  00        BRK                          ;
+95A2  00        BRK                          ;
+95A3  00        BRK                          ;
+95A4  00        BRK                          ;
+95A5  00        BRK                          ;
+95A6  00        BRK                          ;
+95A7  00        BRK                          ;
+95A8  00        BRK                          ;
+95A9  00        BRK                          ;
+95AA  00        BRK                          ;
+95AB  00        BRK                          ;
+95AC  00        BRK                          ;
+95AD  00        BRK                          ;
+95AE  00        BRK                          ;
+95AF  00        BRK                          ;
+95B0  00        BRK                          ;
+95B1  00        BRK                          ;
+95B2  00        BRK                          ;
+95B3  00        BRK                          ;
+95B4  00        BRK                          ;
+95B5  00        BRK                          ;
+95B6  00        BRK                          ;
+95B7  00        BRK                          ;
+95B8  00        BRK                          ;
+95B9  00        BRK                          ;
+95BA  00        BRK                          ;
+95BB  00        BRK                          ;
+95BC  00        BRK                          ;
+95BD  00        BRK                          ;
+95BE  00        BRK                          ;
+95BF  00        BRK                          ;
+95C0  FF        ???
+95C1  FF        ???
+95C2  FF        ???
+95C3  FF        ???
+95C4  FF        ???
+95C5  FF        ???
+95C6  FF        ???
+95C7  FF        ???
+95C8  FF        ???
+95C9  FF        ???
+95CA  FF        ???
+95CB  FF        ???
+95CC  FF        ???
+95CD  FF        ???
+95CE  FF        ???
+95CF  FF        ???
+95D0  FF        ???
+95D1  FF        ???
+95D2  FF        ???
+95D3  FF        ???
+95D4  FF        ???
+95D5  FF        ???
+95D6  FF        ???
+95D7  FF        ???
+95D8  FF        ???
+95D9  FF        ???
+95DA  FF        ???
+95DB  FF        ???
+95DC  FF        ???
+95DD  FF        ???
+95DE  FF        ???
+95DF  FF        ???
+95E0  00        BRK                          ;
+95E1  00        BRK                          ;
+95E2  00        BRK                          ;
+95E3  00        BRK                          ;
+95E4  00        BRK                          ;
+95E5  00        BRK                          ;
+95E6  00        BRK                          ;
+95E7  00        BRK                          ;
+95E8  00        BRK                          ;
+95E9  00        BRK                          ;
+95EA  00        BRK                          ;
+95EB  00        BRK                          ;
+95EC  00        BRK                          ;
+95ED  00        BRK                          ;
+95EE  00        BRK                          ;
+95EF  00        BRK                          ;
+95F0  00        BRK                          ;
+95F1  00        BRK                          ;
+95F2  00        BRK                          ;
+95F3  00        BRK                          ;
+95F4  00        BRK                          ;
+95F5  00        BRK                          ;
+95F6  00        BRK                          ;
+95F7  00        BRK                          ;
+95F8  00        BRK                          ;
+95F9  00        BRK                          ;
+95FA  00        BRK                          ;
+95FB  00        BRK                          ;
+95FC  00        BRK                          ;
+95FD  00        BRK                          ;
+95FE  00        BRK                          ;
+95FF  00        BRK                          ;
+9600  A9 2B     LDA #$2B                     ;
+9602  20 78 FA  JSR $FA78                    ;
+9605  A0 A0     LDY #$A0                     ;
+9607  84 97     STY $97                      ;
+9609  20 9A F8  JSR $F89A                    ;
+960C  AD 10 04  LDA $0410                    ;
+960F  C9 11     CMP #$11                     ;
+9611  F0 1D     BEQ $9630                    ;
+9613  C9 0F     CMP #$0F                     ;
+9615  D0 EE     BNE $9605                    ;
+9617  A5 31     LDA $31                      ;
+9619  C9 07     CMP #$07                     ;
+961B  F0 06     BEQ $9623                    ;
+961D  20 36 96  JSR $9636                    ;
+9620  4C 26 96  JMP $9626                    ;
+9623  20 7A 96  JSR $967A                    ;
+9626  AD 30 04  LDA $0430                    ;
+9629  C9 04     CMP #$04                     ;
+962B  F0 03     BEQ $9630                    ;
+962D  4C 05 96  JMP $9605                    ;
+9630  A2 3C     LDX #$3C                     ;
+9632  20 FF FE  JSR $FEFF                    ;
+9635  60        RTS                          ;
+9636  A2 00     LDX #$00                     ;
+9638  A0 00     LDY #$00                     ;
+963A  A5 31     LDA $31                      ;
+963C  D0 08     BNE $9646                    ;
+963E  B9 3F 97  LDA $973F,Y                  ;
+9641  99 00 02  STA $0200,Y                  ;
+9644  D0 17     BNE $965D                    ;
+9646  C9 06     CMP #$06                     ;
+9648  D0 08     BNE $9652                    ;
+964A  BD 07 98  LDA $9807,X                  ;
+964D  99 00 02  STA $0200,Y                  ;
+9650  D0 0A     BNE $965C                    ;
+9652  C9 05     CMP #$05                     ;
+9654  F0 F4     BEQ $964A                    ;
+9656  BD DF 97  LDA $97DF,X                  ;
+9659  99 00 02  STA $0200,Y                  ;
+965C  E8        INX                          ;
+965D  B9 40 97  LDA $9740,Y                  ;
+9660  99 01 02  STA $0201,Y                  ;
+9663  B9 41 97  LDA $9741,Y                  ;
+9666  99 02 02  STA $0202,Y                  ;
+9669  B9 42 97  LDA $9742,Y                  ;
+966C  99 03 02  STA $0203,Y                  ;
+966F  C8        INY                          ;
+9670  C8        INY                          ;
+9671  C8        INY                          ;
+9672  C8        INY                          ;
+9673  C0 A0     CPY #$A0                     ;
+9675  D0 C3     BNE $963A                    ;
+9677  84 97     STY $97                      ;
+9679  60        RTS                          ;
+967A  A0 00     LDY #$00                     ;
+967C  B9 9F 96  LDA $969F,Y                  ;
+967F  99 00 02  STA $0200,Y                  ;
+9682  B9 A0 96  LDA $96A0,Y                  ;
+9685  99 01 02  STA $0201,Y                  ;
+9688  B9 A1 96  LDA $96A1,Y                  ;
+968B  99 02 02  STA $0202,Y                  ;
+968E  B9 A2 96  LDA $96A2,Y                  ;
+9691  99 03 02  STA $0203,Y                  ;
+9694  C8        INY                          ;
+9695  C8        INY                          ;
+9696  C8        INY                          ;
+9697  C8        INY                          ;
+9698  C0 A0     CPY #$A0                     ;
+969A  D0 E0     BNE $967C                    ;
+969C  84 97     STY $97                      ;
+969E  60        RTS                          ;
+969F  1C        ???
+96A0  C0 00     CPY #$00                     ;
+96A2  64        ???
+96A3  1C        ???
+96A4  C1 00     CMP ($00,X)                  ;
+96A6  6C 1C C1  JMP ($C11C)                  ;
+96A9  00        BRK                          ;
+96AA  74        ???
+96AB  1C        ???
+96AC  C1 00     CMP ($00,X)                  ;
+96AE  7C        ???
+96AF  1C        ???
+96B0  C1 00     CMP ($00,X)                  ;
+96B2  84 1C     STY $1C                      ;
+96B4  C1 00     CMP ($00,X)                  ;
+96B6  8C 1C C1  STY $C11C                    ;
+96B9  00        BRK                          ;
+96BA  94 1C     STY $1C,X                    ;
+96BC  C0 40     CPY #$40                     ;
+96BE  9C        ???
+96BF  24 C2     BIT $C2                      ;
+96C1  00        BRK                          ;
+96C2  64        ???
+96C3  24 C3     BIT $C3                      ;
+96C5  00        BRK                          ;
+96C6  6C 24 C4  JMP ($C424)                  ;
+96C9  00        BRK                          ;
+96CA  74        ???
+96CB  24 C5     BIT $C5                      ;
+96CD  00        BRK                          ;
+96CE  7C        ???
+96CF  24 C5     BIT $C5                      ;
+96D1  00        BRK                          ;
+96D2  84 24     STY $24                      ;
+96D4  C5 00     CMP $00                      ;
+96D6  8C 24 C5  STY $C524                    ;
+96D9  00        BRK                          ;
+96DA  94 24     STY $24,X                    ;
+96DC  CD 00 9C  CMP $9C00                    ;
+96DF  2C C6 00  BIT $00C6                    ;
+96E2  64        ???
+96E3  2C C7 00  BIT $00C7                    ;
+96E6  6C 2C C8  JMP ($C82C)                  ;
+96E9  00        BRK                          ;
+96EA  74        ???
+96EB  2C C9 00  BIT $00C9                    ;
+96EE  7C        ???
+96EF  2C CA 00  BIT $00CA                    ;
+96F2  84 2C     STY $2C                      ;
+96F4  CB        ???
+96F5  00        BRK                          ;
+96F6  8C 2C CC  STY $CC2C                    ;
+96F9  00        BRK                          ;
+96FA  94 2C     STY $2C,X                    ;
+96FC  CD 00 9C  CMP $9C00                    ;
+96FF  34        ???
+9700  CD 40 64  CMP $6440                    ;
+9703  34        ???
+9704  C5 00     CMP $00                      ;
+9706  6C 34 C5  JMP ($C534)                  ;
+9709  00        BRK                          ;
+970A  74        ???
+970B  34        ???
+970C  C5 00     CMP $00                      ;
+970E  7C        ???
+970F  34        ???
+9710  CE 00 84  DEC $8400                    ;
+9713  34        ???
+9714  CF        ???
+9715  00        BRK                          ;
+9716  8C 34 D0  STY $D034                    ;
+9719  00        BRK                          ;
+971A  94 34     STY $34,X                    ;
+971C  D1 00     CMP ($00),Y                  ;
+971E  9C        ???
+971F  3C        ???
+9720  C0 80     CPY #$80                     ;
+9722  64        ???
+9723  3C        ???
+9724  C1 80     CMP ($80,X)                  ;
+9726  6C 3C C1  JMP ($C13C)                  ;
+9729  80        ???
+972A  74        ???
+972B  3C        ???
+972C  C1 80     CMP ($80,X)                  ;
+972E  7C        ???
+972F  3C        ???
+9730  D2        ???
+9731  00        BRK                          ;
+9732  84 3C     STY $3C                      ;
+9734  C1 80     CMP ($80,X)                  ;
+9736  8C 3C C1  STY $C13C                    ;
+9739  80        ???
+973A  94 3C     STY $3C,X                    ;
+973C  C0 C0     CPY #$C0                     ;
+973E  9C        ???
+973F  34        ???
+9740  C0 00     CPY #$00                     ;
+9742  10 34     BPL $9778                    ;
+9744  C1 00     CMP ($00,X)                  ;
+9746  18        CLC                          ;
+9747  34        ???
+9748  C1 00     CMP ($00,X)                  ;
+974A  20 34 C1  JSR $C134                    ;
+974D  00        BRK                          ;
+974E  28        PLP                          ;
+974F  34        ???
+9750  C1 00     CMP ($00,X)                  ;
+9752  30 34     BMI $9788                    ;
+9754  C1 00     CMP ($00,X)                  ;
+9756  38        SEC                          ;
+9757  34        ???
+9758  C1 00     CMP ($00,X)                  ;
+975A  40        RTI                          ;
+975B  34        ???
+975C  C0 40     CPY #$40                     ;
+975E  48        PHA                          ;
+975F  3C        ???
+9760  C2        ???
+9761  00        BRK                          ;
+9762  10 3C     BPL $97A0                    ;
+9764  C3        ???
+9765  00        BRK                          ;
+9766  18        CLC                          ;
+9767  3C        ???
+9768  C4 00     CPY $00                      ;
+976A  20 3C C5  JSR $C53C                    ;
+976D  00        BRK                          ;
+976E  28        PLP                          ;
+976F  3C        ???
+9770  C5 00     CMP $00                      ;
+9772  30 3C     BMI $97B0                    ;
+9774  C5 00     CMP $00                      ;
+9776  38        SEC                          ;
+9777  3C        ???
+9778  C5 00     CMP $00                      ;
+977A  40        RTI                          ;
+977B  3C        ???
+977C  CD 00 48  CMP $4800                    ;
+977F  44        ???
+9780  C6 00     DEC $00                      ;
+9782  10 44     BPL $97C8                    ;
+9784  C7        ???
+9785  00        BRK                          ;
+9786  18        CLC                          ;
+9787  44        ???
+9788  C8        INY                          ;
+9789  00        BRK                          ;
+978A  20 44 C9  JSR $C944                    ;
+978D  00        BRK                          ;
+978E  28        PLP                          ;
+978F  44        ???
+9790  CA        DEX                          ;
+9791  00        BRK                          ;
+9792  30 44     BMI $97D8                    ;
+9794  CB        ???
+9795  00        BRK                          ;
+9796  38        SEC                          ;
+9797  44        ???
+9798  CC 00 40  CPY $4000                    ;
+979B  44        ???
+979C  CD 00 48  CMP $4800                    ;
+979F  4C CD 40  JMP $40CD                    ;
+97A2  10 4C     BPL $97F0                    ;
+97A4  C5 00     CMP $00                      ;
+97A6  18        CLC                          ;
+97A7  4C C5 00  JMP $00C5                    ;
+97AA  20 4C C5  JSR $C54C                    ;
+97AD  00        BRK                          ;
+97AE  28        PLP                          ;
+97AF  4C CE 00  JMP $00CE                    ;
+97B2  30 4C     BMI $9800                    ;
+97B4  CF        ???
+97B5  00        BRK                          ;
+97B6  38        SEC                          ;
+97B7  4C D0 00  JMP $00D0                    ;
+97BA  40        RTI                          ;
+97BB  4C D1 00  JMP $00D1                    ;
+97BE  48        PHA                          ;
+97BF  54        ???
+97C0  C0 80     CPY #$80                     ;
+97C2  10 54     BPL $9818                    ;
+97C4  C1 80     CMP ($80,X)                  ;
+97C6  18        CLC                          ;
+97C7  54        ???
+97C8  C1 80     CMP ($80,X)                  ;
+97CA  20 54 C1  JSR $C154                    ;
+97CD  80        ???
+97CE  28        PLP                          ;
+97CF  54        ???
+97D0  D2        ???
+97D1  00        BRK                          ;
+97D2  30 54     BMI $9828                    ;
+97D4  C1 80     CMP ($80,X)                  ;
+97D6  38        SEC                          ;
+97D7  54        ???
+97D8  C1 80     CMP ($80,X)                  ;
+97DA  40        RTI                          ;
+97DB  54        ???
+97DC  C0 C0     CPY #$C0                     ;
+97DE  48        PHA                          ;
+97DF  74        ???
+97E0  74        ???
+97E1  74        ???
+97E2  74        ???
+97E3  74        ???
+97E4  74        ???
+97E5  74        ???
+97E6  74        ???
+97E7  7C        ???
+97E8  7C        ???
+97E9  7C        ???
+97EA  7C        ???
+97EB  7C        ???
+97EC  7C        ???
+97ED  7C        ???
+97EE  7C        ???
+97EF  84 84     STY $84                      ;
+97F1  84 84     STY $84                      ;
+97F3  84 84     STY $84                      ;
+97F5  84 84     STY $84                      ;
+97F7  8C 8C 8C  STY $8C8C                    ;
+97FA  8C 8C 8C  STY $8C8C                    ;
+97FD  8C 8C 94  STY $948C                    ;

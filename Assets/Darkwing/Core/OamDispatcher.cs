@@ -97,6 +97,18 @@ namespace Darkwing.Core
             System.Array.Copy(oam, offset, _ppu.Oam, 0, 256);
         }
 
+        /// <summary>Model one record's survivorship across a screen change. $C21E only writes the
+        /// Y byte (#$F8) of each record, so tile/attr/X below the walk's $97 cursor keep whatever
+        /// the previous screen composed — for the title they are leftovers of the unported attract
+        /// phase, read here from the original golden. Callers re-prime the HUD value on the screens
+        /// whose verified captures show F8 C0 00 10.</summary>
+        public void SeedHiddenRecord(int entry, byte tile, byte attr, byte x)
+        {
+            _shadow[entry * 4 + 1] = tile;
+            _shadow[entry * 4 + 2] = attr;
+            _shadow[entry * 4 + 3] = x;
+        }
+
         /// <summary>Transcription of bank 2 $9636/$967A: mission-card OAM blit.
         /// 40 groups of 4 bytes at $0200,Y (Y=0,4,…,$9C). The X byte counter is advanced per
         /// branch, not once per row (flat_bank2.txt:4325-4355): world 0 reads $973F,Y and only

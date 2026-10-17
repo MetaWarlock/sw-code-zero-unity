@@ -172,6 +172,10 @@ namespace Darkwing.Core
             WorldRunning = true;
             MapScreen = false;
             MapChooser = false;
+            // Record 0 is below every walk's $97=#$04 start, so its tile/attr/X are the previous
+            // screen's leftovers. Re-prime the value the world HUD captures show (F8 C0 00 10) after
+            // any screen that seeded its own — see <see cref="LoadTitleScreen"/>.
+            Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x10);
             if (Oam != null) Oam.HudActive = true;   // $C887: slot 1 is the HUD block in a world
         }
 
@@ -273,11 +277,13 @@ namespace Darkwing.Core
 
         /// <summary>$C059-$C077: the NMI uploads $0300→$3F00 only when $18 is non-zero, which is
         /// why a fade step's ramp is visible on the NEXT frame (gold_m1_longroute: $0F=$10 is
-        /// stored on f796 while $3F00 still holds the un-faded table).</summary>
+        /// stored on f796 while $3F00 still holds the un-faded table). The 32 bytes go out through
+        /// $2007, so the $3F10/$14/$18/$1C mirrors land on $3F00/$04/$08/$0C — gold_title2 f919
+        /// proves it: $0300[0]=$27 but $3F00[0]=$0F, the sprite table's own first entry.</summary>
         private void NmiPaletteUpload()
         {
             if (_palDirty == 0) return;
-            for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = _palMirror[i];
+            for (int i = 0; i < 32; i++) Ppu.WriteVram(0x3F00 + i, _palMirror[i]);
             _palDirty = 0;
         }
 
@@ -435,6 +441,7 @@ namespace Darkwing.Core
             Player.ScrollX = 0; Player.ScrollY = 0; Player.ScrollYRow = 0;
             Ppu.WriteRegister(0x2001, 0x1E);    // $C158: rendering back on for the map screen
             Objects?.ClearForSectionLoad();
+            Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x10);  // the map captures hold the boot value
             MissionCleared = false;
             WorldRunning = false;
             MapScreen = true;
@@ -514,6 +521,85 @@ namespace Darkwing.Core
             Oam.PublishToOam();
             Oam.RunFrame(FrameParity);                         // $A4F1 STA $97=#$04 + $F89A
             Ppu.Render(Framebuffer);
+        }
+
+        // ==================================================================
+        // The $C792 title screen — bank 7's own loop + the $9500/$9200 bank-2 seeds
+        // ==================================================================
+
+        /// <summary>True while the title owns the frame. The ROM reaches $C792 from its attract
+        /// loop ($C78C <code>LDA $14 / AND #$10 / BEQ $C721</code> — the title only appears on a
+        /// Start press), seeds two sprite slots, then waits for a SECOND Start at $C7C9. The port
+        /// has no attract mode, so its Phase.Title IS the title screen.</summary>
+        public bool TitleScreen;
+
+        /// <summary>$C797-$C7AA: <code>JSR $C970</code> (the resident fade-to-black, $C1BA clear
+        /// and $C95C object-RAM clear), <code>LDA #$02 / JSR $FF55</code> + <code>LDX #$01 /
+        /// JSR $8000</code> (bank-2 task 1 streams the silhouette/stripes picture), then $9500
+        /// (palettes + CHR + the logo slot) and $9200 (the PRESS START slot), then $C158.
+        /// The picture is therefore a bank-2 record stream, not an exported nametable — the
+        /// "title art is missing from the port" note in GAPS was a false premise.</summary>
+        public void LoadTitleScreen()
+        {
+            if (Bank2 == null || Objects == null) return;
+            FillVramPages(0x20, 0x00, 0x00);                   // $C979-$C97F JSR $C1BA(#$20,$00,$00)
+            ClearObjectRamAndScroll();                         // $C982 JSR $C95C
+            RunBank2Task(1);                                   // $C79A-$C7A1 → $80A1 records
+            var t = Sections;
+            if (t != null)
+            {
+                var bg = new byte[16];
+                t.ReadBgPaletteByIndex(0x0D, bg);               // $950E-$9510 JSR $C2F9(#$0D) → $C42D
+                SetPaletteSource(bg, 0);
+            }
+            for (int i = 0; i < 16; i++)                        // $9502-$950C: literal → $0310 AND $0330
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0x953C - 0x8000 + i];
+            SetChrAndUpload(0x9F, 0x99, 0x99);                  // $9513-$951B: $1A/$1B requests + $18
+            TitleSlot(0, 0xA3, 0x0028, 0x009B);                 // $951D-$953A: the logo
+            TitleSlot(1, 0xBC, 0x0000, 0x00DC);                 // $9202-$9213: PRESS START
+            Objects.Slots[1].Flags = 0xA4;                      // $920C-$920E STA $0400,X = #$A4
+            Objects.Slots[1].XVelFrac = 0;                      // $921B-$9221 STA $0500/$0520/$0530,X
+            Objects.Slots[1].XVelInt = 0x01;                    // $9224-$9226 STA $0540,X = #$01
+            // The title walk starts at $97=#$04 and never reaches record 0, and $C21E only writes
+            // its Y byte, so tile/attr/X keep what the previous screen composed. gold_title2 shows
+            // F8 C0 00 64 on every title frame — the attract screen's last composition, which the
+            // port does not have, so the captured value is seeded directly.
+            Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x64);
+            Oam?.SeedHiddenRecord(53, 0xFC, 0x01, 0x84);
+            Oam?.SeedHiddenRecord(54, 0x30, 0x41, 0x86);
+            RenderOn();                                         // $C7AA JSR $C158
+            TitleScreen = true;
+            MapScreen = false;
+            MapChooser = false;
+            EndingScreen = false;
+            WorldRunning = false;
+            if (Oam != null) Oam.HudActive = false;
+        }
+
+        /// <summary>One title frame: $C7AD parks $97 at 4, $C21E publishes the $0200 shadow, the
+        /// bank-5 <code>JSR $8000</code> walks the slots, then $C7BF-$C7C1 integrates slot 1's X
+        /// through $F4FD (PRESS START scrolls right at 1 px/frame, $0541=$01) and $C7C4 re-arms
+        /// its $0400. This is <see cref="StepMapFrame"/> minus the chooser, plus the mover.</summary>
+        private void StepTitleFrame()
+        {
+            FrameParity++;                                      // $8000-$8002
+            Oam.PublishToOam();                                 // $C7B1 JSR $C21E
+            Oam.RunFrame(FrameParity);                          // $C7B9 JSR $8000 (bank 5)
+            EnemyBehaviors.IntegrateXPos(Objects.Slots[1]);      // $C7BF LDX #$01 / JSR $F4FD
+            Objects.Slots[1].Flags = 0x80;                      // $C7C4 LDA #$80 / STA $0401
+            Ppu.Render(Framebuffer);
+        }
+
+        /// <summary>$9500/$9200 write $04D0,X=#$80 and the coordinate pair only — the flags byte
+        /// $0400 is left to the walk's on-screen test (slot 0) or to the seed itself (slot 1).</summary>
+        private void TitleSlot(int index, byte anim, ushort x, ushort y)
+        {
+            var s = Objects.Slots[index];
+            s.Active = true; s.StateLow = 0x80;                 // $9526/$9209 STA $04D0,X = #$80
+            s.Behavior = 0;
+            s.X = x; s.Y = y;                                   // $04F0/$0500, $0510/$0520
+            s.ScreenX = (byte)x; s.ScreenY = (byte)y;
+            EnemyBehaviors.SetAnim(s, anim);                     // $951F/$9202 through $FA6C
         }
 
         /// <summary>
@@ -871,10 +957,12 @@ namespace Darkwing.Core
             {
                 // The title/map/briefing phase is bank 7's own loop ($C792/$C9AC): no player
                 // dispatcher, no bank-6 task. On the city map the frame still belongs to bank 2
-                // ($A448 chooser + the $F89A walk); the title and the GAME OVER card are pure
-                // nametable, so they only take the NMI counter and the renderer.
+                // ($A448 chooser + the $F89A walk); the title runs its own $C7AD walk. The
+                // GAME OVER card is the only pure-nametable screen left, so it just takes the
+                // NMI counter and the renderer.
                 if (EndingScreen && Oam != null) StepEndingFrame();
                 else if (MapScreen && Oam != null) StepMapFrame(pressed);
+                else if (TitleScreen && Oam != null) StepTitleFrame();
                 else
                 {
                     FrameParity++;

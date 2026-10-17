@@ -62,10 +62,11 @@ namespace Darkwing.Core
             // dispatcher, no bank-6 task (the world the host preloaded stays frozen).
             _game.WorldRunning = false;
             _game.MissionCleared = false;
-            // The $C792 title's own nametable is not exported yet (GAPS), so the screen
-            // stays blank — rendering disabled, exactly the $C158 black state — until
-            // LoadMapScreen re-enables it with the real map picture.
-            _game.Ppu.WriteRegister(0x2001, 0x00);
+            // The $C792 title is bank 7's own seed: bank-2 task 1 streams the silhouette/stripes
+            // picture and $9500/$9200 stage the palettes, CHR and the logo/PRESS START sprite slots.
+            // LoadTitleScreen does exactly that, so the boot screen is the real title, not a black
+            // frame waiting for LoadMapScreen.
+            _game.LoadTitleScreen();
         }
 
         /// <summary>Which mission the bubble under the cursor starts right now ($38 rules).</summary>
@@ -105,6 +106,7 @@ namespace Darkwing.Core
                 case Phase.Title:
                     if ((pressed & 0x10) != 0)      // $C7AD waits for Start → $C7CF (game_flow.md §"TITLE")
                     {
+                        _game.TitleScreen = false;   // $C7CF leaves $C792's loop; the title slots stop walking
                         _game.PlaySfx(DarkwingGame.SfxPause);
                         SetPhase(Phase.Intro);                    // $C5F7: $31=$07 then the dialog
                         World.CurrentWorld = 0x07;                // $C5FC LDA #$07 / STA $31

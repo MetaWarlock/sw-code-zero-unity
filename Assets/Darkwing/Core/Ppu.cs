@@ -78,8 +78,15 @@ namespace Darkwing.Core
             else
             {
                 int i = addr & 0x1F;
-                if ((i & 0x13) == 0x10) i &= 0x0F; // mirrors $3F10/14/18/1C -> $3F00/04/08/0C
-                PaletteRam[i] = (byte)(value & 0x3F);
+                // $3F10/$14/$18/$1C are the SAME cells as $3F00/$04/$08/$0C, and the other
+                // $3F11-$3F1F addresses are writable cells of their own, so a read-back of the
+                // whole $3F00-$3F1F window shows the sprite table everywhere except the four
+                // aliased slots, which hold whatever the last write to either name stored
+                // (gold_title2 f919: $3F10..1F = 0f 0f 30 27 0f 0f 13 24 …).
+                int cell = (i & 0x13) == 0x10 ? i & 0x0F : i;
+                byte v = (byte)(value & 0x3F);
+                PaletteRam[cell] = v;
+                if (cell < 0x10 && (cell & 3) == 0) PaletteRam[cell | 0x10] = v;
             }
         }
 
