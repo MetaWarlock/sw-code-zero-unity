@@ -3761,57 +3761,32 @@ namespace Darkwing.Core
 
         // ---- 2.1 Quackerjack (mission 0) ----
 
-        /// <summary>$9736 Quackerjack core: init → wait |dx| >= $60 (HP=8) →
-        /// teleport to the player's X, throw ball children on the $0490 cadence,
-        /// SFX $2A every 4th frame, anims $A5/$A4 by $0490 bit0.</summary>
+        /// <summary>$9736 Quackerjack core (bank 1): the init pass writes $0530=#$00 $0540=#$01
+        /// $0480=#$2D $0490=#$78 and INC $04D0,X; every later frame is the shared $0490 countdown,
+        /// which RTS-es while $0490 != 0. Only at $0490 == 0 does the core act: phase bit1 goes to
+        /// $9789, otherwise $F928 (|player-core|) below #$0C throws the ball child ($9769/$97B0) and
+        /// sets phase bit1, otherwise the core walks by $0580&1 through $F4FD/$F51B and $F808.</summary>
         private static void QuackerjackCore(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            EnemyBehaviors.HitFlashShared(ctx, s);
-            switch (s.StateLow & 0x0F)
+            // $9736 LDA $04D0,X / AND #$0F / BNE $9752
+            if ((s.StateLow & 0x0F) == 0)
             {
-                case 0: // $967E-style init (doc §2.1)
-                    s.YVelFrac = 0; s.XVelFrac = 0;
-                    s.YVelInt = 1; s.XVelInt = 1;
-                    s.T480 = 8; s.T490 = 0x0A;
-                    if ((EnemyBehaviors.SectorToPlayer(ctx, s) & 8) != 0) s.T4A0++;
-                    s.StateLow = 1;
-                    break;
-                case 1: // $96A6
-                    if (EnemyBehaviors.DistX(ctx, s) >= 0x60)
-                    {
-                        s.Health = 8;
-                        s.StateLow = 2;
-                    }
-                    break;
-                case 2: // $96B6 teleport + throw
-                    s.X = ctx.Player.X;
-                    s.T490 = 0x0A;
-                    s.Health = 8;
-                    s.StateLow = 3;
-                    s.BehaviorParam = 0x42;
-                    EnemyBehaviors.SetAnim(s, 0xA8);
-                    EnemyBehaviors.FacePlayerApply(ctx, s);
-                    s.T4A0 = 2;
-                    break;
-                case 3: // throw cadence ($97B0)
-                    if (s.T490 == 0)
-                    {
-                        int y = ctx.FindFreeSlot();
-                        if (y >= 0)
-                        {
-                            var t = ctx.Objects.Slots[y];
-                            t.X = s.X; t.Y = s.Y;
-                            EnemyBehaviors.SpawnInit(ctx, y, 0x47);
-                            t.Behavior = 0x52;
-                            t.BehaviorParam = 0x0A;
-                        }
-                        s.T490 = 0x0A;
-                    }
-                    if (s.T490 % 4 == 0) ctx.Sfx?.Invoke(0x2A);
-                    s.AnimNumber = (byte)((s.T490 & 1) != 0 ? 0xA4 : 0xA5);
-                    s.T490--;
-                    break;
+                s.XVelFrac = 0x00;   // $973D STA $0530,X (A is 0 here)
+                s.XVelInt = 0x01;    // $9740 LDA #$01 / $9742 STA $0540,X
+                s.T480 = 0x2D;       // $9745 LDA #$2D / $9747 STA $0480,X
+                s.T490 = 0x78;       // $974A LDA #$78 / $974C STA $0490,X
+                s.StateLow++;        // $974F INC $04D0,X
             }
+            // $9752 LDA $0490,X / BEQ $975B / DEC $0490,X / RTS
+            if (s.T490 != 0) { s.T490--; return; }
+            // $975B AND #$02 / BNE $9789: phase 2 and the $9769/$97B0 throw are not ported (G84).
+            // tmp_boss_pilot1 never reaches them - $04D0 stays #$81 and $F928 stays >= #$0C.
+            if ((s.StateLow & 0x02) != 0 || EnemyBehaviors.DistX(ctx, s) < 0x0C) return;
+            // $9775 LDA $0580,X / AND #$01: $F4FD adds ($0540.$0530), $F51B subtracts it.
+            if ((s.Direction & 1) != 0) EnemyBehaviors.IntegrateXPos(s);
+            else EnemyBehaviors.IntegrateXNeg(s);
+            // $9785 JSR $F808 (edge bookkeeping) is unported (G84); $0580 stays #$02 across the
+            // whole pilot window, so it is provably inert in this capture.
         }
 
         /// <summary>$9836 Quackerjack ball: destroyable (HP 0); bounces with RNG
@@ -3823,8 +3798,8 @@ namespace Darkwing.Core
             // ($984A JSR $B454 zeroes the $0600 collision window, which the port probes directly.)
             if ((s.StateLow & 0x0F) == 0)
             {
-                s.XVelInt = 0x80;   // $983D LDA #$80 / $983F STA $0530,X
-                s.XVelFrac = 0x01;  // $9842 LDA #$01 / $9844 STA $0540,X
+                s.XVelFrac = 0x80;   // $983D LDA #$80 / $983F STA $0530,X  (frac: $F51B reads $0540.$0530)
+                s.XVelInt = 0x01;    // $9842 LDA #$01 / $9844 STA $0540,X  (integer) -> 1.502 px/frame
                 s.StateLow++;       // $9847 INC $04D0,X
                 return;             // $984D RTS
             }
