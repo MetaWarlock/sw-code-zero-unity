@@ -152,6 +152,15 @@ public static class PhysCompare
             p.WeaponActive = ram0[0x53];
             p.ActiveGasEnergyHi = ram0[0x5BE];
             p.ActiveGasEnergyLo = ram0[0x5C0];
+            // $3B/$EE/$ED are the boss framework's own globals and a mid-fight seed has to carry
+            // them: while $3B counts, the ROM holds every boss body at $F880/$F869, so without it
+            // the port moves the boss through frames the original freezes (measured on
+            // tmp_boss_pilot1 f29: ball $051E port C3 vs ROM D0). $3B is the same byte the player
+            // state machine reads at $D580, and the port keeps that view in IntroHoldFlag.
+            Darkwing.Core.BossBehaviors.DefeatTimer = ram0[0x3B];
+            Darkwing.Core.BossBehaviors.DamageAccum = ram0[0xEE];
+            Darkwing.Core.BossBehaviors.InvulnTimer = ram0[0xED];
+            p.IntroHoldFlag = ram0[0x3B];
             game.FrameParity = ram0[0x95];
             for (int s = 0; s < 16; s++)
             {
@@ -1596,6 +1605,25 @@ public static class PhysCompare
     /// artifact is 32 bytes/frame written by the same endFrame callback as ram_frames.bin,
     /// so the harness frame index maps identically.
     /// </summary>
+    /// <summary>
+    /// G77 — the first ROM golden that contains a live boss. Captured with
+    /// `probe_run.py --load-state reference/m1_standing.mss --patch 005B=02 --patch 006D=02`
+    /// (no pad input at all): the $CA6E door poll takes id 2 into the Quackerjack arena, cell
+    /// $22=$20 of world 0, and the boss core is slot 15 (beh $50, anim $92, $05A0=$80) with the
+    /// ball in slot 14 (beh $51) and children (beh $52) appearing from f~300.
+    /// Seeded on f27, the first frame in which the boss slot is active.
+    /// </summary>
+    public static string BossFight() => BossFightSeed(27);
+
+    public static string BossFightSeed(int seedFrame)
+    {
+        byte[] ram = File.ReadAllBytes(
+            "D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/tmp_boss_pilot1/ram_frames.bin");
+        return Compare($"boss_pilot1_qjack", ram.Length / 2048, f => 0,
+            seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true,
+            goldenDir: "tmp_boss_pilot1", trace: true);
+    }
+
     public static string PaletteDeath() => PaletteWindow(786, 860);
 
     public static string PaletteWindow(int lo, int hi, string golden = "m1_longroute", bool runPort = false)
