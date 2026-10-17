@@ -752,6 +752,11 @@ public static class PhysCompare
     public static string M3RouteTrace() => Route("m3_route", 2, trace: true);
     public static string M4RouteTrace() => Route("m4_route", 3, trace: true);
 
+    /// <summary>Shift 56.1: m6_route is the only route whose RESULT diverges inside the run
+    /// (f330) and has no trace wrapper, so the f325-f335 window is unreadable. Same shape as
+    /// M4RouteTrace; the trace is written to Temp/m6_route_trace.txt by Route(trace: true).</summary>
+    public static string M6RouteTrace() => Route("m6_route", 5, trace: true);
+
     /// <summary>G51: `gold_m6_route` diverges on the SECOND frame, so the diff has to start at the
     /// seed. Full per-frame lines plus the ROM/port slot lists for f0…f12 → Temp/m6_route_trace.txt.
     /// Known so far: the seed is already `$50=$09` with `$10=$40` (the port gives `$10=$01`) and slot
