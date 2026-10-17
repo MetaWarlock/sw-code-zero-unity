@@ -361,13 +361,15 @@ namespace Darkwing.Core
         }
 
         /// <summary>$DB99-$DBB1: hanging on a hook clears object slots 15..2
-        /// (slot 1 is left alive, slot 0 is the player).</summary>
+        /// (slot 1 is left alive, slot 0 is the player). $04D0 is written as a whole byte,
+        /// so the low state nibble is cleared with the active bit.</summary>
         public void ClearForHookRide()
         {
             for (int i = SlotCount - 1; i >= 2; i--)
             {
                 var s = Slots[i];
                 s.Active = false;   // $04D0
+                s.StateLow = 0;     // $04D0 low nibble
                 s.Flags = 0;        // $0400
                 s.BehaviorParam = 0; // $0570
                 s.HitFlash = 0;     // $04C0
@@ -377,7 +379,8 @@ namespace Darkwing.Core
 
         /// <summary>$C235 (JSR'd by $C248 from the section loader and $DE24): writes
         /// $0400/$04D0=0 and $0590=$FF for slots 15..1. DEX/BNE exits at X=0, so the
-        /// player slot is never cleared — $E3F5/$E3FA then re-seeds it explicitly.</summary>
+        /// player slot is never cleared — $E3F5/$E3FA then re-seeds it explicitly.
+        /// $04D0 is a whole-byte write, so the low state nibble goes to 0 as well.</summary>
         public void ClearForSectionLoad()
         {
             for (int i = SlotCount - 1; i >= 1; i--)
@@ -385,6 +388,7 @@ namespace Darkwing.Core
                 var s = Slots[i];
                 s.Flags = 0;           // $0400
                 s.Active = false;      // $04D0
+                s.StateLow = 0;        // $04D0 low nibble
                 s.PlacementIndex = 0xFF; // $0590
             }
         }
