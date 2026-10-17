@@ -3789,14 +3789,57 @@ namespace Darkwing.Core
             }
             // $9752 LDA $0490,X / BEQ $975B / DEC $0490,X / RTS
             if (s.T490 != 0) { s.T490--; return; }
-            // $975B AND #$02 / BNE $9789: phase 2 and the $9769/$97B0 throw are not ported (G84).
-            // tmp_boss_pilot1 never reaches them - $04D0 stays #$81 and $F928 stays >= #$0C.
-            if ((s.StateLow & 0x02) != 0 || EnemyBehaviors.DistX(ctx, s) < 0x0C) return;
+            // $975B LDA $04D0,X / AND #$02 / BNE $9789
+            if ((s.StateLow & 0x02) != 0) { CoreThrowPhase(s, ctx); return; }
+            // $9762 JSR $F928 / CMP #$0C / BCS $9775: within 12 px of the player the core throws.
+            // Measured in tmp_boss_pilot1: the throw fires on f242 and the ROM activates slot 0D.
+            if (EnemyBehaviors.DistX(ctx, s) < 0x0C)
+            {
+                EnemyBehaviors.SetAnim(s, 0x93);   // $9769 LDA #$93 / $976B JSR $FA6C
+                ThrowBallChild(ctx, s);            // $976E JSR $97B0
+                s.StateLow++;                      // $9771 INC $04D0,X → phase bit1
+                return;                            // $9774 RTS
+            }
             // $9775 LDA $0580,X / AND #$01: $F4FD adds ($0540.$0530), $F51B subtracts it.
             if ((s.Direction & 1) != 0) EnemyBehaviors.IntegrateXPos(s);
             else EnemyBehaviors.IntegrateXNeg(s);
-            // $9785 JSR $F808 (edge bookkeeping) is unported (G84); $0580 stays #$02 across the
-            // whole pilot window, so it is provably inert in this capture.
+            // $9785 JSR $F808: bit6 of $0400,X takes bit0 of $0580,X (the incoming carry never
+            // reaches bit6 through AND #$40, so a single mask/merge reproduces it exactly).
+            s.Flags = (byte)((s.Flags & ~0x40) | ((s.Direction & 1) << 6));
+        }
+
+        /// <summary>$9789 core phase 2: anim $93 with timer #$08 converts to $92, then $0480 counts
+        /// a #$2E-frame cadence. On reaching 0 the core drops back to phase 1 ($97A6 DEC $04D0,X)
+        /// and $F81D re-faces the player; $97AC then runs for every path, including that one, so
+        /// the freshly written #$2E is decremented in the same frame.</summary>
+        private static void CoreThrowPhase(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if (s.AnimNumber == 0x93 && s.AnimTimer == 0x08)   // $9789-$9795
+                EnemyBehaviors.SetAnim(s, 0x92);               // $9797/$9799 JSR $FA6C
+            if (s.T480 == 0)                                   // $979C/$979F BNE $97AC
+            {
+                s.T480 = 0x2E;                                 // $97A1/$97A3
+                s.StateLow--;                                  // $97A6 DEC $04D0,X
+                EnemyBehaviors.FacePlayerApply(ctx, s);                  // $97A9 JSR $F81D
+            }
+            s.T480--;                                          // $97AC DEC $0480,X
+        }
+
+        /// <summary>$97B0 the core's throw service: a free slot ($FA4C, carry = none → $97E5 RTS)
+        /// takes the core's $0580/$04F0/$0500, its row minus $0C in the low byte only ($0520 is
+        /// copied unchanged), anim $47 through $FA84 — which also writes $04D0=#$80 and
+        /// $0400=#$90 — behaviour $52 and $0570=#$0A.</summary>
+        private static void ThrowBallChild(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            int y = EnemyBehaviors.FindFreeSlot(ctx);              // $97B0 JSR $FA4C / $97B3 BCS $97E5
+            if (y < 0) return;
+            var t = ctx.Objects.Slots[y];
+            t.Direction = s.Direction;                             // $97B5/$97B8
+            t.X = s.X;                                             // $97BB..$97C4
+            t.Y = (ushort)((s.Y & 0xFF00) | (byte)((byte)s.Y - 0x0C)); // $97C7-$97CD, 8-bit only
+            EnemyBehaviors.SpawnInit(ctx, y, 0x47);                // $97D6/$97D8 JSR $FA84
+            t.Behavior = 0x52;                                     // $97DB/$97DD
+            t.BehaviorParam = 0x0A;                                // $97E0/$97E2
         }
 
         /// <summary>$9836 Quackerjack ball: destroyable (HP 0); bounces with RNG
@@ -3908,18 +3951,34 @@ namespace Darkwing.Core
             s.StateLow--;                                                // $9928 DEC $04D0,X
         }
 
-        /// <summary>$97E6 Quackerjack ball child: pops from the ball and falls.</summary>
+        /// <summary>$97E6 Quackerjack ball child: on its first frame it takes the arc velocity
+        /// ($0560.$0550 = $01.2E rising, $0540.$0530 = $01.00), then walks horizontally by
+        /// $0580&1 through $F4FD/$F51B while $F5C9 integrates and decays the arc. Once the integer
+        /// velocity turns negative and equals $FC it flips to phase bit1, which routes every later
+        /// frame to $F539.</summary>
         private static void QuackerjackChild(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.StateLow == 0)
+            if ((s.StateLow & 0x0F) == 0)                        // $97E6-$97EB
             {
-                s.StateLow = 1;
-                s.YVelFrac = 0; s.YVelInt = 0;
-                s.T480 = 0x30;
+                s.XVelFrac = 0x00;                               // $97ED (A = 0 from the AND #$0F)
+                s.YVelFrac = 0x2E;                               // $97F0/$97F2
+                s.YVelInt = 0x01;                                // $97F5/$97F7
+                s.XVelInt = 0x01;                                // $97FA/$97FC
+                s.StateLow++;                                    // $97FF INC $04D0,X, falls through
             }
-            EnemyBehaviors.ApplyGravity(s, ctx.Player.GravityFrac);
-            EnemyBehaviors.IntegrateYSub(s);
-            if (s.T480-- == 0) EnemyBehaviors.KillSlot(s);
+            if ((s.StateLow & 0x02) != 0)                        // $9802/$9807 BNE $9833
+            {
+                EnemyBehaviors.IntegrateYRideSlot(s);            // $9833 JMP $F539
+                return;
+            }
+            if ((s.Direction & 1) != 0) EnemyBehaviors.IntegrateXPos(s); // $9809-$9810
+            else EnemyBehaviors.IntegrateXNeg(s);                        // $9816 JSR $F51B
+            EnemyBehaviors.ApplyYVelocityDecay(s, ctx.Player.GravityFrac); // $9819 JSR $F5C9
+            if (s.YVelInt >= 0) return;                          // $981C BPL $9832
+            if ((byte)s.YVelInt != 0xFC) return;                 // $9821 CMP #$FC / BNE $9832
+            s.StateLow++;                                        // $9825 INC $04D0,X
+            s.YVelFrac = 0x00;                                   // $9828/$982A
+            s.YVelInt = 0x02;                                    // $982D/$982F
         }
 
         // ---- 2.2 Wolfduck (mission 1) ----
