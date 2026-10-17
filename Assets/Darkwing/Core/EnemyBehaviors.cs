@@ -3981,82 +3981,221 @@ namespace Darkwing.Core
             s.YVelInt = 0x02;                                    // $982D/$982F
         }
 
-        // ---- 2.2 Wolfduck (mission 1) ----
+        // ---- 2.2 Wolfduck (mission 1 arena + boss) ----
 
+        /// <summary>$9A1F / $9A2F: the frame-$0D RNG picks throw ($82, anim $68) or
+        /// charge ($84, anim $6C) with the same $82/$84 ↔ $68/$6C pairing.</summary>
+        static readonly byte[] WolfNextState =   // $9A1F
+        {
+            0x82,0x82,0x84,0x84,0x82,0x82,0x84,0x84,
+            0x82,0x82,0x84,0x84,0x82,0x82,0x84,0x84
+        };
+        static readonly byte[] WolfNextAnim =    // $9A2F
+        {
+            0x68,0x68,0x6C,0x6C,0x68,0x68,0x6C,0x6C,
+            0x68,0x68,0x6C,0x6C,0x68,0x68,0x6C,0x6C
+        };
+
+        /// <summary>$9D4C Wolfduck controller: init ($0530=0 $0540=1 $0480=$B4 $0490=$78),
+        /// then $0490 freezes the slot for 120 frames; state 1 slides the LOW byte of X down
+        /// by $0540.$0530 (only $04F0 is written, $0500 never changes) until Xlo = $28,
+        /// state 2 holds for $0480 and steps back to state 1 on the $B5 re-arm.</summary>
         private static void WolfduckController(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.T480 == 0)
+            if ((s.StateLow & 0x0F) == 0)                              // $9D4E BNE $9D68
             {
-                s.T480 = 0x14;
-                s.T490 = 0x78;
-                s.StateLow = 1;
+                s.XVelFrac = 0x00; s.XVelInt = 0x01;                   // $9D53-$9D58
+                s.T480 = 0xB4; s.T490 = 0x78;                          // $9D5B-$9D62
+                s.StateLow++;                                          // $9D65 INC $04D0,X
             }
-            if (s.T480-- == 0) s.T480 = 0xB5; // re-arm pacing countdown
+            if (s.T490 != 0) { s.T490--; return; }                     // $9D68-$9D70
+            if ((s.StateLow & 0x02) == 0)                              // $9D71-$9D76
+            {
+                int f = s.XFrac - s.XVelFrac;                          // $9D78-$9D7F (SEC/SBC)
+                s.XFrac = (byte)f;
+                s.X = (ushort)((s.X & 0xFF00) | (byte)(s.X - s.XVelInt - (f < 0 ? 1 : 0))); // $9D82-$9D88
+                if ((s.X & 0xFF) == 0x28) s.StateLow++;                // $9D8B-$9D92
+                return;
+            }
+            if (s.T480 == 0) { s.T480 = 0xB5; s.StateLow--; }          // $9D96-$9DA0
+            s.T480--;                                                  // $9DA3
         }
 
-        /// <summary>$9971 Wolfduck: init ($0530=$E6 $0540=3 $0550=$8E $0560=6,
-        /// $0480=$14); walks (speed 3) + jumps ($F2D7 vel $56); frame $0D → screen
-        /// trigger $1A=$8A; frame 8 → RNG mask $0F picks throw ($82)/charge ($84)
-        /// with anim $6C/$68; $04A0=$3C between phases.</summary>
+        /// <summary>$9971 Wolfduck body: $04D0&$0F dispatches to $998E/$99AE/$9A3F/$9AA2/$9B4C.
+        /// States are entered by `INC $04D0,X` (init→1, throw→fly) or by storing $81/$82/$84,
+        /// so the phase lives in the low nibble and bit7 marks the slot active.</summary>
         private static void Wolfduck(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            EnemyBehaviors.HitFlashShared(ctx, s);
-            if (s.StateLow == 0)
+            switch (s.StateLow & 0x0F)                                 // $9971-$9981
             {
-                s.XVelFrac = 0xE6; s.XVelInt = 3;
-                s.YVelFrac = 0x8E; s.YVelInt = 6;
-                s.T480 = 0x14;
-                s.StateLow = 1;
+                case 0: WolfduckInit(s, ctx); break;                   // $998E
+                case 1: WolfduckWait(s, ctx); break;                   // $99AE
+                case 2: WolfduckThrow(s, ctx); break;                  // $9A3F
+                case 3: WolfduckFly(s, ctx); break;                    // $9AA2
+                case 4: WolfduckCharge(s, ctx); break;                 // $9B4C
+            }
+        }
+
+        /// <summary>$998E init: speed 3.$E6, hop velocity 6.$8E up, $0480=$14, state→1.
+        /// The $99AA tail JSR $B454 (clears the $0600 collision window) is not ported here.</summary>
+        private static void WolfduckInit(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            s.XVelFrac = 0xE6; s.XVelInt = 3;
+            s.YVelFrac = 0x8E; s.YVelInt = 6;
+            s.T480 = 0x14;
+            s.StateLow++;                                              // $99A7
+        }
+
+        /// <summary>$99AE state 1 — stands still and waits. The $3B death cinematic is taken
+        /// by BossBehaviors.Dispatch before the handler runs. The helper duck (slot 15) parks
+        /// at Xlo=$28; while its low byte is under 4 the body is handed the $67 wind-up anim.</summary>
+        private static void WolfduckWait(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            HitFlash(ctx, s);                                          // $B36A
+            ConvertWeakProjectile(ctx);                                // $B4BA
+            if (s.Behavior == 0x4F) return;                            // $99C1
+            if (s.AnimNumber != 0x67 && (ctx.Objects.Slots[15].X & 0xFF) < 4)
+            {
+                EnemyBehaviors.SetAnim(s, 0x67);                       // $99D3
+                ctx.Sfx?.Invoke(0x35);                                 // $99DA
                 return;
             }
-            if (s.T4A0 != 0) { s.T4A0--; return; }
-            if (s.T4B0 >= 4) // wall turn → throw cue
+            if (s.AnimFrame == 8)                                      // $99E1
             {
-                EnemyBehaviors.SetAnim(s, 0x67);
-                ctx.Sfx?.Invoke(0x35);
-                s.T4B0 = 0;
-                s.StateLow = 2;
+                ctx.Player.PendingScreenEffect = 0x8A;                 // $1A = $8A
                 return;
             }
-            if (s.StateLow == 2)
+            if (s.AnimFrame != 0x0D) return;                           // $99EA
+            int i = EnemyBehaviors.RngE7PlusE6Wrap() & 0x0F;           // $99EE-$99F6
+            s.StateLow = WolfNextState[i];                             // $99F7
+            EnemyBehaviors.SetAnim(s, WolfNextAnim[i]);                // $99FD
+            if (s.AnimNumber != 0x6C) return;                          // $9A08
+            s.XVelFrac = 0xE6; s.XVelInt = 3;                          // $9A0A-$9A1B
+            s.YVelFrac = 0x8E; s.YVelInt = 6;
+        }
+
+        /// <summary>$9A3F state 2 (anim $68): the runner child leaves at frame 1 / timer 2,
+        /// the anim becomes $6B at frame 2 / timer 8, and while it is $6B the slot freezes on
+        /// frame 1 counting $0480 from $15; the re-arm with the helper still parked at $28
+        /// advances $82→$83 and cues the $67 wind-up.</summary>
+        private static void WolfduckThrow(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            HitFlash(ctx, s);                                          // $9A3F
+            ConvertWeakProjectile(ctx);                                // $9A42
+            if (s.Behavior == 0x4F) return;                            // $9A48
+            if (s.AnimNumber == 0x6B)                                  // $9A4F
             {
-                if (s.AnimFrame == 0x0D) ctx.Player.PendingScreenEffect = 0x8A; // $1A = $8A
-                if (s.AnimFrame == 8 && s.AnimTimer != 0)
+                s.AnimFrame = 1; s.AnimTimer = 0;                     // $9A7B-$9A82
+                if (s.T480 == 0)
                 {
-                    int i = EnemyBehaviors.RngE7PlusE6Wrap() & 0x0F; // E6 += E7 mask $0F
-                    s.StateLow = (byte)(new byte[] { 0x82,0x82,0x84,0x84,0x82,0x82,0x84,0x84,
-                                                      0x82,0x82,0x84,0x84,0x82,0x82,0x84,0x84 }[i]);
-                    EnemyBehaviors.SetAnim(s, s.StateLow == 0x82 ? (byte)0x6C : (byte)0x68);
-                    s.T4A0 = 0x3C;
-                    return;
+                    s.T480 = 0x15;                                     // $9A8A
+                    if ((ctx.Objects.Slots[15].X & 0xFF) == 0x28)
+                    {
+                        s.StateLow++;                                  // $9A96 $82→$83
+                        EnemyBehaviors.SetAnim(s, 0x67);               // $9A99
+                    }
+                }
+                s.T480--;                                              // $9A9E
+                return;
+            }
+            if (s.AnimFrame == 1 && s.AnimTimer == 2)                  // $9A53-$9A5F
+            {
+                EnemyBehaviors.FacePlayerApply(ctx, s);                // $9A61
+                WolfduckSpawnChild(ctx, s);                            // $9A64
+            }
+            if (s.AnimFrame == 2 && s.AnimTimer == 8)                  // $9A67-$9A73
+                EnemyBehaviors.SetAnim(s, 0x6B);                       // $9A75
+        }
+
+        /// <summary>$9AA2 state 3: $67 frame $0D hands the slot the $6A flight anim with
+        /// speed 2.$80 and the $F5FC cut velocity, then every frame runs $F2D7 (fall/land)
+        /// plus the slide. Facing is bit0 of $0490 here, not $0580; the arena edges are
+        /// Xlo $E8/$18 and the turn hands the slot back to state 1 with anim $6B.</summary>
+        private static void WolfduckFly(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            HitFlash(ctx, s);                                          // $9AA2
+            if (s.Behavior == 0x4F) return;                            // $9AAA
+            TakeProjectileHit(ctx, s);                                 // $9AAC (carry unused here)
+            if (s.AnimNumber == 0x67)                                  // $9AB2
+            {
+                if (s.AnimFrame != 0x0D) return;                       // $9ABB
+                ctx.Player.PendingScreenEffect = 0x8B;                 // $1A = $8B
+                EnemyBehaviors.SetAnim(s, 0x6A);                       // $9AC1
+                s.XVelFrac = 0x80; s.XVelInt = 2;                      // $9AC6-$9ACD
+                EnemyBehaviors.CutVelocity(s);                         // $9AD0 = $F5FC
+                return;
+            }
+            bool landed = ctx.FallLand(s, 0x56, 2);                    // $9AD8, kept by PHP at $9ADB
+            if ((s.T490 & 1) != 0)                                     // $9AE1
+            {
+                ctx.WalkRight(s, 0, 2);                                // $9AE7 $F200
+                if ((s.X & 0xFF) >= 0xE8)                              // $9AED BCC $9B0D
+                {
+                    s.T490 = (byte)(s.T490 ^ 1);                       // $9AF1-$9AF6
+                    s.Flags &= 0xBF;                                   // $9AF9 $F2A6
+                    if ((ctx.Objects.Slots[15].X & 0xFF) != 0x28)
+                    {
+                        EnemyBehaviors.SetAnim(s, 0x6B);               // $9B03
+                        s.StateLow = 0x81;                             // $9B0A
+                    }
                 }
             }
-            if (s.StateLow == 0x82) // throw: spawn a runner child
+            else
             {
-                int y = ctx.FindFreeSlot();
-                if (y >= 0)
+                ctx.WalkLeft(s, 3, 2);                                 // $9B12 $F254
+                if ((s.X & 0xFF) < 0x18)                               // $9B1A BCS $9B38
                 {
-                    var t = ctx.Objects.Slots[y];
-                    t.X = s.X; t.Y = s.Y;
-                    EnemyBehaviors.SpawnInit(ctx, y, 0x6D);
-                    t.Behavior = 0x55;
+                    s.Flags |= 0x40;                                   // $9B1C $F24B
+                    s.T490 = (byte)(s.T490 ^ 1);                       // $9B1F-$9B24
+                    if ((ctx.Objects.Slots[15].X & 0xFF) != 0x28)
+                    {
+                        EnemyBehaviors.SetAnim(s, 0x6B);               // $9B2E
+                        s.StateLow = 0x81;                             // $9B35
+                    }
                 }
-                ctx.Sfx?.Invoke(0x2B);
-                s.StateLow = 1;
-                return;
             }
-            if (s.StateLow == 0x84) // charge
-            {
-                if ((s.Direction & 1) != 0) ctx.WalkRight(s, 0, 2); else ctx.WalkLeft(s, 3, 2);
-                if (ctx.ProbeResult >= 3) s.T4B0++;
-                return;
-            }
-            // default walk + jump cycle
-            if ((s.Direction & 1) != 0) ctx.WalkRight(s, 0, 2); else ctx.WalkLeft(s, 3, 2);
-            if (ctx.ProbeResult >= 3) s.T4B0++;
-            if (s.T480 != 0) { s.T480--; return; }
-            bool landed = ctx.FallLand(s, 0x56, 2);
-            if (landed) { s.YVelInt = 0x56; s.T480 = 0x14; }
+            if (!landed || ctx.ProbeResult < 3) return;                // $9B39 PLP / $9B3B
+            s.YVelFrac = 0x00; s.YVelInt = 4;                           // $9B41-$9B48 bounce
+        }
+
+        /// <summary>$9B4C state 4 (charge): slides by $F4FD/$F51B on bit0 of $0490, runs
+        /// $F2D7 for gravity, and on a type>=$03 probe flips round onto anim $68 and state
+        /// $82 — i.e. the charge always ends as a throw.</summary>
+        private static void WolfduckCharge(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            HitFlash(ctx, s);                                          // $9B4C
+            ConvertWeakProjectile(ctx);                                // $9B4F
+            if (s.Behavior == 0x4F) return;                            // $9B57
+            if (s.AnimNumber == 0x68) return;                          // $9B5E
+            if ((s.T490 & 1) != 0) EnemyBehaviors.IntegrateXPos(s);    // $9B67 $F4FD
+            else EnemyBehaviors.IntegrateXNeg(s);                      // $9B6D $F51B
+            ctx.FallLand(s, 0x56, 2);                                  // $9B74
+            if (ctx.ProbeResult < 3) return;                           // $9B7B
+            s.T490 = (byte)(s.T490 ^ 1);                               // $9B7D-$9B82
+            EnemyBehaviors.SetAnim(s, 0x68);                           // $9B85
+            EnemyBehaviors.FacePlayerApply(ctx, s);                    // $9B8A
+            s.StateLow = 0x82;                                         // $9B8D
+        }
+
+        /// <summary>$9B93 throw a runner child into a free slot ($FA4C): facing copied from
+        /// $0580, X = parent ± $0026 chosen by bit1 of $0580, Ylo pinned to $C8 with the
+        /// parent's Yhi, anim $6E via $FA84 plus flags bit5, behavior $55 and velocity 3.$00.</summary>
+        private static void WolfduckSpawnChild(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            int y = ctx.FindFreeSlot();                                // $FA4C
+            if (y < 0) return;                                         // $9B96 BCS
+            var t = ctx.Objects.Slots[y];
+            t.Direction = s.Direction;                                 // $9B9A-$9B9D
+            int dx = (s.Direction & 0x02) == 0 ? 0x26 : -0x26;         // $9BE8/$9BE9
+            t.X = (ushort)(s.X + dx);                                  // $9BA3-$9BB7
+            t.Y = (ushort)((s.Y & 0xFF00) | 0xC8);                      // $9BB9-$9BC2
+            EnemyBehaviors.SpawnInit(ctx, y, 0x6E);                    // $9BC5
+            t.Flags |= 0x20;                                           // $9BCA-$9BCF
+            t.Behavior = 0x55;                                         // $9BD2
+            t.BehaviorParam = 0x00;                                    // $9BD7
+            t.YVelFrac = 0x00;                                         // $9BDC
+            t.Health = 0x00;                                           // $9BDF
+            t.YVelInt = 3;                                             // $9BE4
         }
 
         /// <summary>$9BEC Wolfduck runner child: runs, hops $F2D7 vel $56, throws at

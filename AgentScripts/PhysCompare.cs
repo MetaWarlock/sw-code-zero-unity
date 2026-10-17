@@ -1643,10 +1643,15 @@ public static class PhysCompare
     {
         byte[] ram = File.ReadAllBytes(
             "D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/tmp_boss_pilot14_wolf_defeat/ram_frames.bin");
-        return Compare("boss_pilot14_wolf_defeat", ram.Length / 2048,
-            f => (f % 20 >= 15 && f % 20 <= 18) ? (byte)0x40 : (byte)0x00,
-            seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true, world: 1,
-            goldenDir: "tmp_boss_pilot14_wolf_defeat", trace: true, residentFade: false);
+        _enemyDumpLo = 34; _enemyDumpHi = 44;
+        try
+        {
+            return Compare("boss_pilot14_wolf_defeat", ram.Length / 2048,
+                f => (f % 20 >= 15 && f % 20 <= 18) ? (byte)0x40 : (byte)0x00,
+                seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true, world: 1,
+                goldenDir: "tmp_boss_pilot14_wolf_defeat", trace: true, residentFade: false);
+        }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
     }
 
     public static string PaletteDeath() => PaletteWindow(786, 860);
