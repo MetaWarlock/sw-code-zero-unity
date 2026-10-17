@@ -368,6 +368,16 @@ namespace Darkwing.Core
                 s.Y = (ushort)((((s.Y >> 8) + 1) << 8) | ((lo + 0x0F + 1) & 0xFF)); // $F550-$F55A
         }
 
+        /// <summary>$F5C9: apply the 8.8 Y velocity through the branch that matches its sign
+        /// (non-negative → $F581 at $F5D4, negative → $F5A4), then $F5DA decays the velocity by
+        /// $0099 and clamps a fall at $F8.00. Both calls use JMP, so the decay always runs.</summary>
+        internal static void ApplyYVelocityDecay(ObjectSystem.Slot s, byte gravityFrac)
+        {
+            if (s.YVelInt >= 0) IntegrateYRising(s);          // $F5CC BPL $F5D4
+            else IntegrateYSub(s);                            // $F5CE JSR $F5A4
+            ApplyGravity(s, gravityFrac);                     // $F5D1/$F5D7 JMP $F5DA
+        }
+
         /// <summary>$F55E/$F581/$F5A4 Y -= ($0560.$0550) (up-positive velocity).</summary>
         internal static void IntegrateYSub(ObjectSystem.Slot s)
         {
@@ -3803,31 +3813,99 @@ namespace Darkwing.Core
                 s.StateLow++;       // $9847 INC $04D0,X
                 return;             // $984D RTS
             }
+            // $985B JSR $B36A — the boss hit-flash service ($ED/$EE/$EF globals). In pilot1 they
+            // stay 0 from f150 to f600, so the only effect the capture constrains is the $B395
+            // bit3 clear, which BossBehaviors.HitFlash does not model yet (G85.1).
             EnemyBehaviors.HitFlashShared(ctx, s);
-            if (TakeProjectileHit(ctx, s) && s.Health == 0)
+            if (s.Behavior == 0x4F) return;      // $985E CMP #$4F → $984D RTS (the defeated body)
+            TakeProjectileHit(ctx, s);           // $9865 JSR $B39E — the ROM ignores the carry
+            if ((s.StateLow & 0x02) != 0)        // $9868 AND #$02 / D0 → JMP $98F6
             {
-                EnemyBehaviors.KillSlot(s);
+                BallBounce(s, ctx);
                 return;
             }
-            if (s.T480 == 0)
+
+            // $9872 the patrol: $0580 bit0 is the direction, mirrored into $0400 bit6 by
+            // $F24B/$F2A6, and the step is the 8.8 X velocity (1.$80 = 1.502 px/frame).
+            // Measured slot 0E: X F0→EE→ED→EB… with $0470 alternating 00/80, turning at $16/$E8.
+            if ((s.Direction & 1) != 0)
             {
-                int i = EnemyBehaviors.RngE5Mask7();
-                s.YVelFrac = new byte[] { 0x8E, 0xAB, 0x06, 0xFF, 0x8E, 0xAB, 0x06, 0xFF }[i & 7];
-                s.XVelFrac = new byte[] { 0x06, 0xFF, 0x06, 0xFF, 0x06, 0xFF, 0x06, 0xFF }[i & 7];
-                s.YVelInt = 6;
-                s.T480 = 1;
+                s.Flags |= 0x40;                            // $9879 JSR $F24B
+                EnemyBehaviors.IntegrateXPos(s);            // $987C JSR $F4FD
+                if ((byte)s.X >= 0xE8) s.Direction ^= 3;    // $9882 CMP #$E8 / BCC $989E, else $9896
             }
-            bool landed = ctx.FallLand(s, 0x56, 2);
-            EnemyBehaviors.ApplyGravity(s, ctx.Player.GravityFrac);
-            EnemyBehaviors.IntegrateYSub(s);
-            EnemyBehaviors.IntegrateXPos(s);
-            if (landed)
+            else
             {
-                s.YVelInt = 0x28; // bounce impulse
-                s.T480 = 0;
-                EnemyBehaviors.SetAnim(s, 0x9A);
+                s.Flags = (byte)(s.Flags & ~0x40);          // $9889 JSR $F2A6
+                EnemyBehaviors.IntegrateXNeg(s);            // $988C JSR $F51B
+                if ((byte)s.X < 0x18) s.Direction ^= 3;     // $9892 CMP #$18 / BCS $989E, else $9896
             }
-            else if (s.YVelInt > 0) EnemyBehaviors.SetAnim(s, 0x99);
+            BallRowTrigger(s, ctx);                         // $989E, also reached by fall-through
+        }
+
+        // $9959/$9961/$9969 (prg_bank1 bytes at 0x1959/0x1961/0x1969): the three launch tables
+        // indexed by ($E4+$E5)&$07 for a ball that meets the player off the $D0/$50 rows.
+        static readonly byte[] BallKickFrac = { 0x8E, 0xAB, 0x8E, 0xAB, 0x8E, 0xAB, 0x8E, 0xAB };
+        static readonly byte[] BallKickInt = { 0x06, 0xFF, 0x06, 0xFF, 0x06, 0xFF, 0x06, 0xFF };
+        static readonly byte[] BallKickMode = { 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF };
+
+        /// <summary>$989E: the ball leaves its patrol only when its own row + 4 equals the
+        /// player's row; $04D0 then goes to phase 2, $04B0 counts 15 frames and anim $99 shows.
+        /// The launch velocity is picked by row: $D0 → +6.$8E with $0480=0, $50 → the $F5FC cut
+        /// with $0480=$FF, anything else → the three tables above. pilot1 never matches
+        /// ($051E=$D0 vs $0510=$54), so this block is transcription and is not covered by the
+        /// f150..f600 comparison.</summary>
+        private static void BallRowTrigger(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if ((byte)((byte)s.Y + 4) != (byte)ctx.Player.Y) return;   // $989E-$98A7 BNE $98F5
+            s.StateLow++;                                              // $98A9 INC $04D0,X
+            s.T4B0 = 0x0F;                                             // $98AC STA $04B0,X
+            EnemyBehaviors.SetAnim(s, 0x99);                           // $98B1 JSR $FA6C
+            byte row = (byte)s.Y;                                      // $98B6 LDA $0510,X
+            if (row == 0xD0)
+            {
+                s.YVelFrac = 0x8E; s.YVelInt = 0x06; s.T480 = 0x00;    // $98BD-$98C9
+                return;
+            }
+            if (row == 0x50)
+            {
+                EnemyBehaviors.CutVelocity(s);                         // $98CD JSR $F5FC
+                s.T480 = 0xFF;                                         // $98D6
+                return;
+            }
+            int i = EnemyBehaviors.RngE5Mask7();                       // $98DA E5 += E4, AND #$07
+            s.YVelFrac = BallKickFrac[i];                              // $98E3/$98E6 ← $9959
+            s.YVelInt = (sbyte)BallKickInt[i];                         // $98E9/$98EC ← $9961
+            s.T480 = BallKickMode[i];                                  // $98EF/$98F2 ← $9969
+        }
+
+        /// <summary>$98F6 phase 2: $04B0 counts down first, then anim $AB and the vertical arc.
+        /// $0480 selects the branch: 0 → $F5C9 integrate+decay, landing once the velocity turns
+        /// negative; non-zero → $F5A4+$F5DA until the integer part drops below $FC. Both tails
+        /// probe $EB52 at ($56,$02), snap with $EDD2, show anim $9A and DEC $04D0 back into the
+        /// patrol (only the $992C tail clears $0480). Unexecuted in pilot1.</summary>
+        private static void BallBounce(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if (s.T4B0 != 0) { s.T4B0--; return; }                       // $98F6-$98FE
+            EnemyBehaviors.SetAnim(s, 0xAB);                             // $98FF/$9901 JSR $FA6C
+            if (s.T480 != 0)                                             // $9904 BNE $992C
+            {
+                EnemyBehaviors.IntegrateYSub(s);                         // $992C JSR $F5A4
+                EnemyBehaviors.ApplyGravity(s, ctx.Player.GravityFrac);  // $992E JSR $F5DA
+                if ((byte)s.YVelInt >= 0xFC) return;                     // $9935 CMP #$FC / BCS $98F5
+                if (EnemyBehaviors.Probe(ctx, s, 0x56, 2) == 0) return;  // $9939-$9946 JSR $EB52
+                EnemyBehaviors.SnapToFloor(ctx, s);                      // $9948 JSR $EDD2
+                EnemyBehaviors.SetAnim(s, 0x9A);                         // $994B JSR $FA6C
+                s.StateLow--;                                            // $9950 DEC $04D0,X
+                s.T480 = 0;                                              // $9953 STA $0480,X
+                return;
+            }
+            EnemyBehaviors.ApplyYVelocityDecay(s, ctx.Player.GravityFrac); // $9909 JSR $F5C9
+            if (s.YVelInt >= 0) return;                                  // $990F BPL $98F5
+            if (EnemyBehaviors.Probe(ctx, s, 0x56, 2) == 0) return;      // $9911-$991E JSR $EB52
+            EnemyBehaviors.SnapToFloor(ctx, s);                          // $9920 JSR $EDD2
+            EnemyBehaviors.SetAnim(s, 0x9A);                             // $9923 JSR $FA6C
+            s.StateLow--;                                                // $9928 DEC $04D0,X
         }
 
         /// <summary>$97E6 Quackerjack ball child: pops from the ball and falls.</summary>
