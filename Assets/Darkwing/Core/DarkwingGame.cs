@@ -1735,6 +1735,20 @@ namespace Darkwing.Core
             _palDirty = 0xFF;
         }
 
+        /// <summary>Restores the resident $C270-$C2BF fade schedule — the state the $E388 tail
+        /// ($E492 JMP $C254 / $E495 JMP $C25F) parks the frame body in, which is what freezes $95,
+        /// the object dispatcher and the boss dispatchers for 4 frames per $0F step. $0F/$0D are
+        /// readable from RAM; the cadence index lives on the process stack inside the $C2A4-$C2AE
+        /// yield loop, so the caller has to pass the phase the seed frame is in.</summary>
+        public void SeedResidentFadeIn(byte level, byte delta, byte cadence)
+        {
+            _sectionStage = 3;
+            _fadeLevel = level;
+            _fadeDelta = delta;
+            _fadeFrame = cadence;
+            _fadeExitAt50 = false;
+        }
+
         /// <summary>Serialize all future-affecting state. Version-tagged.</summary>
         public byte[] SaveState()
         {

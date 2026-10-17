@@ -10,7 +10,8 @@ public static class PhysCompare
     private static string Compare(string name, int frames, System.Func<int, byte> input,
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
         int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false,
-        string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false, bool pause = false)
+        string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false, bool pause = false,
+        bool residentFade = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         string gdir = goldenDir ?? $"gold_{name}";
@@ -115,6 +116,11 @@ public static class PhysCompare
             System.Array.Copy(palAll, seedFrame * 32, seedPal, 0, 32);
             game.SeedPaletteTables(ram0, seedPal);
         }
+        // The arena-entry capture is seeded INSIDE the resident $C270-$C2BF fade schedule (f29 is
+        // the first frame of the $0F=$30 step), so the port must start parked there: $0F/$0D are
+        // read from the golden, the cadence index is the phase the seed frame is in (the ROM keeps
+        // it on the process stack, not in RAM).
+        if (residentFade) game.SeedResidentFadeIn(ram0[0x0F], ram0[0x0D], 1);
         // $3D/$3E/$3F: the $EFBE palette-patch script is mid-cycle in every route capture, so its
         // cursor is captured state like $22 or $95. $66 gates the zone service ($CA75 BMI).
         p.SectionFlag3D = ram0[0x3D];
@@ -1621,7 +1627,7 @@ public static class PhysCompare
             "D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/tmp_boss_pilot1/ram_frames.bin");
         return Compare($"boss_pilot1_qjack", ram.Length / 2048, f => 0,
             seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true,
-            goldenDir: "tmp_boss_pilot1", trace: true);
+            goldenDir: "tmp_boss_pilot1", trace: true, residentFade: true);
     }
 
     public static string PaletteDeath() => PaletteWindow(786, 860);

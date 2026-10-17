@@ -1199,3 +1199,22 @@ title-арт, (iii) чтение `$5D` как гейта для `$C850`, (iv) к
   — либо сидировать на f28 и восстановить `$5B → Player.PendingEvent`, либо поднять `_sectionStage = 3`
   с `_fadeLevel = $0F + $10`, `_fadeDelta = $0D`, `_fadeFrame = 0` из эталонной RAM на f29. Приёмка:
   `RESULT` чист до f45, `80→81` на f45, падение с f46, `$3B` 1/кадр f46…f164, Suite побайтово = база.
+
+## Смена 67.3 (2026-10-17): G80 закрыт; `$3B`-гейт перенесён по дизасму; f45 → G81, f165 → G82
+
+- **Что сделано.** (1) Сид `BossFightSeed(29)` переведён в резидентную фазу фейда
+  (`SeedResidentFadeIn` + `residentFade: true`) — f29…f44 теперь покадрово совпадают с ROM.
+  (2) Гейт `$3B` убран из начала `BossBehaviors.Dispatch` и перенесён в форму дизасма: только 7
+  поведений-читателей (49/4A/51/54/57/5A/5F/60), только после гейта `$04D0 & $0F` (кроме `$AFB6`),
+  `$F880` действует лишь при `$3B == 1`, `DEC $3B` один раз за кадр, `$F869` обнуляет аниму своего
+  слота только для 51/57/5A/5F/60.
+- **Замер.** `RESULT: first divergence frame 165 (matched 135/570)` — было f45 (и f30 в старом сиде).
+  `ENEMIES: first divergence f45 slot 0E field Ylo port=C3 orig=D0`. `PhysCompare.Suite` побайтово
+  равен эталонному `Docs/DarkwingPort/evidence/suite_summary.txt`.
+- **Состояние приёмки боя с Quackerjack:** f30…f164 физика и таймеры совпадают, инициализация слотов
+  босса на f45 по `$04D0` совпадает; расходятся Y-координата мяча в том же кадре (G81) и `$50` на f165
+  (G82 — порядок `$F880` против хвоста `$D580/$D586`).
+- **Следующая операция (одна):** G81 — спецификация в MILESTONES «СЛЕДУЮЩИЙ ШАГ (актуальный, смена 67.3)».
+- Изменённый код порта: `Assets/Darkwing/Core/DarkwingGame.cs` (seam `SeedResidentFadeIn`),
+  `Assets/Darkwing/Core/EnemyBehaviors.cs` (`BossBehaviors.Dispatch`), `AgentScripts/PhysCompare.cs`
+  (параметр `residentFade`). `unity recompile` без ошибок CS.

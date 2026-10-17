@@ -3569,10 +3569,16 @@ namespace Darkwing.Core
 
         public static void Dispatch(int slot, ObjectSystem.Slot s, byte behavior, EnemyDispatcher ctx)
         {
-            if (DefeatTimer != 0)
+            // $8836/$88B6: only these seven bodies read $3B ($984E/$99AE/$9DDA/$A166/$A626/
+            // $A992/$AFB6), and six of them read it behind their own $04D0&$0F init gate, so
+            // the frame that first activates a boss takes the init pass and no decrement.
+            if (DefeatTimer != 0 && behavior is 0x49 or 0x4A or 0x51 or 0x54 or 0x57 or 0x5A or 0x5F or 0x60 &&
+                (behavior is 0x5F or 0x60 || (s.StateLow & 0x0F) != 0))   // $AFB6 follows $AFA0 INC $04D0,X
             {
-                DefeatTimer--;
-                ctx.RestorePlayerIdle(); // $F880/$F869
+                if (DefeatTimer == 1) ctx.RestorePlayerIdle();             // $F880: CMP #$01 branch only
+                DefeatTimer--;                                              // $9855 DEC $3B
+                if (behavior is 0x51 or 0x57 or 0x5A or 0x5F or 0x60)
+                { s.AnimFrame = 0; s.AnimTimer = 0; }                        // $F869: STA $0410,X / $0430,X
                 return;
             }
             switch (behavior)
