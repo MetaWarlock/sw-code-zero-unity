@@ -1,6 +1,21 @@
 # STATUS — Darkwing Duck NES → Unity port
 
-Обновлён: 2026-10-17, смена 58 (**код менялся; G67 закрыт**). Тело финала `$D841…$D8D0` (банк 7) перенесено
+Обновлён: 2026-10-17, смена 59 (**код менялся на 1 строку; G68 закрыт**). Из `StepMapFrame` удалён
+собственный `Frame++`: ветка `!WorldRunning` в `Step` уже делает инкремент, поэтому кадр карты двигал
+`Frame` на 2, а титул/финал/мир — на 1. Ложная посылка записи GAPS («`Frame` — часы планировщика аудио»)
+снята замером: `grep -rn "\bFrame\b" Assets/Darkwing` даёт только писатели + `W.Write(Frame)`/
+`Frame = r.ReadInt64()` в сериализаторе сохранения; в `Audio/Apu.cs`/`Audio/AudioSequencer.cs` обращений
+нет. Правка прошла ровно те проверки, которые требовала запись GAPS: `GameOverVerify.Run` = nametable
+`$2000-$23FF` **0 mismatched bytes — EXACT**, палитра 0/16, `ctrl=$90`, A→`Mission`, B→`MapCursor`
+`$F8=$FF` (executeMs 4786); `TextVerify.Run` = **MATCH vs `gold_briefing_b0`** (29/29 тайла в трёх
+строках, pacing diffs 0, executeMs 13); `MapOamVerify.Run/RunPaired` = `probe_flow 0/582`,
+`probe_map_b1 0/179` — побайтово как до правки (их причина — неперенесённый сид слота 5
+`$A216…$A241`, пункт G32.1); `PhysCompare.Suite` = `diff` с копией смены 58 **пуст**. Эталоны и пороги
+не менялись. Следующий шаг прежний: **G66 (структурная часть)** — тело вертикального редрауза
+`$E7C6…$E935` с масками `$10/$11/$12`; его дизасм прочитан целиком (`flat_bank7.txt:5427…5616`), таблицы
+вытянуты из `Assets/Darkwing/Data/world_bank7.bytes` — спецификация в GAPS «Смена 59».
+
+Обновлён ранее: 2026-10-17, смена 58 (**код менялся; G67 закрыт**). Тело финала `$D841…$D8D0` (банк 7) перенесено
 в `GameFlow.Phase.Ending` (`GameFlow.cs:269…331`, примитивы — `DarkwingGame.cs:552…748`) и прогнано целиком:
 `unity recompile` чист (`diagnostics: []`), `FlowVerify.Check` → `success: true` (executeMs 18911), переход в
 Ending по 7 победам, стадии `1@f1 → 2@f95 → 3@f96 → 4@f243($FEFF=30) → 5@f273($FEFF=240) → 6@f513`,

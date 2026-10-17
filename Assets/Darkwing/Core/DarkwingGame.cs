@@ -514,7 +514,6 @@ namespace Darkwing.Core
             Oam.PublishToOam();
             Oam.RunFrame(FrameParity);                         // $A4F1 STA $97=#$04 + $F89A
             Ppu.Render(Framebuffer);
-            Frame++;
         }
 
         /// <summary>
@@ -731,9 +730,11 @@ namespace Darkwing.Core
 
         /// <summary>One ending frame: the background $C285-$C2BF ramp, then the bank-5 walk the
         /// scene routines drive through $F89A ($C21E park at $97=$04 + the compose), then the
-        /// render. This is <see cref="StepMapFrame"/> without the chooser logic — and without its
-        /// own <c>Frame++</c>, because <see cref="Step"/> already ticks the counter for the
-        /// non-world phases (the map phase therefore advances <c>Frame</c> twice per frame).
+        /// render. This is <see cref="StepMapFrame"/> without the chooser logic. Neither of them
+        /// ticks <c>Frame</c>: <see cref="Step"/> already does it for every non-world phase, so
+        /// one call to <c>Step</c> is exactly one NMI (the counter has no runtime reader — the
+        /// probes only print it — but a doubled tick mislabelled every map-phase frame number
+        /// in those reports).
         /// While the ending sits inside $FEFF/$9280's <code>LDX #$F0</code> the ROM is resident in
         /// the yield — ProcessYield only, no walk and no $95 tick — so <see cref="EndingYieldOnly"/>
         /// reduces the frame to a no-op.</summary>

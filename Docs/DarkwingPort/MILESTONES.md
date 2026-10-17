@@ -1273,7 +1273,26 @@ AgentScripts/PhysCompare.cs --entry PhysCompare.Door`.
   проекта (старая заметка `…nametable-not-oam` удалена, добавлена
   `darkwing-map-help-bubbles-are-anim-slots.md`).
 
-## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 58)
+## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 59)
+
+**Закрыто в смене 59 (G68: карта больше не тикает `Frame` дважды).** Из `StepMapFrame` удалён
+собственный `Frame++` (`DarkwingGame.cs:517` до правки) — ветка `!WorldRunning` в `Step` (`:882`)
+уже делает инкремент, поэтому карта двигала счётчик на 2 за кадр, а титул/финал/игрок — на 1.
+Ложная посылка прошлой записи GAPS («`Frame` — часы планировщика аудио») снята замером:
+`grep -rn "\bFrame\b" Assets/Darkwing` даёт только писатели (`Frame++`, `Frame = 0` в `Reset`),
+`W.Write(Frame)`/`Frame = r.ReadInt64()` в сериализаторе сохранения и `public long Frame`
+(`:19`); в `Audio/Apu.cs`/`Audio/AudioSequencer.cs` обращений нет — у аудио свои часы. То есть
+правка меняет ровно нумерацию кадров в отчётах, и она обязана была пройти то, что перечисляла
+запись GAPS. Все четыре проверки измерены после `unity recompile` (чисто, `diagnostics: []`):
+`GameOverVerify.Run` → `success: true`, executeMs 4786, nametable `$2000-$23FF` = **0 mismatched
+bytes — EXACT**, палитра 0/16, `ctrl=$90`, A-ветка → `Mission`, B-ветка → `MapCursor` `$F8=$FF`;
+`TextVerify.Run` → **`RESULT: MATCH text engine vs gold_briefing_b0`** (executeMs 13, `$22E2/$2322/
+$2362` = 29/29, pacing diffs 0); `MapOamVerify.Run`+`.RunPaired` → `probe_flow 0/582` и
+`probe_map_b1 0/179` — побайтово те же числа, что зафиксированы ДО правки (FACTS `:952`), потому
+что их причина — неперенесённый сид слота 5 (`$A216…$A241`), а не часы; `PhysCompare.Suite` →
+`diff Temp/suite_summary.txt Docs/DarkwingPort/evidence/suite_summary.txt` **пуст** (25 строк,
+все `RESULT`/`STRICT`/`ENEMIES` равны копии смены 58). Эталоны и пороги не менялись; код
+изменён на 1 строку (плюс XML-док `StepEndingFrame`).
 
 **Закрыто в смене 57 (G65 = ложная предпосылка; корень m6 найден).** Шаг «перенести тело
 состояния `$07`», записанный сменой 56.1, **отменён до начала работ**: `PlayerCore.cs:875…920`
