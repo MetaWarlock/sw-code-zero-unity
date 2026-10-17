@@ -795,6 +795,121 @@ namespace Darkwing.Core
             EndingScreen = true;
         }
 
+        /// <summary>True while a bank-2 intro story scene owns the frame ($C66B <c>$8F00</c>,
+        /// $C684 <c>$9100</c>, $C69D <c>$9000</c>, $C6B6 <c>$A000</c>). Like the ending scenes the
+        /// ROM is resident inside the routine and drives the bank-5 walk itself through $F89A, so
+        /// <see cref="StepEndingFrame"/> is the frame driver and the player dispatcher stays out.</summary>
+        public bool IntroScene;
+
+        /// <summary>$8F00-$8F5D, the first story panel ($C65F sets <c>$31=$09</c> and $DD57 loads it):
+        /// slot 1 = anim $2F, flags $90, X <c>$00FF</c>, Y <c>$00A4</c>, velocity $0540=$00/$0530=$E9
+        /// (−0.91 px/frame); slot 2 = anim $AD, flags $80, X <c>$0000</c>, Y <c>$00B7</c>, velocity
+        /// $0542=$06 (+6 px/frame); sprite palette $9A9C → $0310 AND $0330 and $18=$FF.</summary>
+        public void IntroPanel8F00Seed()
+        {
+            var o = Objects;
+            EndingSlot(1, 0x90, 0x00FF, 0x00A4, 0x2F);            // $8F02/$8F14/$8F19/$8F1E/$8F04
+            o.Slots[1].XVelInt = 0x00; o.Slots[1].XVelFrac = 0xE9;  // $8F21/$8F3A, $8F2C = 0
+            EndingSlot(2, 0x80, 0x0000, 0x00B7, 0xAD);            // $8F42/$8F45/$8F4A/$8F35/$8F0F
+            o.Slots[2].XVelInt = 0x06; o.Slots[2].XVelFrac = 0x00;  // $8F3D, $8F32 = 0
+            for (int i = 0; i < 16; i++)                          // $8F4F-$8F59
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0x9A9C - 0x8000 + i];
+            SetPaletteUploadFlag(0xFF);                           // $8F5B/$8F5D
+            IntroScene = true; MapScreen = false; WorldRunning = false;
+        }
+
+        /// <summary>One iteration of <c>$8F63…$8F79</c>: $F89A, the $14 exit gate ($8F66 → $8F7B),
+        /// slot 1 <c>X -= $0541.$0531</c> through $F51B, slot 2 <c>X += $0542.$0532</c> through $F4FD,
+        /// then <c>$04F1 &gt;= 4</c> re-arms the loop. False = the body reached $8F82 RTS.</summary>
+        public bool IntroPanel8F00Step(byte justPressed)
+        {
+            StepEndingFrame();                                    // $8F63 JSR $F89A (+ compose)
+            if (justPressed != 0) { IntroScene = false; return false; }   // $8F66 BNE $8F7B
+            EnemyBehaviors.IntegrateXNeg(Objects.Slots[1]);       // $8F6C LDX #$01 / JSR $F51B
+            EnemyBehaviors.IntegrateXPos(Objects.Slots[2]);       // $8F71 LDX #$02 / JSR $F4FD
+            if ((Objects.Slots[1].X & 0xFF) >= 0x04) return true;  // $8F74/$8F77 BCS $8F5F
+            IntroScene = false;
+            return false;                                          // $8F7B…$8F82
+        }
+
+        /// <summary>$9100's sprite seeds (the ROM writes them before its $FA/$FB scroll-settle
+        /// stage): slot 1 = anim $2D, flags $E0, StateLow $80, X $0080, Y $005C; slot 2 = anim $B5,
+        /// flags $A0, StateLow $80, X $0080, Y $0048; sprite palette $919E → $0310/$0330, $18=$FF.
+        /// The <c>$0550=$80/$0560=$02</c> + $F539 + $F7E0 stage is NOT here — $F7E0 is the vertical
+        /// redraw service still open as GAPS G66, so the caller must enter with $FA/$FB settled.</summary>
+        public void IntroPanel9100Seed()
+        {
+            var o = Objects;
+            EndingSlot(1, 0xE0, 0x0080, 0x005C, 0x2D);            // $9100 head/$911B/$9121/$9127/$912D
+            EndingSlot(2, 0xA0, 0x0080, 0x0048, 0xB5);            // $9133/$9139/$913F/$9145
+            for (int i = 0; i < 16; i++)                          // $919E table, $0310 AND $0330
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0x919E - 0x8000 + i];
+            SetPaletteUploadFlag(0xFF);
+            IntroScene = true; MapScreen = false; WorldRunning = false;
+        }
+
+        /// <summary>One iteration of the panel-2 animation wait <c>$9188…$9194</c>: $97=$04, $F89A,
+        /// then <c>$0411 == $11</c> — the exit is the SLOT-1 animation frame counter, measured to leave
+        /// every other slot field frozen. False at $9196 (LDA #$04/STA $97/JSR $C21E/RTS).</summary>
+        public bool IntroPanel9100Step(byte justPressed)
+        {
+            StepEndingFrame();                                    // $918C JSR $F89A
+            if (justPressed != 0) { IntroScene = false; return false; }   // $9165 BNE $9196
+            if (Objects.Slots[1].AnimFrame != 0x11) return true;   // $918F/$9192/$9194 BNE $9188
+            IntroScene = false;
+            return false;
+        }
+
+        /// <summary>$9000's sprite seeds, i.e. everything after its $FA/$FB scroll-settle stage and
+        /// its <c>LDX #$0A / JSR $FEFF</c>: slot 1 = anim $3B, StateLow $80, flags $B0, X $00FF,
+        /// Y $0170 (<c>$0520,X=#$01</c>), velocity $0541=$04/$0531=$04 (−4 px/frame); sprite palette
+        /// $90A4 → $0310/$0330; $18=$FF.</summary>
+        public void IntroPanel9000Seed()
+        {
+            EndingSlot(1, 0xB0, 0x00FF, 0x0170, 0x3B);            // $903A/$9040/$9046/$904C/$902E
+            Objects.Slots[1].XVelInt = 0x04; Objects.Slots[1].XVelFrac = 0x04;   // $9052/$9058
+            for (int i = 0; i < 16; i++)                          // $90A4 table
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0x90A4 - 0x8000 + i];
+            SetPaletteUploadFlag(0xFF);                            // $9075/$9077
+            IntroScene = true; MapScreen = false; WorldRunning = false;
+        }
+
+        /// <summary>One iteration of <c>$9079…$909A</c>: $97=$04, $F89A, the $14 gate, slot 1
+        /// <c>X -= $0541.$0531</c>, the mid-flight flag flip <c>$04F1 &lt; $70 → $0400,X=$90</c>
+        /// ($9089…$9093) and the <c>$04F1 &gt;= 4</c> re-arm. False at $909C…$909F RTS.</summary>
+        public bool IntroPanel9000Step(byte justPressed)
+        {
+            StepEndingFrame();                                    // $907D JSR $F89A
+            if (justPressed != 0) { IntroScene = false; return false; }   // $9080 BNE $909C
+            var s1 = Objects.Slots[1];
+            EnemyBehaviors.IntegrateXNeg(s1);                      // $9084 LDX #$01 / JSR $F51B
+            if ((s1.X & 0xFF) < 0x70) s1.Flags = 0x90;              // $9089…$9093
+            if ((s1.X & 0xFF) >= 0x04) return true;                 // $9095/$9097 BCS $9079
+            IntroScene = false;
+            return false;
+        }
+
+        /// <summary>$A000 — the panel chain's last call ($C6B6) is not a panel but the scene-$0A
+        /// entry: slot 1 = anim $B2, StateLow/flags $80, X $0000, Y $006C, and the PLAYER (slot 0)
+        /// parked at X $0200 with velocity $0530/$0531=$99/$99 and $0540/$0541=$00 (0.6 px/frame),
+        /// $FD=$02 and the camera page $6F=$02; sprite palette $A04C → $0310/$0330, $18=$00.</summary>
+        public void IntroEntryA000()
+        {
+            var o = Objects;
+            EndingSlot(1, 0x80, 0x0000, 0x006C, 0xB2);              // $A004/$A007/$A00C/$A011/$A014/$A016
+            o.Slots[0].X = (ushort)((o.Slots[0].X & 0xFF) | (0x02 << 8));   // $A019/$A01B STA $0500
+            o.Slots[1].X = 0x0200;                                  // $A01E STA $0501 ($04F1 = 0)
+            o.Slots[0].Y = (ushort)(o.Slots[0].Y & 0xFF);            // $A025/$A027 STA $0520
+            o.Slots[1].Y = 0x006C;                                  // $A02A STA $0521 ($0512 = $6C)
+            o.Slots[0].XVelInt = 0x00; o.Slots[1].XVelInt = 0x00;   // $A02D/$A030 STA $0540/$0541
+            o.Slots[0].XVelFrac = 0x99; o.Slots[1].XVelFrac = 0x99; // $A033/$A035/$A038 $0530/$0531
+            Player.ScrollX = (ushort)((Player.ScrollX & 0xFF) | (0x02 << 8));   // $A021 STA $FD
+            for (int i = 0; i < 16; i++)                            // $A03B…$A047
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0xA04C - 0x8000 + i];
+            SetPaletteUploadFlag(0x00);                             // $A049 STY $18 with Y = 0
+            IntroScene = true; MapScreen = false; WorldRunning = false;
+        }
+
         /// <summary>$C970 as the ending calls it: $C276 seeds the fade-out ($0F=$10, $0D=$10,
         /// exit at $0F==$50), $FF06 yields the one frame, then $C14E blanks, $C1BA($20,$00,$00)
         /// clears the nametable and $C95C empties object RAM. The ROM's fade ramp keeps running

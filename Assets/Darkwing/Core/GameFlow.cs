@@ -104,14 +104,31 @@ namespace Darkwing.Core
             switch (Stage)
             {
                 case Phase.Title:
-                    if ((pressed & 0x10) != 0)      // $C7AD waits for Start → $C7CF (game_flow.md §"TITLE")
+                    // Two outcomes, and they are NOT the same: $C595's boot prologue arms $51=#$F0
+                    // and $C5E8…$C5F4 counts it down while the title task $C792 shows the logo, and
+                    // reaching zero is the ONLY way into the story intro ($C5EC JMP $C5F7). A Start
+                    // press is the new-game branch $C7C9 LDA $14 / AND #$10 → $C7CF, which ends at
+                    // $C800 STA $31=#$00 / $C810 STA $38 / $C8B5 = the mission map. $C7CF's two
+                    // bank-2 screens ($9E00 with $62=#$0A, $AA00 with $62=#$0D) are not ported, so
+                    // the press lands straight on the map (GAPS G77). Press-free gold_intro_panels
+                    // confirms the timeout: $14 == $00 on every frame, yet $31 = $07 at f263.
+                    if ((pressed & 0x10) != 0)
                     {
-                        _game.TitleScreen = false;   // $C7CF leaves $C792's loop; the title slots stop walking
+                        _game.TitleScreen = false;
                         _game.PlaySfx(DarkwingGame.SfxPause);
-                        SetPhase(Phase.Intro);                    // $C5F7: $31=$07 then the dialog
-                        World.CurrentWorld = 0x07;                // $C5FC LDA #$07 / STA $31
+                        World.CompletedCount = 0;                   // $C80E/$C810 LDA #$00 / STA $38
+                        EnterMap();                                 // $C7CF…$C8B5
+                    }
+                    else if (PhaseFrames >= 240)                    // $C5E8/$C5EC JMP $C5F7
+                    {
+                        _game.TitleScreen = false;                  // $C5F7 takes the screen over
+                        SetPhase(Phase.Intro);                      // $C5F7: $31=$07 then the dialog
+                        World.CurrentWorld = 0x07;                  // $C5FC LDA #$07 / STA $31
+                        _game.ClearObjectRamAndScroll();            // $C5F7 JSR $C95C
+                        _game.LoadWorld(_decoder, 0x07);            // $C5FE JSR $DD57
+                        _game.WorldRunning = false;
                         _introStage = 0;
-                        _game.Text?.Start(0x0E);                  // $C608/$C60F: $62=$0E, JSR $AA00
+                        _introDelay = 30;                           // $C601 LDX #$1E / JSR $FEFF
                     }
                     break;
 
@@ -204,14 +221,16 @@ namespace Darkwing.Core
         }
 
         private byte _prevHeld;
-        private int _introStage;      // 0 = stream $0E, 1 = the $C612 delay, 2 = stream $0F
-        private int _introDelay;      // $C612 LDX #$1E / JSR $FEFF
+        private int _introStage;      // 0 = $C601 hold, 1 = stream $0E, 2 = $C612 hold, 3 = stream $0F
+        private int _introDelay;      // a $FEFF count: $C601/$C612 both LDX #$1E / JSR $FEFF
 
-        /// <summary>$C5F7: the night-scene intro. The ROM drives the $AA00 coroutine twice —
-        /// $62=$0E at $C608, a 30-frame $FEFF delay at $C612, then $62=$0F at $C617 — and only
-        /// after that enters the $C61E flight loop ($F5A4/$F5DA in bank 5, which runs until the
-        /// sprite counter $0510 reaches $5C). That flight animation is not ported yet, so the
-        /// dialog hands straight over to the city map; the text itself is frame-exact (TextVerify).</summary>
+        /// <summary>$C5F7-$C61B: the night-scene intro. The ROM holds 30 frames ($C601), streams
+        /// $62=$0E through $AA00, holds another 30 ($C612) and streams $62=$0F ($C617). After that
+        /// comes the $C61E flight loop ($F5A4/$F5DA in bank 5, until $0510 reaches $5C), SFX $10,
+        /// the $9600 card and $C650's 60-frame $FEFF — and only then the three story panels
+        /// ($C66B $8F00, $C684 $9100, $C69D $9000) and $C6B6 $A000. The panels are ported on
+        /// DarkwingGame (IntroPanel8F00Seed/Step, …9100…, …9000Seed/Step, IntroEntryA000); the
+        /// flight loop is not, so this phase still hands over to the city map at stage 3.</summary>
         private void StepIntro(byte held)
         {
             var text = _game.Text;
@@ -222,16 +241,23 @@ namespace Darkwing.Core
             }
             switch (_introStage)
             {
-                case 0:
-                    if (!text.Running) { _introStage = 1; _introDelay = 30; }
-                    else StepText(text, held);
+                case 0:                                       // $C601 LDX #$1E / JSR $FEFF
+                    if (--_introDelay > 0) break;
+                    _introStage = 1;
+                    text.Start(0x0E);                          // $C608/$C60F: $62=#$0E, JSR $AA00
+                    World.StreamId = 0x0E;
                     break;
                 case 1:
-                    if (--_introDelay > 0) break;
-                    _introStage = 2;
-                    text.Start(0x0F);               // $C617 LDA #$0F / STA $62, $C61B JSR $AA00
+                    if (!text.Running) { _introStage = 2; _introDelay = 30; }   // $C612
+                    else StepText(text, held);
                     break;
                 case 2:
+                    if (--_introDelay > 0) break;
+                    _introStage = 3;
+                    text.Start(0x0F);                          // $C617 LDA #$0F / STA $62, $C61B JSR $AA00
+                    World.StreamId = 0x0F;
+                    break;
+                case 3:
                     if (!text.Running)
                         EnterMap();                             // $C61E flight loop: still open
                     else StepText(text, held);
