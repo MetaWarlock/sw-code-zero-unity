@@ -1,0 +1,7 @@
+  $8F00: body RTS-ed at port step 275 (golden frame 1008)
+$8F00 window f733..f1008: MATCH 276/276
+  $9100: body RTS-ed at port step 147 (golden frame 1201)
+$9100 window f1054..f1201: MATCH 148/148
+  $9000: body RTS-ed at port step 62 (golden frame 1436)
+$9000 window f1374..f1436: MATCH 63/63
+$A000 at f1482: port slot1 anim $B2 flags $80 X $0200 Y $006C velI 00 velF 99 | gold anim $B2 flags $80 X $0200 Y $006C $0531=$99 $0541=$00

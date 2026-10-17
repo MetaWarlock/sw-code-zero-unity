@@ -1,4 +1,5 @@
 using System.IO;
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using Darkwing.Core;
@@ -76,6 +77,7 @@ public static class IntroVerify
             }
 
             int match = 0, firstBad = -1; string why = "";
+            var trace = new List<string>(hi);
             for (int i = 0; i < hi; i++)
             {
                 // The panel loop is $8F5F LDY #4 / $8F61 STY $97 / $8F63 JSR $F89A / $8F6C JSR
@@ -107,7 +109,7 @@ public static class IntroVerify
                          && pre[s].y == (ushort)(ram[g + 0x510 + s] | (ram[g + 0x520 + s] << 8))
                          && slot.AnimFrame == ram[g + 0x410 + s]
                          && slot.AnimTimer == ram[g + 0x430 + s];
-                    if (!ok)
+                    if (!ok && firstBad < 0)
                         why = $"slot{s}: port t${slot.AnimTimer:X2}/f${slot.AnimFrame:X2}"
                             + $" anim ${pre[s].anim:X2}/fl${pre[s].flags:X2}"
                             + $" X ${pre[s].x:X4} Y ${pre[s].y:X4} vs gold t${ram[g + 0x430 + s]:X2}"
@@ -119,23 +121,36 @@ public static class IntroVerify
                 if (ok) match++;
                 else if (firstBad < 0) firstBad = i;
 
-                // First 6 frames of each panel: port vs golden $0430 timer / $0410 frame /
-                // $04D0 active, so any remaining anim divergence is attributable.
-                if (i < 6)
-                {
-                    var t1 = game.Objects.Slots[1];
-                    sb.AppendLine($"  {name} f{body + i}: port1 t${t1.AnimTimer:X2} f${t1.AnimFrame:X2}"
-                        + $" D${(t1.Active ? 0x80 : 0) | t1.StateLow:X2} X${pre[1].x:X4}"
-                        + $" | gold1 t${ram[g + 0x431]:X2} f${ram[g + 0x411]:X2}"
-                        + $" D${ram[g + 0x4D1]:X2} X${ram[g + 0x501]:X2}{ram[g + 0x4F1]:X2}"
-                        + $" | port2 X${pre[2].x:X4} a${pre[2].anim:X2} | gold2 X${ram[g + 0x502]:X2}{ram[g + 0x4F2]:X2}"
-                        + $" a${ram[g + 0x422]:X2}");
-                }
+                // Per-frame trace (kept for the window around the FIRST divergence): the anim
+                // pair from the post-step state, positions from the pre-step state, plus the
+                // scroll/settle fields that decide which stage of $9100 runs.
+                trace.Add($"  {name} f{body + i}: port1 t${game.Objects.Slots[1].AnimTimer:X2}"
+                    + $" f${game.Objects.Slots[1].AnimFrame:X2} a${pre[1].anim:X2} fl${pre[1].flags:X2}"
+                    + $" X${pre[1].x:X4} Y${pre[1].y:X4} D${(game.Objects.Slots[1].Active ? 0x80 : 0) | game.Objects.Slots[1].StateLow:X2}"
+                    + $" | gold1 t${ram[g + 0x431]:X2} f${ram[g + 0x411]:X2} a${ram[g + 0x421]:X2}"
+                    + $" fl${ram[g + 0x401]:X2} X${ram[g + 0x501]:X2}{ram[g + 0x4F1]:X2}"
+                    + $" Y${ram[g + 0x511]:X2} D${ram[g + 0x4D1]:X2}"
+                    + $" || port2 t${game.Objects.Slots[2].AnimTimer:X2} f${game.Objects.Slots[2].AnimFrame:X2}"
+                    + $" a${pre[2].anim:X2} X${pre[2].x:X4} | gold2 t${ram[g + 0x432]:X2}"
+                    + $" f${ram[g + 0x412]:X2} a${ram[g + 0x422]:X2} X${ram[g + 0x502]:X2}{ram[g + 0x4F2]:X2}"
+                    + $" || port FA${game.Player.ScrollY:X2} FB${game.Player.ScrollYRow:X2}"
+                    + $" 10=${game.Player.ScrollStep:X2} 2F=${game.Player.ScrollMode:X2}"
+                    + $" | gold FA${ram[g + 0xFA]:X2} FB${ram[g + 0xFB]:X2} 10=${ram[g + 0x10]:X2}"
+                    + $" 2F=${ram[g + 0x2F]:X2} 23=${ram[g + 0x23]:X2} 51=${ram[g + 0x51]:X2}"
+                    + $" || port s0 Y${game.Objects.Slots[0].Y:X4} 0460${game.Objects.Slots[0].YFrac:X2}"
+                    + $" velI{game.Objects.Slots[0].YVelInt:X2} | gold s0 Y${ram[g + 0x520]:X2}{ram[g + 0x510]:X2}"
+                    + $" 0460${ram[g + 0x460]:X2}");
 
                 if (!alive) { sb.AppendLine($"  {name}: body RTS-ed at port step {i} (golden frame {body + i})"); break; }
             }
             sb.AppendLine($"{name} window f{body}..f{body + hi - 1}: MATCH {match}/{hi}"
                 + (firstBad >= 0 ? $"  first divergence f{body + firstBad}: {why}" : ""));
+            if (firstBad >= 0)
+            {
+                for (int i = 0; i < System.Math.Min(hi, 8); i++) sb.AppendLine(trace[i]);
+                int lo = System.Math.Max(0, firstBad - 4), n = System.Math.Min(hi, firstBad + 5);
+                for (int i = lo; i < n; i++) sb.AppendLine(trace[i]);
+            }
         }
 
         // $A000 is a seed-only routine (no wait loop): compare its writes against the $0A segment.

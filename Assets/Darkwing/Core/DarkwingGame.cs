@@ -832,32 +832,84 @@ namespace Darkwing.Core
             return false;                                          // $8F7B…$8F82
         }
 
-        /// <summary>$9100's sprite seeds (the ROM writes them before its $FA/$FB scroll-settle
-        /// stage): slot 1 = anim $2D, flags $E0, StateLow $80, X $0080, Y $005C; slot 2 = anim $B5,
-        /// flags $A0, StateLow $80, X $0080, Y $0048; sprite palette $919E → $0310/$0330, $18=$FF.
-        /// The <c>$0550=$80/$0560=$02</c> + $F539 + $F7E0 stage is NOT here — $F7E0 is the vertical
-        /// redraw service still open as GAPS G66, so the caller must enter with $FA/$FB settled.</summary>
+        /// <summary>$9100's sprite seeds (<c>$9100…$9153</c>): slot 1 = anim $2D, flags $E0, StateLow $80,
+        /// X $0080, Y $005C; slot 2 = anim $B5, flags $A0, StateLow $80, X $0080, Y $0048; sprite palette
+        /// $919E → $0310/$0330, $18=$FF. The single $F89A at $9155 and the $0550/$0560 scroll-settle
+        /// stage are in <see cref="IntroPanel9100Step"/>, not here.</summary>
         public void IntroPanel9100Seed()
         {
-            var o = Objects;
             EndingSlot(1, 0xE0, 0x0080, 0x005C, 0x2D);            // $9100 head/$911B/$9121/$9127/$912D
             EndingSlot(2, 0xA0, 0x0080, 0x0048, 0xB5);            // $9133/$9139/$913F/$9145
+            // Slot 0 is the settle's moving reference ($9169 JSR $F539) and $C95C clears only
+            // $0400/$04D0/$0590, so $9100 inherits it. Neither $8F00 nor $9100 writes these bytes,
+            // and gold_intro_panels measures the same values from f600 ($31=$07) through f1054, so
+            // the port restates them here: Y $0006, $0460=$B7 (the $80+$B7 carry that makes the
+            // first settle step +3), X $002C, velocity $F8.00.
+            var s0 = Objects.Slots[0];
+            s0.Y = 0x0006; s0.YFrac = 0xB7;
+            s0.X = 0x002C; s0.YVelInt = -8; s0.YVelFrac = 0x00;
             for (int i = 0; i < 16; i++)                          // $919E table, $0310 AND $0330
                 _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0x919E - 0x8000 + i];
             SetPaletteUploadFlag(0xFF);
+            _intro9100Stage = 0;
             IntroScene = true; MapScreen = false; WorldRunning = false;
         }
 
-        /// <summary>One iteration of the panel-2 animation wait <c>$9188…$9194</c>: $97=$04, $F89A,
-        /// then <c>$0411 == $11</c> — the exit is the SLOT-1 animation frame counter, measured to leave
-        /// every other slot field frozen. False at $9196 (LDA #$04/STA $97/JSR $C21E/RTS).</summary>
+        private int _intro9100Stage;   // 0 = $9155 walk, 1 = $9162 settle, 2 = $9188 animation gate
+
+        /// <summary>$F7E0 as the panel uses it: <c>LDA #$04 / STA $2F</c> then <c>JMP $DC6E</c>
+        /// (the saved <c>LDA $F1 / PHA … PLA / JMP $FF55</c> bank push is a no-op — the panel is
+        /// already in the bank $DC6E lives in). The $DC88-$DC8D step is the observable effect: $FA
+        /// becomes the byte $916E-$9179 just computed from $0510, so the camera tracks slot 0's Y.
+        /// $DC6E's two entry gates are NOT re-evaluated here because $E7C6 (the row redraw, GAPS G66)
+        /// and the world grid the gates read are not ported; gold_intro_panels measures both gates
+        /// passing on every settle frame — $2B goes $01→$04 at f1056, $FA runs $00→$A4 monotonically
+        /// and $FB stays $00 while $22=$00/$2E=$01/$2D=$01, so the $DC8F wrap branch is unreachable
+        /// (exit at $A4) and $E7C6 never touches the panel's compared slot fields.</summary>
+        private void IntroVerticalScroll()
+        {
+            Player.ScrollMode = 0x04;                              // $F7E3 STA $2F
+            Player.ScrollY = (byte)(Player.ScrollY + Player.ScrollStep);   // $DC88-$DC8D
+        }
+
+        /// <summary>The three stages of <c>$9100</c>: one <c>$F89A</c> at $9155, then the $9162…$9186
+        /// settle (<c>JSR $FF06</c> + $F539 on slot 0 + $F7E0, NO walk — the golden freezes $0431=$01
+        /// while $FA chases slot 0's $0510 up to $A4), then the $9188…$9194 gate that walks until
+        /// <c>$0411 == $11</c>. The settle scroll and the gate's first walk are reported one frame
+        /// apart because a settle frame captures at its $FF06 while the gate captures inside $F89A
+        /// (gold f1117 $FA=$A1/$0431=$01, f1118 $FA=$A4/$0431=$02), so the walk is deferred by one
+        /// step. 84 gate walks end with $0431/$0432 = $00/$04 at f1201. False = $9196…$919D.</summary>
         public bool IntroPanel9100Step(byte justPressed)
         {
+            if (_intro9100Stage == 0)
+            {
+                StepEndingFrame();                                 // $9155 JSR $F89A
+                Objects.Slots[0].YVelFrac = 0x80;                  // $9158/$915A STA $0550
+                Objects.Slots[0].YVelInt = 0x02;                   // $915D/$915F STA $0560
+                _intro9100Stage = 1;
+                return true;
+            }
+            if (_intro9100Stage == 1)
+            {
+                if (justPressed != 0) { IntroScene = false; return false; }   // $9165/$9167 BNE $9196
+                var s0 = Objects.Slots[0];
+                EnemyBehaviors.IntegrateYRideSlot(s0);             // $9169 LDX #$00 / JSR $F539
+                int d = (s0.Y & 0xFF) - Player.ScrollY;            // $916E SEC / SBC $FA
+                if (d < 0) d -= 0x10;                              // $9176/$9178 SBC #$0F with C=0
+                Player.ScrollStep = (byte)d;                       // $9179 STA $10
+                IntroVerticalScroll();                             // $917B JSR $F7E0
+                if (Player.ScrollYRow != 0 || Player.ScrollY != 0xA4) return true;   // $917E…$9186
+                // The settle frame's own capture sits at its $FF06 (BEFORE $F539/$F7E0), so the
+                // $FA=$A4 this step produced and the $918C walk that follows it in the same frame
+                // are only both visible at the NEXT capture, which is inside $F89A (gold f1117 =
+                // $FA $A1/$0431 $01, gold f1118 = $FA $A4/$0431 $02). Hence the walk is deferred.
+                _intro9100Stage = 2;
+                return true;
+            }
             StepEndingFrame();                                    // $918C JSR $F89A
-            if (justPressed != 0) { IntroScene = false; return false; }   // $9165 BNE $9196
             if (Objects.Slots[1].AnimFrame != 0x11) return true;   // $918F/$9192/$9194 BNE $9188
             IntroScene = false;
-            return false;
+            return false;                                          // $9196…$919D LDA #$04/STA $97/$C21E/RTS
         }
 
         /// <summary>$9000's sprite seeds, i.e. everything after its $FA/$FB scroll-settle stage and
