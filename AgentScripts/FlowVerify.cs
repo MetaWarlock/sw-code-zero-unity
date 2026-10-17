@@ -23,9 +23,21 @@ public static class FlowVerify
         Left = (bits & 0x02) != 0, Right = (bits & 0x01) != 0,
     };
 
+    private static readonly StringBuilder _sb = new StringBuilder();
+
+    /// <summary>The full flow now runs past the pipeline's 30 s main-thread cap, so the report is
+    /// flushed to Temp/flow_verify.txt as well: read that file when run_script returns HTTP 400.</summary>
     public static string Check()
     {
-        var sb = new StringBuilder();
+        try { Body(); }
+        catch (System.Exception e) { _sb.AppendLine("EXCEPTION: " + e); }
+        finally { File.WriteAllText(Root + "/Temp/flow_verify.txt", _sb.ToString()); }
+        return _sb.ToString();
+    }
+
+    private static void Body()
+    {
+        var sb = _sb;
         var data = DataLoader.Load(
             File.ReadAllBytes(Root + "/Assets/Darkwing/Data/chr_full.bytes"),
             File.ReadAllBytes(Root + "/Assets/Darkwing/Data/levelsets.bytes"),
@@ -53,7 +65,7 @@ public static class FlowVerify
         sb.AppendLine($"map CHR bank {WorldState.MapChrBank} (probe_flow latch + MapChrSearch score); " +
                       $"nametable {game.MapNametable.Length} B, palette {game.MapPalette.Length} B");
 
-        game.Ppu.WriteRegister(0x2000, 0x16);   // bg pattern table at $1000
+        game.Ppu.WriteRegister(0x2000, 0x90);   // $FF=$90 in every ram_frames.bin: bg $1000, +1 increment
         game.LoadWorld(decoder, 0);             // the harness preloads a world; the flow freezes it
         var flow = new GameFlow(game, decoder);
         sb.AppendLine($"after ctor: stage={flow.Stage} WorldRunning={game.WorldRunning} " +
@@ -123,6 +135,31 @@ public static class FlowVerify
         sb.AppendLine($"NATURAL ENDING TRANSITION: reached={sweep.Stage == GameFlow.Phase.Ending} " +
                       $"stage={sweep.Stage} $38={sweep.World.CompletedCount} $69=${sweep.World.CompletedMask:X2}");
 
+        // --- G67: run the ending body itself ($D841-$D8D0). There is no ending capture, so the
+        // acceptance is behavioural: all three blocks execute, each $AA00 dialog terminates, the
+        // two $FEFF counts ($1E=30 at $D89D, $F0=240 at $9282) elapse, every $8000 palette blit
+        // reaches $3F00, and $D8CD's $65 gets its #$FF.
+        int endFrames = 0, lastEndStage = -1;
+        while (sweep.Stage == GameFlow.Phase.Ending && sweep.EndingStage < 6 && endFrames < 6000)
+        {
+            Run(game, sweep, 1, Pad(0));
+            endFrames++;
+            if (sweep.EndingStage != lastEndStage)
+            {
+                lastEndStage = sweep.EndingStage;
+                sb.AppendLine($"ending -> stage {sweep.EndingStage} at f{endFrames} (delay={sweep.EndingDelay}) " +
+                              $"$62={sweep.World.StreamId:X2} $31={sweep.World.CurrentWorld:X2} " +
+                              $"mask=$ {game.Ppu.Mask:X2} chr=${game.Ppu.Chr0Bank:X2}/${game.Ppu.Chr1Bank:X2} " +
+                              $"pal=${game.Ppu.PaletteRam[1]:X2},{game.Ppu.PaletteRam[2]:X2},{game.Ppu.PaletteRam[3]:X2}" +
+                              $"/{game.Ppu.PaletteRam[0x11]:X2},{game.Ppu.PaletteRam[0x12]:X2},{game.Ppu.PaletteRam[0x13]:X2} " +
+                              $"ntTiles={game.Ppu.NametableRam[0]}/{game.Ppu.NametableRam[0x200]} " +
+                              $"slots=[{Anim(game)}]");
+            }
+        }
+        sb.AppendLine($"ENDING BODY: stage={sweep.EndingStage} (6 = past the $D8D0 RTS) frames={endFrames} " +
+                      $"$65=${sweep.World.GameCompletedFlag:X2} WorldRunning={game.WorldRunning} flowStage={sweep.Stage}");
+        DumpPng(game, Root + "/Temp/flow_ending.png", sb);
+
         // --- the B branch of the prompt ($998C) goes back to the map without counting ---
         flow.World.CompletedMask = 0x01;
         game.LoadWorld(decoder, 1);
@@ -134,7 +171,21 @@ public static class FlowVerify
         Run(game, flow2, 1, Pad(0x40));                       // B -> $F8=$FF, back to map
         sb.AppendLine($"B branch: stage={flow2.Stage} $F8=$ {flow2.World.LastOutcome:X2} " +
                       $"$38={flow2.World.CompletedCount} WorldRunning={game.WorldRunning}");
-        return sb.ToString();
+    }
+
+    /// <summary>Ending-slot digest: <c>slot: anim($0420)@($0450,$0440)</c> for slots 1-5, so a
+    /// block's $FA6C seeds are readable in the log without a full object-RAM dump.</summary>
+    private static string Anim(DarkwingGame game)
+    {
+        var s = new StringBuilder();
+        for (int i = 1; i <= 5; i++)
+        {
+            var slot = game.Objects.Slots[i];
+            if (i > 1) s.Append(' ');
+            s.Append($"{i}:$ {slot.AnimNumber:X2}@({slot.ScreenX:X2},{slot.ScreenY:X2})" +
+                     $"{(slot.Active ? "+" : "-")}");
+        }
+        return s.ToString();
     }
 
     /// <summary>$B315: the boss's 16th damage point kills it, which raises

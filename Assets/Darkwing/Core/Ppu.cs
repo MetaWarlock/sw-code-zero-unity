@@ -72,7 +72,9 @@ namespace Darkwing.Core
         {
             addr &= 0x3FFF;
             if (addr < 0x2000) return; // CHR pattern tables are ROM-mapped
-            if (addr < 0x3F00) NametableRam[addr - 0x2000] = value;
+            // $3000-$3FFF mirrors $2000-$2FFF (2 KiB of nametable RAM, mirrored every $800),
+            // so a $2007 run whose auto-increment wraps out of $2FFF keeps writing the tables.
+            if (addr < 0x3F00) NametableRam[(addr - 0x2000) & 0x07FF] = value;
             else
             {
                 int i = addr & 0x1F;

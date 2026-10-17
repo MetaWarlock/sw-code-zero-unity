@@ -72,7 +72,7 @@ namespace Darkwing.UnityApp
             _map = _game.TileMap;
             _map.StreamColumns(0);
             if (WorldId == 0) _game.PlayMusic(1);   // song 1 = mission-1 gameplay (audio_engine.md)
-            _game.Ppu.WriteRegister(0x2000, 0x16); // NMI off phase, bg $1000, sprites $0000
+            _game.Ppu.WriteRegister(0x2000, 0x90); // $FF=$90 in every ram_frames.bin: bg $1000, $2007 +1
             _game.Ppu.WriteRegister(0x2001, 0x1E); // rendering on
             _game.Ppu.ScrollX = 0;
             _game.Ppu.ScrollY = 0;

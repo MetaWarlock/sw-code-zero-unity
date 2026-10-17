@@ -284,10 +284,10 @@ namespace Darkwing.Core
         /// <summary>$C14E: <code>INC $F0 / LDA #$00 / STA $FE / STA $2001</code>. The port keeps
         /// the mask only in the PPU register, so the black window comes from
         /// <see cref="Ppu.Render"/> filling with $3F00 while bit3-4 of $2001 are clear.</summary>
-        private void RenderOff() => Ppu.WriteRegister(0x2001, 0x00);
+        public void RenderOff() => Ppu.WriteRegister(0x2001, 0x00);
 
         /// <summary>$C158: <code>DEC $F0 / LDA #$1E / STA $FE / STA $2001</code>.</summary>
-        private void RenderOn() => Ppu.WriteRegister(0x2001, 0x1E);
+        public void RenderOn() => Ppu.WriteRegister(0x2001, 0x1E);
 
         /// <summary>Host/harness boot palette: the ROM keeps THREE palette states — the un-faded
         /// source $0320, the faded working copy $0300 and the PPU mirror $3F00 that only the NMI
@@ -549,6 +549,204 @@ namespace Darkwing.Core
             MapChooser = false;
         }
 
+        // ==================================================================
+        // G67: the ending ($D841-$D8D0) — the bank-2 primitives its three blocks call
+        // ==================================================================
+
+        /// <summary>True while an ending scene owns the frame. $A900/$9E00/$9280 are bank-2
+        /// resident routines that drive the bank-5 walk through $F89A, like the map chooser,
+        /// but without its per-frame bubble seed ($A4AE/$A503/$A53A) or the $A4FA caret park —
+        /// the ending's own sprites live in slots 1-5 and must keep their clocks.</summary>
+        public bool EndingScreen;
+
+        /// <summary>True while the ending is resident inside a $FEFF count (<code>JSR $FF06 /
+        /// DEX / BNE</code> — the $D89D 30-frame gap and $9280's $F0=240-frame hold). Only the
+        /// yield runs there, so <see cref="StepEndingFrame"/> is a no-op: no walk, no $95 tick.</summary>
+        public bool EndingYieldOnly;
+
+        /// <summary>$C1BA: NMI off (<code>LDA $FF / AND #$FE / STA $2000</code>), then 4 × 256
+        /// bytes of X from the page high byte A, then 64 bytes of Y over the tail of that fill.
+        /// $C1F1's <code>ADC #$02</code> runs with the carry still set from $C1ED's
+        /// <code>CMP #$20</code>, so the attribute pass lands on pageHigh + 3, $C0 = the LAST 64
+        /// bytes the fill wrote ($23C0 for A=$20) — it is a patch of the fill's own tail, not a
+        /// second page. A &lt; $20 takes the CHR-fill path ($C1DA re-reads the page count from Y);
+        /// the ending only ever calls it with A=$20.</summary>
+        public void FillVramPages(byte pageHigh, byte tile, byte attr)
+        {
+            Ppu.WriteRegister(0x2000, (byte)(Ppu.Ctrl & 0xFE));       // $C1C0-$C1C7
+            Ppu.WriteRegister(0x2006, pageHigh);                      // $C1CC
+            Ppu.WriteRegister(0x2006, 0x00);                          // $C1D1 STY $2006 (Y=0)
+            for (int i = 0; i < 4 * 256; i++)                         // $C1D4/$C1E0-$C1E7
+                Ppu.WriteRegister(0x2007, tile);
+            if (pageHigh < 0x20) return;                              // $C1EF BCC $C203
+            Ppu.WriteRegister(0x2006, (byte)(pageHigh + 3));          // $C1F1 ADC #$02 with C=1
+            Ppu.WriteRegister(0x2006, 0xC0);                          // $C1F6
+            for (int i = 0; i < 64; i++)                              // $C1FB LDX #$40
+                Ppu.WriteRegister(0x2007, attr);
+        }
+
+        /// <summary>$C95C: $C235 (slots 15…1 cleared, slot 0 left alone), then slot 0's $0400
+        /// and $04D0 written by hand, then the four scroll mirrors $FC/$FA/$FD/$FB.</summary>
+        public void ClearObjectRamAndScroll()
+        {
+            Objects?.ClearForSectionLoad();                           // $C95C → $C235
+            if (Objects != null)
+            {
+                var s0 = Objects.Slots[0];
+                s0.Flags = 0;                                          // $C961 STA $0400
+                s0.Active = false; s0.StateLow = 0;                    // $C964 STA $04D0
+            }
+            Player.ScrollX = 0; Player.ScrollY = 0;                   // $FC/$FA
+            Player.ScrollYRow = 0;                                     // $FB
+            Ppu.ScrollX = 0; Ppu.ScrollY = 0;
+        }
+
+        /// <summary>Bank 2's task entry $8000 with X = the task index. The pointer pair sits in
+        /// two overlapping tables — low bytes at $803D, high bytes at $8043 — so index i reads
+        /// $803D+i and $8043+i; the ROM's six tasks are $8049, $80A1, $83EC, $8789, $87C8, $89BE.
+        /// Records are [addrHi][addrLo][count][data…], ended by an addrHi with bit 7 set
+        /// ($8011 CMP #$FF), and count is the exact number of $2007 writes ($8031 DEX /
+        /// $8032 BNE $8029) — one less than $C119's queue convention.</summary>
+        public void RunBank2Task(int task)
+        {
+            int p = ((Bank2[0x43 + task] << 8) | Bank2[0x3D + task]) - 0x8000;   // $8000/$8005
+            while ((Bank2[p] & 0x80) == 0)
+            {
+                Ppu.WriteRegister(0x2006, Bank2[p]);                  // $8015
+                Ppu.WriteRegister(0x2006, Bank2[p + 1]);              // $801D
+                int count = Bank2[p + 2];                             // $8023 TAX
+                for (int i = 0; i < count; i++)
+                    Ppu.WriteRegister(0x2007, Bank2[p + 3 + i]);      // $8029/$802B
+                p += 3 + count;
+            }
+        }
+
+        /// <summary>$9E02-$9E15 / $A902-$A915: 16 bytes → $0300 AND $0320, 16 bytes → $0310 AND
+        /// $0330 — the same double write $C2F9/$C319 do, only from a literal bank-2 table.</summary>
+        private void BlitBank2Palette(int bgTable, int spTable)
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                _paletteSrc[i] = _palMirror[i] = Bank2[bgTable - 0x8000 + i];
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[spTable - 0x8000 + i];
+            }
+        }
+
+        /// <summary>$1A/$1B are the CHR request bytes the NMI applies as bank = value &amp; $7F
+        /// (see <see cref="WorldPrelude"/>), $18 is the $C059 palette-upload flag.</summary>
+        private void SetChrAndUpload(byte req1A, byte req1B, byte flag18)
+        {
+            Ppu.Chr0Bank = (byte)(req1A & 0x7F);
+            Ppu.Chr1Bank = (byte)(req1B & 0x7F);
+            _palDirty = flag18;
+        }
+
+        /// <summary>$EE5C/$9322: <code>LDA #$FF / STA $18</code> — flag the $C059 upload without
+        /// touching the $1A/$1B requests (the ending's third scene keeps the ones $DD57 loaded).</summary>
+        private void SetPaletteUploadFlag(byte flag) => _palDirty = flag;
+
+        /// <summary>One ending scene sprite: the $9E00/$A900/$9280 seeds write $04D0=$80 and
+        /// $0400 with the high coordinate bytes already zeroed, so X/Y are the page-low pair.</summary>
+        private void EndingSlot(int index, byte flags, ushort x, ushort y, byte anim)
+        {
+            var s = Objects.Slots[index];
+            s.Active = true; s.StateLow = 0x80;      // $04D0,X = $80 (the MapSlot convention)
+            s.Flags = flags;                         // $0400,X
+            s.Behavior = 0;
+            s.X = x; s.Y = y;                        // $04F0/$0500, $0510/$0520
+            s.ScreenX = (byte)x; s.ScreenY = (byte)y;
+            EnemyBehaviors.SetAnim(s, anim);         // $FA6C: number, timer and frame
+        }
+
+        /// <summary>$A900 — the ending's first scene ($D86C, with $62=$11 and task 5 already
+        /// blitted): palette $A94C/$A95C, slot 1 = anim $56 at ($7C,$5B), $1B=$9E/$1A=$8C/
+        /// $18=$8C, then $F90C (render on + yield) and $F89A (one walk frame). The $AA00 dialog
+        /// is driven by <see cref="GameFlow"/> because the ROM stays resident inside it.</summary>
+        public void EndingSceneA900()
+        {
+            BlitBank2Palette(0xA94C, 0xA95C);                        // $A902/$A90B
+            EndingSlot(1, 0x80, 0x007C, 0x005B, 0x56);               // $A919/$A92E/$A933
+            SetChrAndUpload(0x8C, 0x9E, 0x8C);                        // $A938-$A940
+            RenderOn();                                               // $A942 JSR $F90C
+            EndingScreen = true; MapScreen = false; WorldRunning = false;
+        }
+
+        /// <summary>$9E00 — the ending's second scene ($D89A, with $62=$09 and task 4 already
+        /// blitted): palette $9E68/$9E78, slot 1 = anim $AF at ($8C,$67), slot 2 = anim $B0 at
+        /// ($88,$87), $1B=$9B/$1A=$84/$18=$84, then $F90C and $F89A.</summary>
+        public void EndingScene9E00()
+        {
+            BlitBank2Palette(0x9E68, 0x9E78);                         // $9E02/$9E0B
+            EndingSlot(1, 0x80, 0x008C, 0x0067, 0xAF);                // $9E19/$9E40/$9E4A
+            EndingSlot(2, 0x80, 0x0088, 0x0087, 0xB0);                // $9E1F/$9E45/$9E4F
+            SetChrAndUpload(0x84, 0x9B, 0x84);                         // $9E54-$9E5C
+            RenderOn();                                                // $9E5E JSR $F90C
+            EndingScreen = true; MapScreen = false; WorldRunning = false;
+        }
+
+        /// <summary>$9280's seeds, run after its <code>LDX #$F0 / JSR $FEFF</code> 240-frame
+        /// hold: four anim slots ($2F/$AE/$C6/$C5), the velocity bytes the scene's falling
+        /// sprites need ($0530=$19, $0542=3, $0544=7), the sprite palette $93B8 → $0310/$0330,
+        /// $18=$FF and $97=$04 + one $F89A walk. $9326's flight branch tests
+        /// <code>LDA $04D0 / AND #$0F / CMP #$02</code>; after $C95C cleared slot 0 it is $0, so
+        /// the $F55E/$F51B flight (still unported, task #6) is NOT taken and the routine RTS-es
+        /// at $934B.</summary>
+        public void EndingScene9280()
+        {
+            var o = Objects;
+            EndingSlot(1, 0x90, 0x00FF, 0x00A4, 0x2F);                 // $92A7/$92AC/$92B1
+            o.Slots[1].XVelFrac = 0x19;                                 // $92DF STA $0530,X
+            EndingSlot(2, 0x80, 0x0000, 0x00AC, 0xAE);                 // $9294/$92F4/$92EF
+            o.Slots[2].XVelInt = 0x03;                                  // $92E4 STA $0542
+            EndingSlot(3, 0x00, 0x0000, 0x0000, 0x00);                  // $9297/$92BF/$92C8
+            o.Slots[3].Active = true;
+            EndingSlot(4, 0x80, 0x0000, 0x00B7, 0xC6);                 // $929A/$9300/$92FB
+            o.Slots[4].XVelInt = 0x07;                                  // $92E9 STA $0544
+            EndingSlot(5, 0xA0, 0x00A0, 0x00D0, 0xC5);                 // $92A2/$930C/$9311
+            o.Slots[5].Active = true;
+            for (int i = 0; i < 16; i++)                                // $9314-$9320
+                _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0x93B8 - 0x8000 + i];
+            SetPaletteUploadFlag(0xFF);                                  // $9322 LDA #$FF / STA $18
+            EndingScreen = true;
+        }
+
+        /// <summary>$C970 as the ending calls it: $C276 seeds the fade-out ($0F=$10, $0D=$10,
+        /// exit at $0F==$50), $FF06 yields the one frame, then $C14E blanks, $C1BA($20,$00,$00)
+        /// clears the nametable and $C95C empties object RAM. The ROM's fade ramp keeps running
+        /// in the background service (modelled by <see cref="_fadeRampActive"/> in
+        /// <see cref="StepEndingFrame"/>), so the seed+yield is one frame here, not sixteen —
+        /// there is no ending capture that could prove any other residency.</summary>
+        public void EndingFadeOutAndClear()
+        {
+            _fadeLevel = 0x00; _fadeDelta = 0x10; _fadeFrame = 0;      // $C276
+            _fadeExitAt50 = true;
+            _fadeRampActive = true;
+            StepFade();                                                // $C276 falls into $C285
+            RenderOff();                                               // $C976 JSR $C14E
+            FillVramPages(0x20, 0x00, 0x00);                            // $C979-$C97F
+            ClearObjectRamAndScroll();                                  // $C982 JSR $C95C
+        }
+
+        private bool _fadeRampActive;
+
+        /// <summary>One ending frame: the background $C285-$C2BF ramp, then the bank-5 walk the
+        /// scene routines drive through $F89A ($C21E park at $97=$04 + the compose), then the
+        /// render. This is <see cref="StepMapFrame"/> without the chooser logic — and without its
+        /// own <c>Frame++</c>, because <see cref="Step"/> already ticks the counter for the
+        /// non-world phases (the map phase therefore advances <c>Frame</c> twice per frame).
+        /// While the ending sits inside $FEFF/$9280's <code>LDX #$F0</code> the ROM is resident in
+        /// the yield — ProcessYield only, no walk and no $95 tick — so <see cref="EndingYieldOnly"/>
+        /// reduces the frame to a no-op.</summary>
+        private void StepEndingFrame()
+        {
+            if (EndingYieldOnly) return;
+            if (_fadeRampActive && StepFade()) _fadeRampActive = false;
+            FrameParity++;                                              // $8000-$8002
+            Oam.PublishToOam();
+            Oam.RunFrame(FrameParity);                                  // $F89A
+            Ppu.Render(Framebuffer);
+        }
+
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
         public const int SfxJump = 0x21;        public const int SfxLand = 0x10;
         public const int SfxHurt = 0x15;
@@ -674,7 +872,8 @@ namespace Darkwing.Core
                 // dispatcher, no bank-6 task. On the city map the frame still belongs to bank 2
                 // ($A448 chooser + the $F89A walk); the title and the GAME OVER card are pure
                 // nametable, so they only take the NMI counter and the renderer.
-                if (MapScreen && Oam != null) StepMapFrame(pressed);
+                if (EndingScreen && Oam != null) StepEndingFrame();
+                else if (MapScreen && Oam != null) StepMapFrame(pressed);
                 else
                 {
                     FrameParity++;

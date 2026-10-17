@@ -195,6 +195,7 @@ namespace Darkwing.Core
                     break;
 
                 case Phase.Ending:
+                    StepEnding(held);
                     break;
             }
             return Stage;
@@ -241,6 +242,92 @@ namespace Darkwing.Core
         {
             text.Tick(PhaseFrames, held);
             if (text.SfxToPlay != 0) _game.PlaySfx(text.SfxToPlay);
+        }
+
+        private int _endStage;          // $D841/$D86F/$D8A5 blocks, then the $D8D0 RTS
+        private int _endDelay;          // a $FEFF count: $D89D = $1E (30), $9280 = $F0 (240)
+
+        /// <summary>
+        /// $D841-$D8D0, the ending reached by $D838 <code>LDA $31 / CMP #$06 / BCS $D841</code>.
+        /// Three blocks, each with the same prologue ($C970 fade/clear, $97=$04 + $C21E, the four
+        /// scroll mirrors zeroed, a $C1BA nametable fill) and a bank-2 body:
+        ///   block 1  $D85B $C1BA($20,$00,$00), $62=$11, $FF55(#$02), $8000 with X=$05
+        ///            (records at $89BE), $A900 (palette $A94C/$A95C, slot 1 anim $56 at
+        ///            ($7C,$5B), $1B=$9E/$1A=$8C) then its $AA00 dialog;
+        ///   block 2  $D883 $C1BA($20,$02,$00), $62=$09, X=$04 (records at $87C8), $9E00
+        ///            (palette $9E68/$9E78, slots 1-2 anims $AF/$B0, $1B=$9B/$1A=$84), its dialog,
+        ///            then $D89D LDX #$1E / JSR $FEFF (30 frames) and $D8A2 JSR $C95C;
+        ///   block 3  $D8B6 $31=$0B, $D8BA JSR $DD57, $D8C2 JSR $9280 — which opens with
+        ///            LDX #$F0 / JSR $FEFF (240 frames), then seeds slots 1-5 ($2F/$AE/$C6/$C5),
+        ///            the sprite palette $93B8 and $18=$FF. $D8CD LDA #$FF / STA $65 is the
+        ///            game-completed flag; its readers are not ported yet (GAPS G69).
+        /// Every address above is in disasm/flat_bank7.txt:2998-3059 and flat_bank2.txt, and all
+        /// palette/record/CHR bytes are read from prg_bank2.bytes at run time, never hardcoded.
+        /// There is no ending capture, so this is verified as instruction-for-instruction parity
+        /// plus a rendered screen, not frame-exactly against the original ROM.
+        /// </summary>
+        private void StepEnding(byte held)
+        {
+            var text = _game.Text;
+            switch (_endStage)
+            {
+                case 0:                                     // block 1 ($D841-$D86C)
+                    _game.EndingFadeOutAndClear();           // $D841 JSR $C970
+                    _game.RunBank2Task(5);                   // $D867 LDX #$05 / JSR $8000
+                    _game.EndingSceneA900();                 // $D86C JSR $A900 (sans its $AA00)
+                    World.StreamId = 0x11;                   // $D860 LDA #$11 / STA $62
+                    if (text != null) text.Start(0x11);       // $D86C's tail: JSR $AA00
+                    _endStage = 1;
+                    break;
+                case 1:                                     // resident inside $AA00
+                    if (text == null || !text.Running) { _endStage = 2; break; }
+                    StepText(text, held);
+                    break;
+                case 2:                                     // block 2 ($D86F-$D89A)
+                    _game.EndingFadeOutAndClear();           // $D86F JSR $C970
+                    _game.FillVramPages(0x20, 0x02, 0x00);   // $D883-$D889
+                    _game.RunBank2Task(4);                   // $D897 LDX #$04 / JSR $8000
+                    _game.EndingScene9E00();                 // $D89A JSR $9E00 (sans its $AA00)
+                    World.StreamId = 0x09;                   // $D88E LDA #$09 / STA $62
+                    if (text != null) text.Start(0x09);
+                    _endStage = 3;
+                    break;
+                case 3:
+                    if (text == null || !text.Running)       // $D89D LDX #$1E / JSR $FEFF
+                    {
+                        _endStage = 4;
+                        _endDelay = 30;
+                        _game.EndingYieldOnly = true;
+                    }
+                    else StepText(text, held);
+                    break;
+                case 4:
+                    if (--_endDelay > 0) break;
+                    _game.EndingYieldOnly = false;
+                    _game.ClearObjectRamAndScroll();         // $D8A2 JSR $C95C
+                    World.CurrentWorld = 0x0B;               // $D8B6 LDA #$0B / STA $31
+                    _game.LoadWorld(_decoder, 0x0B);         // $D8BA JSR $DD57
+                    _game.WorldRunning = false;              // $9280's own LDX #$F0 hold is
+                    _game.EndingScreen = true;               // resident: ProcessYield only
+                    _game.EndingYieldOnly = true;
+                    _endDelay = 240;                         // $9282/$9280 JSR $FEFF
+                    _endStage = 5;
+                    break;
+                case 5:
+                    if (--_endDelay > 0) break;
+                    _game.EndingYieldOnly = false;
+                    _game.EndingScene9280();                 // $D8C2 JSR $9280's seeds
+                    _game.PlaySound(0x00);                   // $D8C9 JSR $F84E with A=$00
+                    World.GameCompletedFlag = 0xFF;          // $D8CD LDA #$FF / STA $65
+                    _game.WorldRunning = true;               // $D8D0 RTS → the main loop's engine
+                    _game.EndingScreen = false;
+                    _endStage = 6;
+                    break;
+                case 6:
+                    // Post-RTS: scene $0B runs on the world engine. $65's title-screen readers and
+                    // the $F51B flight inside $9280's $04D0&$0F==2 branch are not ported (G69/task 6).
+                    break;
+            }
         }
 
         /// <summary>$A416/$A448/$A452: A($80) alone is a no-op, Right($01)/Left($02)
@@ -291,9 +378,15 @@ namespace Darkwing.Core
             Stage = next;
             PhaseFrames = 0;
             _promptOpen = false;
+            if (next == Phase.Ending) { _endStage = 0; _endDelay = 0; }
         }
 
         /// <summary>Host calls this on the frame the mission's final boss dies ($B39E path).</summary>
         public void OnMissionCleared() => _game.MissionCleared = true;
+
+        /// <summary>Which $D841/$D86F/$D8A5 step the ending body is on (0-6, 6 = after the
+        /// $D8D0 RTS) and how many $FEFF frames are left in it — exposed for FlowVerify.</summary>
+        public int EndingStage => _endStage;
+        public int EndingDelay => _endDelay;
     }
 }

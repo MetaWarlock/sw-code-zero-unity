@@ -52,6 +52,7 @@ namespace Darkwing.Core
         public byte CompletedMask;      // $69 (bit N = mission N cleared, set at $A5D1+)
         public byte LastOutcome;        // $F8 (bit7 = the player chose Left at the prompt)
         public byte StreamId;           // $62 (text stream / node index)
+        public byte GameCompletedFlag;  // $65 (#$FF written by $D8CD at the end of the ending body)
         public byte CursorBubble;       // $6C (map HELP bubble cursor, 0..2)
 
         public readonly byte[] Bank7;   // world_bank7.bytes
