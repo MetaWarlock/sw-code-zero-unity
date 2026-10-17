@@ -1,0 +1,52 @@
+# shift 62.3 evidence: $31 segments and the f688..f1517 window in reference/gold_title2 (existing golden, no new ROM run)
+# cmds: python Tools/DarkwingResearch/intro_segments.py Research/DarkwingDuck/reference/gold_title2 31 9A9C
+#       python Tools/DarkwingResearch/panel_window.py Research/DarkwingDuck/reference/gold_title2 688 1517 Assets/Darkwing/Data/prg_bank2.bytes 9A9C
+
+cap=gold_title2 frames=4200
+  $31=E1 f0..f3 (4)
+  $31=00 f4..f262 (259)
+  $31=07 f263..f687 (425)
+  $31=09 f688..f1517 (830)
+  $31=00 f1518..f4199 (2682)
+pad1 nonzero: [0, 1, 2, 3, 180, 400, 700, 900, 1100, 1300, 1500, 1700, 1900, 2100, 2300, 2500, 2700, 2900, 3100]
+vram records=70 rem=0
+  vram dump f60  vram dump f120  vram dump f180  vram dump f240  vram dump f300  vram dump f360  vram dump f420  vram dump f480  vram dump f540  vram dump f600  vram dump f660  vram dump f720  vram dump f780  vram dump f840  vram dump f900  vram dump f960  vram dump f1020  vram dump f1080  vram dump f1140  vram dump f1200  vram dump f1260  vram dump f1320  vram dump f1380  vram dump f1440  vram dump f1500  vram dump f1560  vram dump f1620  vram dump f1680  vram dump f1740  vram dump f1800  vram dump f1860  vram dump f1920  vram dump f1980  vram dump f2040  vram dump f2100  vram dump f2160  vram dump f2220  vram dump f2280  vram dump f2340  vram dump f2400  vram dump f2460  vram dump f2520  vram dump f2580  vram dump f2640  vram dump f2700  vram dump f2760  vram dump f2820  vram dump f2880  vram dump f2940  vram dump f3000  vram dump f3060  vram dump f3120  vram dump f3180  vram dump f3240  vram dump f3300  vram dump f3360  vram dump f3420  vram dump f3480  vram dump f3540  vram dump f3600  vram dump f3660  vram dump f3720  vram dump f3780  vram dump f3840  vram dump f3900  vram dump f3960  vram dump f4020  vram dump f4080  vram dump f4140  vram dump f4200
+literal bytes at $9A9C in each $8000-window image:
+  prg_bank2.bytes @$9A9C: 26 0F 30 10 0F 0F 27 13 0F 0F 33 13 0F 0F 30 27
+  prg_bank1.bytes @$9A9C: 6C FA DE 80 04 60 20 6A B3 BD E0 04 C9 4F F0 F5
+  prg_bank5.bytes @$9A9C: 01 4F 01 50 01 51 01 52 01 53 01 54 01 00 00 00
+  prg_bank6.bytes @$9A9C: F0 06 A9 00 9D A0 04 60 A9 FF 9D A0 04 60 A9 1D
+  prg_bank4.bytes @$9A9C: 01 31 01 32 01 2C 01 2D 01 33 01 0C 0A 0C 01 0B
+  prg_bank0.bytes @$9A9C: 09 8B 09 87 8C 03 04 02 89 8D 03 89 8E 09 0A 87
+
+## panel_window (lo=688 hi=1517 table=$9A9C)
+frames=4200 vram_records=70
+distinct $2000 nametables (960 B) over whole capture: 13
+  [outside] f60..f240 (4 recs) first32=00 00 00 00 00 00 00 00 00 00 00 00  top tiles=00x885, 03x8, DCx7, E7x6, DDx5, DEx5
+  [outside] f300..f300 (1 recs) first32=00 00 00 00 00 00 00 00 00 00 00 00  top tiles=00x871, 46x4, 47x4, 48x4, 49x4, 56x4
+  [outside] f360..f360 (1 recs) first32=00 00 00 00 00 00 00 00 00 00 00 00  top tiles=00x854, 46x4, 47x4, 48x4, 49x4, 56x4
+  [outside] f420..f420 (1 recs) first32=00 00 00 00 00 00 00 00 00 00 00 00  top tiles=00x864, 46x4, 47x4, 48x4, 49x4, 56x4
+  [outside] f480..f660 (4 recs) first32=00 00 00 00 00 00 00 00 00 00 00 00  top tiles=00x826, EDx5, DEx5, 46x4, 47x4, 48x4
+  [inside] f720..f900 (4 recs) first32=11 11 11 11 11 11 11 11 11 11 11 11  top tiles=11x256, 10x256, 00x192, 0Cx32, 1Cx32, 0Dx32
+  [inside] f960..f1080 (3 recs) first32=02 02 02 02 02 02 02 02 02 02 02 02  top tiles=02x252, 00x200, 03x126, C3x28, BFx27, BBx26
+  [inside] f1140..f1140 (1 recs) first32=02 02 02 02 02 02 02 02 02 02 02 02  top tiles=02x613, 5Ax114, 5Ex16, 5Fx15, 5Cx14, 69x14
+  [inside] f1200..f1260 (2 recs) first32=02 02 02 02 02 02 02 02 02 02 02 02  top tiles=02x571, 5Ax114, 5Ex16, 5Fx15, 5Cx14, 69x14
+  [inside] f1320..f1320 (1 recs) first32=02 02 02 02 02 02 02 02 02 02 02 02  top tiles=02x612, 5Ax114, 5Ex16, 5Fx15, 5Cx14, 69x14
+  [inside] f1380..f1500 (3 recs) first32=02 02 02 02 02 02 02 02 02 02 02 02  top tiles=02x578, 5Ax114, 5Ex16, 5Fx15, 5Cx14, 69x14
+  [outside] f1560..f3960 (21 recs) first32=03 03 03 03 03 03 03 03 03 03 03 03  top tiles=00x234, 02x202, 03x75, 06x22, 04x15, 08x14
+  [outside] f1620..f4200 (24 recs) first32=03 03 03 03 03 03 03 03 03 03 03 03  top tiles=00x234, 02x201, 03x75, 06x22, 04x15, 08x14
+
+table prg_bank2.bytes@$9A9C = 26 0F 30 10 0F 0F 27 13 0F 0F 33 13 0F 0F 30 27
+  f678: $0310=0F 0F 30 27 0F 0F 27 13 0F 0F 30 25 0F 0F 23 13 eq=False | $0330 eq=$0310:True | $3F01..10 eq:False | $18=00 $31=07
+  f688: $0310=0F 0F 20 17 0F 0F 17 03 0F 0F 20 15 0F 0F 13 03 eq=False | $0330 eq=$0310:False | $3F01..10 eq:False | $18=FF $31=09
+  f718: $0310=0F 0F 00 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 07 0F eq=False | $0330 eq=$0310:False | $3F01..10 eq:False | $18=00 $31=09
+  f1487: $0310=0F 0F 0F 0F 0F 0F 0F 0F 0F 17 27 15 0F 27 36 20 eq=False | $0330 eq=$0310:True | $3F01..10 eq:False | $18=00 $31=09
+  f1517: $0310=0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F 0F eq=False | $0330 eq=$0310:False | $3F01..10 eq:False | $18=00 $31=09
+frames in [lo,hi] where $0310 != table: 663 first=[688, 689, 690, 691, 692, 693, 694, 695]
+
+## Start-press table ($14=$10 bit4 = Start, injected every 200 frames)
+f180 $14=10 $31=00 | f400 $14=10 $31=07 | f700 $14=10 $31=09(in DD57 id9 load) | f900 $14=10 $31=09 -> panel $8F00 exits, $C66E BNE -> $C672 JMP $C792 | f1100/f1300/f1500 $14=10 $31=09(title loop $C7AD waits Start; f1500 press -> $C7CF -> $C800/$C802 STA $31=$00 at f1518)
+
+## $0310==table runs inside 680..1600 (EQ f733..f899 (167 frames, panel $8F00: $0421=2F $04F1=FF->67 $18=FF))
+## slot1 ($04F1/$0511/$0421) f733..f744 = FF/A4/2F, FE/A4/2F, ... ~0.91 px/frame ($0531=$E9)
+## $04F1 frozen at $67 from f900 (panel stepped no more; title took over)
