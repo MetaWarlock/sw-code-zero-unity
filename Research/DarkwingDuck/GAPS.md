@@ -1508,3 +1508,34 @@ Suite-приёмки; эффект появится, когда будет пе�
   `ReloadRow = LoadRow + StreamColumns`, который перерисовывает ВЕСЬ окно за вызов
   (`DarkwingGame.cs:130…134`).
 
+
+## Смена 61 (2026-10-17): standalone-сборка HEAD доказана; открыт G72 (pipeline в Player-сборках)
+
+- **M8 закрыт по критерию «проверенная standalone-сборка»:** `unity command build` из живого редактора →
+  `build_1850d22ae797`, StandaloneWindows64, `Build/Windows/DarkwingDuck.exe`, 106 445 494 Б, 38 487 мс,
+  0 ошибок / 5 предупреждений, рабочее дерево на `bd61482`. Проверка игрока вне Editor
+  (`Tools/DarkwingResearch/verify_player.ps1`): два различных снимка окна титульного экрана
+  (`evidence/player_boot_a.png` 108 235 ненулевых px, `player_boot_b.png` 107 890, SHA различаются),
+  `Player.log` 66 строк без исключений, чистое завершение, `Crashes/` нет; в `Build/` нет ни одного
+  `.nes` — исполняется только нативный C# порт (`Darkwing.Core.dll`, `Darkwing.Audio.dll`,
+  `Darkwing.UnityApp.dll`). Доказательства и вердикты по всем критериям AGENTS.md — `Docs/DarkwingPort/ACCEPTANCE_REPORT.md`.
+- **G72 (открыт, блокирует «полное прохождение в standalone»):** в проекте нет ассета
+  `RuntimePipelineConfig` (Project Settings → Pipeline → Runtime), сборка печатает
+  `Pipeline: No RuntimePipelineConfig asset found … Pipeline will be disabled in Player builds.`
+  Следствие: к собранному игроку нельзя подключиться pipeline-командами (`run_script`, `simulate_key`,
+  `runtime_status`), поэтому покадровая сверка возможна только в Editor, а из standalone — лишь по
+  снимкам окна/логам. Доказательство границы: `unity command editor_status`/`run_script` против pid
+  игрока недоступны, игрок поднимается как обычное приложение. Что делать: либо создать и назначить
+  `RuntimePipelineConfig` (тогда standalone становится управляемым), либо зафиксировать в приёмке, что
+  покадровые золоты снимаются из Editor, а standalone проверяется визуально. Критерии приёмки не двигать.
+- **Бытовые замеры (не гэпы, но мешают):** (1) сборка пересоздаёт `Temp/`, поэтому всё, что лежит в
+  `Temp/`, уничтожается — отчёты надо копировать в `Docs/DarkwingPort/evidence/` сразу после прогона;
+  (2) `Logs/Editor.log` = 3 590 783 690 Б, скан хвоста дорожает — при закрытии редактора обнулить;
+  (3) `Temp/UnityLockfile` этого проекта держал PID 12208, а PID 23556 — редактор чужого проекта
+  `D:\Art\ProjectWitch` (его не трогать); (4) повторный запуск Editor обязан использовать
+  `-projectPath "<путь>"` (позиционный аргумент Unity игнорирует и выходит с rc 0 —
+  `Logs/Editor-reopen2.log`), скрипт `Tools/DarkwingResearch/launch_editor.ps1` обновлён.
+- **СЛЕДУЮЩАЯ КОНКРЕТНАЯ ОПЕРАЦИЯ прежняя: G66** — перенести тело вертикального редрауза `$E7C6…$E935`
+  (спецификация смены 59 + остаток смены 60.1: индекс `$2A`, 8 колонок за проход, число проходов `$05`,
+  окно атрибутов `$0780`, маски `$10/$11/$12` вместо `ReloadRow = LoadRow + StreamColumns`,
+  `DarkwingGame.cs:130…134`). Приёмка — пункт «G66 приёмка», критерии не двигать.

@@ -1,6 +1,20 @@
 # STATUS — Darkwing Duck NES → Unity port
 
-Обновлён: 2026-10-17, смена 59 (**код менялся на 1 строку; G68 закрыт**). Из `StepMapFrame` удалён
+Обновлён: 2026-10-17, смена 61 (**M8: standalone-сборка HEAD доказана, приёмка переписана; код не менялся**).
+Согласованно с человеком сборка выполнена pipeline-командой из живого редактора (`unity command build --target
+StandaloneWindows64 --outputPath "Build/Windows/DarkwingDuck.exe" --confirm true`) → `build_1850d22ae797`,
+38 487 мс, 0 ошибок / 5 предупреждений, 106 445 494 Б, рабочее дерево на `bd61482`; exe SHA-256 `001aeebf…`.
+Игрок проверен вне Editor (`Tools/DarkwingResearch/verify_player.ps1`): два разных снимка окна титула
+(`evidence/player_boot_a.png` 108 235 ненулевых px / `player_boot_b.png` 107 890), `Player.log` 66 строк без
+исключений, чистое завершение; ROM в `Build/` нет — только `Darkwing.Core/Audio/UnityApp.dll`. Все пять
+предупреждений восстановлены дословно из хвоста `Logs/Editor.log` (`RuntimePipelineConfig` + 3× CS1717 +
+1× UAC1001). `Docs/DarkwingPort/ACCEPTANCE_REPORT.md` переписан под текущий HEAD и содержит честный вердикт:
+критерий «проверенная standalone-сборка» выполнен, «секреты/бонус-зоны», золоты боссов и APU/WAV-сверка — нет.
+Открыт **G72**: `Pipeline will be disabled in Player builds` (нет `RuntimePipelineConfig`) ⇒ собранный игрок
+недоступен покадровому харнессу. Следующий шаг прежний: **G66 (структурная часть)** — тело вертикального
+редрауза `$E7C6…$E935` с масками `$10/$11/$12` (спецификация в GAPS «Смена 59», остаток — «Смена 60.1»).
+
+Обновлён ранее: 2026-10-17, смена 59 (**код менялся на 1 строку; G68 закрыт**). Из `StepMapFrame` удалён
 собственный `Frame++`: ветка `!WorldRunning` в `Step` уже делает инкремент, поэтому кадр карты двигал
 `Frame` на 2, а титул/финал/мир — на 1. Ложная посылка записи GAPS («`Frame` — часы планировщика аудио»)
 снята замером: `grep -rn "\bFrame\b" Assets/Darkwing` даёт только писатели + `W.Write(Frame)`/

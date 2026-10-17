@@ -184,19 +184,26 @@ AgentScripts/PhysCompare.cs --entry PhysCompare.Door`.
 
 ## M8 — сборка и доказательства
 
-- [ ] **Актуальная standalone-сборка (текущий HEAD) НЕ доказана** (аудит смены 54). Прежний
-      закрытый пункт относился к ревизии `830521c` (смена 28d, 2026-10-16): `BuildPlayer.Win64` →
-      run_script `result:0` (~23 с); `Darkwing.Core.dll`/`Darkwing.UnityApp.dll` пересобраны;
-      exe-стаб побайтно тот же (`001aeebf…`, лаунчер-заглушка Unity); smoke вне Editor — процесс
-      жив ≥10 с, корректно завершён; доказательство `Temp/build_win64.log`. После `830521c` в
-      `Assets/Darkwing/**` вошли смены 30–54, поэтому собранный exe больше не отражает исходники.
-      Пересборка заблокирована: живой Editor держит `Temp/UnityLockfile`, `unity build` — только
-      при явном согласии человека.
-- [ ] Полное прохождение в standalone + артефакты приёмки
-- [ ] `ACCEPTANCE_REPORT.md` актуален для текущего HEAD. Файл переписан 2026-10-16 на ревизии
-      `830521c` и с тех пор не обновлялся = stale; completion в нём не объявлен, но его список
-      «доказанное» не включает смены 45–54 (мисс-карта `$9636`, `Phase.Pause`, `$D838`-финал,
-      исправленные `ENEMIES`/`STRICT`-вердикты) и потому не может служить приёмкой текущего кода.
+- [x] **Актуальная standalone-сборка (текущий HEAD) доказана (смена 61, 2026-10-17).** Команда, сборка
+      из живого редактора: `unity command build --target StandaloneWindows64 --outputPath
+      "Build/Windows/DarkwingDuck.exe" --confirm true` → `build_1850d22ae797`, 38 487 мс, 0 ошибок /
+      5 предупреждений, 106 445 494 Б, рабочее дерево на `bd61482`; `Build/Windows/DarkwingDuck.exe`
+      SHA-256 `001aeebf…`; ROM в `Build/` отсутствует, в сборке только `Darkwing.*.dll` порта.
+      Проверка игрока вне Editor: `Tools/DarkwingResearch/verify_player.ps1` → `evidence/player_boot_a.png` (108 235
+      ненулевых px) и `player_boot_b.png` (107 890, SHA другой) = титульный экран, `Player.log` 66 строк
+      без исключений, чистое завершение, `Crashes/` нет. История вопроса (смена 28d, `830521c`):
+      сборка делалась batch-mode `BuildPlayer.Win64` → run_script `result:0` (~23 с), exe-стаб побайтно
+      тот же (`001aeebf…` — лаунчер-заглушка Unity, размер 667 136 Б), доказательство
+      `Temp/build_win64.log` уничтожено пересозданием `Temp/` при сборке смены 61.
+- [ ] Полное прохождение в standalone + артефакты приёмки — **заблокировано новым gap'ом:** в проекте
+      нет `RuntimePipelineConfig` ассета, сборка печатает `Pipeline will be disabled in Player builds`,
+      поэтому покадрово драйвить собранный игрок из харнесса нельзя; обход — сверка по снимкам окна.
+- [x] `ACCEPTANCE_REPORT.md` переписан 2026-10-17 (смена 61) под HEAD `bd61482`: 9 разделов — SHA-256 ROM,
+      состав сборки, таблица билда с 5 предупреждениями дословно, проверка игрока, 25 строк Suite,
+      экраны/прогрессия, 9 пунктов «не выполнено» (G66, G62, G71, G69/G70, секреты/бонусы без строки в
+      COVERAGE, continue-экран, золоты боссов, APU/WAV, Bloom), вердикт по каждому критерию AGENTS.md и
+      команды воспроизведения. Отдельный честный вердикт: критерий «проверенная standalone-сборка»
+      выполнен, «секреты/бонус-зоны» и «золотые сравнения боссов/аудио» — нет, поэтому цель не закрыта.
 
 ## Известные расхождения, которые нельзя «починить» ослаблением критериев
 
@@ -1273,7 +1280,29 @@ AgentScripts/PhysCompare.cs --entry PhysCompare.Door`.
   проекта (старая заметка `…nametable-not-oam` удалена, добавлена
   `darkwing-map-help-bubbles-are-anim-slots.md`).
 
-## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 60)
+## СЛЕДУЮЩИЙ ШАГ (актуальный, смена 61)
+
+**Закрыто в смене 61 (M8: standalone-сборка текущего HEAD доказана + переписан `ACCEPTANCE_REPORT.md`).**
+Согласованно с человеком («Закрыть Editor и собрать») сборка выполнена НЕ batch-mode, а pipeline-командой
+из живого редактора: `unity command build --target StandaloneWindows64 --outputPath
+"Build/Windows/DarkwingDuck.exe" --confirm true --project-path "D:/Art/SW Code Zero Unity"` →
+`buildId build_1850d22ae797`, 38 487 мс, **0 ошибок / 5 предупреждений**, 106 445 494 Б,
+рабочее дерево на HEAD `bd61482`. Конфликт с `Temp/UnityLockfile` не возник (второй редактор не поднимался).
+Игрок проверен вне редактора `Tools/DarkwingResearch/verify_player.ps1`: два снимка окна (`PrintWindow`, флаг 2)
+`evidence/player_boot_a.png` / `player_boot_b.png` — 108 235 и 107 890 ненулевых px, 10 разных цветов,
+SHA различаются (кадр анимирован), на снимках титульный экран порта; `Player.log` 66 строк без исключений;
+завершение корректное, `Crashes/` нет. В сборке только нативный код порта (`Darkwing.Core.dll`,
+`Darkwing.Audio.dll`, `Darkwing.UnityApp.dll`), ROM в `Build/` отсутствует (`find -iname "*.nes"` пуст) —
+эмуляторной обёртки нет. Все пять предупреждений восстановлены дословно из хвоста `Logs/Editor.log`
+(~70 МБ, скан `Tools/DarkwingResearch/tail_grep.ps1`): `Pipeline: No RuntimePipelineConfig asset found …` + 3× `CS1717`
+(`EnemyBehaviors.cs:1676/1677`, осознанные no-op'ы `Riser` case 0) + 1× `UAC1001` (`AudioOutFeed.cs:15`).
+**Новый открытый gap:** отсутствие `RuntimePipelineConfig` ⇒ pipeline выключен в Player-сборках, поэтому
+покадрово управлять собранным игроком из харнесса нельзя (проверка «полное прохождение в standalone» упирается в него).
+Путаница с владельцем lockfile исправлена замером: `Temp/UnityLockfile` держал PID 12208 (этот проект),
+PID 23556 — редактор чужого проекта `D:\Art\ProjectWitch`, его не трогали. Побочный эффект сборки:
+`Temp/` пересоздаётся, поэтому `Temp/dialogue.txt` и `Temp/build_report.json` уничтожены; копия диалога
+заранее сохранена в `evidence/shared_dialogue.txt`. Бытовой дефект: `Logs/Editor.log` = 3 590 783 690 Б
+(3.59 ГБ) — при следующем закрытии редактора его стоит обнулить, иначе скан лога становится дорогим.
 
 **Закрыто в смене 60 (титульный экран — картинка есть, сравнение покадровое).** Предпосылка
 «титульный арт = чёрный экран, `$2001=0`, nametable не экспортирован» опровергнута дизасмом и
