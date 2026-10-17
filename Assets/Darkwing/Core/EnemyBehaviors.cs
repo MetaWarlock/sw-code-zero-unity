@@ -284,10 +284,14 @@ namespace Darkwing.Core
             s.AnimNumber = anim; s.AnimFrame = 0; s.AnimTimer = 0;
         }
 
-        /// <summary>$FA9A kill slot X.</summary>
+        /// <summary>$FA9A kill slot X: LDA #$00 → $04D0,X / $0400,X / $04C0,X / $04E0,X,
+        /// then #$FF → $0590,X. $04D0 is zeroed as a whole byte, so the low state nibble
+        /// goes with it — clearing only bit7 would leave $80|state and keep the slot readable
+        /// as state 1 by the $8000 dispatcher.</summary>
         internal static void KillSlot(ObjectSystem.Slot s)
         {
-            s.Active = false; s.Flags = 0; s.HitFlash = 0; s.Behavior = 0; s.PlacementIndex = 0xFF;
+            s.Active = false; s.StateLow = 0; s.Flags = 0; s.HitFlash = 0;
+            s.Behavior = 0; s.PlacementIndex = 0xFF;
         }
 
         /// <summary>$FA4C find free object slot 15..4 (returns -1 = none/CS).</summary>
