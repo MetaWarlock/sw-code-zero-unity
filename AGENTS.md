@@ -12,6 +12,15 @@ When explicitly assigned implementation of the port, read these documents before
 
 These are explicit reading instructions; do not assume ZCode automatically imports linked files.
 
+## Available research tools
+
+- REA `rea-agents@6.5.0` is installed globally (`rea` CLI); its MCP server is registered in Qoder. Use it when useful for focused original-code analysis: 6502 disassembly, pseudocode, calls and references.
+- Before first use, read `C:\Users\Warlock\.qoder\skills\reverse-engineer-anything\SKILL.md`; consult only relevant supporting references.
+- Ghidra 12.1.4: `D:\Tools\ghidra_12.1.4_PUBLIC`; JDK 21: `D:\Tools\jdk-21.0.12.1+1`. If the current process lacks the configured environment, pass these paths as `GHIDRA_INSTALL_DIR` and `JAVA_HOME`, with `REA_ANALYSIS_PROVIDER=ghidra`.
+- If REA MCP tools are absent from the current session, use the working CLI and continue. Reuse the installed toolchain; diagnose specific failures instead of repeating setup or broad readiness checks.
+- Raw 6502 analysis does not model iNES/MMC1 bank switching. Preserve bank identity and load address. Distinguish memory addresses from file offsets: with a bank loaded at `0x8000`, procedure `0x8F00` is file offset `0x0F00`. Use explicit `--file-offset` for file coordinates; `REA_GHIDRA_SEED_FILE` takes loaded-memory addresses.
+- Keep Mesen and existing capture/comparison tools as the behavioral reference. REA pseudocode is analysis evidence, not proof of runtime equivalence. Save and reuse analysis results; avoid restarting a full ROM investigation.
+
 ## Implementation rules
 
 - Target the existing project at `D:\Art\SW Code Zero Unity`; specify this project path in Unity commands because another Editor may be running.

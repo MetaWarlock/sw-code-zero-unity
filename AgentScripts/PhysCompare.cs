@@ -206,7 +206,8 @@ public static class PhysCompare
         var fieldNames = new[] { "X", "Y", "$50 state", "$FA scrollY", "$FB row",
                                  "$22 cell", "$23 next", "$2B scrollstate", "$25 streamcursor",
                                  "$0460 Yfrac", "$0470 Xfrac", "$0560 YvelI", "$0550 YvelF",
-                                 "ladder($05B2-B8)" };
+                                 "ladder($05B2-B8)", "$2F scrollmode", "$10 colmask",
+                                 "$28 redrawscroll", "$FC scrollXlo" };
         var firstBad = new int[fieldNames.Length];
         var badPort = new int[fieldNames.Length];
         var badOrig = new int[fieldNames.Length];
@@ -386,12 +387,14 @@ public static class PhysCompare
                                    && p.CellIndex == g[0x22] && p.CellIndexNext == g[0x23] && p.ScrollState == g[0x2B]);
             int[] pv = { p.X, p.Y, p.State, p.ScrollY, p.ScrollYRow,
                          p.CellIndex, p.CellIndexNext, p.ScrollState, p.StageCursor,
-                         p.YFrac, p.XFrac, p.YVelInt & 0xFF, p.YVelFrac, p.HitLadder };
+                         p.YFrac, p.XFrac, p.YVelInt & 0xFF, p.YVelFrac, p.HitLadder,
+                         p.ScrollMode, p.ScrollStep, p.LastRedrawScroll, p.ScrollX & 0xFF };
             int[] ov = { gx, gy, g[0x50], g[0xFA], g[0xFB],
                          g[0x22], g[0x23], g[0x2B], g[0x25],
                          g[0x460], g[0x470], g[0x560], g[0x550],
                          g[0x5B2] != 0x80 ? 4 : (g[0x5B4] != 0x80 ? 1 : 0) +
-                             (g[0x5B8] != 0x81 ? 1 : 0) + (g[0x5B6] != 0x81 ? 1 : 0) };
+                             (g[0x5B8] != 0x81 ? 1 : 0) + (g[0x5B6] != 0x81 ? 1 : 0),
+                         g[0x2F], g[0x10], g[0x28], g[0xFC] };
             for (int i = 0; i < pv.Length; i++)
                 if (pv[i] != ov[i])
                 {
