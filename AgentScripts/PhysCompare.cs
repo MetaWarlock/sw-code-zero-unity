@@ -1630,6 +1630,25 @@ public static class PhysCompare
             goldenDir: "tmp_boss_pilot1", trace: true, residentFade: true);
     }
 
+    /// <summary>
+    /// G86 — the ROM golden that contains a boss DEFEAT: `tmp_boss_pilot14_wolf_defeat` (400 frames,
+    /// loaded from `tmp_boss_pilot13_stage520/midfight520.mss`, RAM patched `$00EE=$0F` so the first hit
+    /// crosses the `$10` line, and B held 4 frames every 20: `0:b@15-18, 35-38, … 395-398`). Boss slot is
+    /// index $0E (behaviour `$54`), so the defeat path `$B36A → $B315` is measurable here: ROM shows
+    /// `$EE` 0F→10 at f38, slot behaviour `$54→$4F` at f39 and the slot dying at f79.
+    /// </summary>
+    public static string BossFightWolfDefeat() => BossWolfDefeatSeed(0);
+
+    public static string BossWolfDefeatSeed(int seedFrame)
+    {
+        byte[] ram = File.ReadAllBytes(
+            "D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/tmp_boss_pilot14_wolf_defeat/ram_frames.bin");
+        return Compare("boss_pilot14_wolf_defeat", ram.Length / 2048,
+            f => (f % 20 >= 15 && f % 20 <= 18) ? (byte)0x40 : (byte)0x00,
+            seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true,
+            goldenDir: "tmp_boss_pilot14_wolf_defeat", trace: true, residentFade: true);
+    }
+
     public static string PaletteDeath() => PaletteWindow(786, 860);
 
     public static string PaletteWindow(int lo, int hi, string golden = "m1_longroute", bool runPort = false)
