@@ -1495,11 +1495,9 @@ namespace Darkwing.Core
                 }
                 else SetAnimPlayer(0x12);                                               // $D688 → $D6AC
             }
-            // $D6B1 JSR $F64A (the slot-pair push, still unported — G92): Y = X^1 (slot 1 for the
-            // player), needs $04D0,Y negative, both $0400 flags set and $04E0,Y != 0, then measures
-            // with $F699/$F6DF to leave $11; carry would take $D709 ($0510 -= $11, $50 = 0). Its
-            // CLC exit is JMP $F784, not RTS. With no live pair $F64A is CLC, which is what
-            // gold_m1_cling (199/199) observes.
+            // $D6B1/$D6B4: JSR $F64A — with carry set the frame leaves through $D709 and the
+            // player is lifted off an armed object instead of reaching the steering.
+            if (PushPairOrScan(out byte lift)) PushUpAndLand(lift);   // $D709 JSR $D7D8, $50 = 0
             if (State != 0x0B)                                          // $D6B6 CMP #$0B / BEQ $D6C7
             {
                 probe = ProbeHook();                                    // $D6BC-$D6C4: $40 = $3A
@@ -1514,6 +1512,134 @@ namespace Darkwing.Core
                 case 4: AirD73C(); return false;                        // $D6E6 BEQ $D73C
                 default: return true;                                   // $D6E8 JMP $D756
             }
+        }
+
+        // ---------- $F64A: the player/object push ----------
+        // $00/$01 are the scratch the 6502 leaves behind inside $F699 for $F7A8 to re-read, so
+        // they are fields, not locals.
+        private byte _push00;
+        private byte _push01;
+
+        /// <summary>$F699: the horizontal gap between the player (slot 0) and slot Y. The
+        /// player's $0400 is $D0, so bit4 is always set and the 16-bit branch is the live one;
+        /// the $F6C6 screen-relative branch is kept for fidelity but its RTS at $F6DE leaves
+        /// the accumulator at the LDA #$00, i.e. it always measures a gap of 0.</summary>
+        private byte PushDx(byte y)
+        {
+            var o = Objects;
+            if (o == null) return 0;
+            int px = o.Slots[y].X;
+            if ((Flags & 0x10) != 0)                                    // $F69C AND #$10
+            {
+                int d = X - px;
+                if (d < 0) d = -d;                                      // $F6B1-$F6C1
+                _push00 = (byte)(d & 0xFF);
+                _push01 = (byte)((d >> 8) & 0xFF);
+                return _push00;                                         // $F6C3 LDA $00
+            }
+            int s = (byte)px - (byte)ScrollX;                           // partner screen Xlo
+            int r = s - (byte)X;
+            _push00 = (byte)(r < 0 ? -r : r);                           // $F6D2-$F6D8
+            _push01 = 0;
+            return 0;
+        }
+
+        /// <summary>$F6DF: slot Y's Y is nudged one $10-row toward the player by which 256-block
+        /// it occupies, then the 16-bit player-minus-partner difference is taken. A is the
+        /// absolute value of the LOW byte only; carry (restored by $F718/$F722 PHP/PLP) is the
+        /// no-borrow of the full subtraction, so set means the player is not above.</summary>
+        private byte PushDy(byte y, out bool playerBelow)
+        {
+            var o = Objects;
+            int other = o == null ? 0 : o.Slots[y].Y;
+            int adjusted = (other >> 8) == (Y >> 8) ? other
+                         : (other >> 8) < (Y >> 8) ? other + 0x10       // $F6FF-$F709
+                         : other - 0x10;                                // $F6F0-$F6FA
+            int d = Y - adjusted;                                       // $F70B-$F716
+            playerBelow = d >= 0;
+            int lo = d & 0xFF;
+            if ((lo & 0x80) != 0) lo = (-lo) & 0xFF;                    // $F71D-$F720
+            return (byte)lo;
+        }
+
+        /// <summary>$F7A8: measure slot Y and, when the player is inside its touch box, leave
+        /// the vertical push in $11 = $FC09[class] - |ΔY|. $F7CB accepts |ΔY| EQUAL to
+        /// $FBE9[class] (the $F772 twin does not), and the SBC at $F7D6 is preceded by SEC so
+        /// there is no off-by-one as in the $F679 pair path.</summary>
+        private bool PushScanOne(byte y, out byte push)
+        {
+            push = 0;
+            var o = Objects;
+            if (o == null) return false;
+            byte cls = (byte)(o.Slots[y].BehaviorParam & 0x1F);         // $F7AB AND #$1F
+            PushDx(y);
+            if (_push01 != 0) return false;                             // $F7B4 BNE $F7DC
+            if (_push00 >= EnemyBehaviors.TouchXHalf[cls]) return false; // $F7BA BCS $F7DC
+            byte dy = PushDy(y, out _);                                 // $F7C1
+            if (dy > EnemyBehaviors.TouchYHalf[cls]) return false;      // $F7CB
+            push = (byte)(EnemyBehaviors.TouchXHalf[cls] - dy);         // $F7D3-$F7D9
+            return EnemyBehaviors.TouchXHalf[cls] >= dy;                // carry out of the SBC
+        }
+
+        /// <summary>$F784: the all-slot scan reached from every rejected $F64A pair test (its
+        /// exit is JMP $F784, not RTS). Slots 2..15 with $04D0, $0400 AND $0570 all negative —
+        /// bit7 of $0570 is armed at runtime only, e.g. the CeilingGrabber's mine goes $47 →
+        /// $87 as it settles. The first hit wins and $F79E jumps to $F7DE to return SEC.</summary>
+        private bool PushScanAll(out byte push)
+        {
+            push = 0;
+            var o = Objects;
+            if (o == null) return false;
+            for (byte y = 2; y < 16; y++)                               // $F784/$F7A1-$F7A4
+            {
+                var s = o.Slots[y];
+                if (!s.Active || (s.Flags & 0x80) == 0 || (s.BehaviorParam & 0x80) == 0) continue;
+                if (PushScanOne(y, out push)) return true;              // $F79E JMP $F7DE
+            }
+            return false;                                               // $F7A6 CLC
+        }
+
+        /// <summary>$F64A: first the slot-pair test (X = 0 ⇒ Y = slot 1), then the $F784
+        /// all-slot scan on every rejection. The pair path's two rewrites of $11 both subtract
+        /// with C = 0 inherited from the CMP that gated them ($F66E CMP #$19 / $F684 CMP #$11),
+        /// so each is constant - $11 - 1, and the RTS carries that SBC's no-borrow.</summary>
+        private bool PushPairOrScan(out byte push)
+        {
+            push = 0;
+            var o = Objects;
+            if (o == null) return false;
+            var s = o.Slots[1];                                         // $F64B EOR #$01
+            if (!s.Active || (Flags & 0x80) == 0 || (s.Flags & 0x80) == 0 || s.Behavior == 0)
+                return PushScanAll(out push);                           // $F651-$F660 → $F696
+            if (PushDx(1) >= 0x10) return PushScanAll(out push);        // $F665/$F667
+            byte dy = PushDy(1, out bool below);                        // $F669
+            if (below) return PushScanAll(out push);                    // $F66C BCS
+            if (dy >= 0x19) return PushScanAll(out push);               // $F66E/$F670
+            push = dy;                                                  // $F672 STA $11
+            if (s.AnimNumber != 0)                                      // $F674/$F677
+            {
+                int v = 0x19 - push - 1;                                // $F679/$F67B SBC $11, C=0
+                push = (byte)v;
+                return v >= 0;
+            }
+            if (push >= 0x11) return PushScanAll(out push);             // $F684/$F686
+            int w = 0x11 - push - 1;                                    // $F688/$F68A SBC $11, C=0
+            push = (byte)w;
+            return w >= 0;
+        }
+
+        /// <summary>$D709/$D7D8: clamp $11 to 4, subtract it from $0510/$0520 with the same
+        /// row-borrow wrap the Y integrator uses ($D7EB SBC #$0F then $D7F3 SBC #$01 — a 240 px
+        /// row, not a 256 px byte borrow), and drop $50 to 0. That state write is what makes an
+        /// armed object a stand: the airborne handler returns here without reaching steering.</summary>
+        private void PushUpAndLand(byte push)
+        {
+            if (push > 4) push = 4;                                     // $D7D8-$D7DE
+            int yl = (Y & 0xFF) - push;                                 // $D7E0-$D7E6
+            int yh = Y >> 8;
+            if (yl < 0) { yl -= 0x10; yh -= 1; }                        // $D7EB-$D7F5
+            Y = (ushort)(((yh & 0xFF) << 8) | (yl & 0xFF));
+            State = 0;                                                  // $D70C-$D70E
         }
 
         /// <summary>$D6EE: a type-1 (one-way) support under a falling $0B/$10. $FD and $FE are
