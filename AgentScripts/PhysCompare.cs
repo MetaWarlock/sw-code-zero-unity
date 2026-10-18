@@ -696,11 +696,26 @@ public static class PhysCompare
     /// edge at f70 goes through $D224 (impulse $0550=$E5/$0560=$04, $50=$0B, anim $11) and rises
     /// another 50 px, so the player lands on the pylon top shelf at Y=$324 (surface $330) — a
     /// 80 px climb from the street. This is the mechanic every mission-1 vertical shaft uses,
-    /// so the park + re-launch arc has to be byte-exact before any route attempt.
+    /// so the park + re-launch arc has to be byte-exact before any route attempt. The replay
+    /// feeds the schedule exactly as recorded: Right f2..190, then two A-holds f40..65 and
+    /// f70..95. The golden's release at f190 is the only idle-transition observation this
+    /// fixture has, so the replay must stop holding too — an unbounded Right tests a walk the
+    /// original never ran.
     /// </summary>
     public static string M1Cling() => Compare("m1_cling", 200,
-        f => (byte)((f >= 2 ? 0x01 : 0x00) | (f >= 40 && f <= 65 ? 0x80 : 0x00)
+        f => (byte)((f >= 2 && f <= 190 ? 0x01 : 0x00) | (f >= 40 && f <= 65 ? 0x80 : 0x00)
               | (f >= 70 && f <= 95 ? 0x80 : 0x00)),
+        camera: true, enemies: true, trace: true);
+
+    /// <summary>
+    /// Natural climb golden `gold_m1_climb` (probe_run `--input 0:right@2-390 --input 0:up@180-390`,
+    /// no RAM patch, no warp): the mission-1 walk into the room-0x02 pylon, then UP held from
+    /// f180 — the hook/grab attempt every mission-1 vertical shaft needs. The suite's "hook" case
+    /// rides a PATCHED seed cell, so it cannot prove the grab is reachable by input; this fixture
+    /// is the input-driven version and locates the first divergence of the climb path.
+    /// </summary>
+    public static string M1Climb() => Compare("m1_climb", 400,
+        f => (byte)((f >= 2 && f <= 390 ? 0x01 : 0x00) | (f >= 180 && f <= 390 ? 0x08 : 0x00)),
         camera: true, enemies: true, trace: true);
 
     /// <summary>
