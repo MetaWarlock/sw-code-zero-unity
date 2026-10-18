@@ -105,6 +105,10 @@ namespace Darkwing.Core
         // STA $0042,Y with $41 counting 2,1,0, so $44/$43/$42 = probes $40/$40+1/$40+2).
         // The rising branch's $F44C/$F461 gates read it; every probe service rewrites it.
         private byte _probe43;
+        // $5C — the $F322 latch set by $F360 when a fall passes into a type-1/type-2 tile.
+        // While it is non-zero every falling frame enters at $F366 (hook check) instead of
+        // the plain $F326 floor probe, so the pass-through is not re-caught next frame.
+        private byte _hookLatch;
 
         public PlayerCore(ITileMap tiles) { _tiles = tiles; }
 
@@ -174,6 +178,7 @@ namespace Darkwing.Core
         // ceiling -12 at X -11/0/+11; hook set $3A above head.
         private static readonly sbyte[] FloorXOff = { -11, 0, 11 };
         private static readonly sbyte[] SideYOff = { -11, 0, 11 };
+        private static readonly sbyte[] HookXOff = { -1, 0, 1 };   // $ED19[58..60]
 
         public byte ProbeFloor()  // $40=6 → points 6-8
         {
@@ -199,6 +204,24 @@ namespace Darkwing.Core
                 int py = (short)(Y - 12);
                 byte t = TileTypeAt(px, py);
                 if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
+                result = Math.Max(result, t);
+            }
+            HandleProbeType(result);   // $EBAA tail
+            return result;
+        }
+
+        /// <summary>$40=$3A, $41=2 → table points 58/59/60 ($ED19/$ECAD): X-1/X/X+1 at Y-20,
+        /// i.e. the row 8 px above the head. Used by the $F366 hook check and the ceiling
+        /// dispatch's $F44C gate.</summary>
+        public byte ProbeHook()
+        {
+            byte result = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                int px = (short)(X + HookXOff[i]);
+                int py = (short)(Y - 20);
+                byte t = TileTypeAt(px, py);
+                if (i == 1) _probe43 = t;         // point 59 is the middle sample
                 result = Math.Max(result, t);
             }
             HandleProbeType(result);   // $EBAA tail
@@ -1086,26 +1109,43 @@ namespace Darkwing.Core
             if ((held & 0x03) != 0) // Left/Right held → walk ($CBB7/$CC53)
             {
                 // $CC53-$CC6D: the B edge is read BEFORE the walk anim and the $CCB4 move,
-                // so a shot frame latches the spawn and RTS-es without walking. When $CF3A
-                // refuses, $CC5C falls through to the walk — unless the pose is still the
-                // fire anim $05, whose $CC71-$CC75 detour lands back on $CC16 → $CC52.
-                if ((pressed & 0x40) != 0)
+                // so a shot frame latches the spawn and RTS-es without walking.
+                var s0 = Objects != null ? Objects.Slots[0] : null;
+                bool bEdge = (pressed & 0x40) != 0;
+                if (bEdge && CanFire())
                 {
-                    var sw = Objects?.Slots[0];
-                    if (CanFire())
+                    if (s0 != null && s0.AnimNumber != 5) SetAnimPlayer(5);       // $CC5E-$CC67
+                    TryLatchFire();                                               // $CC6A
+                    return;                                                       // $CC6D
+                }
+                // $CC6E-$CC75 diverts EVERY walk frame whose pose is still the fire anim
+                // $05 into the $CBF6 gate, not just the frame with the B edge. $CBF6/$CBFD
+                // hold the pose (and therefore all horizontal movement) until anim frame 2
+                // with timer 4 — three pose frames of five ticks — and $CC04 then spends one
+                // frame on the idle anim $01 before $CC78 may start the walk again. A B edge
+                // seen by $CC16 still fires, because $CC04 has already left the pose.
+                if (s0 != null && s0.AnimNumber == 5)
+                {
+                    if (s0.AnimFrame != 2 || s0.AnimTimer != 4)
                     {
-                        if (sw != null && sw.AnimNumber != 5) SetAnimPlayer(5);   // $CC61/$CC65
-                        TryLatchFire();                                           // $CC6A
-                        return;                                                   // $CC6D
+                        if (bEdge && CanFire()) { TryLatchFire(); }               // $CC1C-$CC34
+                        return;                                                   // $CC37/$CC52
                     }
-                    if (sw != null && sw.AnimNumber == 5) return;                 // $CC6E/$CC75
+                    SetAnimPlayer(0x01);                                          // $CC04-$CC0D
+                    State = 0;                                                    // $CC12
+                    HopTimer = 0;                                                 // $CC14
+                    if (bEdge && CanFire())
+                    {
+                        if (s0.AnimNumber != 5) SetAnimPlayer(5);                 // $CC1C-$CC2F
+                        TryLatchFire();                                           // $CC34
+                    }
+                    return;                                                       // $CC37/$CC52
                 }
                 // Walk anim ($CC6E-$CCB1): anim 3 is set when it isn't already the anim,
                 // the only manual frame edit here is the $CC84 wrap (frame 4 + timer 6 →
                 // frame 1, timer 0). Frame 0 with timer < 4 is the footstep dust and pins
                 // the speed to 0.$48 (0.28 px/frame); gold_m1_fulljump f354-f358 holds it
                 // for five frames and only reaches 1.$80 when the timer passes 4.
-                var s0 = Objects != null ? Objects.Slots[0] : null;
                 if (s0 != null)
                 {
                     if (s0.AnimNumber != 3)
@@ -1214,6 +1254,75 @@ namespace Darkwing.Core
             }
         }
 
+        // ---------- $F344 landing / $F360 hook dance ----------
+        /// <summary>$EDD2: pull the feet up onto the row plane the floor sample hit. Only
+        /// ever moves the player UP, which is why the caller must reject a type-1 support
+        /// once the feet are 8 px or more inside the tile.</summary>
+        private void SnapFeetUpToRow()
+        {
+            // $07 is the last sampled point's Y low byte; the $EC2D/$EC47 +$10 row-wrap
+            // correction cannot change its low nibble, so (Y+12)&$0F is exact.
+            int off = (Y + 12) & 0x0F;
+            int lo = (Y & 0xFF) - off;
+            int hi = Y & 0xFF00;
+            if (lo < 0)                       // $EDE1 BCS $EDF0, else $EDE3-$EDEC
+            {
+                hi = (hi - 0x100) & 0xFFFF;
+                lo = (lo - 0x10) & 0xFF;
+            }
+            Y = (ushort)(hi | lo);
+        }
+
+        /// <summary>$F344 JSR $EDD2 / $F347 JSR $F5FC / SEC — "floor collision".</summary>
+        private bool LandOnRow(bool cutOnLand)
+        {
+            SnapFeetUpToRow();
+            _hookLatch = 0;                   // $F35B / $F397 / $F3BF clear $5C on every land
+            // The $50=0B/10 landing ($D711 = $50→0, $56→0, then `LDA $0560 / BPL $D71F /
+            // JMP $EDD2`) is snap only — the fall velocity survives into state 0 (m1_longroute
+            // f441: ROM $0550 = $E5-$40 = $A5 while a cut there leaves $0460 six units low
+            // for the rest of the run and costs the Y carry at f511). $CE08's landing SFX
+            // belongs to the state-1 handler, not $D711.
+            if (cutOnLand)
+            {
+                CutVelocity(); // landing leaves the $F607 value (-0.33), capture-verified
+                if (_wasAirborne) Sfx?.Invoke(0x10); // landing SFX ($CE08: SFX $10)
+            }
+            LandedFlag = 1;
+            return true;
+        }
+
+        /// <summary>$F360-$F3C1 for slot 0: the fall went into a type-1 (too deep) or type-2
+        /// tile, so $5C is latched and the next probe uses the hook set ($3A) 8 px above the
+        /// head. A type 1/2 there is the hang grab ($50=$0D + SFX $12, no snap); otherwise
+        /// the floor set is probed a second time and only a type >= 3 — or a type 1 with
+        /// $0560 exactly $FA — may land.</summary>
+        private bool HookDance(bool cutOnLand)
+        {
+            if (_hookLatch == 0) _hookLatch = 1;                    // $F364 INC $5C
+            byte above = ProbeHook();                               // $F372
+            _probeResult = above;
+            if (above == 1 || above == 2)                           // $F37E/$F382 BEQ $F386
+            {
+                if (State != 0x0D)                                  // $F386 BEQ $F347: cut only
+                {
+                    State = 0x0D;                                   // $F38E
+                    Sfx?.Invoke(0x12);                              // $F392 JSR $F850
+                }
+                _hookLatch = 0;                                     // $F397
+                CutVelocity();                                      // $F39F (no snap)
+                return false;                                       // $F3A2, carry clear
+            }
+            if (above >= 3) return false;                           // $F384 BNE $F3A2
+            byte re = ProbeFloor();                                 // $F3AB re-probe the floor set
+            _probeResult = re;
+            if (re == 0) return false;                              // $F3B3 BCC $F3A2
+            if (re == 1)                                             // $F3B7 BEQ $F34C
+                return (byte)YVelInt == 0xFA ? LandOnRow(cutOnLand) : false;   // $F34F/$F359
+            if (re == 2) return false;                               // $F3BB BEQ $F3A2
+            return LandOnRow(cutOnLand);                             // $F3BD/$F3C1
+        }
+
         // ---------- Shared vertical physics ($CD0E/$F2D7) ----------
         /// <returns>true if landed this frame</returns>
         /// <param name="f2d7">true when the caller runs the full service $F2D7 (states 0/1/2/6,
@@ -1236,45 +1345,50 @@ namespace Darkwing.Core
             _wasAirborne = State is 1 or 0x0B or 0x10;
             if (falling)
             {
-                IntegrateY();               // down
-                // The keep-on-ground test (states 0/6) is not $F4D7: in gold_hurt_a41 the
-                // player rests on a type-1 platform with $0560 still $FF, so no gravity
-                // is applied and the type-1 velocity gate does not reject the support.
-                bool grounded = State is 0 or 6;
+                IntegrateY();               // $F2ED JSR $F5A4 (down)
                 // $F31F runs $F5DA unconditionally on the falling path ($F64A is a slot-pair
                 // test, not a ground test): gravity applies every frame and the landing
                 // branch re-cuts to $FF,AB afterwards. On the frame the floor disappears
                 // there is no cut, so the fall keeps accelerating (gold_m1_fulljump f208:
                 // $0560/$0550 FF,AB → FF,6B).
                 ApplyGravity();
-                byte floor = ProbeFloor();
-                _probeResult = floor;               // $10 as left by $EB52
-                // $F4E4-$F4F1 verbatim: `LDA $10 / CMP #$01 / BCC no-hit / BNE hit`, and only
-                // the equal-to-1 case falls through the velocity gate `LDA $0560,X / CMP #$FC /
-                // BCS no-hit`. So EVERY type >= 1 is support — the port previously tested
-                // `2,3,>=8` and walked the player straight through type-4 floors (w03 f582).
-                bool oneWayLand = grounded || (byte)YVelInt < 0xFC;
-                if (floor != 0 && (floor > 1 || oneWayLand))
+                if (!f2d7)
                 {
-                    // land ($F360): snap onto tile top ($EDB3)
-                    int py = Y + 12;
-                    py = py - (py & 0x0F) - 12;  // top of the 16px tile under the probe
-                    Y = (ushort)(py & 0xFFFF);
-                    // $F360 pairs the snap with $F5FC, but the $50=0B/10 landing is the other
-                    // branch: $D711 = $50→0, $56→0, then `LDA $0560 / BPL $D71F / JMP $EDD2`,
-                    // i.e. snap only — the fall velocity survives into state 0 (m1_longroute
-                    // f441: ROM $0550 = $E5-$40 = $A5 while the port cut to $AB, which leaves
-                    // $0460 six units low for the rest of the run and costs the Y carry at
-                    // f511). $CE08's landing SFX belongs to the state-1 handler, not $D711.
+                    // $F5C9 ($D650, states $0B/$10) is integrate plus gravity only; its
+                    // $D653/$D656 probe is still unported (G39), so this path keeps the
+                    // pre-existing "solid only" snap to leave the passing goldens unchanged.
+                    byte legacy = ProbeFloor();
+                    _probeResult = legacy;
+                    // Unchanged from the previous rule on purpose: $F4E4-$F4F1 (`LDA $10 /
+                    // CMP #$01 / BCC no-hit / BNE hit`, with only the equal-to-1 case behind
+                    // the $F4EC `CMP #$FC` velocity gate) is what the $D517 pit-fall handler
+                    // uses, and gold_hurt_a41 rests on a type-1 support with $0560 = $FF.
+                    bool grounded = State is 0 or 6;
+                    if (legacy == 0 || !(legacy > 1 || grounded || (byte)YVelInt < 0xFC)) return false;
+                    SnapFeetUpToRow();
                     if (cutOnLand)
                     {
-                        CutVelocity(); // landing leaves the $F607 value (-0.33), capture-verified
+                        CutVelocity();
                         if (_wasAirborne) Sfx?.Invoke(0x10); // landing SFX ($CE08: SFX $10)
                     }
                     LandedFlag = 1;
                     return true;
                 }
-                return false;
+                // $F322: $5C latches "this fall has already gone through a pass-through tile,
+                // so start the next frame at the hook check". It survives the frame it is set
+                // on ($F3A2 returns without clearing it) and only a land clears it.
+                if (_hookLatch != 0) return HookDance(cutOnLand);   // $F324 BNE $F366
+                byte floor = ProbeFloor();                          // $F326 ($40=$06 floor set)
+                _probeResult = floor;                               // $10 as left by $EB52
+                if (floor == 0) return false;                       // $F32E BCC $F34B
+                // $F332-$F338: a type-1 support is only caught while the feet sample sits in
+                // the upper half of the tile — $EDD2 can only snap the feet UP to the row
+                // plane, so once the feet are >= 8 px into the tile the one-way is passed
+                // through. There is NO velocity gate here: $F4D7's `CMP #$FC` belongs to the
+                // $D517 pit-fall handler. At m1_trench f277 the ROM lands with $0560 = $FE.
+                if (floor == 1 && (((Y + 12) & 0x0F) >= 8)) return HookDance(cutOnLand);
+                if (floor == 2) return HookDance(cutOnLand);        // $F33E-$F342 BEQ $F360
+                return LandOnRow(cutOnLand);                        // $F344/$F347
             }
             else
             {
@@ -1283,7 +1397,13 @@ namespace Darkwing.Core
                 {
                     CutVelocity();
                 }
-                IntegrateY();
+                // $F3CB JSR $F581 — the RISE integrate, not $F5A4. The two differ exactly on
+                // a page crossing: $F5A4 wraps lo >= $F0 BACK UP by adding $100 (correct while
+                // $0560 is negative), while $F581 borrows $10 off the page. Using $F5A4 here
+                // turned the m1_trench f378 jump 0301→02EE into 0301→040E, which then made
+                // the bank-15 $8062 offscreen-slot-0 test read a row difference of 1 and
+                // start the death throes ($806E STA $50 = $07).
+                IntegrateYRise();
                 ApplyGravity();
                 byte ceil = ProbeCeiling();
                 _probeResult = ceil;                // $10 as left by $EB52
@@ -1520,7 +1640,11 @@ namespace Darkwing.Core
                 WallBlocked = 0;                        // $D2D5 ($9E)
                 return;                                 // no probe/move/DEC: $0460 and $0430 hold
             }
-            if (StateTimer == 0x0F) SpawnHurtAfterimage();  // $D2D8-$D313 (only the first frame)
+            if (StateTimer == 0x0F)                        // $D2DA CMP #$0F
+            {
+                CutVelocity();                             // $D2DE JSR $F5FC
+                SpawnHurtAfterimage();                     // $D2E1-$D313
+            }
             VerticalPhysics(held, pressed);             // $D316: X=0, Y=2, A=6 → JSR $F2D7
             StateTimer--;                               // $D31F
             // $D323-$D33F: $52 bit 0 set → $F254 SUBTRACTS the velocity (drift left, i.e.
@@ -1983,6 +2107,13 @@ namespace Darkwing.Core
             if (val > 99) val = 99;
             GasEnergyHi = (byte)(0x70 + val / 10);
             GasEnergyLo = (byte)(0x70 + val % 10);
+        }
+
+        /// <summary>$88CE: a weapon grant promotes the saved meter into the active one.</summary>
+        public void CommitSavedGasMeter()
+        {
+            ActiveGasEnergyHi = GasEnergyHi;
+            ActiveGasEnergyLo = GasEnergyLo;
         }
 
         /// <summary>$8982 add/subtract the active gas meter ($05BE/$05C0).</summary>

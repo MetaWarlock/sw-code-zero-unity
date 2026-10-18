@@ -127,17 +127,21 @@ namespace Darkwing.Core
                 ContactCheck(slot, s); // $813B
                 return;
             }
-            // $803C hit-flash: toggle $0400 bit3 from bit3 of the timer
+            // $803C-$805B: while the flash counter runs the dispatcher ONLY toggles the
+            // bit and jumps back to $813B — $8066 JSR $FAAE is reachable exclusively from
+            // the $805E counter==0 branch. Without this gate a projectile (in practice the
+            // hit puff itself, $04D0=$80/$0400=$90 after $F872) re-hits the enemy on the
+            // following frame, and the $8096 health==0 test launches it one hit early
+            // (m1_trench slot 0D died at f293 while the ROM keeps it walking).
             if (s.HitFlash != 0)
             {
-                if (((s.HitFlash >> 3) & 1) != 0) s.Flags &= 0xF7;   // compose on
-                else s.Flags |= 0x08;                                 // compose off
+                if (((s.HitFlash >> 3) & 1) != 0) s.Flags &= 0xF7;   // compose off
+                else s.Flags |= 0x08;
                 s.HitFlash--;
+                ContactCheck(slot, s); // $805B JMP $8039 → $813B
+                return;
             }
-            else
-            {
-                s.Flags &= 0xF7;
-            }
+            s.Flags &= 0xF7;                                            // $805E
             // $8066 projectile overlap
             if (!ProjectileOverlapHit(s))
             {
@@ -297,14 +301,17 @@ namespace Darkwing.Core
             return false;
         }
 
-        /// <summary>$F872 retask the projectile slot into a hit puff (anim $14, behavior 0).</summary>
+        /// <summary>$F872 retask the projectile slot into a hit puff. $FA84 (not the plain
+        /// $FA6C setter) also restates the slot: $04D0=$80, $0400=$90.</summary>
         public void SpawnHitPuff()
         {
             if (ProjSlot < 0) return;
             var p = Objects.Slots[ProjSlot];
-            EnemyBehaviors.SetAnim(p, 0x14);
-            p.Behavior = 0x00;
-            p.BehaviorParam = 0x00;
+            p.AnimNumber = 0x14; p.AnimTimer = 0; p.AnimFrame = 0;   // $FA84
+            p.StateLow = 0x80;
+            p.Flags = 0x90;
+            p.Behavior = 0x00;                                        // $F879
+            p.BehaviorParam = 0x00;                                   // $F87C
         }
 
         /// <summary>$FA4C free object slot 15..4 (-1 = none).</summary>

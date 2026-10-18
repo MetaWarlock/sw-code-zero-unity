@@ -3,6 +3,62 @@ using UnityEngine;
 
 public static class PhysCompare
 {
+    private const string Root = "D:/Art/SW Code Zero Unity";
+    [System.Serializable] private sealed class CaptureRequest { public string rom_sha256; public string[] argv; }
+    [System.Serializable] private sealed class CaseResult
+    {
+        public string name, result, strict, details, error;
+    }
+    [System.Serializable] private sealed class SuiteResult
+    {
+        public int schema = 1, cases, resultPassed, strictPassed, errors;
+        public string verdict, scope = "Selected fields only; seeded fixtures, not full playthrough or full-frame equivalence.";
+        public CaseResult[] results;
+    }
+
+    // Read the capture contract, rather than trusting a caller's old advisory `frames` value.
+    // Several callers deliberately replay the WHOLE capture (e.g. WorldWalks: 700, not 360).
+    private static void ValidateCapture(string dir, byte[] ram, int seed, byte[] pal = null, byte[] oam = null)
+    {
+        var req = JsonUtility.FromJson<CaptureRequest>(File.ReadAllText(dir + "/request.json"));
+        if (req.rom_sha256 != "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00")
+            throw new System.IO.InvalidDataException("Unexpected ROM identity: " + dir);
+        int n = System.Array.IndexOf(req.argv, "--frames");
+        if (n < 0 || n + 1 >= req.argv.Length || !int.TryParse(req.argv[n + 1], out int expected))
+            throw new System.IO.InvalidDataException("No frame count in request: " + dir);
+        ValidateRecords(ram.Length, expected, 2048, seed, "RAM");
+        if (pal != null) ValidateRecords(pal.Length, expected, 32, seed, "palette");
+        if (oam != null) ValidateRecords(oam.Length, expected, 256, seed, "OAM");
+    }
+
+    private static void ValidateRecords(int bytes, int expected, int stride, int seed, string label)
+    {
+        if (expected < 2 || seed < 0 || seed >= expected - 1 || bytes != (long)expected * stride)
+            throw new System.IO.InvalidDataException($"{label}: bytes={bytes}, expected={expected}x{stride}, seed={seed}; no partial/empty acceptance");
+    }
+
+    private static string VerdictTail(string full)
+    {
+        int i = full.LastIndexOf("RESULT:", System.StringComparison.Ordinal);
+        if (i < 0) throw new System.IO.InvalidDataException("Missing RESULT verdict");
+        return full.Substring(i).Trim(); // Never cap: trailing STRICT/ENEMIES/OAM diagnostics matter.
+    }
+
+    private static bool SlotsEqual(byte[] port, byte[] rom, out int slot, out string field, out int got, out int want)
+    {
+        int[] addrs = { 0x4F0, 0x500, 0x510, 0x520, 0x4D0, 0x4E0, 0x420 };
+        string[] names = { "Xlo", "Xhi", "Ylo", "Yhi", "state", "beh", "anim" };
+        for (int s = 1; s < 16; s++)
+        {
+            bool a = (port[0x4D0 + s] & 0x80) != 0, b = (rom[0x4D0 + s] & 0x80) != 0;
+            if (a != b) { slot = s; field = "active"; got = a ? 1 : 0; want = b ? 1 : 0; return false; }
+            if (!a) continue;
+            for (int k = 0; k < addrs.Length; k++)
+                if (port[addrs[k] + s] != rom[addrs[k] + s])
+                { slot = s; field = names[k]; got = port[addrs[k] + s]; want = rom[addrs[k] + s]; return false; }
+        }
+        slot = got = want = -1; field = null; return true;
+    }
     /// <summary>
     /// Golden physics comparison through the full DarkwingGame stack (movement +
     /// anim advance + slot sync), replaying the captured original input schedule.
@@ -11,7 +67,7 @@ public static class PhysCompare
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
         int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false,
         string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false, bool pause = false,
-        bool residentFade = false)
+        bool residentFade = false, bool mapScreen = false)
     {
         string root = "D:/Art/SW Code Zero Unity";
         string gdir = goldenDir ?? $"gold_{name}";
@@ -23,6 +79,8 @@ public static class PhysCompare
             ? File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/oam_frames.bin")
             : System.Array.Empty<byte>();
         int avail = ramAll.Length / 2048;
+        ValidateCapture(root + $"/Research/DarkwingDuck/reference/{gdir}", ramAll, seedFrame,
+            palette ? palAll : null, scoreOam ? oamAll : null);
 
         var data = Darkwing.Core.DataLoader.Load(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
@@ -216,6 +274,18 @@ public static class PhysCompare
             s0.AnimTimer = ram0[0x430];
         }
 
+        // These historical "enemy" captures contain the city-map service, not a mission.
+        // Restore its scheduler ownership as well as the slot RAM. Keep SlotsEqual unchanged.
+        if (mapScreen)
+        {
+            if (ram0[0x420] != 0x36 || ram0[0x421] != 0x39 || ram0[0x422] != 0xBB)
+                throw new InvalidDataException("Expected map plate/caret/bubble signature");
+            game.WorldRunning = false;
+            game.MapScreen = game.MapChooser = true;
+            game.MapCursorBubble = ram0[0x6C];
+            game.Oam.HudActive = false;
+        }
+
         // Per-field first-divergence report, and the input to the STRICT verdict below. RESULT
         // itself only gates X/Y (plus the camera fields when asked), so this table is what makes
         // a "$25 drifts but RESULT says MATCH" run legible instead of misleading.
@@ -290,36 +360,9 @@ public static class PhysCompare
             {
                 byte[] prE = PackedSlots(game);
                 enemyTotalFrames++;
-                bool allMatch = true;
-                for (int s = 1; s < 16 && allMatch; s++)
-                {
-                    // The active bit is a COMPARED field, not a filter. Scanning only the slots the
-                    // ROM happens to hold alive silently accepted the opposite error: a slot the
-                    // port spawns and the ROM does not.
-                    bool romOn = (g[0x4D0 + s] & 0x80) != 0;
-                    bool portOn = (prE[0x4D0 + s] & 0x80) != 0;
-                    if (romOn != portOn)
-                    {
-                        allMatch = false;
-                        if (enemyFirstDiv < 0)
-                        { enemyFirstDiv = f; enemyDivSlot = s; enemyDivField = "active";
-                          enemyDivPort = portOn ? 1 : 0; enemyDivOrig = romOn ? 1 : 0; }
-                        break;
-                    }
-                    if (!romOn) continue;
-                    // $0510/$0520 are the Y pair: the verdict below claims Y, so Y has to be read.
-                    int[] addrs = { 0x4F0, 0x500, 0x510, 0x520, 0x4D0, 0x4E0, 0x420 };
-                    string[] fld = { "Xlo", "Xhi", "Ylo", "Yhi", "state", "beh", "anim" };
-                    for (int k = 0; k < addrs.Length; k++)
-                        if (prE[addrs[k] + s] != g[addrs[k] + s])
-                        {
-                            allMatch = false;
-                            if (enemyFirstDiv < 0)
-                            { enemyFirstDiv = f; enemyDivSlot = s; enemyDivField = fld[k];
-                              enemyDivPort = prE[addrs[k] + s]; enemyDivOrig = g[addrs[k] + s]; }
-                            break;
-                        }
-                }
+                bool allMatch = SlotsEqual(prE, g, out int badSlot, out string badField, out int got, out int want);
+                if (!allMatch && enemyFirstDiv < 0)
+                { enemyFirstDiv = f; enemyDivSlot = badSlot; enemyDivField = badField; enemyDivPort = got; enemyDivOrig = want; }
                 if (allMatch) enemyMatchFrames++;
                 fEnemies = allMatch;
             }
@@ -719,6 +762,64 @@ public static class PhysCompare
         camera: true, enemies: true, trace: true, limit: 0, palette: true);
 
     /// <summary>
+    /// Mission-1 trench crossing candidate route `gold_m1_step` (900 frames from
+    /// m1_standing.mss, Right held f2-899 plus 26-frame A-holds at f150, f195 and f258).
+    /// The ROM on this schedule: jumps the room-0x02 wall onto the $864 step (f183 X=310),
+    /// is knocked off the second jump by the behavior-$0C walker that stands on the $816
+    /// one-way (state $06 at f201), then drops into the 128x64 trench at f276. There is no
+    /// ladder mechanic: holding Up at the $98/$A0/$A8 ladder art (X=468, feet 960) leaves
+    /// $50=$00 and the walk anim unchanged, and world 0 has no type-7/8 hook tiles at all, so
+    /// the only way out of the trench is the $816 one-way stepping stone. This case measures
+    /// whether the port reproduces the step landing, the one-way and the contact.
+    /// </summary>
+    public static string M1StepRoute() => Compare("m1_step", 900,
+        f =>
+        {
+            byte b = (f >= 2 && f <= 899) ? (byte)0x01 : (byte)0x00;
+            if (f >= 150 && f <= 175) b |= 0x80;
+            if (f >= 195 && f <= 220) b |= 0x80;
+            if (f >= 258 && f <= 283) b |= 0x80;
+            return b;
+        },
+        camera: true, enemies: true, trace: true, limit: 0, palette: true,
+        goldenDir: "gold_m1_step");
+
+    /// <summary>
+    /// Verified natural trench crossing, golden `m1_trench` (620 frames from m1_standing.mss,
+    /// no RAM patch, no warp): the player is knocked back only twice and ends standing on the
+    /// $896 ledge at X=473. Sequence: Right to the $288 face (blocked at X=276, the side probe
+    /// is X±12), 12-frame A-hold onto the $864 step (f183 X=296), two B presses at the wrong
+    /// altitude (the $849 gas passes under the walker at Y=$804 - a projectile keeps the Y it
+    /// was spawned at), 20-frame A-hold from X=303 onto the $816 one-way (f278 X=342), one B
+    /// press at X=343 whose gas meets the walker at f293 X=402, then a 20-frame A-hold from
+    /// X=405 that carries the player over the 64-px trench onto the $896 ledge. The route
+    /// measures the port's one-way support (floor probe X-11/X/X+11), gas spawn offset and
+    /// altitude, behavior-$0C walker patrol and the $D2DE knockback velocity cut.
+    /// </summary>
+    public static string M1Trench() => Compare("m1_trench", 620,
+        f =>
+        {
+            byte b = ((f >= 2 && f <= 184) || (f >= 236 && f <= 620)) ? (byte)0x01 : (byte)0x00;
+            if ((f >= 229 && f <= 232) || (f >= 235 && f <= 238) || (f >= 282 && f <= 285)) b |= 0x40;
+            if (f >= 162 && f <= 173) b |= 0x80;
+            if (f >= 252 && f <= 271) b |= 0x80;
+            if (f >= 369 && f <= 388) b |= 0x80;
+            return b;
+        },
+        camera: true, enemies: true, trace: true, limit: 0, palette: true,
+        goldenDir: "m1_trench", scoreEnemies: true);
+
+    /// <summary>The trench run diverges where the ROM takes an enemy contact. Dump the full
+    /// per-slot list (port | ROM) around that frame so the missing $813B hit is attributable
+    /// to a slot field instead of guessed.</summary>
+    public static string M1TrenchSlotDump()
+    {
+        _enemyDumpLo = 222; _enemyDumpHi = 320;
+        try { return M1Trench(); }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
+
+    /// <summary>
     /// Shared schedule for the mission route goldens `gold_m2_route` … `gold_m7_route`:
     /// 1500 frames captured from each `gold_wNN/gameplay.mss` — the state probe_run saves at
     /// the END of that world's entry capture, so the port seeds mid-mission (no $DDFE entry
@@ -807,7 +908,7 @@ public static class PhysCompare
             catch (System.Exception e) { sb.Append(label).Append(": ERROR ").Append(e.Message).Append('\n'); return; }
             int i = full.LastIndexOf("RESULT:");
             sb.Append(label).Append(": ")
-              .Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(500, full.Length - i)))
+              .Append(i < 0 ? "no result" : full.Substring(i))
               .Append('\n');
         }
         One("m2(w01)", M2Route);
@@ -863,16 +964,29 @@ public static class PhysCompare
     public static string Hook() => Compare("hook_ride2", 300, f => 0, seedFrame: 1, camera: true);
 
     /// <summary>
-    /// M6 enemy-dispatcher determinism: replays the probe_enemy_verify capture (600 frames from
-    /// the mid-mission m1_gameplay save state, NO input — the player idles and every bank-6 enemy
-    /// self-moves). Every slot the ROM holds active must match the port on X/Y/state/behavior/anim,
-    /// so this scores the dispatcher trajectory rather than only printing it.
+    /// Historical EnemyVerify fixture: the save named m1_gameplay is a city map (slots
+    /// $36/$39/$BB/$73/$73), so this tests map slots, not bank-6 enemy coverage.
+    /// All active/missing/extra slots and seven fields are still compared at the same index.
     /// </summary>
     public static string EnemyVerify() => Compare("enemy_verify", 600, f => 0,
-        enemies: true, world: 0, goldenDir: "probe_enemy_verify", scoreEnemies: true, trace: false);
+        enemies: true, world: 0, goldenDir: "probe_enemy_verify", scoreEnemies: true, mapScreen: true, trace: false);
 
-    /// <summary>Sweep every probe_enemy_verify capture and keep only the ENEMIES verdict line,
-    /// so the bank-6 frame-exact coverage claim spans all multi-enemy captures, not just one.</summary>
+    public static string EnemyFixtureRegression()
+    {
+        string wrong = Compare("enemy_seed_control", 600, f => 0, enemies: true,
+            goldenDir: "probe_enemy_verify", scoreEnemies: true, limit: 20);
+        string fixedSeed = Compare("enemy_seed_fixed", 600, f => 0, enemies: true,
+            goldenDir: "probe_enemy_verify", scoreEnemies: true, limit: 20, mapScreen: true);
+        if (!wrong.Contains("ENEMIES: first divergence f9 slot 01 field active port=00 orig=01")
+            || !fixedSeed.Contains("ENEMIES: MATCH 20/20"))
+            throw new System.Exception("Map ownership negative control did not reproduce/repair f9");
+        return "PASS: world-owner control fails f9 slot01 active; map-owner seed matches 20/20; identical SlotsEqual and golden.";
+    }
+
+    public static string EnemyVerifyTrace() => Compare("enemy_verify_trace", 600, f => 0,
+        enemies: true, world: 0, goldenDir: "probe_enemy_verify", scoreEnemies: true, mapScreen: true, trace: true);
+
+    /// <summary>Sweep the five historical map fixtures; ENEMIES is the legacy slot verdict label.</summary>
     public static string EnemySweep()
     {
         var sb = new System.Text.StringBuilder();
@@ -881,8 +995,8 @@ public static class PhysCompare
         {
             if (!System.IO.File.Exists("D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/" + dir + "/ram_frames.bin"))
             { sb.Append($"{dir}: NO CAPTURE\n"); continue; }
-            string r = Compare("enemy_sweep", 600, f => 0, enemies: true, world: 0,
-                goldenDir: dir, scoreEnemies: true, trace: false);
+            string r = Compare("enemy_sweep_" + dir, 600, f => 0, enemies: true, world: 0,
+                goldenDir: dir, scoreEnemies: true, mapScreen: true, trace: false);
             int i = r.IndexOf("ENEMIES:");
             sb.Append($"{dir}: {(i >= 0 ? r.Substring(i) : "(no enemy verdict)")} \n");
         }
@@ -910,8 +1024,9 @@ public static class PhysCompare
         for (int world = 0; world < 7; world++)
         {
             string dir = root + $"/Research/DarkwingDuck/reference/gold_w{world:X2}";
-            if (!File.Exists(dir + "/ram_frames.bin")) { sb.Append($"w{world}: NO CAPTURE; "); continue; }
+            if (!File.Exists(dir + "/ram_frames.bin")) throw new FileNotFoundException("Missing world capture", dir);
             byte[] ram = File.ReadAllBytes(dir + "/ram_frames.bin");
+            ValidateCapture(dir, ram, 0);
             int frames = ram.Length / 2048;
 
             var game = new Darkwing.Core.DarkwingGame(data);
@@ -929,7 +1044,7 @@ public static class PhysCompare
             int lf = -1;
             for (int f = 300; f < frames; f++)
                 if (ram[f * 2048 + 0x2E] != 0x01) { lf = f; break; }
-            if (lf < 0) { sb.Append($"w{world}: loader never ran; "); continue; }
+            if (lf < 0) throw new System.IO.InvalidDataException($"w{world}: loader never ran");
             byte[] g = new byte[2048];
             System.Array.Copy(ram, lf * 2048, g, 0, 2048);
 
@@ -982,7 +1097,7 @@ public static class PhysCompare
             One("CHR0", (byte)game.Ppu.Chr0Bank, (byte)(g[0x1A] & 0x7F));
             sb.Append($"w{world}@f{lf}/{pf}: {okAll}/{nAll} cum [{string.Join(" ", fields)}]\n");
         }
-        sb.Append($"RESULT: world seeds {okAll}/{nAll} fields over 7 captures\n");
+        sb.Append($"RESULT: {(okAll == 133 && nAll == 133 ? "MATCH" : "DIVERGENCE")} world seeds {okAll}/{nAll} fields over 7 captures\n");
         return sb.ToString();
     }
 
@@ -1253,38 +1368,92 @@ public static class PhysCompare
         finally { _enemyDumpLo = _enemyDumpHi = -1; }
     }
 
-    /// <summary>Runs the whole player-physics suite and returns only the RESULT lines.</summary>
+    /// <summary>All cases retain full details; JSON is the authoritative automation verdict.</summary>
     public static string Suite()
     {
         var sb = new System.Text.StringBuilder();
-        void One(string label, string full)
+        var rows = new System.Collections.Generic.List<CaseResult>();
+        void One(string label, System.Func<string> run)
         {
-            int i = full.LastIndexOf("RESULT:");
-            sb.Append(label).Append(": ").Append(i < 0 ? "no result" : full.Substring(i, System.Math.Min(500, full.Length - i))).Append('\n');
+            var row = new CaseResult { name = label };
+            rows.Add(row);
+            try
+            {
+                string full = run();
+                row.details = "Temp/suite_" + label + ".txt";
+                File.WriteAllText(Root + "/" + row.details, full);
+                string tail = VerdictTail(full);
+                row.result = tail.StartsWith("RESULT: MATCH ") ? "PASS" : "FAIL";
+                int strict = tail.IndexOf("STRICT:", System.StringComparison.Ordinal);
+                row.strict = strict < 0 ? row.result : tail.Substring(strict).StartsWith("STRICT: MATCH ") ? "PASS" : "FAIL";
+                sb.AppendLine(label + ": " + tail);
+            }
+            catch (System.Exception e)
+            {
+                row.result = row.strict = "ERROR"; row.error = e.ToString();
+                row.details = "Temp/suite_" + label + ".txt";
+                File.WriteAllText(Root + "/" + row.details, row.error);
+                sb.AppendLine(label + ": ERROR " + e.Message);
+            }
         }
-        One("walk", Walk());
-        One("jump", Jump());
-        One("b_attack", BAttack());
-        One("hook", Hook());
-        One("traverse", Traverse());
-        One("contact", Contact());
-        One("m1route", M1Route());
-        One("hurt", Hurt());
-        One("door", Door());
-        One("worldseeds", WorldSeeds());
-        foreach (var line in WorldWalks().Split('\n'))      // seven worlds, one line each
+        One("walk", Walk); One("jump", Jump); One("b_attack", BAttack); One("hook", Hook);
+        One("traverse", Traverse); One("contact", Contact); One("m1route", M1Route);
+        One("hurt", Hurt); One("door", Door); One("worldseeds", WorldSeeds);
+        for (int w = 0; w < 7; w++)
         {
-            int i = line.LastIndexOf("RESULT:");
-            int j = line.IndexOf("] w");
-            if (i < 0 || j < 0) continue;
-            sb.Append(line.Substring(j + 3, 3)).Append("fall: ")
-              .Append(line.Substring(i, System.Math.Min(500, line.Length - i))).Append('\n');
+            int world = w;
+            One($"w{w:X2}_fall", () => Compare($"w{world:X2}", 360, WorldInput,
+                seedFrame: 328, camera: true, enemies: true, world: world, entryFreeze: 16));
         }
-        // the run_script console truncates, so keep the scoreboard on disk too
-        One("longroute", M1LongRoute());
-        sb.Append(Routes());     // missions 2-7 traversal, one line each
-        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/suite_summary.txt", sb.ToString());
+        One("longroute", M1LongRoute);
+        One("m2", M2Route); One("m3", M3Route); One("m4", M4Route);
+        One("m5", M5Route); One("m6", M6Route); One("m7", M7Route);
+        var report = new SuiteResult { results = rows.ToArray(), cases = rows.Count };
+        foreach (var row in rows)
+        {
+            if (row.result == "PASS") report.resultPassed++;
+            if (row.strict == "PASS") report.strictPassed++;
+            if (row.result == "ERROR") report.errors++;
+        }
+        report.verdict = report.errors > 0 ? "ERROR" : report.strictPassed == report.cases ? "PASS" : "FAIL";
+        sb.AppendLine($"SUITE: {report.verdict}; RESULT {report.resultPassed}/{report.cases}; STRICT {report.strictPassed}/{report.cases}; errors {report.errors}");
+        File.WriteAllText(Root + "/Temp/suite_summary.txt", sb.ToString());
+        File.WriteAllText(Root + "/Temp/suite_result.json", Newtonsoft.Json.JsonConvert.SerializeObject(report, Newtonsoft.Json.Formatting.Indented));
         return sb.ToString();
+    }
+
+    /// <summary>Synthetic faults only; never mutates ROM or golden files.</summary>
+    public static string AuditSelfTests()
+    {
+        int count = 0;
+        void Check(bool condition, string label) { if (!condition) throw new System.Exception("FAILED: " + label); count++; }
+        void Reject(System.Action a, string label)
+        {
+            bool rejected = false;
+            try { a(); } catch (System.IO.InvalidDataException) { rejected = true; }
+            Check(rejected, label);
+        }
+        Reject(() => ValidateRecords(256, 2, 256, 0, "OAM"), "missing OAM frame");
+        Reject(() => ValidateRecords(4095, 2, 2048, 0, "RAM"), "partial RAM record");
+        Reject(() => ValidateRecords(4096, 3, 2048, 0, "RAM"), "whole-record truncation");
+        Reject(() => ValidateRecords(2048, 1, 2048, 0, "RAM"), "zero compared frames");
+        Reject(() => ValidateRecords(4096, 2, 2048, 1, "RAM"), "seed at EOF");
+        ValidateRecords(4096, 2, 2048, 0, "RAM"); count++;
+        string tail = "RESULT: MATCH 1/1 " + new string('x', 650) + " STRICT: first divergence f1 ENEMIES: Yhi";
+        Check(VerdictTail(tail).EndsWith("ENEMIES: Yhi"), "summary keeps trailing errors beyond 500 chars");
+        Reject(() => VerdictTail("no verdict"), "missing verdict");
+        var a = new byte[2048]; var b = new byte[2048];
+        bool Equal() => SlotsEqual(a, b, out _, out _, out _, out _);
+        a[0x4D1] = 0x80; Check(!Equal(), "extra port object");
+        a[0x4D1] = 0; b[0x4D1] = 0x80; Check(!Equal(), "missing port object");
+        a[0x4D1] = 0x80; Check(Equal(), "same active slot");
+        a[0x511] = 1; Check(!Equal(), "Y low mismatch"); a[0x511] = 0;
+        a[0x521] = 1; Check(!Equal(), "Y high mismatch"); a[0x521] = 0;
+        a[0x4D1] = b[0x4D1] = 0;
+        a[0x4D2] = b[0x4D3] = 0x80; Check(!Equal(), "different slots do not rematch by proximity");
+        string result = $"PASS {count} targeted harness checks";
+        File.WriteAllText(Root + "/Temp/audit_selftests.txt", result);
+        return result;
     }
 
     /// <summary>
@@ -1300,6 +1469,7 @@ public static class PhysCompare
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_hurt_a41/ram_frames.bin");
         int avail = ramAll.Length / 2048;
+        ValidateCapture(root + "/Research/DarkwingDuck/reference/" + "gold_hurt_a41", ramAll, 173);
         var data = Darkwing.Core.DataLoader.Load(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),
@@ -1470,6 +1640,7 @@ public static class PhysCompare
     /// </summary>
     private static void FieldResult(System.Text.StringBuilder sb, string[] names, int[] ok, int[] firstBad, int span)
     {
+        if (span <= 0) throw new System.IO.InvalidDataException("No compared field-frames");
         int totalOk = 0, allFields = 0, firstDiv = -1;
         for (int i = 0; i < names.Length; i++)
         {
@@ -1493,6 +1664,7 @@ public static class PhysCompare
         string root = "D:/Art/SW Code Zero Unity";
         byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_door_id1/ram_frames.bin");
         int avail = ramAll.Length / 2048;
+        ValidateCapture(root + "/Research/DarkwingDuck/reference/gold_door_id1", ramAll, 21);
         var data = Darkwing.Core.DataLoader.Load(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),

@@ -253,7 +253,7 @@ namespace Darkwing.Core
                 case 0x2E: Zipper(s, ctx); break;                          // $A00A fast zipper
                 case 0x2F: Spitter(s, ctx); break;                         // $ABBE wall spitter
                 case 0x30: Slider(s, ctx); break;                          // $AD5B sliding turret
-                case 0x31: LingeringInit(s, ctx); break;                   // $883F lingering-gas body
+                case 0x31: LingerGrant(s, ctx); break;                   // $883F lingering-gas body
                 case 0x32: SkyBomber(s, ctx); break;                       // $B007 falling bomber
                 case 0x33: Rainmaker(s, ctx); break;                       // $AAD1 waterfall spawner
                 case 0x34: DiveBomber(s, ctx); break;                      // $ADF2 dive bomber
@@ -965,30 +965,29 @@ namespace Darkwing.Core
             MoveY(s);
         }
 
-        /// <summary>$8837 behavior 8: lingering gas / bonus pickup. Touch → collect via
-        /// the (anim-$22) jump table; lingering clouds drain the active meter ($8957).</summary>
+        /// <summary>$8837 behavior 8: lingering gas / bonus pickup. Touch → clear the slot
+        /// and run the (anim−$22) grant table.</summary>
         private static void LingeringGasOrBonus(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (!TouchTest(ctx, s)) return; // BCS $8856: not touching → linger
-            MarkPlacement(ctx, s);
-            KillSlot(s);
-            s.Behavior = 0x31; // grant runs via the LingeringInit body below
-            LingeringInit(s, ctx);
-            switch (s.AnimNumber) // $8857/$885E jump table
-            {
-                case 0x22: BonusEnergy(ctx, s, 5); break;                     // $89D6
-                case 0x23: BonusPoints(ctx, s, 1); break;                     // $88D9
-                case 0x24: BonusPoints(ctx, s, 10); break;                    // $88D9
-                case 0x25: BonusPoints(ctx, s, 1); break;                     // $88D9
-                case 0x26: WeaponPickup(ctx, s, 2, 0x7B); break;              // $8865
-                case 0x27: WeaponPickup(ctx, s, 1, 0x7A); break;              // $8889
-                case 0x28: WeaponPickup(ctx, s, 3, 0x7C); break;              // $89AD
-                case 0x29: WeaponPickup(ctx, s, 1, 0x7A); break;              // $8989
-            }
+            if (!TouchTest(ctx, s)) return; // $883A BCS $8856: not touching → linger
+            MarkPlacement(ctx, s);          // $883C JSR $FC29
+            LingerGrant(s, ctx);
         }
 
-        /// <summary>$883F behavior 31: the lingering-gas grant body (also its dispatch id).</summary>
-        private static void LingeringInit(ObjectSystem.Slot s, EnemyDispatcher ctx) { /* grant handled by caller */ }
+        /// <summary>$883F (also behavior $31's dispatch entry): $FA9A clear plus the
+        /// 7-entry (anim−$22) grant table at $8857/$885E. Anim ≥ $29 is out of range.</summary>
+        private static void LingerGrant(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            KillSlot(s);
+            switch (s.AnimNumber)
+            {
+                case 0x22: case 0x23: BonusEnergy(ctx, s, 5); break;                            // $89D6
+                case 0x24: case 0x25: BonusPoints(ctx, s, s.AnimNumber == 0x24 ? 10 : 1); break; // $88D9
+                case 0x26: WeaponPickup(ctx, s, 2, 0x7B); break;                                 // $8865
+                case 0x27: WeaponPickup(ctx, s, 1, 0x7A); break;                                 // $8889
+                case 0x28: WeaponPickup(ctx, s, 3, 0x7C); break;                                 // $88AD
+            }
+        }
 
         private static void BonusEnergy(EnemyDispatcher ctx, ObjectSystem.Slot s, int units)
         {
@@ -1005,13 +1004,17 @@ namespace Darkwing.Core
             ctx.Player.AddSavedMeter((byte)(units == 10 ? 0x0A : 0x01));
         }
 
+        /// <summary>$8865/$8889/$88AD weapon grant: icon + $54 + saved meter, then the
+        /// $05C0 active-meter gate promotes $53 and copies the saved meter ($88CE).</summary>
         private static void WeaponPickup(EnemyDispatcher ctx, ObjectSystem.Slot s, int weapon, byte icon)
         {
             ctx.Sfx?.Invoke(0x18);
             ctx.Player.PendingWeaponIcon = icon;
             ctx.Player.WeaponSelected = (byte)weapon;
             ctx.Player.AddSavedMeter(0x0A);
-            if (ctx.Player.GasEnergyLo != 0) ctx.Player.WeaponActive = (byte)weapon;
+            if (ctx.Player.ActiveGasEnergyLo == 0) return; // $887B/$889F/$88C3: LDA $05C0 / BEQ
+            ctx.Player.WeaponActive = (byte)weapon;
+            ctx.Player.CommitSavedGasMeter();
         }
 
         /// <summary>$8A1A behavior 9: weapon pickup — touch → mark + kill + grant.</summary>
