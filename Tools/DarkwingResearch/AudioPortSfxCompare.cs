@@ -9,7 +9,9 @@ using Darkwing.Audio;
 
 public static class AudioPortSfxCompare
 {
-    public static string Main()
+    public static string Main() => RenderTo(@"D:\Art\SW Code Zero Unity\Research\DarkwingDuck");
+
+    public static string RenderTo(string outputDirectory)
     {
         string proj = @"D:\Art\SW Code Zero Unity";
         byte[] bank3 = File.ReadAllBytes(Path.Combine(proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
@@ -31,7 +33,8 @@ public static class AudioPortSfxCompare
             for (int a = 0x00; a <= 0x44; a += 4) v.Add(st[b + a].ToString("X2"));
             sb.AppendLine(string.Join(",", v));
         }
-        string path = Path.Combine(proj, @"Research\DarkwingDuck\audio_port_sfx3F_state.csv");
+        string path = Path.Combine(outputDirectory, "audio_port_sfx3F_state.csv");
+        Directory.CreateDirectory(outputDirectory);
         File.WriteAllText(path, sb.ToString());
         return "OK " + path;
     }

@@ -1,0 +1,15 @@
+tmp_boss_pilot1            frames=  600  BOSS f27..f599  samples=573  kinds=$50 Quackerjack x573
+tmp_boss_pilot10_wolf_defeat frames=  900  BOSS f247..f899  samples=1306  kinds=$54 Wolfduck x653, $53 WolfduckCtrl x653
+tmp_boss_pilot11_staging   frames=  700  BOSS f28..f699  samples=1344  kinds=$54 Wolfduck x672, $53 WolfduckCtrl x672
+tmp_boss_pilot12_wolf_defeat frames=  400  BOSS f4..f399  samples=770  kinds=$54 Wolfduck x385, $53 WolfduckCtrl x385
+tmp_boss_pilot13_stage520  frames=  520  BOSS f28..f519  samples=984  kinds=$54 Wolfduck x492, $53 WolfduckCtrl x492
+tmp_boss_pilot14_wolf_defeat frames=  400  BOSS f4..f38  samples=70  kinds=$54 Wolfduck x35, $53 WolfduckCtrl x35
+tmp_boss_pilot2            frames= 1200  BOSS f27..f1199  samples=1163  kinds=$50 Quackerjack x1163
+tmp_boss_pilot3            frames= 1200  BOSS f27..f1199  samples=1163  kinds=$50 Quackerjack x1163
+tmp_boss_pilot4_wolfduck   frames=  600  BOSS f28..f29  samples=2  kinds=$50 Quackerjack x2
+tmp_boss_pilot5_wolfduck_vis frames=  120  BOSS f28..f29  samples=2  kinds=$50 Quackerjack x2
+tmp_boss_pilot6_wolfduck   frames=  400  BOSS f28..f399  samples=744  kinds=$54 Wolfduck x372, $53 WolfduckCtrl x372
+tmp_boss_pilot7_wolfduck_fight frames= 1500  BOSS f28..f1499  samples=2922  kinds=$54 Wolfduck x1461, $53 WolfduckCtrl x1461
+tmp_boss_pilot8_wolf_kill  frames= 1500  BOSS f28..f1499  samples=2922  kinds=$54 Wolfduck x1461, $53 WolfduckCtrl x1461
+tmp_boss_pilot9_wolf_jumpfight frames= 1500  BOSS f28..f1499  samples=2922  kinds=$54 Wolfduck x1461, $53 WolfduckCtrl x1461
+captures scanned: 85   with a boss core slot: 14

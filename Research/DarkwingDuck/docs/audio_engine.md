@@ -284,36 +284,17 @@ drives `Apu.Write` in the original order, `Tick()` = one driver tick per game fr
 `RenderFrame()` = tick + 29780/29781 alternating CPU cycles sampled at 48 kHz through a fixed
 rational resampler 16000/596591 — drift-free; `SaveState`/`LoadState` schema-tagged).
 Test harness: `Tools/DarkwingResearch/AudioPortRender.cs` (editor `run_script`: renders song 1
-600 frames → `Research/DarkwingDuck/audio_port_song1.wav` + per-frame state CSV),
+600 frames → generated WAV + per-frame state CSV; use `RenderTo` with a temporary output directory),
 `Tools/DarkwingResearch/AudioPortSfxCompare.cs` (SFX state dump), and
 `Tools/DarkwingResearch/compare_audio_port.py` (structural comparison vs the Mesen probes).
 
-### 11.1 Verification results
+### 11.1 Проверки
 
-Music (song 1, port from song start vs original captured mid-song from `m1_gameplay.mss`,
-compared as per-channel (note-interval, APU-period) transitions — the APU period derived from
-the stored $0720/$0724 through the $8849 octave fold):
+Актуальные числа — в [audio_port_comparison.json](../audio_port_comparison.json); команды генерации временных CSV/WAV — в [RESEARCH_HANDOFF](../../../Docs/DarkwingPort/RESEARCH_HANDOFF_RU.md). Постоянные копии экспортов не требуются.
 
-- **100% of port note transitions occur in the original's capture**: pulse1 51/51,
-  pulse2 59/59, triangle 34/34.
-- Longest contiguous identical (interval, period) runs: pulse1 12, pulse2 17, triangle 18
-  transitions (e.g. pulse1: (13,$213)(7,$169)(13,$113)(7,$134)(13,$169)(7,$190)… — rhythm and
-  pitch identical). The residual differences cluster at the capture-window edges (the probe
-  starts mid-phrase; the port starts at the song loop point).
-- The tempo mechanics match exactly: default $0199 at music start, song 1's cmd $05 → $0133,
-  $C8 += $33/frame with $C7 toggling 1↔2 (probe-observed values reproduced).
+Проверка 2026-10-18: song1 — 600 кадров, 479210 samples при 48 kHz; longest contiguous (interval,period) runs: pulse1 12, pulse2 17, triangle 18. Старое утверждение «100% переходов» было ошибкой сравнения списка порта с самим собой. После исправления присутствие переходов в original capture: **33/51, 44/59, 26/34**; порядок/кратность эта метрика не проверяет. Исходные старты различны: порт от начала песни, оригинал — mid-song snapshot. Envelope correlation **0,4367** при подобранном сдвиге **−87 кадров** не доказывает сигнал или абсолютный тайминг.
 
-SFX (punch $3F, port from fresh state vs `probe_audio_sfx` whose game re-fires it while B is
-held): block parse, D3/D4/D5 block timing (len $05, speed $56, D5 = (D3·D4)>>8+1), channel
-mask $08 (noise), instrument $29, volume $0F → control $3F, noise period $400E = $84
-(= (note-1)^$0F | instr[7]), envelope timer sequence $F0/$90/$6D/$4A/$27, and the stop
-semantics ($FF block → $81C8 full reset) all match the original frame-for-frame.
-Arbitration verified live: SFX steal sets $CF, music parsing continues on stolen channels
-(stream pointers advance, registers muted via the $88A0 skip), seamless hand-back.
-WAV: `audio_port_song1.wav` (48 kHz mono, 479,210 samples = exactly 600 × 798.68) vs the
-Mesen capture — per-frame RMS envelope correlation 0.44 at best frame offset −87; the gap is
-expected (different mixers/gain, stereo→mono, mid-song capture start), the note structure
-above is the meaningful check.
+Технические наблюдения при переносе: tempo default $0199, song1 cmd05→$0133, $C8 += $33/frame с $C7 1↔2. SFX $3F: len $05, speed $56, D5=(D3·D4)>>8+1; mask $08/noise, instrument $29, volume $0F→control $3F; $400E=$84 = ((note−1)^$0F)|instr[7], envelope $F0/$90/$6D/$4A/$27, stop $FF→банк3 $81C8. Арбитраж: $CF steal, музыка продолжает parse со skip записи через $88A0. Это описание исследованных/портированных веток; сквозная покадровая приёмка не закрыта. Legacy SFX alignment port1=probe88 даёт 1091/1160 значений за 40f; начальное состояние/фаза требуют проверки (формат проб — FACTS, раздел SFX $3F).
 
 ### 11.2 Corrections to the static analysis above (found while porting)
 

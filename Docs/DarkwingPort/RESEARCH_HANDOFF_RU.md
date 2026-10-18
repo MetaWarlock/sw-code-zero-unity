@@ -1,3 +1,73 @@
+# Работа с проектом
+
+Проект `D:\Art\SW Code Zero Unity`, установленный Unity 6000.6.5f1. Перед изменениями читать `AGENTS.md` и [бриф](IMPLEMENTATION_BRIEF_RU.md). Текущие результаты — только в [приёмке](ACCEPTANCE_REPORT.md); очередь — [MILESTONES](MILESTONES.md), вопросы/адреса — `Research/DarkwingDuck/GAPS.md` и `FACTS.md`.
+
+База последней проверки — `901cc0150460018a1ac159f1a8e91e82499d1a99` + локальные изменения интеграции и инструментов. В Assets исправлены GameFlow/Launcher/nametable/CHR/text; см. приёмку. Исходные правки `UniversalRP.asset`, IET Settings.json и untracked-исследования сохранять; коммиты не создавались. Build через Editor добавляет InputSystem_Actions в preloadedAssets. История текущих документов доступна в Git, например `git show 901cc015:Research/DarkwingDuck/GAPS.md`.
+
+## Воспроизведение проверок (PowerShell)
+
+```powershell
+Set-Location -LiteralPath 'D:\Art\SW Code Zero Unity'
+unity status --project-path 'D:\Art\SW Code Zero Unity' --format json
+python Tools\DarkwingResearch\run_check.py --suite --out Temp\next_suite
+$LASTEXITCODE
+python Tools\DarkwingResearch\run_check.py --entry PhysCompare.EnemyVerifyTrace --out Temp\next_enemy
+python -m unittest discover -s Tools\DarkwingResearch -p 'test_*.py' -v
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\DarkwingResearch\test_player_smoke.ps1
+python Tools\DarkwingResearch\run_check.py --entry PhysCompare.AuditSelfTests --out Temp\next_tests
+```
+
+Для `--suite`: exit0 = все выбранные STRICT совпали; 1 = расхождение; 2 = ошибка/неполный или устаревший отчёт. Последний запуск — exit1. Wrapper проверяет внутренний success CLI и даёт 240000ms; Suite занимает около 44с. Без `--suite` exit0 подтверждает только исполнение: читать результат, это не приёмочный PASS. После разбора временный вывод не хранить как второй постоянный отчёт.
+
+Шаблон: `python Tools\DarkwingResearch\run_check.py --file AgentScripts/TitleVerify.cs --entry TitleVerify.Run --out Temp\next_title`.
+
+| Файл / класс | Действующие entry |
+|---|---|
+| AgentScripts/PhysCompare.cs | EnemySweep, BossFightSeed с `--args '[29]'`, BossFightWolfDefeat, PauseHold, PauseResume, HudOam, M6RouteTrace (префикс PhysCompare.) |
+| AgentScripts/TitleVerify.cs / IntroVerify.cs / MapOamVerify.cs | TitleVerify.Run / IntroVerify.Run / MapOamVerify.Run |
+| AgentScripts/MissionCardVerify.cs / GameOverVerify.cs | MissionCardVerify.Suite / GameOverVerify.Run |
+| AgentScripts/FlowVerify.cs | FlowVerify.Check — принудительные победы, не прохождение |
+| AgentScripts/BootFlowProbe.cs / SceneAudit.cs | BootFlowProbe.Run — fixed-step снимки без ROM alignment; SceneAudit.Inspect — чтение Editor API |
+
+Экспорт звука и диагностическое сравнение (CSV/WAV сначала генерируются, постоянные копии не требуются):
+
+```powershell
+python Tools\DarkwingResearch\run_check.py --file Tools/DarkwingResearch/AudioPortRender.cs --entry AudioPortRender.RenderTo --args '["D:/Art/SW Code Zero Unity/Temp/next_audio"]' --out Temp\next_audio_run
+python Tools\DarkwingResearch\compare_audio_port.py --port-state Temp\next_audio\audio_port_song1_state.csv --port-wav Temp\next_audio\audio_port_song1.wav --out Temp\next_audio_comparison.json
+```
+
+Для SFX использовать `AudioPortSfxCompare.RenderTo` из `Tools/DarkwingResearch/AudioPortSfxCompare.cs` тем же способом. Exit0 аудиосравнения означает выполнение диагностики, не идентичность сигнала. Нельзя заменять original goldens выходом порта.
+
+## Обычный вход: Editor и standalone
+
+Editor этого проекта должен быть ready. Все CLI-команды явно адресуют проект, runtime Pipeline включать не нужно. Кнопочный replay существует только для Editor/Development, запускается до первого игрового кадра и не допускает seed RAM/phase. В обычном запуске Enter=Start, X=B, Z=A, стрелки=движение; карту/страницы подтверждают B/A по подсказкам.
+
+```powershell
+unity command editor_stop --project-path 'D:\Art\SW Code Zero Unity' --caller plugin --skill unity-cli --format json
+python Tools\DarkwingResearch\run_check.py --file AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.EditorRoute --out Temp\editor_route_command
+# Progress должен показать finished=True; результат — Temp/editor_route/route.json.
+python Tools\DarkwingResearch\run_check.py --file AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.Progress --out Temp\editor_progress
+unity command editor_stop --project-path 'D:\Art\SW Code Zero Unity' --caller plugin --skill unity-cli --format json
+python Tools\DarkwingResearch\build_player.py --out Build\Audit_20261018\DarkwingDuck.exe --evidence Temp\integration_build --development
+powershell -NoProfile -ExecutionPolicy Bypass -File Tools\DarkwingResearch\verify_player.ps1 -Exe 'D:\Art\SW Code Zero Unity\Build\Audit_20261018\DarkwingDuck.exe' -PngA 'Temp\player_route\window_a.png' -PngB 'Temp\player_route\window_b.png' -FirstWaitSec 50 -SecondWaitSec 1 -Replay 'D:\Art\SW Code Zero Unity\Temp\route_input_player.json'
+python Tools\DarkwingResearch\run_check.py --file AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.Verify --out Temp\route_verify
+python Tools\DarkwingResearch\run_check.py --file AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.IdleTitle --out Temp\idle_title
+python Tools\DarkwingResearch\run_check.py --entry PhysCompare.EnemyFixtureRegression --out Temp\enemy_regression
+```
+
+Build wrapper требует Succeeded/0 errors и проверяет source hashes до/после. Verify требует одинаковые 14 состояний Editor/Player, обязательные фазы, движение/прыжок/газ. Smoke сам по себе проверяет только запуск/окно/штатный выход. Данные в Temp перезаписывать при повторении, промежуточные коллекции не сохранять.
+
+Оригинальный маршрут от reset (выходная папка должна отсутствовать; load-state/patch не применять):
+
+```powershell
+python Tools\DarkwingResearch\probe_run.py --out Temp\ordinary_original_route --frames 4200 --compact --screenshot-every 100 --vram-every 20 --timeout 260 --input '0:start@900-903' --input '0:start@1100-1103' --input '0:start@1300-1303' --input '0:start@1500-1503' --input '0:b@1700-1703' --input '0:a@2000-2003' --input '0:a@2200-2203' --input '0:a@2400-2403' --input '0:a@2600-2603' --input '0:a@2800-2803' --input '0:b@3620-3623' --input '0:right@3700-3770' --input '0:a@3790-3805' --input '0:b@3850-3853'
+python Tools\DarkwingResearch\compare_frames.py --route Temp\ordinary_original_route Temp\editor_route\route.json Temp\player_route\route.json
+```
+
+Последняя команда сохраняет точные различия и даёт exit1 при несовпадении любого сравниваемого PNG. Текущий ordinary-entry проходит как маршрут; **полная пиксельная эквивалентность меню не принята**. Mesen CLI relative f попадает в Lua capture f+1; port replay нумеруется с 1. Поэтому управляющие состояния сравниваются с offset921, а устойчивые экраны — по явно указанным парам. Это не одинаковая длительность переходов. Канонические исходные goldens не переписывать. Постоянные минимальные доказательства — только существующие файлы `evidence/audit_20261018`.
+
+Ниже исходные исследовательские сведения и адреса. Это данные подготовки, а не текущие вердикты готовности.
+
 # Справочник уже собранных сведений
 
 Это материалы подготовки задания, а не готовый порт. Не требуется повторять весь поиск. Проверять конкретное утверждение тогда, когда от него зависит текущая реализация. При конфликте статей и поведения ROM приоритет имеют воспроизводимые наблюдения оригинала.

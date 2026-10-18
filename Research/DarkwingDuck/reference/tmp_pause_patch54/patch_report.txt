@@ -1,0 +1,3 @@
+0054 <- 01  ok=true readback=01
+0060 <- AA  ok=true readback=AA
+0061 <- BB  ok=true readback=BB

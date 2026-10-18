@@ -161,6 +161,7 @@ namespace Darkwing.Core
             _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
             WorldPrelude();
             Player.StageSectionToEnd();     // $DE86-$DE91: the inline entry has no frame machine
+            TileMap.StreamColumns(Player.ScrollX); // staging must publish the newly decoded world
             WorldSpawn();
             // $C2F9/$C319 never flag $18 — the PPU only sees a new table through a fade step's
             // $C2A2 STY $18. Inside the staged loader that is the $DE06/$C270 fade-in; this
@@ -172,6 +173,7 @@ namespace Darkwing.Core
             WorldRunning = true;
             MapScreen = false;
             MapChooser = false;
+            TitleScreen = EndingScreen = false;
             // Record 0 is below every walk's $97=#$04 start, so its tile/attr/X are the previous
             // screen's leftovers. Re-prime the value the world HUD captures show (F8 C0 00 10) after
             // any screen that seeded its own — see <see cref="LoadTitleScreen"/>.
@@ -419,18 +421,21 @@ namespace Darkwing.Core
         /// boss dies — the end-of-mission event that <see cref="GameFlow"/> watches.</summary>
         public bool MissionCleared;
 
-        /// <summary>Loads the city-map screen (the $C8B5 world-31 path: nametable + palette +
-        /// CHR from the descriptor, rendering re-enabled, scroll zeroed, world objects cleared)
-        /// and seeds the five object slots its sprites live in — see <see cref="SeedMapSlots"/>.
-        /// The bubble BODY text ($A6A5 through the $0360 VRAM queue) is still open (GAPS G32.2),
-        /// so the HELP letters are the only map layer the screen does not draw.</summary>
+        /// <summary>$C7E5-$C804: clear VRAM, bank-2 task 2, $8E00 palette/CHR,
+        /// then $A100 map sprites. GameFlow drives the $A300 text independently.</summary>
         public void LoadMapScreen()
         {
-            if (MapNametable != null)
-                System.Array.Copy(MapNametable, 0, Ppu.NametableRam, 0,
-                    System.Math.Min(MapNametable.Length, 0x800));
+            // $C7E5/$C7FA: rebuild from bank-2 task 2. The old exported snapshot
+            // included the preceding intro's dialog, which is not map initialization.
+            FillVramPages(0x20, 0x00, 0x00);
+            if (Bank2 != null) RunBank2Task(2);
+            else if (MapNametable != null)
+                System.Array.Copy(MapNametable, Ppu.NametableRam, System.Math.Min(MapNametable.Length, 0x800));
             if (MapPalette != null)
-                for (int i = 0; i < 32; i++) Ppu.PaletteRam[i] = MapPalette[i];
+                for (int i = 0; i < 32; i++)
+                    _paletteSrc[i] = _palMirror[i] = MapPalette[i];
+            _palDirty = 0xFF;
+            TitleScreen = EndingScreen = false;
             Ppu.Chr0Bank = MapChrBank0;
             Ppu.Chr1Bank = MapChrBank1;
             Ppu.ScrollX = 0; Ppu.ScrollY = 0;
@@ -1065,6 +1070,7 @@ namespace Darkwing.Core
         {
             _parityStepped = false;
             _oamPublished = false;
+            NmiChrUpload();                // $C047/$C050, before $C059 palette upload
             NmiPaletteUpload();            // $C059: $18-flagged $0300 → $3F00, every frame
             // $DE03 JSR $FF06 + $DE06 JMP $C254 → $C270: the world loader stays in its
             // palette fade for 17 NMIs, so neither the input read nor $CAFC/$CB41 runs
@@ -1242,6 +1248,24 @@ namespace Darkwing.Core
             ConsumeChrLatch();
             RunWorldServices();
             Frame++;
+        }
+
+        private void NmiChrUpload()
+        {
+            // Resident section/death loaders retain their existing request-residency
+            // schedule. Ordinary requests (card release $D565, zone service $EE26…)
+            // are consumed by the next NMI, never by the frame that writes them.
+            if (_sectionStage != 0 || _reloadStage != 0 || _chrPending) return;
+            if (Player.ChrLatch0 != 0)
+            {
+                Ppu.Chr0Bank = Player.ChrLatch0 & 0x1F;
+                Player.ChrLatch0 = 0;
+            }
+            if (Player.ChrLatch1 != 0)
+            {
+                Ppu.Chr1Bank = Player.ChrLatch1 & 0x1F;
+                Player.ChrLatch1 = 0;
+            }
         }
 
         private void ConsumeChrLatch()

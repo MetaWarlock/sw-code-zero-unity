@@ -20,7 +20,9 @@ public static class AudioPortRender
     const string Proj = @"D:\Art\SW Code Zero Unity";
     const int Frames = 600;
 
-    public static string Main()
+    public static string Main() => RenderTo(Path.Combine(Proj, @"Research\DarkwingDuck"));
+
+    public static string RenderTo(string outputDirectory)
     {
         byte[] bank3 = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
         var seq = new AudioSequencer(bank3);
@@ -54,8 +56,8 @@ public static class AudioPortRender
         }
         FinishWav(wav, 48000);
 
-        string wavPath = Path.Combine(Proj, @"Research\DarkwingDuck\audio_port_song1.wav");
-        string csvPath = Path.Combine(Proj, @"Research\DarkwingDuck\audio_port_song1_state.csv");
+        string wavPath = Path.Combine(outputDirectory, "audio_port_song1.wav");
+        string csvPath = Path.Combine(outputDirectory, "audio_port_song1_state.csv");
         Directory.CreateDirectory(Path.GetDirectoryName(wavPath));
         File.WriteAllBytes(wavPath, wav.ToArray());
         File.WriteAllText(csvPath, csv.ToString());

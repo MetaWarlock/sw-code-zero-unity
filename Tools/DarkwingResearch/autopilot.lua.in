@@ -1,0 +1,269 @@
+-- Natural-route autopilot. Substituted by probe_run.py --bot.
+-- Writes emulated input through the Lua input API only (controller-only, like a
+-- human playthrough): never writes emulated memory, never warps, never patches.
+-- Two decision layers:
+--   * route  = explicit waypoint actions authored from the metatile map, so the
+--     bot performs the jumps the level actually requires (a 64px pit cannot be
+--     cleared by the ~56px jump arc, so it must be crossed over the top);
+--   * __COLL__, the collision grid decoded from the ROM by decode_room.py, drives
+--     generic obstacle jumps outside the routed spans.
+local dir = __OUTPUT_DIR__
+local cfg = __BOT__
+local grid = __COLL__
+local COLS, ROWS, TYPE_BASE = __COLS__, __ROWS__, __TYPE_BASE__
+local WCOLS = __WCOLS__
+local frame = 0
+local ram = emu.memType.nesInternalRam
+local BITS = { a = 0x80, b = 0x40, select = 0x20, start = 0x10,
+               up = 0x08, down = 0x04, left = 0x02, right = 0x01 }
+local function r(a) return emu.read(a, ram, false) end
+local function w16(a) return r(a) + r(a + 16) * 256 end   -- $4F0/$500 low/high pair
+
+local inp = assert(io.open(dir .. "/bot_input.csv", "w"))
+inp:write("frame,byte\n")
+local diag = assert(io.open(dir .. "/bot_diag.csv", "w"))
+diag:write("frame,inGame,x,y,st,row,cell,vya,anim,beh,hp,n38,n69,resF8,jump,up,reason\n")
+local evf = assert(io.open(dir .. "/bot_events.txt", "w"))
+local function ev(t) evf:write(string.format("f%d %s\n", frame, t)); evf:flush() end
+
+-- Metatile collision at a world pixel; -1 = outside the decoded world.
+local function tile(wx, wy)
+    local cx, cy = math.floor(wx / 16), math.floor(wy / 16)
+    if cx < 0 or cy < 0 or cx >= COLS or cy >= ROWS then return -1 end
+    local b = grid:byte(cy * COLS + cx + 1)
+    if not b then return -1 end
+    return b - TYPE_BASE
+end
+
+local BLOCK = { [2] = true, [3] = true, [4] = true }
+local FLOOR = { [1] = true, [2] = true, [3] = true, [4] = true, [7] = true, [8] = true }
+local FEET, HEAD = cfg.feet, cfg.feet - 32
+
+local function onGround(wx, wy)
+    local t = tile(wx, wy + FEET + 1)
+    return t >= 0 and FLOOR[t] == true
+end
+
+-- First row at or below fromRow that stops a fall in this column.
+local function groundRow(wx, fromRow)
+    for k = 0, 6 do
+        local t = tile(wx, (fromRow + k) * 16)
+        if t == -1 then return nil end
+        if FLOOR[t] then return fromRow + k, t end
+    end
+    return nil
+end
+
+-- Waypoint actions, "x:act:len[:y]" (len defaults to jumpHold, y is the player Y
+-- while standing on the surface the jump takes off from). A band change climbs a
+-- one-way ladder whose steps jump left and right within a few metatiles of the
+-- same X, so X alone cannot order them; the takeoff-Y gate does. Ties on X fire
+-- from the lowest surface (largest Y) upward.
+local route = {}
+for part in string.gmatch(cfg.route, "[^;]+") do
+    local x, act, len, y = string.match(part, "^(%d+):(%a+):?(%d*):?(%d*)$")
+    if x then
+        route[#route + 1] = { x = tonumber(x), act = act,
+            len = tonumber(len) or cfg.jumpHold, done = false,
+            y = tonumber(len ~= "" and y ~= "" and y or nil) }
+    end
+end
+table.sort(route, function(a, b)
+    if a.x ~= b.x then return a.x < b.x end
+    return (a.y or 10000) > (b.y or 10000) end)
+
+local jumpLeft, upLeft, holdLeft, holdKeys = 0, 0, 0, nil
+local cool = 0   -- A must be released between jumps: the ROM samples a press edge
+local stopLeft, leftLeft, fireLeft = 0, 0, 0
+local holdGround, shootFrames, lastThreat = false, 0, 0
+local prevX, stall, stuckTries, wasIn = nil, 0, 0, false
+local bestX, lastCell, lastN38, lastF8 = 0, nil, -1, -1
+
+-- Jump arc measured from gold_m1_longroute (right held, A held past the apex):
+-- 60px horizontal, 50px rise, apex 20 frames after takeoff, and support lasts
+-- ~13px past the visual lip, so a takeoff at the last supported frame is both the
+-- longest and the safest jump. cfg.range / cfg.rise carry the tunables.
+local function surfaceTopRow(ax, row)
+    while row > 0 do
+        local t = tile(ax, (row - 1) * 16)
+        if t >= 0 and BLOCK[t] then row = row - 1 else break end
+    end
+    return row
+end
+
+-- Nearest obstacle ahead that needs a jump, plus the latest frame it can be
+-- taken from. Returns nil when the way is free (walk, drop-throughs included).
+local function jumpNeed(x, y)
+    local myRow = groundRow(x, math.floor((y + FEET) / 16))
+    if not myRow then return nil end
+    local c0 = math.floor(x / 16)
+    for k = 1, 8 do
+        local ax = (c0 + k) * 16
+        -- Wall: solid in the body rows above the surface we stand on.
+        local body = tile(ax, (myRow - 1) * 16)
+        if body >= 0 and BLOCK[body] then
+            local rise = (myRow - surfaceTopRow(ax, myRow)) * 16
+            if rise > cfg.rise then return nil end
+            local frames = 20 * (1 - math.sqrt(math.max(0, 1 - rise / cfg.rise)))
+            if ax - x <= frames * 1.5 + 18 then return "step" .. rise end
+            return nil
+        end
+        -- Pit: no floor at or below our own level within the scan window.
+        if not groundRow(ax, myRow) then
+            local far = nil
+            for j = k, k + 8 do
+                local tt = tile((c0 + j) * 16, myRow * 16)
+                if tt >= 0 and FLOOR[tt] then far = (c0 + j) * 16 break end
+            end
+            if not far or far - ax > cfg.range - cfg.land then return nil end
+            if x + cfg.range >= far + cfg.land then return "hole" .. (far - ax) end
+            return nil
+        end
+    end
+    return nil
+end
+
+-- Nearest live object slot ahead of the player at a shootable height. Object
+-- arrays are 16 one-byte slots: state $4D0+s (bit7 alive), X $4F0/$500+s,
+-- Y $510/$520+s (same world space as the player, slot 0 = player).
+local function threat(px, py)
+    local bestId, bestDist = 0, 999
+    for s = 1, 15 do
+        if math.floor(r(0x4D0 + s) / 128) % 2 == 1 then
+            local d = w16(0x4F0 + s) - px
+            if d >= 0 and d <= cfg.threat and math.abs(w16(0x510 + s) - py) <= cfg.vgap
+               and d < bestDist then
+                bestDist, bestId = d, s
+            end
+        end
+    end
+    return bestId, bestDist
+end
+
+emu.addEventCallback(function()
+    frame = frame + 1
+    if frame < cfg.startFrame then emu.setInput({}, 0) return end
+    local x, y = w16(0x4F0), w16(0x510)
+    local st, cell, row = r(0x0050), r(0x22), r(0xFB)
+    local hp, n38, n69, resF8 = r(0x5A0), r(0x38), r(0x69), r(0xF8)
+    local inGame = math.floor(r(0x4D0) / 128) % 2 == 1
+    local reason, why = nil, ""
+
+    if inGame then
+        if not wasIn then
+            -- The ROM put Darkwing back at the level start, so every waypoint has to
+            -- be re-armed. Falling behind is NOT a reason to re-arm: a ladder step
+            -- deliberately moves left.
+            for i = 1, #route do route[i].done = false end
+            bestX, prevX, stall, stuckTries = 0, nil, 0, 0
+            ev(string.format("respawn x=%04X y=%04X", x, y))
+        end
+        local inRoute = #route > 0 and x >= route[1].x - 8 and x <= route[#route].x + 16
+        for i = 1, #route do
+            local e = route[i]
+            if not e.done and x >= e.x then
+                if e.act ~= "jump" or (jumpLeft == 0 and cool == 0 and onGround(x, y)
+                        and (not e.y or math.abs(y - e.y) <= 24)) then
+                    e.done = true
+                    if e.act == "jump" then jumpLeft = e.len
+                    elseif e.act == "left" then leftLeft = e.len
+                    elseif e.act == "stop" then stopLeft = e.len
+                    elseif e.act == "up" then upLeft = e.len end
+                    why = "r" .. e.act .. e.x .. (e.y and ("_" .. e.y) or "")
+                end
+                break
+            end
+        end
+        -- Inside a routed span the waypoints own the timing; generic jumps would
+        -- fire early and drop the player into the pit the route crosses over.
+        if not inRoute and jumpLeft == 0 and cool == 0 and onGround(x, y) then
+            reason = jumpNeed(x, y)
+            if reason then jumpLeft, why = cfg.jumpHold, reason end
+        end
+        -- Hold ground and fire while a live slot is close, ahead and level:
+        -- walking into it costs a heart. B is pulsed, not held: the ROM gates the
+        -- fire off the pressed edge ($14) and a held button restarts anim 5.
+        local ts, td = threat(x, y)
+        holdGround = ts > 0 and shootFrames < cfg.holdMax and jumpLeft == 0
+                       and onGround(x, y)
+        if holdGround then
+            shootFrames, why = shootFrames + 1, "shoot" .. ts
+            if ts ~= lastThreat then fireLeft = 3 end
+        elseif ts == 0 then
+            shootFrames = 0
+        end
+        if cfg.attack ~= 0 and cfg.attack ~= 1 then fireLeft = 3 end
+        lastThreat = ts
+        if prevX == nil then prevX = x end
+        if x == prevX then stall = stall + 1 else stall, stuckTries = 0, 0 end
+        prevX = x
+        if x > bestX then
+            if bestX > 0 and x - bestX >= 0x40 then
+                ev(string.format("progress x=%04X (was %04X) y=%04X", x, bestX, y))
+            end
+            bestX = x
+        end
+        if stall >= cfg.stallAfter then
+            stuckTries = stuckTries + 1
+            ev(string.format("stall x=%04X y=%04X st=%02X try=%d", x, y, st, stuckTries))
+            if stuckTries == 1 then jumpLeft = math.max(jumpLeft, 45)
+            elseif stuckTries == 2 then upLeft = math.max(upLeft, 70); jumpLeft = math.max(jumpLeft, 45)
+            elseif stuckTries == 3 then holdLeft, holdKeys = 100, { up = true }
+            elseif stuckTries == 4 then holdLeft, holdKeys = 100, { up = true, right = true }
+            else stall, stuckTries = 0, 0 end
+            cool = 0
+            why = "stall" .. stuckTries
+        end
+    end
+    wasIn = inGame
+
+    local walking = cfg.right ~= 0 and inGame and not holdGround
+                    and stopLeft == 0 and leftLeft == 0
+    local buttons = { right = walking or nil, b = (fireLeft > 0 and inGame) or nil }
+    if fireLeft > 0 then fireLeft = fireLeft - 1 end
+    if leftLeft > 0 then buttons.left = true; leftLeft = leftLeft - 1 end
+    if stopLeft > 0 then stopLeft = stopLeft - 1 end
+    if jumpLeft > 0 then
+        buttons.a = true
+        jumpLeft = jumpLeft - 1
+        if jumpLeft == 0 then cool = cfg.cool end
+    elseif cool > 0 then
+        cool = cool - 1
+    end
+    if upLeft > 0 then buttons.up = true; upLeft = upLeft - 1 end
+    if holdLeft > 0 then
+        for k in pairs(holdKeys) do buttons[k] = true end
+        holdLeft = holdLeft - 1
+    end
+    if cfg.select ~= 0 then buttons.select = true end
+
+    local byte = 0
+    for k, v in pairs(buttons) do
+        if v then byte = byte + BITS[k] end
+    end
+    inp:write(string.format("%d,%d\n", frame, byte))
+    diag:write(string.format("%d,%d,%04X,%04X,%02X,%d,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%02X,%d,%s\n",
+        frame, inGame and 1 or 0, x, y, st, row, cell, r(0x560), r(0x420), r(0x4E0),
+        hp, n38, n69, resF8, jumpLeft > 0 and 1 or 0, upLeft > 0 and 1 or 0, why))
+
+    if n38 ~= lastN38 then ev(string.format("PROGRESS $38=%02X $69=%02X $F8=%02X", n38, n69, resF8)); lastN38 = n38 end
+    if resF8 ~= lastF8 then ev(string.format("RESULT $F8=%02X", resF8)); lastF8 = resF8 end
+    if cell ~= lastCell then
+        ev(string.format("cell=%02X row=%d x=%04X y=%04X", cell, row, x, y))
+        lastCell = cell
+        -- The level script byte ($34),Y with Y=$22 gates the hook grab and the
+        -- checkpoints ($DAFD/$DB6D). Dump the whole per-cell array on every cell
+        -- change: one room's script is 46*4 bytes, indexed by cell id.
+        local base = r(0x34) + r(0x35) * 256
+        local hex = {}
+        for k = 0, 15 do hex[#hex + 1] = string.format("%02X", emu.read(base + k, ram, false)) end
+        ev(string.format("SCRIPT $34=%04X byte[%02X]=%02X first16=%s",
+            base, cell, emu.read(base + cell, ram, false), table.concat(hex, " ")))
+    end
+
+    emu.setInput(buttons, 0)
+end, emu.eventType.inputPolled)
+
+emu.addEventCallback(function()
+    for _, h in ipairs({ inp, diag, evf }) do h:flush(); h:close() end
+end, emu.eventType.scriptEnded)

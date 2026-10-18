@@ -1,0 +1,6 @@
+05C4 <- 22  ok=true readback=22
+05C6 <- 33  ok=true readback=33
+05C8 <- 44  ok=true readback=44
+05CA <- 55  ok=true readback=55
+05E4 <- 66  ok=true readback=66
+05E6 <- 77  ok=true readback=77

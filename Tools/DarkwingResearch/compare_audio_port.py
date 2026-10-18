@@ -18,6 +18,7 @@ import csv
 import json
 import struct
 import wave
+import argparse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -187,7 +188,20 @@ def corr(a, b):
     return cov / (va * vb) ** 0.5
 
 
+def transition_membership(port, probe):
+    """Presence only: ignores order/multiplicity; it is not event-stream identity."""
+    reference = set(probe)
+    return sum(t in reference for t in port)
+
+
 def main():
+    global PORT_STATE, PORT_WAV
+    parser = argparse.ArgumentParser(description="Diagnostic audio structure/envelope comparison, not an acceptance gate")
+    parser.add_argument("--out", type=Path, default=REF / "audio_port_comparison.json")
+    parser.add_argument("--port-state", type=Path, default=PORT_STATE)
+    parser.add_argument("--port-wav", type=Path, default=PORT_WAV)
+    args = parser.parse_args()
+    PORT_STATE, PORT_WAV = args.port_state, args.port_wav
     port = load_port()
     probe = load_probe()
     print(f"port frames: {len(port)}, probe frames: {len(probe)}")
@@ -213,8 +227,7 @@ def main():
     # construction — report the share of transitions covered by any exact run instead.
     for k in ("p1", "p2", "tri"):
         sa, sb = transitions(port_ev[k]), transitions(probe_ev[k])
-        st = set(sa)
-        hits = sum(1 for t in sa if t in st)
+        hits = transition_membership(sa, sb)
         report[k]["port_transitions_present_in_probe"] = hits
         print(f"{k}: {hits}/{len(sa)} port transitions occur in the probe sequence")
 
@@ -239,7 +252,8 @@ def main():
         print(f"wav: port {prate} Hz {len(pe)} frames, probe {qrate} Hz {len(qe)} frames, "
               f"best envelope corr at frame offset {best[0]} = {best[1]:.4f}")
 
-    out = REF / "audio_port_comparison.json"
+    report["scope"] = "diagnostic only: transition presence ignores order/multiplicity; best-offset envelope correlation is not RMS error or signal identity"
+    out = args.out
     out.write_text(json.dumps(report, indent=2))
     print("wrote", out)
 

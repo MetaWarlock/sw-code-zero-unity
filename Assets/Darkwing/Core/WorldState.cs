@@ -16,16 +16,13 @@ namespace Darkwing.Core
         public const int MapWorld = 31;
 
         /// <summary>
-        /// 4K CHR bank holding the city-map background tiles. Evidence, not a guess:
-        /// probe_flow's MMC1 log latches chr($1000)=$26 for the 579 map frames
-        /// (chr_map.csv columns are frame,ctrl,pl,ph,cl,ch), and AgentScripts/MapChrSearch
-        /// scores every one of the 32 banks against probe_flow/final.png with the port's own
-        /// renderer: bank 26 → 58509/61440 px exact, the runner-up 34690. The 2931-pixel
-        /// remainder is the unported cursor/HELP-bubble sprites (G27).
-        /// The $DEE6/$DEF5[31] descriptor entries ($01/$05) do NOT drive this screen —
-        /// probe_map logged no CHR writes at all, so the map inherits the latched banks.
+        /// Map CHR requests are explicit in bank 2 $8E16-$8E1F: $1A=$9F,
+        /// $1B=$9A. NMI masks the high bit: sprites bank 31, background bank 26.
+        /// probe_flow f1819+ confirms CHR0/CHR1=31/26. The old background-only
+        /// screenshot search did not establish the sprite bank.
         /// </summary>
-        public const byte MapChrBank = 26;
+        public const byte MapChrBank = 26; // background $1000
+        public const byte MapSpriteChrBank = 31; // probe_flow f1819+: CHR0=$1F, CHR1=$1A
 
         // --- GAME OVER outro ($D46C) ---
         // gold_gameover/chr_map.csv latches chr0=$1F / chr1=$19 from f265 (the frame the

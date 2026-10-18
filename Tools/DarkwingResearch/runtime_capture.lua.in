@@ -4,6 +4,11 @@
 -- screenshots at intervals. Frame numbers are relative to script start (frame 0 = before first frame end).
 local dir = __OUTPUT_DIR__
 local frame = 0
+local trace = __TRACE__
+local function traceFile(name)
+    if trace then return assert(io.open(dir .. name, "w")) end
+    return {write=function() end, flush=function() end, close=function() end}
+end
 local ram = assert(io.open(dir .. "/ram_frames.bin", "wb"))
 local pal = assert(io.open(dir .. "/palette_frames.bin", "wb"))
 local oam = assert(io.open(dir .. "/oam_frames.bin", "wb"))
@@ -11,9 +16,9 @@ local vram = assert(io.open(dir .. "/vram_frames.bin", "wb"))  -- both nametable
 local chr = assert(io.open(dir .. "/chr_map.csv", "w"))
 local regs = assert(io.open(dir .. "/regs.csv", "w"))
 local meta = assert(io.open(dir .. "/frames.csv", "w"))
-local ppulog = assert(io.open(dir .. "/ppu_writes.csv", "w"))
+local ppulog = traceFile("/ppu_writes.csv")
 local banklog = assert(io.open(dir .. "/mmc1_writes.csv", "w"))
-local allw = assert(io.open(dir .. "/mmc1_all_writes.csv", "w"))
+local allw = traceFile("/mmc1_all_writes.csv")
 meta:write("relative_frame,ppu_frame,cpu_cycle,pc,scanline,ppu_cycle\n")
 ppulog:write("relative_frame,cpu_cycle,pc,address,value\n")
 banklog:write("relative_frame,cpu_cycle,pc,address,value,shift_count,latched_reg,bank\n")
@@ -48,6 +53,7 @@ emu.addMemoryCallback(function(a, v) mmc1Write(emu.getState()["cpu.pc"], a, v) e
 
 -- PPU register writes ------------------------------------------------------
 emu.addMemoryCallback(function(a, v)
+    if not trace then return end
     local s = emu.getState()
     ppulog:write(string.format("%d,%d,%04X,%04X,%d\n", frame, s["cpu.cycleCount"], s["cpu.pc"], a, v))
 end, emu.callbackType.write, 0x2000, 0x2007)

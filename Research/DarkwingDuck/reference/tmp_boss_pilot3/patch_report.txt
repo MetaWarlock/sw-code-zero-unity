@@ -1,0 +1,2 @@
+005B <- 02  ok=true readback=02
+006D <- 02  ok=true readback=02

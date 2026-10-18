@@ -1,194 +1,96 @@
-# Отчёт о приёмке — порт Darkwing Duck (NES) → Unity
+# Приёмка Darkwing Duck NES → Unity — 2026-10-18
 
-Дата: 2026-10-17 (смена 61). Ветка `main`, проект `D:\Art\SW Code Zero Unity`.
-Все числа получены командами из раздела 9. Ни один эталон не заменён выводом порта и ни один
-порог приёмки не ослаблен: расхождения перечислены как есть.
+**Порт не завершён.** Этот файл — единственный текущий отчёт о приёмке. Исходные критерии [брифа §9–11](IMPLEMENTATION_BRIEF_RU.md) сохранены. Исторические версии — в Git; часть прежних выводов не воспроизвелась.
 
-## 1. Идентификация источника
+База: commit `901cc0150460018a1ac159f1a8e91e82499d1a99` + локальные исправления интеграции, инструментов и документов. ROM SHA-256 `1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00`, неизменён. Исходные незавершённые изменения сохранены. Ниже ссылки на минимальные доказательства актуальных результатов.
 
-| что | значение |
-|---|---|
-| ROM | `Art/Darkwing Duck (USA).nes` |
-| SHA-256 (замер 2026-10-17, `certutil`) | `1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00` |
-| совпадение с задокументированным | да, побайтно (IMPLEMENTATION_BRIEF_RU.md, раздел «источник») |
-| ROM в собранном игроке | отсутствует: `find Build -iname "*.nes"` → пусто |
+## Значение результатов
 
-Игровые данные извлечены из ROM побанково в `Assets/Darkwing/Data/*.bytes`
-(`manifest.json` + `sha256-per-bank` в `Research/DarkwingDuck/COVERAGE.csv`), то есть в билде
-лежат разобранные таблицы/паттерны, а не образцовой ROM-файл и не код эмулятора.
+- `RESULT` в Compare — только X/Y, при `camera:true` ещё `$50,$FA,$FB,$22,$23,$2B` (8 полей). В Hurt/Door это сумма **field-frames**, в WorldSeeds — 133 значения в семи загрузчиках. Единицы не взаимозаменяемы.
+- `STRICT` — 20 перечисленных полей `pv/ov` (включая дроби, Y-скорость, счётчик урона, `$25,$10,$28,$FC,$1F,$20`) и только явно включённые ENEMIES/PAL/OAM/PANEL. Не сравнивает всё состояние, VRAM или итоговые RGB-пиксели. X-скорости, многие таймеры/флаги/RNG не входят в эти 20 полей.
+- ENEMIES сопоставляет **тот же индекс RAM-слота 01–0F**, проверяет missing/extra по активности с двух сторон; у активных сравнивает Xlo/Xhi/Ylo/Yhi/state/behavior/anim. Если обе стороны неактивны, прочие байты не проверяются. `$0400,$0570`, скорости, дроби, anim frame/timer и глобальные boss bytes этим вердиктом не сертифицируются.
+- `enemies:true` подключает bank6 и seed слотов; симуляцию определяет WorldRunning; `scoreEnemies:true` включает их приёмку. В стандартном Suite ENEMIES включён только у b_attack. У маршрутов STRICT не означает совпадение всех врагов.
+- PAL — 32 байта `$3F00`; PALMODEL (`$0300/$0320/$18`) диагностический и сам по себе не влияет на STRICT. OAM — 256 байт каждый кадр, без допуска. Отсутствующие кадры теперь ERROR вместо «не оценивались». PANEL — явно перечисленные поля панели/блока.
+- `frames` в старом API Compare — историческая подсказка: выполняется весь захват от seed+1 (либо явный limit). Длина сверяется с `request.json --frames`; частичные/пустые/укороченные захваты отвергаются. Ограничение окна явно отражается в знаменателе.
+- Совпадение указанных полей не доказывает полную покадровую идентичность. Ни golden, ни пороги не менялись.
 
-## 2. Что реально исполняется в собранном игроке
+## Повторённые проверки
 
-`Build/Windows/DarkwingDuck_Data/Managed/` содержит три сборки порта:
-`Darkwing.Core.dll`, `Darkwing.Audio.dll`, `Darkwing.UnityApp.dll`
-(asmdef'ы `Assets/Darkwing/Core|Audio|UnityApp/*.asmdef`). Это нативный редактируемый C#:
-PPU/MMC1-модель, физика игрока, диспетчер OAM, декодер комнат, поведенческий диспетчер банка 6,
-аудио-секвенсор — всё свои классы, без wrapper'а эмулятора.
-
-## 3. Standalone-сборка (закрытый пункт приёмки)
-
-| поле | значение |
-|---|---|
-| команда | `unity command build --target StandaloneWindows64 --outputPath "Build/Windows/DarkwingDuck.exe" --confirm true --project-path "D:/Art/SW Code Zero Unity"` |
-| buildId | `build_1850d22ae797` |
-| платформа | `StandaloneWindows64` (активный таргет редактора, build support установлен) |
-| вывод | `D:/Art/SW Code Zero Unity/Build/Windows/DarkwingDuck.exe` |
-| размер сборки | 106 445 494 Б (103 MiB на диске) |
-| длительность | 38 487 мс |
-| ошибки / предупреждения | 0 / 5 |
-| SHA-256 `DarkwingDuck.exe` | `001aeebfb92718f8b49f0c0e0a03e313c54669552b08e952b2fee3ddd143683a` |
-| сцены в билде | `Assets/Scenes/DarkwingMain.unity` (enabled), `SampleScene.unity` (disabled) |
-
-Сборка запущена из живого редактора через pipeline-команду `build`, поэтому второй (batch-mode)
-редактор не поднимался и конфликт с `Temp/UnityLockfile` не возник.
-
-Предупреждения сборки (0 ошибок / 5 предупреждений). Все пять строк восстановлены дословно из
-`Logs/Editor.log` (хвост ~70 МБ, та же редактор-сессия, что выполнила `build_1850d22ae797`):
-
-| # | предупреждение | контекст |
+| Проверка | Фактический результат | Граница |
 |---|---|---|
-| 1 | `Pipeline: No RuntimePipelineConfig asset found (Project Settings > Pipeline > Runtime). Pipeline will be disabled in Player builds.` | блокирует покадровое управление игроком извне (см. границу раздела 4) |
-| 2 | `Assets\Darkwing\Core\EnemyBehaviors.cs(1676,21): warning CS1717: Assignment made to same variable; did you mean to assign something else?` | осознанный no-op `s.T480 = s.T480;` в `Riser` case 0 (зеркало $A431) |
-| 3 | `Assets\Darkwing\Core\EnemyBehaviors.cs(1676,38): warning CS1717: Assignment made to same variable; did you mean to assign something else?` | то же, `s.T4B0 = s.T4B0;` |
-| 4 | `Assets\Darkwing\Core\EnemyBehaviors.cs(1677,21): warning CS1717: Assignment made to same variable; did you mean to assign something else?` | то же, `s.YVelFrac = s.YVelFrac;` |
-| 5 | `Assets\Darkwing\UnityApp\AudioOutFeed.cs(15,46): warning UAC1001: Field 'Source' type 'Darkwing.Audio.AudioSequencer' is skipped by serialization (missing the [Serializable] attribute).` | `Source` присваивается кодом (`DarkwingLauncher`), а не инспектором — сериализация не нужна |
+| Suite | **FAIL**, RESULT 19/24, STRICT 8/24, ERROR 0; gate exit 1 | 24 сценария, не 25; прежняя пустая строка не сценарий |
+| Hurt / Door | 1056/1056 (16×66), 1470/1470 (15×98) | принудительные fixtures / выбранные поля |
+| WorldSeeds | 133/133 | 19 полей по разным фазам загрузчика ×7; не прохождение |
+| EnemySweep | **MATCH** 599/599, 699/699, 799/799, 899/899, 899/899 | это карта, а не враги миссии. Исправлен владелец кадра в seed; SlotsEqual не менялся |
+| Quackerjack | RESULT/STRICT/ENEMIES 570/570, seed29 | короткая idle-сцена после patch-door, без доказательства естественной победы |
+| Wolfduck pilot14 | RESULT f40 (317/399), STRICT f38 (38/399), ENEMIES f38 slot03 state 81/80 (356/399) | world1, seed0, без residentFade; RAM-патч $EE=0F сокращает бой |
+| Пауза hold / resume | RESULT/ENEMIES/PANEL 69/69 и 79/79; OAM/STRICT 68/69 и 78/79 | обе расходятся на f1; это не полный PASS |
+| HUD OAM | contact 398/399, jump 118/119; longroute 883/2499 | отдельный OAM-сценарий, не сертификация изображения |
+| Титул | OAM и палитра 59/60, первая ошибка port f1; nametable 960/2048 отличаются с $2400 | выбранное окно; прежний пункт про $97=220 не подтверждён текущей диагностикой ($97=212) |
+| IntroVerify | $8F00 276/276, $9100 148/148, $9000 63/63; $A000 отдельный seed | процедуры вызываются вручную; только поля слотов1–2, не полный экран/обычный GameFlow |
+| MapOamVerify | обычный проход: 107/899, 0/179, 42/259, 0/582 exact OAM | paired-проход подсевает оригинальные записи, поэтому не равен непрерывному маршруту; тоже имеет ошибки |
+| Карточки миссий | 160/160 по 7 мирам | content-only blit; поиск лучшего кадра, не временная идентичность |
+| GameOverVerify | nametable $2000–23FF 0 ошибок, BG palette 0/16 ошибок; A/B ветки выполнены | смерть и состояние принудительны; не полный continue-маршрут |
+| FlowVerify | 7 принудительных clear → Ending; EndingStage6 через 515 frames, $65=FF | ClearMission выставляет DamageAccum=10 и вызывает HitFlash; реальные семь боёв этим не проверены |
+| BootFlowProbe | настоящая сцена Editor: Title → NewGameDialog → MapCursor → MapBriefing → Mission0; IdleTitle 600f PASS | кнопки от Awake, без LoadWorld/phase/RAM вызовов из проверки; выстрел/ходьба/прыжок проверяются отдельно от полного прохождения |
+| Аудио | [Диагностика](../../Research/DarkwingDuck/audio_port_comparison.json): свежий song1 export 600f/479210 samples + Save/Load; файлы равны сохранённым; исправленная membership 33/51,44/59,26/34 | presence без порядка/кратности не является event-stream match |
+| WAV | best envelope correlation **0,4367**, offset **−87 f**, 48kHz | это не RMS и не совпадение сигнала; оптимизация сдвига скрывает абсолютный тайминг |
+| SFX $3F | свежие 40f экспортированы; по старому заявленному выравниванию port1=probe88 совпало 1091/1160 значений | первая диагностическая ошибка port f1 D3=05/03; фаза/начальное состояние ещё не подтверждены, точность не принята |
 
-Ни одно предупреждение не меняет поведение собранного игрока; #2–#4 оставлены как есть,
-чтобы не трогать порт без конкретной необходимости.
+[Сжатый снимок Suite](evidence/audit_20261018/suite/suite_result.json) сохраняет статусы, первые расхождения, gate exit1 и границы original routes. Дополнительно прошли 14 C#, 7 Python и 2 PowerShell целевых проверки; отрицательные missing-source/missing-exe дают gate2/gate1. Проверки Y/missing/extra уже существовавшей ENEMIES-логики сохранены. Исправлены обрезание отчётов, неполные captures, внутренняя ошибка CLI и аудиосравнение с собственным списком порта; smoke не принимает рамку окна за изображение и корректно считает RGB через int. Полные воспроизводимые дампы генерировать командами из [RESEARCH_HANDOFF](RESEARCH_HANDOFF_RU.md).
 
-## 4. Проверка собранного игрока
+## Семь миссий и боссы
 
-Скрипт `Tools/DarkwingResearch/verify_player.ps1` (запуск → два снимка окна → корректное закрытие):
+Все маршруты ниже локальные записи: во всех `$38=0` до конца, без завершения миссии ([данные](evidence/audit_20261018/suite/suite_result.json)).
 
-| проверка | результат |
-|---|---|
-| процесс | PID 60672, жив ≥ 50 с, окно `SW Code Zero Unity`, rect 2560×1440 |
-| цикл кадров идёт | WorkingSet 379 052 → 380 080 КБ; `TotalProcessorTime` 25 047 → 66 453 мс |
-| кадр рисуется | снимок A: 10 различных цветов, 108 235 из 230 400 отсчётов не чёрные; снимок B: 107 890 |
-| кадр меняется | SHA-256 A ≠ SHA-256 B (текст «PRESS START» в разных фазах анимации) |
-| содержимое | титульный экран `$C792`: логотип, силуэт, спрайт утки, «PRESS START» |
-| `Player.log` | 66 строк; движок 6000.6.5f1, D3D12, RTX 5090; исключений и скриптовых ошибок нет |
-| шум в логе | 17 повторов `Shader 'Hidden/Universal Render Pipeline/Bloom' is not supported or has been stripped from the build` + `d3d12: failed to query info queue interface (0x80004002)` |
-| завершение | по закрытию окна, чистое (`Input System … Shutdown`, `Cleanup mono`); crash-дампа нет (`Crashes/` отсутствует) |
+| Миссия / world | RESULT | STRICT | Обычный полный маршрут |
+|---|---|---|---|
+| 1 / 00 | 2499/2499 | f814 $25, 2163/2499 | не доказан; maxX=$0394, были смерть/перезагрузка |
+| 2 / 01 | 1499/1499 | 1499/1499 | не доказан |
+| 3 / 02 | f1314, 1313/1499 | f50 $25, 1131/1499 | не доказан |
+| 4 / 03 | f198, 1498/1499 | f190 $25, 908/1499 | не доказан |
+| 5 / 04 | f507, 1497/1499 | f499 $25, 1038/1499 | не доказан |
+| 6 / 05 | f330, 1034/1499 | f303 $10, 977/1499 | не доказан |
+| 7 / 06 | 1499/1499 | 1499/1499 | не доказан |
 
-Доказательства: `Docs/DarkwingPort/evidence/player_boot_a.png`,
-`Docs/DarkwingPort/evidence/player_boot_b.png`.
+[Скан 85 захватов](evidence/audit_20261018/boss_capture_inventory.txt): 14 содержат boss core, только Quackerjack ($50) и Wolfduck ($54 с контроллером $53). Bushroot ($49), Moliarty ($4A), Liquidator ($57), Megavolt ($5A), Steelbeak ($62) активного core в этом наборе не имеют. Название каталога pilot не доказывает покрытие: pilot4/5 с wolfduck в имени содержат Quackerjack. Контроллер $53 не восьмой босс. Наличие веток dispatch не доказывает полноту поведения; G90 остаётся частичным.
 
-Граница этого пункта: сверка покадровая и идёт в редакторе через harness (раздел 5); в собранном
-игроке проверено «запускается, рисует, не падает, корректно закрывается», а не побайтовое равенство
-кадра эталону. Отдельный открытая задача — `RuntimePipelineConfig` отсутствует, поэтому pipeline
-в билде выключен и покадровые сверки из самого игрока невозможны (записано в GAPS).
+Секреты/бонусы: часть pickup-кода имеется, но входы, награда/выход, достижимость и полное покрытие по мирам не доказаны. UI, progression и полный финал остаются частичными. Процент готовности не выводится.
 
-## 5. Покадровые сверки с ROM (редактор, `PhysCompare.Suite`)
+## Источник и воспроизводимость
 
-База: `Docs/DarkwingPort/evidence/suite_summary.txt` (25 строк, смена 58; побайтово воспроизведена
-в сменах 59 и 60). 20 строк дают `RESULT: MATCH`, 5 расходятся — все пять перечислены ниже как есть.
+Исходные request, снимки и бинарные данные 85 RAM-захватов находятся в `Research/DarkwingDuck/reference/`; они не переписывались. [Сверка сохранённых det_a/det_b](evidence/audit_20261018/stored_reference_determinism.json): RAM отличается только f0–3, OAM f0–5, palette f0–6, то есть общий стабильный участок начинается f7. Это уточнение прежнего вывода, не разрешение пропускать ошибку на произвольном seed+1. Новую пару det_a/b не снимали; новый обычный маршрут от reset записан отдельно, его общий участок двух запусков (records7–3099) совпал по RAM/palette/OAM.
 
-| строка | RESULT | STRICT |
-|---|---|---|
-| walk / jump | MATCH 119/119 | расходится с f1 по `$10` (59/119) |
-| b_attack | MATCH 170/170 | MATCH 170/170, ENEMIES MATCH 170/170 |
-| hook | MATCH 298/298 | расходится с f3 по `$10` (149/298) |
-| traverse | MATCH 599/599 | расходится с f1 по `$10` (547/599) |
-| contact / m1route | MATCH 399/399 | MATCH 399/399 |
-| hurt | MATCH 1056/1056 field-frames (16 полей × 66 кадров) | — |
-| door | MATCH 1470/1470 field-frames (15 полей × 98 кадров) | — |
-| worldseeds | 133/133 поля по 7 захватам | — |
-| 00…06:fall (7 строк) | MATCH 371/371, кроме `05:fall` | `05:fall`: основной RESULT расходится с f683 (370/371); STRICT всех семи — расхождение с f329 по `$10` |
-| longroute (m1) | MATCH 2499/2499 | `$25` расходится с f814 (2163/2499) |
-| m2(w01) / m7(w06) | MATCH 1499/1499 | MATCH 1499/1499 |
-| m3(w02) | f1314 (1313/1499) | `$25` с f50 (1131/1499) |
-| m4(w03) | f198 (1498/1499) | `$25` с f190 (908/1499) |
-| m5(w04) | f507 (1497/1499) | `$25` с f499 (1038/1499) |
-| m6(w05) | f330 (1034/1499) | `$10` с f303 (977/1499) |
+## Обычный вход в миссию 1
 
-Прочитанные отдельно: `walk`/`jump`/`hook`/`traverse` и `00…06:fall` расходятся по полю `$10`
-(маска колонок) — это окно стиджинга G62/G66, а не позиция игрока; позиция (`X`,`Y`) в этих
-строках совпадает до конца захвата.
+Причины повреждения установлены по данным до Unity-вывода:
 
-## 6. Экраны, progression, рендер
+- Первая неверная ветка титула — port f240: GameFlow принимал RESET-задержку `$51=$F0` за таймер титула и запускал незавершённый Intro. Оригинальный `$C7AD–$C7CC` ждёт Start (probe_flow остаётся на титуле более 240f). IdleTitle теперь держит CHR31/25 все 600f.
+- `LoadWorld` не публиковал новую nametable: это делал только начальный Launcher для world0. Добавлен StreamColumns нового мира; предварительная загрузка миссии перед титулом (и оставшийся от неё EntryFreeze17) удалена.
+- После карточки `$D562/$D565` просит CHR0=$80→bank0; порт оставлял загрузочный14. Обычные ненулевые CHR-запросы теперь применяются в начале следующего кадра перед палитрой (`$C047/$C050`), а не только хранятся в latch. В gameplay банки **0/16**, в загрузчике14/16.
+- Карта использовала CHR26/26. Bank2 `$8E16–$8E1F` задаёт `$9F/$9A`, то есть **31/26**. Экспортированный снимок содержал старый текст; карта теперь строится task2 исходного банка. `$A300` имеет строки `$22E7/$2327/$2367` шириной 19 тайлов, отдельно от `$AA00`.
 
-| блок | состояние | доказательство |
-|---|---|---|
-| boot → title | PASS frame-exact (смена 60) | `evidence/title_verify.txt`, `evidence/title_port.png`; nametable `$2000-$23FF` 0 расхождений, OAM 59/60 кадров, `$3F00` 59/60, `$2000/$2001=$90/$1E`, CHR 31/25 |
-| брифинг/текст | PASS | `flow,textengine,AA00_dialog_and_C5F7_intro,gold_briefing_b0` |
-| карта города | фон PASS,整体 render FAIL | `hud,map_screen,city_map_background` PASS (побайтово nametable + визуал); `city_map_render` FAIL — HELP-облака/курсор (G32.1, задача #7) |
-| карточка миссии | PASS 160/160 по всем 7 мирам | смена 45.2, `$9636/$967A` blit |
-| пауза | PASS frame-exact | `flow,pause,start` + `gold_pause_m1`/`gold_pause_resume` (hold 68/69, resume 78/79, OAM побайтно) |
-| game over / continue-карточка | PASS | `flow,gameover,D46C_card_and_prompt,gold_gameover_f300` |
-| двери/переходы `$E388` | PASS | `flow,doors,E388_section_loader,golden_98f` (1470/1470 field-frames) |
-| миссия 1 от входа до выхода | PASS | `flow,level,traversal_m1,gold_traverse_m1` (599/599) |
-| 7 побед → финал | переход есть, финал перенесён | `flow,progression,seven_wins_natural,$D838_branch_ending` = yes; тело финала `$D841…$D8D0` — смена 59 |
-| враги/боссы | 47/47 поведений + 7/7 боссов перенесено | `enemies,dispatch,bank6_8000` = partial-pass; `enemies,dispatch,bank6_frame_exact(_sweep)` = pass (ENEMIES MATCH 599/599) |
-| аудио | секвенсор + интеграция | `audio,sequencer,bank3_port` partial-pass, `audio,sfx,punch_3f` pass, `audio,integration,darkwing_game` pass; регистровый APU и WAV-сверка не закрыты |
+Порядок шага сохранён: ввод → GameFlow.Step → DarkwingGame.Step → изображение. URP, point texture, PPUCTRL90 и camera postProcessing=false проверены. Исправление шейдеров не требовалось; ERROR было наблюдением повреждённых тайлов, не установленным исключением.
 
-## 7. Что НЕ закрыто (ограничения приёмки)
+EnemyFixtureRegression доказывает отдельную причину: тот же golden и SlotsEqual при world-owner дают **f9 slot01 active 00/01**, при map-owner — 20/20. Source `m1_gameplay.mss` фактически содержит map-плашку $36, caret $39 и пузыри $BB/$73/$73. На неверной ветке Y плашки расходился уже на f1. Полные пять записей совпали; это исправление fixture, не покрытие bank6. Эталоны сохранены.
 
-1. **G66** — вертикальный редрауз `$E7C6…$E935` перенесён функционально, но не структурно:
-   порт перерисовывает весь ряд (`ReloadRow = LoadRow + StreamColumns`) вместо 8 колонок за проход,
-   маски `$10/$11/$12` и окно атрибутов `$0780` не смоделированы. Это причина расхождений `$10`
-   в разделе 5.
-2. **G62** — фаза окна стиджинга зависит от позиции цикл-счётчика при входе в `$DE24`; без
-   цикл-точного CPU (запрещён AGENTS.md) не переносится. Эффект не выходит за окно загрузки.
-3. **G71** — титульный экран: один кадр из 60 не совпадает по OAM и счётчик `$97` 212 против 220.
-4. **G69/G70** — хвост финала за `$D8D0` (читатели `$65`, ветка полёта `$F51B`) и отсутствие
-   золотого захвата финала: резидентность фейда, длины `$FEFF`, момент `JSR $FF55(#$02)`
-   покадрово не подтверждены.
-5. **Secrets/bonus** — в `COVERAGE.csv` нет ни одной строки про бонус-раунды и секреты: не
-   вытеснено, не перенесено, не сверено. Критерий AGENTS.md «secrets/bonus areas» не выполнен.
-6. **Continue-экран** — перенесён только гейт `$5D`; ветка выбора темпа после continue не перенесена
-   (нет захвата-потребителя).
-7. **Боссы** — код перенесён, но покадровой золотой сверки боя нет (ни одного босс-захвата).
-8. **Аудио** — регистровый APU-фронт и WAV-сверка не закрыты; известна RMS 0.44 расхождения.
-9. **Bloom-варнинг** в игроке (раздел 4) — постпроцесс-шейдер вырезан из билда, лог спамится;
-   на картинку порта не влияет, но требует либо отключения Volume-постпроцесса, либо
-   Always Included Shaders.
+## Standalone и сравнение
 
-## 8. Итог по критериям AGENTS.md («полное завершение»)
+Свежая Development-сборка `Build/Audit_20261018/DarkwingDuck.exe`: build_30f71baffa53, Succeeded, 12018ms, 0 errors/4 warnings. Development нужен для отключаемого кнопочного повтора; нативный игровой runtime не исполняет ROM. [Hashes/BuildReport](evidence/audit_20261018/build/build_final.json), [минимальное доказательство маршрута](evidence/audit_20261018/player/player_smoke.json).
 
-| критерий | статус |
-|---|---|
-| 7 миссий | перенесены и играбельны; покадровая позиция совпадает у m1/m2/m7 полностью, у m3…m6 расходится на 1–2 кадра и на f330 у m6 (см. раздел 5) |
-| все боссы | перенесены (7/7), золотой сверки нет |
-| секреты/бонус-зоны | **не выполнены** (пункт 7.5) |
-| UI / progression / финал | титул, брифинг, карта (фон), карточка, пауза, game over, двери, 7 побед, финал `$D841…$D8D0` — перенесены; хвост финала и HELP-облака карты — нет |
-| аудио | перенесено частично (секвенсор+SFX+интеграция), APU/WAV-сверка не закрыта |
-| доказательства приёмки | есть: 25-строчный Suite, титул/пауза/карта/двери/контакт сверки, `Player.log`, снимки игрока |
-| проверенная standalone-сборка | **выполнено** (разделы 3 и 4) |
+Проверены обычные кнопки от Awake: Title → Start → диалоги $0A/$0D → карта → страницы/подтверждение первой миссии → игровой процесс. Проверка не вызывает LoadWorld, не меняет фазу и не пишет RAM. **14 сохранённых состояний Editor/Player совпали** по framebuffer, nametable, палитре, OAM и слотам. Native window 768×720, point scale3, штатный exit0, исключений нет; 17 Bloom warnings остаются.
 
-Вывод: последний инфраструктурный пункт (сборка + запуск) закрыт с доказательствами. Полным
-«дособрать игру» в смысле AGENTS.md результат пока не является — остаются пункты 7.1…7.9, из
-которых содержательно самые дорогие G66 (структурный редрауз + маски), бонус-зоны и золотая
-сверка боёв.
+| Логическое состояние, port/original f | NT видимой страницы | Палитра | RGB PNG, отличия /61440 |
+|---|---|---|---|
+| Title 80/1000 | 0/1024 | 0/32 | 286 |
+| MapCursor 700/1600 | 0/1024 | 0/32 | 299 |
+| MapBriefing 1000/2100 | 1/1024 | 0/32 | 319 |
+| Mission0 idle 2680/3600 | **0/1024** | **0/32** | **0** |
 
-## 9. Как воспроизвести
+CHR совпадают: Title31/25, карта31/26, игровой процесс0/16; PPUCTRL90/PPUMASK1E. [Порт](evidence/audit_20261018/player/boot_a.png) и [оригинал](evidence/audit_20261018/player/boot_b.png) — последняя строка таблицы. Это сравнение одинаковых устойчивых состояний, не равных длительностей переходов. Различия raw OAM сохранены полностью; одинаковые RGB не означают одинаковые 256 байт OAM.
 
-```bash
-# 0. редактор должен быть запущен для этого проекта (другой редактор может держать другой проект)
-#    запуск: Tools/DarkwingResearch/launch_editor.ps1
+Управление после входа: газ — slot04 anim13/behavior01; ходьба X=$002C→$0046; прыжок/уступ Y=$0374→$034C, state04. Координаты/состояния оригинала совпадают при учёте **Mesen relative f → Lua f+1** (control offset921). Прежний диагностический 1px X был ошибкой выравнивания, не подтверждённым дефектом игрока.
 
-# 1. идентификатор источника
-certutil -hashfile "Art/Darkwing Duck (USA).nes" SHA256
+Остатки: фазы/приём кнопок меню различаются, а анимация полёта с карты перед загрузкой ещё пропущена; после прыжка есть 18 байт отличий nametable, raw OAM/палитровая фаза расходятся. Фактический Unity-вывод по центрам пикселей3× имеет 951 отличие RGB на 1 единицу и 81 пиксель Development watermark (полный strict diff1032/61440); это **не принято за точное RGB-соответствие**. Проверены HDR=true/MSAA=true, qualityAA=0; причина повреждённых тайлов была в Core/flow, происхождение оставшейся RGB-квантизации отдельно не установлено. Полный PNG gate меню остаётся exit1.
 
-# 2. сборка (из живого редактора, без второго batch-редактора)
-unity command build --target StandaloneWindows64 \
-  --outputPath "Build/Windows/DarkwingDuck.exe" --confirm true \
-  --project-path "D:/Art/SW Code Zero Unity"
-unity command build_status --project-path "D:/Art/SW Code Zero Unity" --format json
-
-# 3. проверка игрока (запуск, два снимка, закрытие)
-powershell -ExecutionPolicy Bypass -File Tools/DarkwingResearch/verify_player.ps1 \
-  -Exe "D:\Art\SW Code Zero Unity\Build\Windows\DarkwingDuck.exe" \
-  -PngA Docs\DarkwingPort\evidence\player_boot_a.png \
-  -PngB Docs\DarkwingPort\evidence\player_boot_b.png
-
-# 4. покадровый Suite (25 строк, пишется в Temp/suite_summary.txt)
-unity recompile --project-path "D:/Art/SW Code Zero Unity"
-unity command run_script --file AgentScripts/PhysCompare.cs --entry PhysCompare.Suite \
-  --project-path "D:/Art/SW Code Zero Unity"
-diff Temp/suite_summary.txt Docs/DarkwingPort/evidence/suite_summary.txt
-
-# 5. титульный экран против gold_title2
-unity command run_script --file AgentScripts/TitleVerify.cs --entry TitleVerify.Run \
-  --project-path "D:/Art/SW Code Zero Unity"
-```
+Полное прохождение миссии, RESET-пролог/idle attract, resident section/reload CHR timing и боссы не закрыты. Wolfduck и другие боссы не дорабатывались. Команды — в [RESEARCH_HANDOFF](RESEARCH_HANDOFF_RU.md). Goldens, критерии и ROM не заменялись; промежуточные коллекции удалены.

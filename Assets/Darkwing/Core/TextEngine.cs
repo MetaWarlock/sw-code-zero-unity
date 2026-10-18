@@ -36,7 +36,7 @@ namespace Darkwing.Core
         private const int LineCount = 3;
         private const int LineTiles = 29;                 // $AADD clears 29 tiles per line
         private const int StartBit = 0x10;                // $14 bit4 = START
-        private const int ConfirmBits = 0xD0;             // $AB6D AND #$D0 = A | Select | Start
+        private const int ConfirmBits = 0xD0;             // $AB6D AND #$D0 = A | B | Start
 
         private readonly Ppu _ppu;
         private readonly byte[] _bank2;
@@ -52,6 +52,7 @@ namespace Darkwing.Core
         private int _pendingYields;      // frames spent inside $AB57/$AADD before work resumes
         private bool _cleared;           // $AA00's opening JSR $AADD has run
         private bool _running;
+        private bool _waiting, _endWait, _mapMode;
 
         public TextEngine(Ppu ppu, byte[] bank2)
         {
@@ -86,15 +87,20 @@ namespace Darkwing.Core
 
         /// <summary>Queue a stream the way `LDA #$xx / STA $62 / JSR $AA00` does: the first
         /// thing that happens is the $AADD text-box clear, which costs one frame.</summary>
-        public void Start(int streamId)
+        public void Start(int streamId, bool map = false)
         {
             _streamId = streamId;
+            _mapMode = map;
+            for (int i = 0; i < LineCount; i++)
+                _lineAddr[i] = (_bank2[(map ? 0xA38C : 0xAAD7) - 0x8000 + i] << 8)
+                             | _bank2[(map ? 0xA38F : 0xAADA) - 0x8000 + i];
             _ptr = ((_bank2[PtrHiTable + streamId] << 8) | _bank2[PtrLoTable + streamId]) - 0x8000;
             _byteIndex = 0;
             _line = 0;
             _column = 0;
             _cleared = false;
             _pendingYields = 1;      // $AADD ends in JMP $FF06 (ProcessYield)
+            _waiting = _endWait = false;
             _running = true;
             Done = false;
         }
@@ -106,6 +112,18 @@ namespace Darkwing.Core
             if (!_running) return;
             _frame = frameCounter;
 
+            // $AB57 stays resident until A/B/Start ($14 & $D0), for both page
+            // breaks and the terminator. It does not auto-advance ordinary dialogs.
+            if (_waiting)
+            {
+                WriteTile(_mapMode ? 0x2379 : 0x22FE, (byte)((_frame & 0x10) == 0 ? 0xFE : 0x02));
+                if ((padHeld & (_mapMode ? 0xC3 : ConfirmBits)) == 0) return;
+                _waiting = false;
+                if (_endWait || (!_mapMode && (padHeld & StartBit) != 0))
+                { _running = false; Done = true; return; }
+                ClearTextLines(); _line = _column = 0;
+            }
+
             if (_pendingYields > 0)
             {
                 if (!_cleared) ClearTextLines();   // $AADD
@@ -115,7 +133,7 @@ namespace Darkwing.Core
             }
 
             // $AA1B: outside the auto-advancing intro streams, holding START freezes the text.
-            if (!AutoAdvance && (padHeld & StartBit) != 0) return;
+            if (!_mapMode && !AutoAdvance && (padHeld & StartBit) != 0) return;
 
             // $AA2C: one visible character per frame; $FE line breaks are consumed for free
             // and the character after them lands in the same frame.
@@ -126,9 +144,8 @@ namespace Darkwing.Core
                 if (b == 0xFF)
                 {
                     // $AA9E → $AAD3 → $AB57: $0E/$0F yield exactly one frame and RTS out.
-                    _running = false;
-                    Done = true;
-                    if (AutoAdvance) _pendingYields = 1;
+                    if (AutoAdvance) { _running = false; Done = true; _pendingYields = 1; }
+                    else { _waiting = _endWait = true; }
                     return;
                 }
                 if (b == 0xFE)
@@ -136,10 +153,8 @@ namespace Darkwing.Core
                     _line++;
                     if (_line < LineCount) { _column = 0; continue; }
                     // $AA85: page flip — one yield, then $AADD clears and lines restart at 0.
-                    _pendingYields = 1;
-                    _cleared = false;
-                    _line = 0;
-                    _column = 0;
+                    if (!AutoAdvance) { _waiting = true; _endWait = false; }
+                    else { _pendingYields = 1; _cleared = false; _line = _column = 0; }
                     return;
                 }
                 WriteTile(_lineAddr[_line] + _column, (byte)b);
@@ -152,8 +167,8 @@ namespace Darkwing.Core
         /// <summary>$0E/$0F are the intro dialogs: they never wait for the pad.</summary>
         private bool AutoAdvance => _streamId == 0x0E || _streamId == 0x0F;
 
-        /// <summary>The $AB57 wait for every other stream: A/Select/START ends the page.</summary>
-        public bool WaitingForInput => _running && _pendingYields > 0 && !AutoAdvance;
+        /// <summary>The $AB57 wait for every other stream: A/B/START ends the page.</summary>
+        public bool WaitingForInput => _running && _waiting;
 
         /// <summary>$AADD: three 29-tile blank runs at the line bases plus one tile at $23FE.
         /// The filler is tile $00 for $0E/$0F/$11 and tile $02 for every other stream.</summary>
@@ -161,9 +176,9 @@ namespace Darkwing.Core
         {
             byte blank = (byte)(_streamId == 0x0E || _streamId == 0x0F || _streamId == 0x11 ? 0x00 : 0x02);
             for (int i = 0; i < LineCount; i++)
-                for (int t = 0; t < LineTiles; t++)
+                for (int t = 0; t < (_mapMode ? 19 : LineTiles); t++)
                     WriteTile(_lineAddr[i] + t, blank);
-            WriteTile(0x23FE, blank);
+            WriteTile(_mapMode ? 0x2379 : 0x23FE, blank);
         }
 
         /// <summary>One ROM queue entry: [hi][lo][count-1][tile][$FF terminator].</summary>

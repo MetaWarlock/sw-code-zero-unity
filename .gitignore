@@ -17,3 +17,21 @@
 .vs/
 Research/DarkwingDuck/reference/*/raw_frames/
 __pycache__/
+*.pyc
+*.pyo
+
+# Local source ROM and reproducible raw ROM dumps (see Docs/DarkwingPort/GIT_CONTENTS_RU.md).
+*.nes
+/Research/DarkwingDuck/extracted/raw/
+
+# Mesen working directories; keep explicit captures, goldens and verification reports.
+/Research/DarkwingDuck/reference/**/home/
+/Tools/**/home/
+/Tools/DarkwingResearch/runs/inspect-home/
+
+# Duplicate download; extracted tools, license, release metadata and checksums stay tracked.
+/Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent-windows-x64.zip
+
+# Ad hoc output written to the project root.
+/trace.txt
+/m1z_pit*_report.txt

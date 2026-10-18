@@ -29,7 +29,6 @@ namespace Darkwing.UnityApp
 
         private DarkwingGame _game;
         private GameFlow _flow;
-        private Darkwing.Core.LevelTileMap _map;
         private Texture2D _screen;
         private double _accumulator;
         private System.DateTime _last;
@@ -59,27 +58,18 @@ namespace Darkwing.UnityApp
             _game.ObjectTypeTable = ObjectTypesData.bytes;
             _game.MapNametable = MapNametableData != null ? MapNametableData.bytes : null;
             _game.MapPalette = MapPaletteData != null ? MapPaletteData.bytes : null;
-            // Map CHR: probe_map logged no MMC1 CHR writes at all (the screen inherits the
-            // banks latched by the previous phase), so the value comes from probe_flow's
-            // chr($1000)=$26 latch plus the MapChrSearch screenshot score — see WorldState.
-            _game.MapChrBank0 = WorldState.MapChrBank;
+            // Bank 2 $8E18/$8E1B request separate sprite/background banks ($9F/$9A).
+            _game.MapChrBank0 = WorldState.MapSpriteChrBank;
             _game.MapChrBank1 = WorldState.MapChrBank;
             _audioOut = gameObject.AddComponent<AudioOutFeed>();
-            // $DD57: the whole per-world setup (descriptor, grid, palettes, CHR, player seed)
-            // comes from the ROM tables, so WorldId 0-6 selects missions 1-7 with no hardcoded
-            // palette/bank here. World 0 is what the goldens were captured on.
-            _game.LoadWorld(decoder, (byte)WorldId);
-            _map = _game.TileMap;
-            _map.StreamColumns(0);
-            if (WorldId == 0) _game.PlayMusic(1);   // song 1 = mission-1 gameplay (audio_engine.md)
-            _game.Ppu.WriteRegister(0x2000, 0x90); // $FF=$90 in every ram_frames.bin: bg $1000, $2007 +1
-            _game.Ppu.WriteRegister(0x2001, 0x1E); // rendering on
-            _game.Ppu.ScrollX = 0;
-            _game.Ppu.ScrollY = 0;
+            _game.Ppu.WriteRegister(0x2000, 0x90);
+            _game.Ppu.WriteRegister(0x2001, 0x1E);
             if (UseFlow)
-            {
-                // M7: boot at the title screen ($C792), then the map/briefing/mission phases.
                 _flow = new GameFlow(_game, decoder);
+            else
+            {
+                _game.LoadWorld(decoder, (byte)WorldId);
+                if (WorldId == 0) _game.PlayMusic(1);
             }
             _screen = new Texture2D(DarkwingGame.ScreenWidth, DarkwingGame.ScreenHeight,
                 TextureFormat.RGBA32, false)
@@ -89,6 +79,19 @@ namespace Darkwing.UnityApp
             };
             GetComponent<Renderer>().material.mainTexture = _screen;
             _last = System.DateTime.UtcNow;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR
+            var editorReplay = UnityEditor.SessionState.GetString("DarkwingReplay", "");
+            if (editorReplay.Length > 0)
+            {
+                UnityEditor.SessionState.EraseString("DarkwingReplay");
+                BeginReplay(editorReplay);
+            }
+#endif
+            var args = System.Environment.GetCommandLineArgs();
+            int replayArg = System.Array.IndexOf(args, "-darkwing-replay");
+            if (replayArg >= 0 && replayArg + 1 < args.Length) BeginReplay(args[replayArg + 1]);
+#endif
         }
 
         private AudioOutFeed _audioOut;
@@ -96,6 +99,9 @@ namespace Darkwing.UnityApp
         private void Update()
         {
             if (_audioOut != null && _game.Audio != null) _audioOut.Source = _game.Audio;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_replay != null) { for (int i = 0; i < 8; i++) ReplayFrame(); return; }
+#endif
             var now = System.DateTime.UtcNow;
             _accumulator += (now - _last).TotalSeconds;
             _last = now;
@@ -107,13 +113,24 @@ namespace Darkwing.UnityApp
                 var pad = ReadPad1();
                 // $C595 master loop: the bank-7 phase runs first and decides whether the
                 // world engine gets this frame (WorldRunning) before the core steps.
-                if (_flow != null) _flow.Step(in pad);
-                _game.Step(in pad);
+                AdvanceFrame(in pad);
                 // One audio frame per simulation frame: the sequencer's tempo is the 60 Hz clock
                 // above, never the render rate of Update().
-                if (_audioOut != null) _audioOut.PushFrame();
+
             }
         }
+
+        // One public frame boundary for the host and deterministic input replay. A replay
+        // supplies buttons only; it cannot seed RAM or select a flow phase.
+        public void AdvanceFrame(in NesButtons pad)
+        {
+            if (_flow != null) _flow.Step(in pad);
+            _game.Step(in pad);
+            if (_audioOut != null) _audioOut.PushFrame();
+        }
+
+        public DarkwingGame Game => _game;
+        public GameFlow Flow => _flow;
 
         private void LateUpdate()
         {
@@ -128,6 +145,87 @@ namespace Darkwing.UnityApp
             _screen.SetPixels32(_pixels);
             _screen.Apply(false);
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [System.Serializable] public sealed class ReplayInput { public int first, last, buttons; }
+        [System.Serializable] public sealed class ReplaySpec
+        {
+            public int frames;
+            public ReplayInput[] inputs;
+            public int[] captures;
+            public string output;
+        }
+        [System.Serializable] public sealed class ReplayState
+        {
+            public int frame, gameFrame, phaseFrames, world, x, y, state, scrollX, scrollY, chr0, chr1, ctrl, mask;
+            public string phase, framebuffer, nametable, palette, oam, slots;
+        }
+        [System.Serializable] public sealed class ReplayResult
+        {
+            public string scope = "Scene launcher; buttons only from Awake. No RAM seed or direct phase entry.";
+            public bool editor;
+            public ReplaySpec input;
+            public ReplayState[] states;
+        }
+        private ReplaySpec _replay;
+        private int _replayFrame;
+        private readonly System.Collections.Generic.List<ReplayState> _replayStates = new System.Collections.Generic.List<ReplayState>();
+        private string _lastPhase;
+        public bool ReplayFinished => _replay != null && _replayFrame >= _replay.frames;
+
+        public void BeginReplay(string path)
+        {
+            if (_game.Frame != 0) throw new System.InvalidOperationException("Replay must begin before the first game frame");
+            _replay = JsonUtility.FromJson<ReplaySpec>(File.ReadAllText(path));
+            if (_replay.frames <= 0 || _replay.inputs == null || _replay.captures == null)
+                throw new System.IO.InvalidDataException("Invalid button replay");
+            Directory.CreateDirectory(_replay.output);
+            File.Delete(Path.Combine(_replay.output, "route.json"));
+        }
+
+        private string ReplaySlots()
+        {
+            var s = new System.Text.StringBuilder();
+            for (int i = 0; i < _game.Objects.Slots.Length; i++)
+            {
+                var slot = _game.Objects.Slots[i];
+                if (slot.Active) s.AppendFormat("{0:X2}:{1:X2}/{2:X2}@{3:X4},{4:X4};", i, slot.AnimNumber, slot.Behavior, slot.X, slot.Y);
+            }
+            return s.ToString();
+        }
+
+        private void ReplayFrame()
+        {
+            if (ReplayFinished) return;
+            int f = ++_replayFrame, bits = 0;
+            foreach (var entry in _replay.inputs)
+                if (f >= entry.first && f <= entry.last) bits |= entry.buttons;
+            var pad = NesButtons.FromByte((byte)bits);
+            AdvanceFrame(in pad);
+            string phase = _flow == null ? "DirectWorld" : _flow.Stage.ToString();
+            bool capture = System.Array.IndexOf(_replay.captures, f) >= 0;
+            if (capture || phase != _lastPhase)
+            {
+                var p = _game.Player; var ppu = _game.Ppu;
+                _replayStates.Add(new ReplayState {
+                    frame=f, gameFrame=(int)_game.Frame, phase=phase, phaseFrames=_flow == null ? 0 : _flow.PhaseFrames,
+                    world=_flow == null ? WorldId : _flow.World.CurrentWorld,
+                    x=p.X, y=p.Y, state=p.State, scrollX=p.ScrollX, scrollY=(p.ScrollYRow << 8) | p.ScrollY,
+                    chr0=ppu.Chr0Bank, chr1=ppu.Chr1Bank, ctrl=ppu.Ctrl, mask=ppu.Mask,
+                    slots=ReplaySlots(),
+                    framebuffer=System.Convert.ToBase64String(_game.Framebuffer),
+                    nametable=System.Convert.ToBase64String(ppu.NametableRam),
+                    palette=System.Convert.ToBase64String(ppu.PaletteRam), oam=System.Convert.ToBase64String(ppu.Oam)
+                });
+                _lastPhase = phase;
+                if (capture) DumpFramebuffer(Path.Combine(_replay.output, "frame_" + f + ".png"));
+            }
+            if (ReplayFinished)
+                File.WriteAllText(Path.Combine(_replay.output, "route.json"), JsonUtility.ToJson(new ReplayResult {
+                    editor=Application.isEditor, input=_replay, states=_replayStates.ToArray()
+                }));
+        }
+#endif
 
         private static NesButtons ReadPad1()
         {

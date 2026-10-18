@@ -32,6 +32,7 @@ namespace Darkwing.Core
         public enum Phase
         {
             Title,          // $C792: logo + PRESS START, waits for Start
+            NewGameDialog, // $C7CF: task 4, $9E00, streams $0A/$0D
             Intro,          // $C5F7: night scene + the $AA00 dialog streams $0E and $0F
             MapCursor,      // $C9AC map loop, $A448 bubble chooser
             MapBriefing,    // $D46C tail + $9900 prompt (flight arrived at the node)
@@ -104,32 +105,32 @@ namespace Darkwing.Core
             switch (Stage)
             {
                 case Phase.Title:
-                    // Two outcomes, and they are NOT the same: $C595's boot prologue arms $51=#$F0
-                    // and $C5E8…$C5F4 counts it down while the title task $C792 shows the logo, and
-                    // reaching zero is the ONLY way into the story intro ($C5EC JMP $C5F7). A Start
-                    // press is the new-game branch $C7C9 LDA $14 / AND #$10 → $C7CF, which ends at
-                    // $C800 STA $31=#$00 / $C810 STA $38 / $C8B5 = the mission map. $C7CF's two
-                    // bank-2 screens ($9E00 with $62=#$0A, $AA00 with $62=#$0D) are not ported, so
-                    // the press lands straight on the map (GAPS G77). Press-free gold_intro_panels
-                    // confirms the timeout: $14 == $00 on every frame, yet $31 = $07 at f263.
+                    // $C7AD-$C7CC is the title's Start loop. The $51=$F0 timer belongs
+                    // to the RESET prologue, before $C5F7, not to this title. Sending an
+                    // idle title through LoadWorld(7) after 240 frames corrupted its image.
                     if ((pressed & 0x10) != 0)
                     {
                         _game.TitleScreen = false;
                         _game.PlaySfx(DarkwingGame.SfxPause);
-                        World.CompletedCount = 0;                   // $C80E/$C810 LDA #$00 / STA $38
-                        EnterMap();                                 // $C7CF…$C8B5
+                        World.CompletedCount = 0;
+                        SetPhase(Phase.NewGameDialog);
+                        _game.ClearObjectRamAndScroll();
+                        _game.FillVramPages(0x20, 0x02, 0x00);
+                        _game.RunBank2Task(4);
+                        _game.EndingScene9E00();
+                        _game.Text.Start(0x0A);
+                        World.StreamId = 0x0A;
                     }
-                    else if (PhaseFrames >= 240)                    // $C5E8/$C5EC JMP $C5F7
+                    break;
+
+                case Phase.NewGameDialog:
+                    if (_game.Text.Running) StepText(_game.Text, held);
+                    else if (World.StreamId == 0x0A)
                     {
-                        _game.TitleScreen = false;                  // $C5F7 takes the screen over
-                        SetPhase(Phase.Intro);                      // $C5F7: $31=$07 then the dialog
-                        World.CurrentWorld = 0x07;                  // $C5FC LDA #$07 / STA $31
-                        _game.ClearObjectRamAndScroll();            // $C5F7 JSR $C95C
-                        _game.LoadWorld(_decoder, 0x07);            // $C5FE JSR $DD57
-                        _game.WorldRunning = false;
-                        _introStage = 0;
-                        _introDelay = 30;                           // $C601 LDX #$1E / JSR $FEFF
+                        World.StreamId = 0x0D;
+                        _game.Text.Start(0x0D);
                     }
+                    else EnterMap();
                     break;
 
                 case Phase.Intro:
@@ -137,18 +138,24 @@ namespace Darkwing.Core
                     break;
 
                 case Phase.MapCursor:
-                    StepBubbleChooser(pressed);
+                    if (_game.Text != null && _game.Text.Running) StepText(_game.Text, held);
+                    if (_game.Text == null || !_game.Text.Running) StepBubbleChooser(pressed);
                     _game.MapCursorBubble = World.CursorBubble;   // $6C feeds the $A4AE/$51D/$554 seed
                     break;
 
                 case Phase.MapBriefing:
+                    if (_game.Text != null && _game.Text.Running)
+                        StepText(_game.Text, held);
+                    if (_game.Text != null && _game.Text.Running) break;
                     if (!_promptOpen)
                     {
-                        if (PhaseFrames >= PromptFrames) _promptOpen = true;
+                        World.StreamId = 8;
+                        _game.Text.Start(8, map: true); // YES A BUTTON / NO B BUTTON
+                        _promptOpen = true;
                     }
-                    else if ((pressed & 0x90) != 0)   // $9947: A ($80) or Start ($10) → enter the world
+                    else if ((pressed & 0x90) != 0)
                     {
-                        World.LastOutcome = 0x00;     // $F8 still cleared by $DD57
+                        World.LastOutcome = 0x00;
                         SetPhase(Phase.Mission);
                         _game.LoadWorld(_decoder, World.CurrentWorld);
                         _game.PlayMusic(World.MusicId(World.CurrentWorld));
@@ -388,6 +395,7 @@ namespace Darkwing.Core
             // $A43F → $A402: the map loop becomes the idle queue, which still parks the caret
             // ($A404) but never re-seeds the bubbles ($A4AE/$A503/$A53A are chooser-only).
             _game.MapChooser = false;
+            _game.Text.Start(World.StreamId, map: true);
         }
 
         /// <summary>Entering the city map: $6C restarts at bubble 0 ($A193/$A1C8 LDA #$00 /
@@ -399,6 +407,8 @@ namespace Darkwing.Core
             World.CursorBubble = 0;
             _game.MapTier = World.CompletedCount;
             _game.LoadMapScreen();
+            World.StreamId = 7;
+            _game.Text?.Start(7, map: true);
         }
 
         private void SetPhase(Phase next)

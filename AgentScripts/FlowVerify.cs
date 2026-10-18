@@ -30,14 +30,15 @@ public static class FlowVerify
     public static string Check()
     {
         try { Body(); }
-        catch (System.Exception e) { _sb.AppendLine("EXCEPTION: " + e); }
+        catch (System.Exception e) { _sb.AppendLine("EXCEPTION: " + e); throw; }
         finally { File.WriteAllText(Root + "/Temp/flow_verify.txt", _sb.ToString()); }
-        return _sb.ToString();
+        return "SMOKE EXECUTED: forced boss defeat, no original-ROM comparison.\n" + _sb.ToString();
     }
 
     private static void Body()
     {
         var sb = _sb;
+        sb.Clear();
         var data = DataLoader.Load(
             File.ReadAllBytes(Root + "/Assets/Darkwing/Data/chr_full.bytes"),
             File.ReadAllBytes(Root + "/Assets/Darkwing/Data/levelsets.bytes"),
@@ -60,7 +61,7 @@ public static class FlowVerify
         game.MapNametable = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/map_nametable.bytes");
         game.MapPalette = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/map_palette.bytes");
 
-        game.MapChrBank0 = WorldState.MapChrBank;    // evidence: probe_flow chr($1000)=$26
+        game.MapChrBank0 = WorldState.MapSpriteChrBank;    // evidence: probe_flow chr($1000)=$26
         game.MapChrBank1 = WorldState.MapChrBank;
         sb.AppendLine($"map CHR bank {WorldState.MapChrBank} (probe_flow latch + MapChrSearch score); " +
                       $"nametable {game.MapNametable.Length} B, palette {game.MapPalette.Length} B");
@@ -88,8 +89,8 @@ public static class FlowVerify
         sb.AppendLine($"stage={flow.Stage} $31={flow.World.CurrentWorld} $62={flow.World.StreamId}");
 
         // --- briefing prompt: wait out the card, then A ($80) = enter the world ---
-        Run(game, flow, GameFlow.PromptFrames + 5, Pad(0));
-        Run(game, flow, 1, Pad(0x80));          // A
+        UntilMissionOrMap(game, flow, 0x80);
+        Run(game, flow, 1, Pad(0));          // A
         sb.AppendLine($"stage={flow.Stage} WorldRunning={game.WorldRunning} $F8=$ {flow.World.LastOutcome:X2} " +
                       $"playerState=$ {game.Player.State:X2} X=$ {game.Player.X:X4}");
         Run(game, flow, 120, Pad(0x01));        // walk right inside the mission
@@ -109,7 +110,7 @@ public static class FlowVerify
         // --- the $A4B0 rule: with $38=1 bubble 0 is still mission 0 ---
         sb.AppendLine($"MissionForBubble(0) at $38={flow.World.CompletedCount} -> {flow.MissionForBubble(0)}");
 
-        // --- the NATURAL seven-win transition. Clearing the mask by hand proves nothing about the
+        // --- the FORCED seven-win transition. Clearing the mask by hand proves nothing about the
         // branch, and $D838 gates on $31, not on $69: the bubbles run 0,1,2 (missions 0,1,2), then
         // 3,4,5, and at $38=6 $A46E/$A48B freeze the cursor on bubble 0, which $A4EB maps to
         // mission 6. That seventh clear must take BCS $D841 = Phase.Ending, and $69 bit 6 stays
@@ -119,20 +120,21 @@ public static class FlowVerify
         UntilMap(game, sweep, null);
         for (int i = 0; i < 7; i++)
         {
+            UntilMap(game, sweep, null);
             int bubble = i % 3;
             while (sweep.Stage == GameFlow.Phase.MapCursor && sweep.World.CursorBubble != bubble)
             { Run(game, sweep, 1, Pad(0x01)); Run(game, sweep, 2, Pad(0)); }   // $A46E Right, edge-per-press
             if (sweep.Stage != GameFlow.Phase.MapCursor) { sb.AppendLine($"win {i + 1}: map not reached, stage={sweep.Stage}"); break; }
             Run(game, sweep, 1, Pad(0x40));                        // confirm the bubble under $6C
             int cleared = sweep.World.CurrentWorld;
-            Run(game, sweep, GameFlow.PromptFrames + 5, Pad(0));   // $C970 fade + $9900 settle
-            Run(game, sweep, 1, Pad(0x80));                        // A → $995E flight → $D4E9 load
+            UntilMissionOrMap(game, sweep, 0x80);
+            Run(game, sweep, 1, Pad(0));                        // A → $995E flight → $D4E9 load
             if (sweep.Stage != GameFlow.Phase.Mission) { sb.AppendLine($"win {i + 1}: enter gave {sweep.Stage}"); break; }
             ClearMission(game);
             Run(game, sweep, 2, Pad(0));
             sb.AppendLine($"win {i + 1}: cleared $31={cleared} -> stage={sweep.Stage} $38={sweep.World.CompletedCount} $69=${sweep.World.CompletedMask:X2}");
         }
-        sb.AppendLine($"NATURAL ENDING TRANSITION: reached={sweep.Stage == GameFlow.Phase.Ending} " +
+        sb.AppendLine($"FORCED SEVEN-WIN TRANSITION: reached={sweep.Stage == GameFlow.Phase.Ending} " +
                       $"stage={sweep.Stage} $38={sweep.World.CompletedCount} $69=${sweep.World.CompletedMask:X2}");
 
         // --- G67: run the ending body itself ($D841-$D8D0). There is no ending capture, so the
@@ -142,7 +144,7 @@ public static class FlowVerify
         int endFrames = 0, lastEndStage = -1;
         while (sweep.Stage == GameFlow.Phase.Ending && sweep.EndingStage < 6 && endFrames < 6000)
         {
-            Run(game, sweep, 1, Pad(0));
+            Run(game, sweep, 1, Pad(game.Text != null && game.Text.WaitingForInput ? (byte)0x80 : (byte)0));
             endFrames++;
             if (sweep.EndingStage != lastEndStage)
             {
@@ -167,8 +169,8 @@ public static class FlowVerify
         Run(game, flow2, 1, Pad(0x10));                       // Start -> $C5F7 intro
         UntilMap(game, flow2, sb);
         Run(game, flow2, 1, Pad(0x40));                       // B -> confirm bubble 0
-        Run(game, flow2, GameFlow.PromptFrames + 5, Pad(0));
-        Run(game, flow2, 1, Pad(0x40));                       // B -> $F8=$FF, back to map
+        UntilMissionOrMap(game, flow2, 0x40);
+        Run(game, flow2, 1, Pad(0));                       // B -> $F8=$FF, back to map
         sb.AppendLine($"B branch: stage={flow2.Stage} $F8=$ {flow2.World.LastOutcome:X2} " +
                       $"$38={flow2.World.CompletedCount} WorldRunning={game.WorldRunning}");
     }
@@ -199,26 +201,31 @@ public static class FlowVerify
         BossBehaviors.HitFlash(game.Enemies, boss);
     }
 
-    /// <summary>$C5F7 plays two $AA00 dialog streams ($0E then $0F, $C612 delays 30 frames
-    /// between them) before the map is built. Steps until the flow leaves Phase.Intro and
-    /// reports the nametable text held on the last Intro frame — the ROM leaves stream $0F's
-    /// three lines on screen ($AADD only clears when the NEXT stream starts).</summary>
-    /// <returns>frames spent inside Phase.Intro</returns>
+    // Drive the actual dialog waits through buttons. These are synthetic progression
+    // checks; the scene/standalone route is independently verified by BootFlowProbe.
     private static int UntilMap(DarkwingGame game, GameFlow flow, StringBuilder sb)
     {
-        var pad = Pad(0);
-        string last = null;
-        int f = 0;
-        for (; f < 600 && flow.Stage == GameFlow.Phase.Intro; f++)
-        {
-            var t = game.Text;
-            if (t != null)
-                last = $"$ {t.StreamId:X2}: \"{t.LineText(0, 29)}\" | \"{t.LineText(1, 29)}\" | \"{t.LineText(2, 29)}\"";
-            flow.Step(in pad);
-            game.Step(in pad);
-        }
-        sb?.AppendLine($"intro: {f} frames, exits to {flow.Stage}, last frame drew {last ?? "(no bank 2)"}");
+        int f=0;
+        for (; f<2400 && flow.Stage!=GameFlow.Phase.MapCursor; f++)
+            Run(game,flow,1,Pad(f%120==119 ? (byte)0x10 : (byte)0));
+        if (flow.Stage!=GameFlow.Phase.MapCursor) throw new System.Exception("Map not reached");
+        for (int t=0; t<600 && game.Text != null && game.Text.Running; t++)
+            Run(game,flow,1,Pad(game.Text.WaitingForInput ? (byte)0x80 : (byte)0));
+        Run(game,flow,1,Pad(0));
+        sb?.AppendLine($"map reached through dialog input in {f} frames");
         return f;
+    }
+
+    private static void UntilMissionOrMap(DarkwingGame game, GameFlow flow, byte confirm)
+    {
+        for (int f=0; f<2400 && flow.Stage==GameFlow.Phase.MapBriefing; f++)
+        {
+            byte bits=game.Text != null && game.Text.WaitingForInput
+                ? (game.Text.StreamId==8 ? confirm : (byte)0x80) : (byte)0;
+            Run(game,flow,1,Pad(bits));
+        }
+        if (flow.Stage!=GameFlow.Phase.Mission && flow.Stage!=GameFlow.Phase.MapCursor)
+            throw new System.Exception("Briefing did not finish through input");
     }
 
     private static void Run(DarkwingGame game, GameFlow flow, int frames, NesButtons pad)

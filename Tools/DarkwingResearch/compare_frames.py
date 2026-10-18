@@ -91,12 +91,84 @@ def to_index_map(w, h, rgb):
     return bytes(idxs), unmapped
 
 
+def compare_route(original: Path, editor_path: Path, player_path: Path):
+    """Compare corresponding stable screens; retain raw differences, never relax pixel equality."""
+    import base64
+    import hashlib
+    import json
+    request = json.loads((original / "request.json").read_text(encoding="utf-8"))
+    argv = request["argv"]
+    expected = "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00"
+    if request["rom_sha256"] != expected or "--load-state" in argv:
+        raise ValueError("Ordinary original route must start at reset with the documented ROM")
+    if "local patches = {}" not in (original / "capture.lua").read_text(encoding="utf-8"):
+        raise ValueError("Ordinary route cannot use RAM patches")
+    editor = json.loads(editor_path.read_text()); player = json.loads(player_path.read_text())
+    if not editor["editor"] or player["editor"] or editor["states"] != player["states"]:
+        raise ValueError("Editor/player scene states differ")
+    for entry in player["input"]["inputs"]:
+        names = {16:"start",64:"b",128:"a",1:"right"}
+        token = f"0:{names[entry['buttons']]}@{entry['first']+920}-{entry['last']+920}"
+        if token not in argv:
+            raise ValueError("Original/port input schedules differ: " + token)
+    ram = (original / "ram_frames.bin").read_bytes()
+    pal = (original / "palette_frames.bin").read_bytes()
+    oam = (original / "oam_frames.bin").read_bytes()
+    vram = (original / "vram_frames.bin").read_bytes()
+    count = int(argv[argv.index("--frames")+1])
+    if (len(ram),len(pal),len(oam)) != (count*2048,count*32,count*256):
+        raise ValueError("Incomplete original capture")
+    chr_rows = {int(line.split(",")[0]):[int(v) for v in line.split(",")[2:4]] for line in (original/"chr_map.csv").read_text().splitlines()}
+    tables = {struct.unpack_from("<I",vram,i)[0]:vram[i+4:i+2052] for i in range(0,len(vram),4100)}
+    metrics=[]
+    for pf,gf in [(80,1000),(700,1600),(1000,2100),(2680,3600),(2710,3631),(2800,3721),(2900,3821),(3000,3921)]:
+        state=next(x for x in player["states"] if x["frame"]==pf)
+        data=ram[(gf-1)*2048:gf*2048]
+        vf=max(f for f in tables if f<=gf)
+        nt=base64.b64decode(state["nametable"])
+        slot0=next(x for x in state["slots"].split(";") if x.startswith("00:"))
+        slot_xy=[int(x,16) for x in slot0.split("@")[1].split(",")]
+        row={"portFrame":pf,"originalFrame":gf,"phase":state["phase"],"vramFrame":vf,
+             "visibleNametableDiff":sum(a!=b for a,b in zip(nt[:1024],tables[vf][:1024])),
+             "allNametableDiff":sum(a!=b for a,b in zip(nt,tables[vf])),
+             "paletteDiff":sum(a!=b for a,b in zip(base64.b64decode(state["palette"]),pal[(gf-1)*32:gf*32])),
+             "oamDiff":sum(a!=b for a,b in zip(base64.b64decode(state["oam"]),oam[(gf-1)*256:gf*256])),
+             "originalXY":[data[0x4F0]|data[0x500]<<8,data[0x510]|data[0x520]<<8],
+             "portXY":[state["x"],state["y"]] if state["phase"]=="Mission" else slot_xy,"originalState":data[0x50],"portState":state["state"],"originalCtrlShadow":data[0xFF],"portCtrl":state["ctrl"],"originalMask":data[0xFE],"portMask":state["mask"],
+             "portChr":[state["chr0"],state["chr1"]],"originalChr":chr_rows[gf],"originalSlots":[
+                 f"{i:02X}:{data[0x420+i]:02X}/{data[0x4E0+i]:02X}" for i in range(16) if data[0x4D0+i]&128],
+             "portSlots":state["slots"]}
+        png=original/f"frame_{gf:06d}.png"
+        if pf in (80,700,1000,2680) and not png.exists():
+            raise ValueError("Missing required original key-screen PNG: " + str(png))
+        if png.exists():
+            w,h,rgb=read_png_rgb(png)
+            fb=base64.b64decode(state["framebuffer"])
+            row["pixelsDiff"]=sum(rgb[i*3:i*3+3] != MESEN_2C02[fb[i]&63].to_bytes(3,"big") for i in range(w*h))
+        metrics.append(row)
+    return {"scope":"Corresponding logical screens; transition timings differ. Pixel/OAM differences are not accepted as exact matches.",
+            "resetOriginal":True,"sameButtonsOffset":920,"inputConvention":"Mesen CLI relative f appears in Lua capture f+1; port replay frames are 1-based. Control sample offset=921.","editorPlayerStatesIdentical":len(player["states"]),
+            "originalRequest":request,"originalHashes":{p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+                for p in [original/n for n in ["request.json","ram_frames.bin","palette_frames.bin","oam_frames.bin","vram_frames.bin"]]},
+            "input":player["input"],"comparisons":metrics,
+            "imagesCompared":sum("pixelsDiff" in x for x in metrics),
+            "pixelEquivalence":all(x["pixelsDiff"]==0 for x in metrics if "pixelsDiff" in x)}
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("golden", type=Path)
-    ap.add_argument("unity", type=Path)
+    ap.add_argument("golden", type=Path, nargs="?")
+    ap.add_argument("unity", type=Path, nargs="?")
     ap.add_argument("--max-report", type=int, default=20)
+    ap.add_argument("--route", type=Path, nargs=3, metavar=("ORIGINAL", "EDITOR_JSON", "PLAYER_JSON"))
     args = ap.parse_args()
+    if args.route:
+        import json
+        result = compare_route(*args.route)
+        print(json.dumps(result, indent=2))
+        return 0 if result["pixelEquivalence"] else 1
+    if not args.golden or not args.unity:
+        ap.error("Provide two PNGs or --route ORIGINAL EDITOR_JSON PLAYER_JSON")
     w1, h1, rgb1 = read_png_rgb(args.golden)
     w2, h2, rgb2 = read_png_rgb(args.unity)
     if (w1, h1) != (w2, h2):

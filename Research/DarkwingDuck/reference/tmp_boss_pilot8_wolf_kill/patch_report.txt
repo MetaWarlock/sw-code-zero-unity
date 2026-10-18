@@ -1,0 +1,12 @@
+0072 <- 74  ok=true readback=74
+0073 <- 83  ok=true readback=83
+0074 <- 38  ok=true readback=38
+0075 <- 83  ok=true readback=83
+0076 <- EC  ok=true readback=EC
+0077 <- 83  ok=true readback=83
+0078 <- B0  ok=true readback=B0
+0079 <- 83  ok=true readback=83
+007A <- 28  ok=true readback=28
+007B <- 84  ok=true readback=84
+005B <- 04  ok=true readback=04
+006D <- 04  ok=true readback=04

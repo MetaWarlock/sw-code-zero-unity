@@ -1,0 +1,256 @@
+{
+  "schema": 1,
+  "cases": 24,
+  "resultPassed": 19,
+  "strictPassed": 8,
+  "errors": 0,
+  "verdict": "FAIL",
+  "scope": "Selected fields only; seeded fixtures, not full playthrough or full-frame equivalence.",
+  "results": [
+    {
+      "name": "walk",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_walk.txt",
+      "entry": "PhysCompare.Walk"
+    },
+    {
+      "name": "jump",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_jump.txt",
+      "entry": "PhysCompare.Jump"
+    },
+    {
+      "name": "b_attack",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_b_attack.txt",
+      "entry": "PhysCompare.BAttack"
+    },
+    {
+      "name": "hook",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_hook.txt",
+      "entry": "PhysCompare.Hook"
+    },
+    {
+      "name": "traverse",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_traverse.txt",
+      "entry": "PhysCompare.Traverse"
+    },
+    {
+      "name": "contact",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_contact.txt",
+      "entry": "PhysCompare.Contact"
+    },
+    {
+      "name": "m1route",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_m1route.txt",
+      "entry": "PhysCompare.M1Route"
+    },
+    {
+      "name": "hurt",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_hurt.txt",
+      "entry": "PhysCompare.Hurt"
+    },
+    {
+      "name": "door",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_door.txt",
+      "entry": "PhysCompare.Door"
+    },
+    {
+      "name": "worldseeds",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_worldseeds.txt",
+      "entry": "PhysCompare.WorldSeeds"
+    },
+    {
+      "name": "w00_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w00_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "w01_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w01_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "w02_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w02_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "w03_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w03_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "w04_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w04_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "w05_fall",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w05_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "w06_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_w06_fall.txt",
+      "entry": "PhysCompare.WorldWalks"
+    },
+    {
+      "name": "longroute",
+      "result": "PASS",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_longroute.txt",
+      "entry": "PhysCompare.M1LongRoute",
+      "originalCapture": {
+        "capture": "gold_m1_longroute",
+        "frames": 2500,
+        "maxX": 916,
+        "completedCounts": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "m2",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_m2.txt",
+      "entry": "PhysCompare.M2Route",
+      "originalCapture": {
+        "capture": "gold_m2_route",
+        "frames": 1500,
+        "maxX": 468,
+        "completedCounts": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "m3",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_m3.txt",
+      "entry": "PhysCompare.M3Route",
+      "originalCapture": {
+        "capture": "gold_m3_route",
+        "frames": 1500,
+        "maxX": 65535,
+        "completedCounts": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "m4",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_m4.txt",
+      "entry": "PhysCompare.M4Route",
+      "originalCapture": {
+        "capture": "gold_m4_route",
+        "frames": 1500,
+        "maxX": 436,
+        "completedCounts": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "m5",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_m5.txt",
+      "entry": "PhysCompare.M5Route",
+      "originalCapture": {
+        "capture": "gold_m5_route",
+        "frames": 1500,
+        "maxX": 786,
+        "completedCounts": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "m6",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "comparison": "Temp/suite_m6.txt",
+      "entry": "PhysCompare.M6Route",
+      "originalCapture": {
+        "capture": "gold_m6_route",
+        "frames": 1500,
+        "maxX": 65535,
+        "completedCounts": [
+          0
+        ]
+      }
+    },
+    {
+      "name": "m7",
+      "result": "PASS",
+      "strict": "PASS",
+      "comparison": "Temp/suite_m7.txt",
+      "entry": "PhysCompare.M7Route",
+      "originalCapture": {
+        "capture": "gold_m7_route",
+        "frames": 1500,
+        "maxX": 1108,
+        "completedCounts": [
+          0
+        ]
+      }
+    }
+  ],
+  "harnessChecks": {
+    "csharp": 14,
+    "python": 7,
+    "powershell": 2,
+    "missingSourceGate": 2,
+    "missingExeGate": 1
+  },
+  "run": {
+    "baseCommit": "901cc0150460018a1ac159f1a8e91e82499d1a99",
+    "gateExitCode": 1,
+    "strictPassed": 8,
+    "resultPassed": 19,
+    "errors": 0,
+    "source": "fresh after ordinary CHR NMI fix"
+  },
+  "integrationChecks": {
+    "enemySeed": "PASS: world-owner control fails f9 slot01 active; map-owner seed matches 20/20; identical SlotsEqual and golden.",
+    "enemySweep": "probe_enemy_verify: ENEMIES: MATCH 599/599 frames (slots 01-0F: X/Y/state+active/beh/anim identical both ways) \nprobe_enemy_verify2: ENEMIES: MATCH 699/699 frames (slots 01-0F: X/Y/state+active/beh/anim identical both ways) \nprobe_enemy_verify3: ENEMIES: MATCH 799/799 frames (slots 01-0F: X/Y/state+active/beh/anim identical both ways) \nprobe_enemy_verify4: ENEMIES: MATCH 899/899 frames (slots 01-0F: X/Y/state+active/beh/anim identical both ways) \nprobe_enemy_verify5: ENEMIES: MATCH 899/899 frames (slots 01-0F: X/Y/state+active/beh/anim identical both ways)",
+    "idleTitle": "PASS: title remains title for 600 no-input frames, CHR31/25; no world pre-load.",
+    "sceneRoute": "PASS: 14 Editor/player states byte-identical (framebuffer/NT/palette/OAM/slots); mission0 CHR0/16; walk X 002C->0046; jump Y 0374->034C; gas slot04 anim13/behavior01."
+  }
+}

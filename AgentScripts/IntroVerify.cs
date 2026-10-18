@@ -33,8 +33,8 @@ public static class IntroVerify
     {
         var sb = new StringBuilder();
         try { Verify(sb); }
-        catch (System.Exception e) { sb.AppendLine("EXCEPTION: " + e); }
-        File.WriteAllText(Root + "/Temp/intro_verify.txt", sb.ToString());
+        catch (System.Exception e) { sb.AppendLine("EXCEPTION: " + e); throw; }
+        finally { File.WriteAllText(Root + "/Temp/intro_verify.txt", sb.ToString()); }
         return sb.ToString();
     }
 

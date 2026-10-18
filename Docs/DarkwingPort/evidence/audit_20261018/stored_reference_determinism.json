@@ -1,0 +1,40 @@
+{
+  "ram_frames.bin": {
+    "bytesA": 614400,
+    "bytesB": 614400,
+    "differentFrames": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "sameFromFrame4": true
+  },
+  "palette_frames.bin": {
+    "bytesA": 9600,
+    "bytesB": 9600,
+    "differentFrames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "sameFromFrame4": false
+  },
+  "oam_frames.bin": {
+    "bytesA": 76800,
+    "bytesB": 76800,
+    "differentFrames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "sameFromFrame4": false
+  }
+}
