@@ -1,5 +1,6 @@
 system,level,object,scenario,extracted,implemented,compared,evidence
 level,m1,trench_thug,natural_620f_shift69,yes,yes,PASS,Research/DarkwingDuck/reference/m1_trench; PhysCompare.M1Trench RESULT/STRICT/ENEMIES/PAL3F00 MATCH 619/619; Suite unchanged RESULT19/24 STRICT8/24 errors0
+level,m1,cling_relaunch,natural_200f_shift70,yes,yes,PASS_selected,Research/DarkwingDuck/reference/gold_m1_cling; PhysCompare.M1Cling RESULT MATCH 199/199 STRICT 194/199 (residual f191 $0470/pose in state 0); Suite unchanged RESULT19/24 STRICT8/24 errors0
 tools,rom,identity,sha256,yes,n/a,PASS,Docs/DarkwingPort/evidence/audit_20261018/build/build_final.json; ROM unchanged
 tools,reference,det_a_b,stored_artifacts,yes,n/a,PASS_selected,Docs/DarkwingPort/evidence/audit_20261018/stored_reference_determinism.json; RAM stable f4 OAM f6 palette f7; no new emulator runs
 tools,harness,suite,strict_gate,yes,yes,FAIL,Docs/DarkwingPort/evidence/audit_20261018/suite/suite_result.json; RESULT19/24 STRICT8/24 errors0 exit1; selected fields only

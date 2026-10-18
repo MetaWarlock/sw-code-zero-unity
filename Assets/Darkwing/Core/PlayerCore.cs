@@ -1324,11 +1324,11 @@ namespace Darkwing.Core
         }
 
         // ---------- Shared vertical physics ($CD0E/$F2D7) ----------
+        /// <summary>The full service $F2D7 used by states 0/1/2/6 ($CD63/$D0C8/$D31C/$D9A3).
+        /// The state $0B/$10 vertical service $F5C9 is a different routine with its own probe
+        /// dispatch and lives in <see cref="AirborneD626"/>.</summary>
         /// <returns>true if landed this frame</returns>
-        /// <param name="f2d7">true when the caller runs the full service $F2D7 (states 0/1/2/6,
-        /// $CD63/$D0C8/$D31C/$D9A3); false for $F5C9 (state $0B/$10, $D650), which is integrate
-        /// plus gravity ONLY — it never reaches the $F430 ceiling dispatch.</param>
-        private bool VerticalPhysics(byte held, byte pressed, bool cutOnLand = true, bool f2d7 = true)
+        private bool VerticalPhysics(byte held, byte pressed, bool cutOnLand = true)
         {
             // $EB62: $10 is cleared on entry to every probe service, so a hazard code only
             // ever survives the frame whose $EB52 actually sampled it. Without the reset a
@@ -1352,28 +1352,6 @@ namespace Darkwing.Core
                 // there is no cut, so the fall keeps accelerating (gold_m1_fulljump f208:
                 // $0560/$0550 FF,AB → FF,6B).
                 ApplyGravity();
-                if (!f2d7)
-                {
-                    // $F5C9 ($D650, states $0B/$10) is integrate plus gravity only; its
-                    // $D653/$D656 probe is still unported (G39), so this path keeps the
-                    // pre-existing "solid only" snap to leave the passing goldens unchanged.
-                    byte legacy = ProbeFloor();
-                    _probeResult = legacy;
-                    // Unchanged from the previous rule on purpose: $F4E4-$F4F1 (`LDA $10 /
-                    // CMP #$01 / BCC no-hit / BNE hit`, with only the equal-to-1 case behind
-                    // the $F4EC `CMP #$FC` velocity gate) is what the $D517 pit-fall handler
-                    // uses, and gold_hurt_a41 rests on a type-1 support with $0560 = $FF.
-                    bool grounded = State is 0 or 6;
-                    if (legacy == 0 || !(legacy > 1 || grounded || (byte)YVelInt < 0xFC)) return false;
-                    SnapFeetUpToRow();
-                    if (cutOnLand)
-                    {
-                        CutVelocity();
-                        if (_wasAirborne) Sfx?.Invoke(0x10); // landing SFX ($CE08: SFX $10)
-                    }
-                    LandedFlag = 1;
-                    return true;
-                }
                 // $F322: $5C latches "this fall has already gone through a pass-through tile,
                 // so start the next frame at the hook check". It survives the frame it is set
                 // on ($F3A2 returns without clearing it) and only a land clears it.
@@ -1411,14 +1389,6 @@ namespace Darkwing.Core
                 // not on "solid or not". Type 0 leaves the frame untouched; types 1 and 2 react
                 // only when the middle sample ($43, directly over the head) is itself non-zero;
                 // type 4 is the damage tile; 3/5/6/7 (and the hook type 8) just snap and fall.
-                if (!f2d7)
-                {
-                    // $F5C9 integrates and adds gravity, nothing else — the $D653/$D656 probe
-                    // that follows it in state $0B/$10 is still unported (G39), so the pre-
-                    // existing "solid only" snap keeps the passing goldens unchanged here.
-                    if (ceil >= 3) { SnapBelowHead(); CutVelocity(); }
-                    return false;
-                }
                 switch (ceil)
                 {
                     case 0:                                        // $F434 BCC $F474
@@ -1479,8 +1449,7 @@ namespace Darkwing.Core
             // moved this frame. The port had the order reversed, which cost one frame of wall
             // stop: m1_longroute f438 Y=0374 → ROM X 01D4→01D6 (bottom point 037F leaves the
             // solid row 0380), port 01D4 (it still probed from 0375, point 0380).
-            bool landed = VerticalPhysics(held, pressed, cutOnLand: false, f2d7: false);
-            if (landed) { State = 0; AirSubState = 0; return; }   // $D711-$D715 ($56 → 0 too)
+            if (!AirborneD626(pressed)) return;
             AirborneControl(held);
             // $D79A-$D7B3: the airborne shot picks the pose from the POST-service velocity
             // sign ($0E rising, $0F falling) and calls $FA78 unconditionally before $CE39.
@@ -1489,6 +1458,132 @@ namespace Darkwing.Core
                 SetAnimPlayer(YVelInt >= 0 ? (byte)0x0E : (byte)0x0F);
                 TryLatchFire();
             }
+        }
+
+        /// <summary>$D626-$D756 for slot 0: the $F5C9 vertical service followed by the $EB52
+        /// class dispatch. Returns false when the frame leaves through a landing/park/hurt
+        /// exit ($D6FB/$D711/$D725/$D73C/$D7C0) and must not reach the steering. $F5C9 has NO
+        /// jump cut — the variable-height cut lives in $F2D7, so a state $0B/$10 arc is always
+        /// the full impulse height.</summary>
+        private bool AirborneD626(byte pressed)
+        {
+            // $D626-$D63C pick the probe set from the PRE-service velocity sign: $40 = $09
+            // (ceiling set) while rising, $06 (floor set) while falling, $41 = 2 either way.
+            bool rising = YVelInt >= 0;
+            var s0 = Objects?.Slots[0];
+            if ((pressed & 0x08) != 0 && s0 != null && s0.AnimNumber != 0x0D) SetAnimPlayer(0x0D);   // $D63E-$D64D
+            if (rising) { IntegrateYRise(); ApplyGravity(); }               // $F5C9 BPL → $F581 + $F5DA
+            else { IntegrateY(); ApplyGravity(); }                          // $F5C9 BMI → $F5A4 + $F5DA
+            byte probe = rising ? ProbeCeiling() : ProbeFloor();            // $D653, $40 as set above
+            _probeResult = probe;
+            if (probe == 3) return AirD711();                         // $D656 BEQ $D711
+            if (probe == 4) { AirD73C(); return false; }               // $D65F BEQ $D73C
+            if (!rising && probe == 1) return AirD6EE();               // $D666 BPL / $D66F BEQ $D6EE
+            if (YVelInt >= 0) return true;                             // $D671 BPL $D676 → $D756
+            // $D679-$D6AC: falling onto a class the floor set cannot catch. Only the plain
+            // falling poses are rewritten to $12; the shot poses keep their frames until
+            // $0410 = 1 with $0430 = 2, and the reach pose $0D clears its counters.
+            if (s0 != null)
+            {
+                if (s0.AnimNumber is 0x0E or 0x0F)
+                {
+                    if (s0.AnimFrame == 1 && s0.AnimTimer == 2) SetAnimPlayer(0x12);   // $D69E/$D6A5 → $D6AC
+                }
+                else if (s0.AnimNumber == 0x0D)
+                {
+                    if (s0.AnimFrame == 3) { s0.AnimFrame = 1; s0.AnimTimer = 0; }      // $D68A-$D698
+                }
+                else SetAnimPlayer(0x12);                                               // $D688 → $D6AC
+            }
+            // $D6B1 JSR $F64A (the slot-pair push, still unported — G92): Y = X^1 (slot 1 for the
+            // player), needs $04D0,Y negative, both $0400 flags set and $04E0,Y != 0, then measures
+            // with $F699/$F6DF to leave $11; carry would take $D709 ($0510 -= $11, $50 = 0). Its
+            // CLC exit is JMP $F784, not RTS. With no live pair $F64A is CLC, which is what
+            // gold_m1_cling (199/199) observes.
+            if (State != 0x0B)                                          // $D6B6 CMP #$0B / BEQ $D6C7
+            {
+                probe = ProbeHook();                                    // $D6BC-$D6C4: $40 = $3A
+                _probeResult = probe;
+            }
+            if (CellGridByte == 0x90 && (byte)YVelInt == 0xFA) return AirD6FB();   // $D6C7-$D6D4
+            switch (probe)
+            {
+                case 1: return AirD711();                               // $D6DA BEQ $D711
+                case 2: return AirD7C0();                               // $D6DE BEQ $D7C0
+                case 3: return AirD6FB();                               // $D6E2 BEQ $D6FB
+                case 4: AirD73C(); return false;                        // $D6E6 BEQ $D73C
+                default: return true;                                   // $D6E8 JMP $D756
+            }
+        }
+
+        /// <summary>$D6EE: a type-1 (one-way) support under a falling $0B/$10. $FD and $FE are
+        /// caught; $FF parks as state 4 only from state $10 with a solid middle sample $43;
+        /// every faster fall passes through to the $D6FB land.</summary>
+        private bool AirD6EE()
+        {
+            byte v = (byte)YVelInt;
+            if (v == 0xFD || v == 0xFE) return AirD6FB();               // $D6F1/$D6F5 BEQ $D6FB
+            if (v == 0xFF && State == 0x10 && _probe43 != 0)            // $D6F9 BCS $D725, $D727/$D72B
+            {
+                State = 4;                                              // $D731
+                Sfx?.Invoke(0x12);                                      // $D735 JSR $F850
+                CutVelocity();                                          // $D738 JSR $F607
+                return false;
+            }
+            return AirD6FB();
+        }
+
+        /// <summary>$D6FB: land with the landing SFX — $50 = $56 = 0, feet snapped UP to the row
+        /// plane ($EDD2); the fall velocity survives into state 0.</summary>
+        private bool AirD6FB()
+        {
+            Sfx?.Invoke(0x10);                                          // $D6FD JSR $F850
+            State = 0;                                                  // $D702
+            AirSubState = 0;                                            // $D704
+            SnapFeetUpToRow();                                          // $D706 JMP $EDD2
+            return false;
+        }
+
+        /// <summary>$D711: exit to state 0 on a class-3 tile. Falling snaps the feet up ($EDD2);
+        /// rising is a head bonk — $F607 commits the fall, then $EDB3 pushes the body down onto
+        /// the ceiling row. Neither branch plays the landing SFX.</summary>
+        private bool AirD711()
+        {
+            State = 0;                                                  // $D713
+            AirSubState = 0;                                            // $D715
+            if (YVelInt < 0) SnapFeetUpToRow();                          // $D717/$D71C JMP $EDD2
+            else { CutVelocity(); SnapBelowHead(); }                     // $D71F JSR $F607, $D722 JMP $EDB3
+            return false;
+        }
+
+        /// <summary>$D7C0: a class-2 tile under a falling $0B/$10. State $0B hands the frame to
+        /// the jump service ($50 = $01 plus the feet snap); state $10 becomes the ceiling park
+        /// $0D with pose $0B, SFX $12 and the $F607 velocity.</summary>
+        private bool AirD7C0()
+        {
+            if (State != 0x10)
+            {
+                State = 1;                                              // $D7B9
+                SnapFeetUpToRow();                                      // $D7BB JSR $EDD2
+                return false;
+            }
+            Sfx?.Invoke(0x12);                                          // $D7C8 JSR $F850
+            State = 0x0D;                                               // $D7CD
+            SetAnimPlayer(0x0B);                                        // $D7D1 JSR $FA78
+            CutVelocity();                                              // $D7D4 JSR $F607
+            return false;
+        }
+
+        /// <summary>$D73C: the class-4 hazard tile met in the air — the same hurt ladder as the
+        /// $F2D7 ceiling dispatch's $F476, but here with no invulnerability veto.</summary>
+        private void AirD73C()
+        {
+            State = 6;                                                  // $D73E
+            StateTimer = 0x0F;                                          // $D742 STA $51
+            Sfx?.Invoke(0x15);                                          // $D746 JSR $F850
+            SetAnimPlayer(0x09);                                        // $D74B JSR $FA78
+            InvulnFrames = 0x3C;                                        // $D750 STA $7C
+            TakeHit(Objects != null ? Objects.Slots[0].AnimNumber : 0); // $D752 JSR $F9C2
         }
 
         // ---------- State 1: air ($CD0E path) ----------

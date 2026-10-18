@@ -1,0 +1,25 @@
+{
+  "rom_sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "argv": [
+    "D:\\Art\\SW Code Zero Unity\\Tools\\DarkwingResearch\\vendor\\mesen-agent\\mesen-agent.exe",
+    "D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes",
+    "--home",
+    "D:\\Art\\SW Code Zero Unity\\Temp\\m1_dj2\\home",
+    "--frames",
+    "200",
+    "--timeout",
+    "90",
+    "--lua",
+    "D:\\Art\\SW Code Zero Unity\\Temp\\m1_dj2\\capture.lua",
+    "--lua-allow-io",
+    "--load-state",
+    "D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\m1_standing.mss",
+    "--input",
+    "0:right@2-190",
+    "--input",
+    "0:a@40-65",
+    "--input",
+    "0:a@70-95"
+  ],
+  "binary_sha256": "4143766f2b900e63663ea000655f24fd824f2ce5324c2575025f8bb68030a910"
+}

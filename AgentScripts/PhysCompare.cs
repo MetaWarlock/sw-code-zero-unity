@@ -690,6 +690,20 @@ public static class PhysCompare
         camera: true, enemies: true);
 
     /// <summary>
+    /// Golden `gold_m1_cling` (probe_run `--input 0:right@2-190 --input 0:a@40-65 --input 0:a@70-95`,
+    /// no RAM patch): the first jump rises 40 px and parks against the room-0x02 pylon face at
+    /// f51 ($50=$04, anim $0B, SFX $12, $F607) with X=114/Y=844 held for 19 frames; the SECOND A
+    /// edge at f70 goes through $D224 (impulse $0550=$E5/$0560=$04, $50=$0B, anim $11) and rises
+    /// another 50 px, so the player lands on the pylon top shelf at Y=$324 (surface $330) — a
+    /// 80 px climb from the street. This is the mechanic every mission-1 vertical shaft uses,
+    /// so the park + re-launch arc has to be byte-exact before any route attempt.
+    /// </summary>
+    public static string M1Cling() => Compare("m1_cling", 200,
+        f => (byte)((f >= 2 ? 0x01 : 0x00) | (f >= 40 && f <= 65 ? 0x80 : 0x00)
+              | (f >= 70 && f <= 95 ? 0x80 : 0x00)),
+        camera: true, enemies: true, trace: true);
+
+    /// <summary>
     /// Natural contact golden `gold_contact` (objective item 3/7): mission 1 from
     /// `m1_standing.mss`, original input is `0:right@10-360` — NO jump, so the player walks
     /// right until the room-0x02 tower wall (the G14 finding: the walker sits behind that
