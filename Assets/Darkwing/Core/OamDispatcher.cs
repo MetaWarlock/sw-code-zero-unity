@@ -37,6 +37,9 @@ namespace Darkwing.Core
         /// Never set by the current flow — shift 45 wires it in
         /// <see cref="PlayerCore.MissionIntroCard"/>.</summary>
         public bool MissionCardHold;
+        public byte ReservedCursor; // $9B71 reserves the score records below $0298
+        public byte ReadShadowByte(int offset) => _shadow[offset];
+        public void WriteShadowByte(int offset, byte value) => _shadow[offset] = value;
 
         public OamDispatcher(byte[] bank5, ObjectSystem objects, Ppu ppu, PlayerCore player)
         {
@@ -88,6 +91,18 @@ namespace Darkwing.Core
         /// <summary>The NMI DMA: copy the $0200 shadow the last walk composed into the live
         /// sprite buffer. Called once per frame, before the HUD is laid out.</summary>
         public void PublishToOam() => System.Array.Copy(_shadow, _ppu.Oam, 256);
+
+        public void ResetShadow()
+        {
+            System.Array.Clear(_shadow, 0, _shadow.Length);
+            HideShadow();
+        }
+
+        /// <summary>$C21E changes only the Y bytes of the sprite shadow.</summary>
+        public void HideShadow()
+        {
+            for (int i = 0; i < 256; i += 4) _shadow[i] = 0xF8;
+        }
 
         /// <summary>Seed the shadow from a golden capture frame so a resumed run starts with the
         /// buffer the previous ROM walk left behind (harness only).</summary>
@@ -176,12 +191,12 @@ namespace Darkwing.Core
         /// content=f-1 plus HUD placement from RAM[f].$95, and 0 for every other pairing.</summary>
         public void RunFrame(byte parity)
         {
-            _oamCursor = MissionCardHold ? (byte)0xA0 : (byte)4;   // $CAB6 / $9607
+            _oamCursor = MissionCardHold ? (byte)0xA0 : ReservedCursor != 0 ? ReservedCursor : (byte)4;
             // $C21E, called just before the walk: hides every record from the cursor to the end
             // of the page, so each frame's unused tail is F8 plus last frame's tile/attr/X bytes.
             // During the mission-card phase the front 160 bytes hold the $9636 blit — $C21E's
             // wipe starts at the cursor, so only $02A0..$02FF is reset.
-            int wipeStart = MissionCardHold ? 0xA0 : 0;
+            int wipeStart = MissionCardHold ? 0xA0 : ReservedCursor;
             for (int i = wipeStart; i < 256; i += 4) _shadow[i] = 0xF8;
             // Player invulnerability blink runs first ($80E1-$80F1 side effects).
             bool playerBlinkSkip = false;
@@ -198,6 +213,7 @@ namespace Darkwing.Core
                 if (slot == HudComposer.Slot && HudActive && _hud != null)
                 {
                     var hs = _objects.Slots[slot];
+                    if (hs.Active) UpdateSlotCull(slot, hs); // $80C7 absolute HUD screen coordinates
                     // $C887 makes slot 1 the HUD block, so its RECORDS come from the HUD's own
                     // param block — but the ROM still walks the slot, so its anim timer keeps
                     // counting (gold_pause_m1: $0430[1] = 08,00,01,… under anim $1B, entry $B064
@@ -208,14 +224,13 @@ namespace Darkwing.Core
                         _player.ScrollStep = (byte)(hs.Flags & 0x40);   // $80F2-$80F9
                         AnimAdvance(hs);
                     }
-                    ComposeHud();
+                    if (hs.Active) ComposeHud();
                     continue;
                 }
                 var s = _objects.Slots[slot];
                 if (!s.Active) continue;              // $04D0 bit7
                 if (slot == 0 && playerBlinkSkip) continue;
-                UpdateSlotCull(slot, s);
-                if (!s.Active) continue;
+                if (!UpdateSlotCull(slot, s) || !s.Active) continue;
                 if (s.AnimNumber == 0) continue;      // $80DB/$80DE/$80E0: RTS before $8100, so an
                 // anim number of $00 advances no timer and composes no record — the pause panel's
                 // slot 3 carries $00 while no weapon is selected ($902C, $54 = 0).
@@ -226,7 +241,7 @@ namespace Darkwing.Core
         }
 
         // ---------- $802F-$80C6: relative update + culling ----------
-        private void UpdateSlotCull(int slot, ObjectSystem.Slot s)
+        private bool UpdateSlotCull(int slot, ObjectSystem.Slot s)
         {
             byte flags = s.Flags;
             if ((flags & 0x10) == 0)
@@ -239,7 +254,7 @@ namespace Darkwing.Core
                 s.ScreenX = (byte)s.X;
                 s.ScreenY = (byte)s.Y;
                 s.Flags = (byte)(flags | 0x80);
-                return;
+                return true;
             }
             // $8039-$8047 byte-exact: $803C SEC makes SBC subtract only M (A−M−1+C with C=1),
             // so the screen byte is a plain low-byte difference — no extra −1. The borrow it
@@ -256,11 +271,11 @@ namespace Darkwing.Core
                 // the object sits at a lower page than the scroll. So a slot stays alive
                 // up to one page + $0F px away and frees at one page + $10 px.
                 int mag = xNoBorrow ? s.ScreenX : (byte)(-s.ScreenX & 0xFF);
-                if (mag >= 0x10) { Deactivate(s); return; }              // $809F/$80A1 → $807A
+                if (mag >= 0x10) { Deactivate(s); return false; }        // $809F/$80A1 → $807A
                 if (s.AnimNumber is 0x13 or 0x14 or 0x17 or 0x18 or 0x19 or 0x29)
-                { Deactivate(s); return; }                                // $80A3-$80B8
+                { Deactivate(s); return false; }                          // $80A3-$80B8
                 s.Flags = (byte)(flags & 0x7F);                           // $80BE, no advance
-                return;
+                return false;
             }
             // $8049-$805A byte-exact: sy = $0510 - $FA; if it borrows, $8051 SBC #$0F
             // runs with C still clear (−$10 more) and $8053 CLC makes the row compare
@@ -272,18 +287,19 @@ namespace Darkwing.Core
             if (borrow) sy -= 0x10;
             s.ScreenY = (byte)(sy & 0xFF);                              // $0440
             int yHi = ((s.Y >> 8) - _player.ScrollYRow - (borrow ? 1 : 0)) & 0xFF;
-            if (yHi == 0) { s.Flags |= 0x80; return; }                   // $805C → $80D3
-            if (slot >= 1) { Deactivate(s); return; }                    // $805E/$8060
+            if (yHi == 0) { s.Flags |= 0x80; return true; }               // $805C → $80D3
+            if (slot >= 1) { Deactivate(s); return false; }              // $805E/$8060
             // $8062-$8078: slot 0 goes offscreen; it dies only when the row difference
             // is exactly 1 (the original PLA/CMP #$01), otherwise it stays active.
             s.Flags = (byte)(s.Flags & 0x7F);
-            if (yHi != 1) return;
+            if (yHi != 1) return true; // $806E BNE $80E1: player above camera still animates
             _player.InvulnFrames = 0;                                    // $806A STA $7C
             _player.State = 7;                                           // $806E STA $50
             // $8072 D0 00 / BNE $807A: the last LDA wrote #$07, so Z is always clear and
             // slot 0 ALWAYS takes the deactivate payload. Without it $CAFC would keep
             // running the state machine instead of the death service $CB01.
             Deactivate(s);
+            return false;
         }
 
         /// <summary>$807A-$808A: the four writes a culled slot gets. Behavior ($04E0)

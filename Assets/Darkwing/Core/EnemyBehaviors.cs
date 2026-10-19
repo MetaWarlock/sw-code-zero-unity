@@ -25,7 +25,17 @@ namespace Darkwing.Core
 
         public static void ResetRng()
         {
-            RngE4 = RngE5 = RngE6 = RngE7 = 0; // RAM init (doc §4: zero at power-on)
+            RngE4 = 0x88; RngE5 = RngE6 = RngE7 = 0; // RESET $C5A5-$C5A7 after RAM clear
+        }
+
+        /// <summary>Fixed bank $CAD8 -> $C2DE: feedback then four chained RORs.</summary>
+        public static void AdvanceRng()
+        {
+            byte a = RngE4, b = RngE5, c = RngE6, d = RngE7;
+            RngE4 = (byte)((a >> 1) | (((a ^ b) & 2) != 0 ? 0x80 : 0));
+            RngE5 = (byte)((b >> 1) | ((a & 1) << 7));
+            RngE6 = (byte)((c >> 1) | ((b & 1) << 7));
+            RngE7 = (byte)((d >> 1) | ((c & 1) << 7));
         }
 
         // E5 += E4 + C ($8D2A, $8D3F, $9648, $A153, $ADCA, $B405)
@@ -43,7 +53,7 @@ namespace Darkwing.Core
         private static void RngIncE6E7() { RngE6++; RngE7++; } // cheap bump (bank 6 $BAD0 class)
 
         // ---- per-site wrappers (BossBehaviors consumes these) ----
-        internal static int RngE5Mask7() => RngE5PlusE4(false) & 7;                 // $9959 ball
+        internal static int RngE5Mask7(bool carry = false) => RngE5PlusE4(carry) & 7; // $9959 ball
         internal static int RngE5Mask15() => RngE5PlusE4(false);                    // $AF74/$AAEC-class
         internal static int RngE7PlusE6Wrap() { RngE6 = RngE7PlusE6(false); return RngE6; } // E6 += E7
         internal static int RngE4PlusE6() { int v = RngE4 + RngE6; RngE4 = (byte)v; return RngE4; } // $AF0F-class
@@ -305,7 +315,7 @@ namespace Darkwing.Core
         /// <summary>$FA5C find free projectile slot 4..1 (returns -1 = none/CS).</summary>
         internal static int FindFreeProjSlot(EnemyDispatcher ctx)
         {
-            for (int i = 4; i >= 1; i--)
+            for (int i = 4; i >= 2; i--)
                 if (!ctx.Objects.Slots[i].Active) return i;
             return -1;
         }
@@ -316,6 +326,7 @@ namespace Darkwing.Core
             var t = ctx.Objects.Slots[y];
             SetAnim(t, anim);
             t.Active = true;
+            t.StateLow = 0x80; // $FA84-$FA89 re-arms the complete state byte
             t.Flags = 0x90;
         }
 
@@ -407,7 +418,7 @@ namespace Darkwing.Core
         {
             int v = (sbyte)s.YVelInt * 256 + s.YVelFrac;
             v -= gravityFrac;
-            if (v < -0x0800) v = -0x0800; // $F5EB clamp ($F8.00)
+            if ((byte)(v >> 8) >= 0x80 && (byte)(v >> 8) < 0xF9) v = -0x0800; // $F5EB clamps F8.xx too
             s.YVelInt = (sbyte)((v >> 8) & 0xFF);
             s.YVelFrac = (byte)v;
         }
@@ -565,7 +576,7 @@ namespace Darkwing.Core
 
         /// <summary>$F919 |player.Y - s.Y| (low byte).</summary>
         internal static int DistY(EnemyDispatcher ctx, ObjectSystem.Slot s) =>
-            Math.Abs((short)(ctx.Player.Y - s.Y)) & 0xFF;
+            Math.Abs((ctx.Player.Y & 0xFF) - (s.Y & 0xFF));
 
         /// <summary>$F93F 24-sector code to the player (0-$1F; table SectorTable).</summary>
         internal static int SectorToPlayer(EnemyDispatcher ctx, ObjectSystem.Slot s)
@@ -673,20 +684,20 @@ namespace Darkwing.Core
             byte debrisAnim;
             if (s.AnimNumber == 0x38)
             {
-                byte r = RngE6PlusE5(false); // $8745 E6 += E5
+                byte r = RngE6PlusE5(true); // $8745: carry from CMP #$38 (equal)
                 if (r < 0x50) return;
                 debrisAnim = DebrisVelFrac2[r & 0x1F];
             }
             else
             {
-                byte r = RngE6PlusE5(false); // $875F E6 += E5
+                byte r = RngE6PlusE5(s.AnimNumber >= 0x38); // $875F inherits CMP #$38
                 if (r < 0x7F) return;
                 debrisAnim = DebrisVelFrac[r & 0x1F];
             }
             SpawnInit(ctx, y, debrisAnim);
             t.Behavior = 0x0A;
             t.YVelFrac = 0xAB; t.YVelInt = -1;
-            byte r2 = RngE6PlusE7(false); // $8785 E6 += E7
+            byte r2 = RngE6PlusE7(true); // $8785: successful CMP #$50/#$7F, FA84 preserves carry
             if (r2 == 0x30 || r2 == 0x50 || r2 == 0x80 || r2 == 0xA0)
                 SpawnInit(ctx, y, 0x1E); // second-roll retask of the same slot
         }
@@ -739,27 +750,28 @@ namespace Darkwing.Core
             }
             if (s.AnimNumber == 0x14) return; // burst: static
             bool right = (s.Direction & 1) != 0;
-            if (ctx.Player.ScrollYRow == 4) // $2B == 4: vertical-scroll rooms clamp at edges
+            if (ctx.Player.ScrollState == 4) // $831D/$8342 read $2B, not camera row $FB
             {
-                if (right && s.X < 0xF0) { IntegrateXPos(s); return; }
-                if (!right && s.X >= 0x10) { IntegrateXNeg(s); return; }
+                if (right && (s.X & 0xFF) >= 0xF0) { IntegrateXPos(s); return; }
+                if (!right && (s.X & 0xFF) < 0x10) { IntegrateXNeg(s); return; }
             }
             int screenX = (s.X - ctx.Player.ScrollX) & 0xFF; // $832D unsigned compare
+            int hit;
             if (right)
             {
                 if (screenX >= 0xFC) { KillSlot(s); return; }  // $8337: >= $FC → kill
-                WalkRight(ctx, s, 0x0C, 1);
+                hit = WalkRight(ctx, s, 0x0C, 1);
             }
             else
             {
                 if (screenX < 8)
                 {
-                    if (s.X >= 4) { KillSlot(s); return; }     // $8363: abs X >= 4 → kill
+                    if ((ctx.Player.X & 0xFF) >= 4) { KillSlot(s); return; } // $835C reads player $04F0
+                    IntegrateXNeg(s); return;               // $8361 BCC $834F
                 }
-                WalkLeft(ctx, s, 0x0F, 1);
+                hit = WalkLeft(ctx, s, 0x0F, 1);
             }
-            // wall → burst ($836B: probe result 3..6 while moving)
-            int hit = Probe(ctx, s, right ? 0x24 : 0x27, 1); // $0C sets: right/left walls
+            // $836B consumes the move's $10; it performs no second probe.
             if (hit >= 3 && hit != 7)
             {
                 if (s.AnimNumber != 0x18) SetAnim(s, 0x14);
@@ -776,17 +788,25 @@ namespace Darkwing.Core
                 s.XVelInt = 0; s.YVelFrac = 0;
                 ctx.Player.DrainActiveMeter(0xFE); // $8982 add -$02 (lob cost)
                 ctx.Player.AddSavedMeter(0xFE);    // $890B
-                s.StateLow = 1;
+                s.StateLow++;
                 s.XVelFrac = 0x80;
                 s.YVelInt = 3; s.YVelFrac = 0;
             }
             if (s.AnimNumber == 0x14) return;
             if ((s.Direction & 1) != 0) IntegrateXPos(s); else IntegrateXNeg(s);
-            bool landed = FallAndLand(ctx, s, 6, 1); // probe (set 6, y 1) — $F2D7($12,$01)
+            bool landed = FallAndLand(ctx, s, 0x12, 1); // $83C2: A=$12, Y=$01
             if (landed)
             {
                 SetAnim(s, 0x14);
-                SpawnSplitClouds(ctx, s, new byte[] { 0x02, 0x01 }); // $841A table
+                // $83DB is distinct from the arrow's $8634 splitter: anim $18,
+                // behavior 1, and no writes to the child's old velocity/fraction bytes.
+                for (int n = 1; n >= 0; n--)
+                {
+                    int y = FindFreeProjSlot(ctx); if (y < 0) break;
+                    var t = ctx.Objects.Slots[y]; t.X = s.X; t.Y = s.Y;
+                    t.BehaviorParam = 1; SpawnInit(ctx, y, 0x18); t.Behavior = 1;
+                    t.Direction = n == 1 ? (byte)1 : (byte)2; // $841A
+                }
                 ctx.Sfx?.Invoke(0x24);
             }
         }
@@ -938,8 +958,7 @@ namespace Darkwing.Core
             }
             if ((s.StateLow & 0x02) == 0)
             {
-                if (s.AnimNumber == 0x5F) { s.Direction ^= 3; s.StateLow |= 0x02; }
-                else s.StateLow |= 0x02;
+                if (s.AnimNumber == 0x5F) { s.Direction ^= 3; s.StateLow++; } // $8702-$870E
             }
             BounceTail(s, ctx); // $87FE
         }
@@ -961,8 +980,8 @@ namespace Darkwing.Core
         /// <summary>$87FE shared tail: X by dir bit0 (own velocity), $F5C9 integrate.</summary>
         private static void BounceTail(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if ((s.Direction & 1) != 0) IntegrateXPos(s); else IntegrateXNeg(s);
-            MoveY(s);
+            if ((s.Direction & 1) != 0) IntegrateXNeg(s); else IntegrateXPos(s); // $8803-$880B
+            ApplyYVelocityDecay(s, ctx.Player.GravityFrac);              // $880E JSR $F5C9
         }
 
         /// <summary>$8837 behavior 8: lingering gas / bonus pickup. Touch → clear the slot
@@ -981,7 +1000,7 @@ namespace Darkwing.Core
             KillSlot(s);
             switch (s.AnimNumber)
             {
-                case 0x22: case 0x23: BonusEnergy(ctx, s, 5); break;                            // $89D6
+                case 0x22: case 0x23: RepairHealth(ctx, s); break;                            // $89D6
                 case 0x24: case 0x25: BonusPoints(ctx, s, s.AnimNumber == 0x24 ? 10 : 1); break; // $88D9
                 case 0x26: WeaponPickup(ctx, s, 2, 0x7B); break;                                 // $8865
                 case 0x27: WeaponPickup(ctx, s, 1, 0x7A); break;                                 // $8889
@@ -989,10 +1008,11 @@ namespace Darkwing.Core
             }
         }
 
-        private static void BonusEnergy(EnemyDispatcher ctx, ObjectSystem.Slot s, int units)
+        private static void RepairHealth(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
             ctx.Sfx?.Invoke(0x17);
-            ctx.Player.AddActiveGasUnits(units);
+            if (s.AnimNumber == 0x22) ctx.Player.HitLadder = 0;
+            else if (ctx.Player.HitLadder > 0 && ctx.Player.HitLadder < 4) ctx.Player.HitLadder--;
         }
 
         private static void BonusPoints(EnemyDispatcher ctx, ObjectSystem.Slot s, int units)
@@ -1064,7 +1084,7 @@ namespace Darkwing.Core
             if ((s.StateLow & 0x02) == 0)
             {
                 bool landed = FallAndLand(ctx, s, 0x28, 2);
-                if (landed) s.StateLow |= 0x02;
+                if (landed) s.StateLow++;                           // $8B9B INC $04D0,X ($81 -> $82)
                 return;
             }
             if (s.T480 == 0) { KillSlot(s); return; }
@@ -1196,41 +1216,35 @@ namespace Darkwing.Core
         {
             if ((s.StateLow & 0x0F) == 0)
             {
-                s.StateLow = 1;
-            }
-            if ((s.StateLow & 0x02) == 0)
-            {
                 if (DistY(ctx, s) < 8)
                 {
                     SetAnim(s, 0x46);
                     s.BehaviorParam = 0x49;
                     FacePlayerApply(ctx, s);
-                    s.StateLow |= 0x02;
+                    s.StateLow++;
                     return;
                 }
-                BayonetPace(s, ctx);
                 return;
             }
             // lunge ($8DCE): while T480 != 0 bob, else integrate + X move
             if (s.T480 == 0)
             {
-                int i = (s.T490 & 0x0F) * 2; // $8E95 phase → *2 into the vel table
-                byte f = HeavyVelFrac[i & 31];
-                byte hi = HeavyVelFrac[(i + 1) & 31];
-                byte vi = HeavyVelInt[i & 31];
-                byte vhi = HeavyVelInt[(i + 1) & 31];
-                s.YVelFrac = f;
-                s.YVelInt = (sbyte)vi;
-                s.XVelFrac = f; // $8E75/$8E76 pairs load $0530/$0540 from the same rows
-                s.XVelInt = vi;
-                if ((sbyte)hi < 0) { s.XVelFrac = (byte)(((~f) & 0xFF) + 1); s.XVelInt = (byte)(((~vi) & 0xFF) + 1); }
-                s.T490 = (byte)((s.T490 + 1) & 0x0F);
-                s.T480 = (byte)(AreaOr5(ctx) == 5 ? 0x0C : 0x06);
+                int i = BayonetPhases[s.T490] * 2; // bank6 $8E95
+                s.YVelFrac = HeavyVelFrac[i]; s.YVelInt = (sbyte)HeavyVelFrac[i + 1];
+                int vx = (short)(HeavyVelInt[i] | (HeavyVelInt[i + 1] << 8));
+                if (vx < 0) vx = -vx;
+                s.XVelFrac = (byte)vx; s.XVelInt = (byte)(vx >> 8);
+                s.T490++; if (s.T490 == 14) s.T490 = 0;
+                s.T480 = (byte)(ctx.Player.AreaId == 5 ? 0x0C : 0x06); // $8E1C LDA $31
             }
             s.T480--;
-            IntegrateYAdd(s);
+            int yf = s.YFrac + s.YVelFrac;                           // $8E30-$8E40, LOW byte only
+            s.YFrac = (byte)yf;
+            s.Y = (ushort)((s.Y & 0xFF00) | (byte)((byte)s.Y + (byte)s.YVelInt + (yf >> 8)));
             if ((s.Direction & 2) == 0) IntegrateXPos(s); else IntegrateXNeg(s);
         }
+
+        private static readonly byte[] BayonetPhases = { 9,10,11,12,13,14,15,1,2,3,4,5,6,7 }; // $8E95
 
         private static void BayonetPace(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
@@ -1286,7 +1300,7 @@ namespace Darkwing.Core
             HeavyWobble(s);                                        // $8EFB-$8F22
             if (s.AnimFrame == 3 && s.AnimTimer == 0x10)           // $8F25-$8F31
             {
-                s.StateLow |= 0x02;                                // $8F33 INC $04D0,X
+                s.StateLow++;                                     // $8F33 INC $04D0,X ($81 -> $82)
                 SetAnim(s, 0x5E);                                  // $8F36-$8F38
                 HeavySpawnPuff(ctx, s);                            // $8F3B JSR $9028
             }
@@ -1359,7 +1373,7 @@ namespace Darkwing.Core
                 s.Direction ^= 3;                                 // $8FBC-$8FBE EOR #$03
                 s.Health = s.T4A0;                                // $8FC1-$8FC4
                 SetAnim(s, 0x5C);                                 // $8FC7-$8FC9
-                ctx.Sfx?.Invoke(0x08);                            // $8FCC JSR $F808
+                ApplyFacing(s);                            // $8FCC JSR $F808
             }
         }
 
@@ -1368,7 +1382,7 @@ namespace Darkwing.Core
             // $8F54: charge jump arc (F2D7 $28,1) + chase move
             bool landed = FallAndLand(ctx, s, 0x28, 1);
             if ((s.Direction & 1) != 0) WalkRight(ctx, s, 0, 1); else WalkLeft(ctx, s, 3, 1);
-            if (landed)
+            if (landed && ctx.ProbeResult >= 3)                     // $8F73-$8F79: AFTER the side probe
             {
                 s.T4A0 = s.Health;
                 s.Health = 0x80; // gas-immune while airborne
@@ -1391,8 +1405,8 @@ namespace Darkwing.Core
             t.Direction = (byte)(s.Direction ^ 3);
         }
 
-        /// <summary>$906A behavior 10: wall climber frog (state table $90CD: 0 init,
-        /// 1 climb, 2 hop). Shares the swimmer/pipe family helpers.</summary>
+        /// <summary>$906A behavior 10: rail handle. $90CD maps init / wait / move
+        /// to $907D / $9331 / $909D; $9379 owns the player's grab and release.</summary>
         private static void ClimberFrog(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             switch (s.StateLow & 0x0F)
@@ -1402,14 +1416,17 @@ namespace Darkwing.Core
                     s.T480 = 1; s.T4A0 = 6; s.Direction = 1;
                     s.StateLow = 1;
                     break;
-                case 1: // $909D hop-walk (F200/F254 $2C/$2E)
-                    PipeHopTail(s, ctx);
-                    if ((s.Direction & 1) != 0) WalkRight(ctx, s, 0x2C, 0);
-                    else WalkLeft(ctx, s, 0x2E, 0);
-                    if (ctx.ProbeResult != 0) { ClimberTurn(s, ctx); return; }
+                case 1: // $9331: wait until the player grabs the handle
+                    s.AnimFrame = 0; s.AnimTimer = 0;
+                    SwimmerChase(s, ctx);
+                    if (s.T490 != 0) s.StateLow++;
                     break;
-                case 2: // $906A's hop arc — falls through the swimmer $9341 code
-                    SwimRise(s, ctx);
+                case 2: // $909D: move along the rail, then carry the player
+                    PipeHopTail(s, ctx);
+                    if (s.Direction == 2) WalkLeft(ctx, s, 0x2E, 1);
+                    else WalkRight(ctx, s, 0x2C, 1);
+                    if (ctx.ProbeResult != 0) ClimberTurn(s, ctx);
+                    SwimmerChase(s, ctx);
                     break;
             }
         }
@@ -1417,8 +1434,7 @@ namespace Darkwing.Core
         private static void ClimberTurn(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             s.Direction ^= 3;
-            ctx.Sfx?.Invoke(0x08);
-            PipeHopTail(s, ctx);
+            ApplyFacing(s);
         }
 
         /// <summary>$90D3 behaviors 11/16: the carried/grabbed enemy controller.
@@ -1578,11 +1594,10 @@ namespace Darkwing.Core
 
         private static readonly byte[] PipePopperDirs = { 0x01, 0x02 }; // $92E4
 
-        private static void PipeHopTail(ObjectSystem.Slot s, EnemyDispatcher ctx) { /* shared hop tail */ }
-
-        private static void SwimRise(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        private static void PipeHopTail(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            IntegrateYSub(s);
+            if (s.T4A0 == 0) { ctx.Sfx?.Invoke(0x27); s.T4A0 = 6; }
+            s.T4A0--;
         }
 
         /// <summary>$92E6 behaviors 13/14/19/1C: swimmer family (state table $9418:
@@ -1603,34 +1618,29 @@ namespace Darkwing.Core
                     break;
                 case 1: // $9331
                     s.AnimFrame = 0; s.AnimTimer = 0; // $F869
-                    SwimmerAggro(s, ctx);
+                    SwimmerChase(s, ctx);
+                    if (s.T490 != 0) s.StateLow++;
                     break;
                 case 2: // $9341
-                    SwimmerAggro(s, ctx);
+                    PipeHopTail(s, ctx);
+                    SwimmerChase(s, ctx);
                     IntegrateXPos(s);
                     s.T4B0--;
-                    if (s.T4B0 == 0) s.StateLow = 3;
+                    if (s.T4B0 == 0)
+                    {
+                        if (s.T490 != 0 && ctx.Player.YVelInt == -1)
+                        {
+                            ctx.Player.CutVelocity(); ctx.Player.State = 1;
+                            s.T490 = 0; s.YVelFrac = 0; s.YVelInt = 0;
+                        }
+                        s.StateLow++;
+                    }
                     break;
                 case 3: // $9372 rise + chase
-                    MoveY(s);
+                    ApplyYVelocityDecay(s, ctx.Player.GravityFrac);
                     IntegrateXPos(s);
-                    SwimmerChase(s, ctx);
-                    break;
-                case 4: // $9892 grabbed-carrier states (shared with behavior 46)
-                    GrabbedShared(s, ctx);
                     break;
             }
-        }
-
-        private static void SwimmerAggro(ObjectSystem.Slot s, EnemyDispatcher ctx)
-        {
-            s.T490 = 0; s.T4B0 = 0; s.XVelFrac = 0; s.XVelInt = 1;
-            s.T480 = 1; s.T4A0 = 6;
-            s.StateLow = 2;
-            s.T4B0 = s.Behavior == 0x13 ? SwimmerWalkLen[0]
-                   : s.Behavior == 0x14 ? SwimmerWalkLen[1]
-                   : s.Behavior == 0x19 ? SwimmerWalkLen[2]
-                   : SwimmerWalkLen[3];
         }
 
         private static void SwimmerChase(ObjectSystem.Slot s, EnemyDispatcher ctx)
@@ -1640,25 +1650,29 @@ namespace Darkwing.Core
             if (s.T480 != 0) return;
             if (s.T490 == 0)
             {
-                if (s.X != ctx.Player.X) { s.T480 = 1; return; }
+                if ((s.X >> 8) != (ctx.Player.X >> 8)) { s.T480 = 1; return; }
             }
-            if (s.T490 == 0 && ctx.Player.YVelInt >= 0) { s.T480 = 1; return; }
-            if (s.T490 != 0) { s.T490 = 0; if (ctx.Player.Y == 4) { s.T480 = 0x1E; s.T490 = 0; ctx.Player.State = 1; return; } }
+            if (s.T490 != 0)
+            {
+                if (ctx.Player.YVelInt >= 0) { s.T480 = 1; return; }
+                s.T490 = 0;
+                if (ctx.Player.PressedThisFrame == 4)
+                { s.T480 = 0x1E; ctx.Player.State = 1; return; }
+            }
             if (ctx.Player.State == 7) { s.T480 = 1; return; }
             if (DistX(ctx, s) >= 8) { s.T480 = 1; return; }
             int py = ctx.Player.Y;
-            ctx.Player.Y = (ushort)(py - 0x12);
+            ctx.Player.Y = (ushort)((py & 0xFF00) | (byte)(py - 0x12));
             if (DistY(ctx, s) < 5)
             {
-                ctx.Player.Y = (ushort)(py - 0x12);
                 ctx.Player.State = 4;
                 ctx.Player.YVelInt = -1;
                 s.T490 = 1;
                 ctx.Player.X = s.X;
-                ctx.Player.Y = (ushort)(s.Y + 0x16);
+                ctx.Player.Y = (ushort)((s.Y & 0xFF00) | (byte)(s.Y + 0x16));
                 s.T480 = 1;
             }
-            else ctx.Player.Y = (ushort)py;
+            else { ctx.Player.Y = (ushort)py; s.T480 = 1; } // $93F0 rearms every failed probe
         }
 
         private static void GrabbedShared(ObjectSystem.Slot s, EnemyDispatcher ctx)
@@ -1754,6 +1768,18 @@ namespace Darkwing.Core
                 if (s.T480 == 0)
                 {
                     if (s.AnimNumber != 0x4D) { SetAnim(s, 0x4D); return; }
+                    FacePlayerApply(ctx, s);                    // $9454
+                    if (s.Flags is not 0x50 and not 0x10)
+                    {
+                        if (s.AnimFrame == 3 && s.AnimTimer == 4)
+                        {
+                            s.Health ^= 0x80;                    // $9470-$9478
+                            SpawnHopperShot(s, ctx);
+                        }
+                        if (s.AnimFrame != 0x0B || s.AnimTimer != 4) return;
+                    }
+                    SetAnim(s, 0x4C); s.Health |= 0x80;
+                    s.T490 = 0x1E; s.StateLow++;
                     return;
                 }
                 FacePlayerApply(ctx, s); // $F81D
@@ -1763,20 +1789,32 @@ namespace Darkwing.Core
             // burst state ($949F)
             if (s.T490 == 0)
             {
-                s.StateLow = 1;
+                s.StateLow--;
                 s.T480 = HopperDelay[RngE6PlusE4(false) & 0x03];
-                return;
             }
             s.T490--;
         }
 
-        /// <summary>$950B behavior 18: sway swinger. Horizontal 1 px/f; timer $32 →
+        private static void SpawnHopperShot(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            int y = FindFreeSlot(ctx);                           // $94B1
+            if (y < 0) return;
+            var t = ctx.Objects.Slots[y];
+            t.Direction = s.Direction;
+            t.X = (ushort)(s.X + ((s.Direction & 2) != 0 ? -0x12 : 0x12));
+            t.Y = (ushort)((s.Y & 0xFF00) | (byte)(s.Y - 1));
+            SpawnInit(ctx, y, 0x4E);
+            t.Behavior = 0x0B; t.BehaviorParam = 0x0A;
+            InitChildVel(t);
+        }
+
+        /// <summary>$950B behavior 18: sway swinger. Horizontal 0.5 px/f; timer $32 →
         /// reverse + SFX cue; timer $65 re-arm.</summary>
         private static void SwayWick(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             if ((s.StateLow & 0x0F) == 0)
             {
-                s.XVelInt = 0; s.XVelFrac = 0;
+                s.XVelInt = 0; s.XVelFrac = 0x80; // $9512/$9515/$9517
                 s.T480 = 0x32;
                 s.StateLow = 1;
             }
@@ -1784,7 +1822,7 @@ namespace Darkwing.Core
             if (s.T480 == 0)
             {
                 s.Direction ^= 3;
-                ctx.Sfx?.Invoke(0x08); // $F808 site cue
+                ApplyFacing(s); // $F808 site cue
                 s.T480 = 0x65;
             }
             s.T480--;
@@ -1955,7 +1993,7 @@ namespace Darkwing.Core
                 {
                     s.T480 = 0x31;
                     s.Direction ^= 3;
-                    ctx.Sfx?.Invoke(0x08); // $F808
+                    ApplyFacing(s); // $F808
                 }
                 s.T480--;
                 if (s.Flags == 0x50 || s.Flags == 0x10) return;
@@ -2321,7 +2359,7 @@ namespace Darkwing.Core
                 s.XVelInt = FlyerDiveInt[SectorTable[SectorToPlayer(ctx, s) & 31] & 0x0F];
                 s.YVelFrac = FlyerRiseFrac[SectorTable[SectorToPlayer(ctx, s) & 31] & 0x0F];
                 s.YVelInt = (sbyte)FlyerRiseInt[SectorTable[SectorToPlayer(ctx, s) & 31] & 0x0F];
-                ctx.Sfx?.Invoke(0x08); // $F808
+                ApplyFacing(s); // $F808
                 s.T490++;
                 return;
             }
@@ -2376,7 +2414,7 @@ namespace Darkwing.Core
                 {
                     s.Direction ^= 3;
                     s.T480 = 0x50;
-                    ctx.Sfx?.Invoke(0x08); // $F808
+                    ApplyFacing(s); // $F808
                     s.StateLow |= 0x02;
                     return;
                 }
@@ -2867,7 +2905,7 @@ namespace Darkwing.Core
             s.XVelInt = AimInt[idx];
             s.YVelFrac = AimYFrac[idx];
             s.YVelInt = (sbyte)AimYInt[idx];
-            ctx.Sfx?.Invoke(0x08); // $F808
+            ApplyFacing(s); // $F808
             s.StateLow |= 0x02;
         }
 
@@ -3037,7 +3075,7 @@ namespace Darkwing.Core
                 s.T490 = 0x20;
                 s.XVelFrac = (byte)0x80; s.XVelInt = 1;
                 if (DistX(ctx, s) < 0) s.T480++;
-                ctx.Sfx?.Invoke(0x08); // $F808
+                ApplyFacing(s); // $F808
                 s.StateLow = 1;
             }
             s.Health |= 0x80;
@@ -3062,7 +3100,7 @@ namespace Darkwing.Core
             s.T490 = DrifterDelay[i];
             s.T480 ^= 1;
             s.Direction ^= 3;
-            ctx.Sfx?.Invoke(0x08); // $F808
+            ApplyFacing(s); // $F808
         }
 
         /// <summary>$ADF2 behavior 34: dive bomber — hop arcs (F2D7 $56,$01) with
@@ -3515,13 +3553,13 @@ namespace Darkwing.Core
     {
         public static byte DamageAccum;   // $EE (universal HP: >= $10 = defeated)
         public static byte InvulnTimer;   // $ED
-        public static byte DefeatTimer;   // $3B death cinematic countdown
-        public static int ProjectileSlot; // $EF (last projectile slot that hit)
+        public static byte DefeatTimer;   // $3B boss entrance countdown (shared with Player.IntroHoldFlag)
+        public static int ProjectileSlot; // $EF (boss slot that owns the hit countdown)
 
         public static void Reset()
         {
             DamageAccum = InvulnTimer = DefeatTimer = 0;
-            ProjectileSlot = -1;
+            ProjectileSlot = 0; // RESET clears RAM $EF; no owner is read while $ED is zero
         }
 
         /// <summary>$B39E BossTakeProjectileHit: same 1/2/3 damage rule as enemies,
@@ -3530,23 +3568,25 @@ namespace Darkwing.Core
         {
             if (InvulnTimer != 0) return false;
             if (!ctx.ProjectileOverlapHit(s)) return false;
-            ProjectileSlot = ctx.ProjSlot;
-            byte dmg = ctx.ProjectileDamage(ctx.Objects.Slots[ctx.ProjSlot].AnimNumber);
+            ProjectileSlot = System.Array.IndexOf(ctx.Objects.Slots, s); // $B3F2 STX $EF
+            var shot = ctx.Objects.Slots[ctx.ProjSlot];
+            byte dmg = ctx.ProjectileDamage(shot.AnimNumber);
             ctx.Sfx?.Invoke(0x1D);
             DamageAccum += dmg;
             InvulnTimer = 0x1E;
-            ctx.SpawnHitPuff();
+            if (shot.Behavior != 7 && shot.AnimNumber != 0x17 && shot.AnimNumber != 0x18)
+                ctx.SpawnHitPuff(); // $B3D7-$B3EB: persistent clouds/bolts keep travelling
             return true;
         }
 
         /// <summary>$B36A hit-flash toggle; >= 16 damage → $B315 BossDefeat.</summary>
         public static void HitFlash(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            if (InvulnTimer == 0) return;
-            if (((InvulnTimer >> 3) & 1) != 0) s.Flags &= 0xF7;
+            if (DamageAccum >= 0x10) { BossDefeat(ctx, s); return; }
+            if (InvulnTimer == 0) { s.Flags &= 0xF7; return; }
+            if ((InvulnTimer & 4) != 0) s.Flags &= 0xF7; // three LSRs leave original bit 2 in C
             else s.Flags |= 0x08;
-            InvulnTimer--;
-            if (DamageAccum >= 0x10) BossDefeat(ctx, s);
+            if (ProjectileSlot >= 0 && ctx.Objects.Slots[ProjectileSlot] == s) InvulnTimer--;
         }
 
         /// <summary>$B315 BossDefeat: sweep slots 15..1 (the $51/$54/$57 cores
@@ -3557,14 +3597,16 @@ namespace Darkwing.Core
             {
                 var t = ctx.Objects.Slots[i];
                 if (!t.Active) continue;
+                t.BehaviorParam = 0;
                 if (t.Behavior is 0x51 or 0x54 or 0x57) continue;
-                EnemyBehaviors.KillSlot(t);
+                t.Active = false; t.StateLow = t.Behavior = 0; // $B330 keeps flags/animation/coordinates
             }
             s.Behavior = 0x4F;
-            s.StateLow = 0; s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;
+            s.Active = true; s.StateLow = 0x80;
+            ctx.Objects.Slots[0].Active = true; ctx.Objects.Slots[0].StateLow = 0x80;
+            s.T480 = 0; s.T490 = 0; s.T4A0 = 0; s.T4B0 = 0;
             ctx.Player.YVelFrac = 0xAB; ctx.Player.YVelInt = -1; // $F607 knockback
             if (ctx.Player.State != 6 && ctx.Player.State != 7) ctx.Player.State = 0x0F;
-            ctx.BossDefeated?.Invoke();
         }
 
         /// <summary>$B4BA child-object projectile check: weak projectiles (anim
@@ -3599,6 +3641,7 @@ namespace Darkwing.Core
                     EnemyBehaviors.SetAnim(s, BossFightAnims[ctx.Player.AreaId]);   // $F88A LDY $31 / $F88C / $F88F JSR $FA6C
                 }
                 DefeatTimer--;                                              // $9855 DEC $3B
+                ctx.Player.IntroHoldFlag = DefeatTimer;
                 if (behavior is 0x51 or 0x57 or 0x5A or 0x5F or 0x60)
                 { s.AnimFrame = 0; s.AnimTimer = 0; }                        // $F869: STA $0410,X / $0430,X
                 return;
@@ -3670,16 +3713,18 @@ namespace Darkwing.Core
         /// player state $15.</summary>
         private static void DefeatPop(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            s.Flags |= 0xD0;
-            ctx.Sfx?.Invoke(0x1E);
-            if (s.StateLow == 0)
+            ctx.Objects.Slots[0].AnimFrame = ctx.Objects.Slots[0].AnimTimer = 0;
+            s.BehaviorParam = s.AnimFrame = s.AnimTimer = 0;
+            if ((s.StateLow & 15) == 0)
             {
-                s.YVelFrac = 0x44; s.YVelInt = 3;
-                s.StateLow = 1;
+                s.XVelInt = 0; s.XVelFrac = 0x80;
+                s.YVelFrac = 0x44; s.YVelInt = 3; s.Flags = 0xD0;
+                ctx.Sfx?.Invoke(0x1E); s.StateLow++;
             }
-            EnemyBehaviors.IntegrateYSub(s);
-            if ((s.Direction & 1) != 0) EnemyBehaviors.IntegrateXPos(s); else EnemyBehaviors.IntegrateXNeg(s);
-            if (s.Y >= 0xE0) ctx.Player.State = 0x15;
+            if ((s.Direction & 1) != 0) { s.Flags |= 0x40; EnemyBehaviors.IntegrateXPos(s); }
+            else { s.Flags &= 0xBF; EnemyBehaviors.IntegrateXNeg(s); }
+            EnemyBehaviors.ApplyYVelocityDecay(s, ctx.Player.GravityFrac);
+            if ((byte)s.Y >= 0xE0) ctx.Player.State = 0x15;
         }
 
         /// <summary>$8CE6 spawner: timed child spawn (anim $33).</summary>
@@ -3919,7 +3964,7 @@ namespace Darkwing.Core
                 s.T480 = 0xFF;                                         // $98D6
                 return;
             }
-            int i = EnemyBehaviors.RngE5Mask7();                       // $98DA E5 += E4, AND #$07
+            int i = EnemyBehaviors.RngE5Mask7(row >= 0x50);           // $98DA ADC keeps carry from CMP #$50
             s.YVelFrac = BallKickFrac[i];                              // $98E3/$98E6 ← $9959
             s.YVelInt = (sbyte)BallKickInt[i];                         // $98E9/$98EC ← $9961
             s.T480 = BallKickMode[i];                                  // $98EF/$98F2 ← $9969

@@ -88,6 +88,8 @@ namespace Darkwing.Core
             _pauseSavedInvuln = Player.InvulnFrames;     // $8F00/$8F02: LDA $7C / PHA
             _pauseBlock[0x1E] = Player.GasEnergyHi;      // $8F03/$8F05: $60 → $05E0
             _pauseBlock[0x20] = Player.GasEnergyLo;      // $8F08/$8F0A: $61 → $05E2
+            for(int i=0;i<5;i++) _pauseBlock[2+i*2]=Player.ScoreDigits[i];
+            _pauseBlock[0x22]=Player.EnergyColLeft; _pauseBlock[0x24]=Player.EnergyColRight;
             PauseWeaponName(Player.WeaponSelected);      // $8F0D JSR $904E
 
             for (int x = 5; x >= 0; x--)                 // $8F10 LDX #$05 … $8F7F DEX / BPL

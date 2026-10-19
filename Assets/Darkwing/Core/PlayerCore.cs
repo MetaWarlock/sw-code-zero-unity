@@ -16,6 +16,7 @@ namespace Darkwing.Core
         public byte StateTimer;         // $51
         public byte DirBits;            // $52 (latched $16&3)
         public byte WeaponActive;       // $53
+        public byte PressedThisFrame { get; private set; } // $14, read by carried-object release
         public byte WeaponSelected;     // $54
         public byte AirSubState;        // $56
         public byte SavedState;         // $58
@@ -78,7 +79,14 @@ namespace Darkwing.Core
         public byte PendingScreenEffect;// $1A screen-effect trigger ($8A/$8B/$88/$FF)
         public byte PendingSpawnType;   // $042E boss drop request (Bushroot vines $52)
         public byte PendingMissionFlag; // $66 door mission flag ($FF/$F0)
-        public byte BonusDigits;        // $05C4-$05CC pickup cascade (mod-10 accumulator)
+        public readonly byte[] ScoreDigits = { 0x70,0x70,0x70,0x70,0x70 }; // $05C4/$C6/$C8/$CA/$CC
+        public int ScoreUnits
+        {
+            get { int value=0; foreach(byte d in ScoreDigits) value=value*10+(d&15); return value; }
+            set { int v=Math.Max(0,Math.Min(99999,value)); for(int i=4;i>=0;i--){ScoreDigits[i]=(byte)(0x70+v%10);v/=10;} }
+        }
+        public byte BonusDigits { get => (byte)(ScoreUnits%100); set => ScoreUnits=value; }
+        public byte ScoreLifeState; // $6B
         public byte TilesetBank;        // $36 section metatile-set bank ($E38F)
         public byte SectionFlag3D;      // $3D palette-patch script id, bit7 = active (was G16)
         public byte PalStep3E;          // $3E frame counter inside the current $EFBE script step
@@ -92,10 +100,14 @@ namespace Darkwing.Core
         public ITileMap TileMap { get => _tiles; set => _tiles = value; }
         public ObjectSystem Objects;  // slot 0 shares the player's anim state (original RAM model)
         public System.Action<int> Sfx; // wired to DarkwingGame.PlaySfx ($F84E/$F850 sites)
+        public System.Action<int> Sound; // generic $F84E, including victory music
         /// <summary>$9605: the mission intro card owns the OAM page while it is on screen, so the
         /// card's blit ($961D JSR $9636) and the cursor prime ($9607 STY $97 / JSR $F89A) both act
         /// on the dispatcher. Null until the host wires it.</summary>
         public OamDispatcher Oam;
+        public System.Action ResetHud;
+        public System.Action RestoreHud;
+        private byte _dropSupportTimer; // $9D in $D590-$D625
         /// <summary>Raw PRG bank 2, mapped at $8000. <see cref="OamDispatcher.BlitMissionCard"/> reads
         /// the card's table quartets from it, so a missing bank disables the blit rather than faulting.</summary>
         public byte[] PrgBank2;
@@ -180,13 +192,23 @@ namespace Darkwing.Core
         private static readonly sbyte[] SideYOff = { -11, 0, 11 };
         private static readonly sbyte[] HookXOff = { -1, 0, 1 };   // $ED19[58..60]
 
+        private int ProbeY(int offset)
+        {
+            // $EC16-$EC4B: each page holds 240 pixels, including the probe offset.
+            // Feet at $01E4 + 12 therefore sample $0200, not the unused $01F0 strip.
+            int lo = (Y & 0xFF) + offset, hi = Y & 0xFF00;
+            if (lo < 0) { lo = (lo - 0x10) & 0xFF; hi = (hi - 0x100) & 0xFFFF; }
+            else if (lo >= 0xF0) { lo -= 0xF0; hi = (hi + 0x100) & 0xFFFF; }
+            return hi | lo;
+        }
+
         public byte ProbeFloor()  // $40=6 → points 6-8
         {
             byte result = 0;
             for (int i = 0; i < 3; i++)
             {
                 int px = (short)(X + FloorXOff[i]);
-                int py = (short)(Y + 12);
+                int py = ProbeY(12);
                 byte t = TileTypeAt(px, py);
                 if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
                 result = Math.Max(result, t);
@@ -201,7 +223,7 @@ namespace Darkwing.Core
             for (int i = 0; i < 3; i++)
             {
                 int px = (short)(X + FloorXOff[i]);
-                int py = (short)(Y - 12);
+                int py = ProbeY(-12);
                 byte t = TileTypeAt(px, py);
                 if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
                 result = Math.Max(result, t);
@@ -219,7 +241,7 @@ namespace Darkwing.Core
             for (int i = 0; i < 3; i++)
             {
                 int px = (short)(X + HookXOff[i]);
-                int py = (short)(Y - 20);
+                int py = ProbeY(-20);
                 byte t = TileTypeAt(px, py);
                 if (i == 1) _probe43 = t;         // point 59 is the middle sample
                 result = Math.Max(result, t);
@@ -235,7 +257,7 @@ namespace Darkwing.Core
             for (int i = 0; i < 3; i++)
             {
                 int px = (short)(X + dx);
-                int py = (short)(Y + SideYOff[i]);
+                int py = ProbeY(SideYOff[i]);
                 byte t = TileTypeAt(px, py);
                 if (i == 1) _probe43 = t;         // $EB6B STA $0042,Y — средняя точка = $43
                 result = Math.Max(result, t);
@@ -299,6 +321,7 @@ namespace Darkwing.Core
             ScrollX = (ushort)(col << 8);                   // $FC=0 ($DE3A) + $FD
             X = (ushort)((col << 8) | 0x30);                // $0500/$04F0=$30 ($E3D1)
             Y = (ushort)((row << 8) | 0x06);                // $0520/$0510=$06 ($E3CC)
+            if (Objects != null) { Objects.Slots[0].X=X; Objects.Slots[0].Y=Y; }
             ChrLatch0 = t.ChrRequest0(id);                  // $1A ($E3AB)
             ChrLatch1 = t.ChrRequest1(id);                  // $1B ($E3B0)
             SectionFlag3D = t.Flag3D(id);                   // $3D ($E3B5)
@@ -323,13 +346,15 @@ namespace Darkwing.Core
                                                             // $E670 flip block out of the first
                                                             // scroll pass after a reload)
             LastRedrawScroll = 0;                           // $28 ($DE3E) — without this a reload
+            LastVerticalRedraw = 0; VerticalRedrawRow = 0; PrevVerticalMode = 4; // $29/$2A/$21
                                                             // keeps the death frame's redraw mark,
                                                             // inflating the first $E650 pass count
                                                             // and arming $23 early (G42)
-            StateTimer = 0;                                 // $51 ($DE5A clears $50)
+            State = 0;                                      // $DE5A clears $50, preserves $51
             AirSubState = 0;                                // $56
             SavedState = 0;                                 // $58
             HopTimer = 0;                                   // $5A
+            _dropSupportTimer = 0;                          // $9D
             LandedFlag = 0;                                 // $5C
             GasActive = 0;                                  // $5F
             DeathFlag = 0;                                  // $64
@@ -431,10 +456,18 @@ namespace Darkwing.Core
                 s0.AnimNumber = 0x2C;                       // $0420 ($DDDE JSR $FA78, A=$2C)
                 s0.AnimTimer = 0;                           // $0430
                 s0.AnimFrame = 0;                           // $0410
+                s0.X = X; s0.Y = Y;                         // shared $04F0/$0510 coordinate storage
+                if (w.Id >= 7)
+                {
+                    if (w.Id == 8 || w.Id == 10) Flags = s0.Flags = 0xD8; // $DE09-$DE1B
+                    return;
+                }
                 s0.StateLow = 0x80;                         // $04D0 ($DDF1, $31 < 7)
                 s0.Active = true;
+                s0.Flags = 0xD0;
             }
             Flags = 0xD0;                                   // $0400 ($DDF6, $31 < 7)
+            FacingRight = 0x40;
             CutVelocity();                                  // $F5FC → FF,AB ($DDF9)
             State = 0x09;                                   // $50 ($DDFE) — map entry, not the $12 exit
             _matLanded = 0;                                 // $04D0 & $0F ($DDF1 seeds $80)
@@ -504,6 +537,38 @@ namespace Darkwing.Core
         public byte LastRedrawScroll;    // $28 (scroll X at the end of the last redraw)
         public byte ColsToStream;        // $1F (column passes queued by the driver)
         public byte PrevScrollMode;      // $20 ($2F as of the last queued pass)
+        public byte LastVerticalRedraw;  // $29
+        public byte VerticalRedrawRow;   // $2A (tile row cursor, 0..29)
+        public byte PrevVerticalMode = 4;// $21
+
+        /// <summary>$E7C6/$E936: vertical stream cursors, including incoming-room changes.
+        /// $E936 can run twice on a direction change at row 0, before any row is drawn.</summary>
+        public void VerticalStreamPass()
+        {
+            int d = (sbyte)(byte)(ScrollY - LastVerticalRedraw);
+            int passes = (Math.Abs(d) & 15) >> 3;
+            if (passes == 0) return;
+            bool down = (ScrollMode & 4) != 0;
+            int step = down ? 1 : -1;
+            void NextRoom() => CellIndexNext = (byte)(CellIndexNext + ((ScrollMode & 8) != 0 ? -RowStride : RowStride));
+            if (ScrollMode != PrevVerticalMode)
+            {
+                int row = (byte)(VerticalRedrawRow + step);
+                if (row >= 30) { row = (byte)(row + (down ? 2 : -2)) & 31; NextRoom(); }
+                VerticalRedrawRow = (byte)row;
+                NextRoom();
+            }
+            PrevVerticalMode = ScrollMode;
+            while (passes-- > 0)
+            {
+                int row = (byte)(VerticalRedrawRow + step);
+                if (row >= 30) { NextRoom(); row = down ? 0 : 29; }
+                VerticalRedrawRow = (byte)row;
+                int last = (byte)(LastVerticalRedraw + (down ? 8 : -8));
+                if (last >= 240) last = (byte)(last + (down ? 16 : -16));
+                LastVerticalRedraw = (byte)last;
+            }
+        }
 
         /// <summary>$E7BA — the $23 step used when the direction byte changes, indexed by
         /// ($2F&amp;2) plus one more when the $25 bit7 flips.</summary>
@@ -564,6 +629,7 @@ namespace Darkwing.Core
             _cardWait = 0;                                  // a $12 entry never runs $9600
             _cardPhase = false;
             Flags = 0xD0;                                   // $0400 ($E3FA)
+            FacingRight = 0x40;
             if (Objects != null)
             {
                 var s0 = Objects.Slots[0];
@@ -572,10 +638,15 @@ namespace Darkwing.Core
                 s0.AnimFrame = 0;                           // $0410
                 s0.StateLow = 0x80;                         // $04D0=$80 ($E3F5) — arms the $CAFC gate
                 s0.Active = true;
+                s0.X = X; s0.Y = Y; s0.Flags = Flags;
             }
             CutVelocity();                                  // $F5FC → FF,AB ($E401)
             State = 0x12;                                   // $50 ($E406)
             if (ContinueCount != 0) HitLadder = 0;          // $E40A BEQ $E43D / $E40C JSR $C850
+            if (ContinueCount != 0) ResetHud?.Invoke();
+            else RestoreHud?.Invoke();                    // $E43D JSR $C887, keeps the heart
+            ContinueCount = WeaponActive = 0;             // $E448-$E44C
+            ActiveGasEnergyHi = ActiveGasEnergyLo = 0;     // $E440/$E442/$E445
         }
 
         // ---------- Camera ($DA70/$DC19/$DBCE) ----------
@@ -601,7 +672,8 @@ namespace Darkwing.Core
             }
             byte ahead = (byte)(X - ScrollX);                       // $00 ($DA7F-$DA85)
             int moved = X - PrevPlayerX;                            // $04 + high byte ($DA87-$DA96)
-            PrevPlayerX = X;
+            try
+            {
             if (moved == 0) return;
             if (moved > 0)
             {
@@ -627,6 +699,13 @@ namespace Darkwing.Core
                     if (ahead < 0x10) X = (ushort)(ScrollX + 0x10);     // $DAB7-$DAC9 clamp: camera refused
                 }                                                       // $DAB3 BCS $DAFD: a scroll that SUCCEEDS
             }                                                           // skips the clamp entirely
+            }
+            finally
+            {
+                // $CA5C/$CA64 save the position AFTER $DA70 has clamped the player.
+                // Saving the attempted position lets alternate frames escape the clamp.
+                PrevPlayerX = X;
+            }
         }
 
         /// <summary>$DC19-$DC6B: scroll left. Returns the carry; false = CLC (no scroll,
@@ -692,6 +771,7 @@ namespace Darkwing.Core
         /// <summary>One frame of player logic. padBits: 7=A,6=B,5=Sel,4=Start,3=Up,2=Down,1=Left,0=Right.</summary>
         public void Step(byte held, byte pressed)
         {
+            PressedThisFrame = pressed;
             OnHookTileFlag = false;
             PrevState = State;
             HurtOrigin = 0;
@@ -708,7 +788,7 @@ namespace Darkwing.Core
                 case 0x02: CrouchState(held, pressed); break;
                 case 0x03: LookUpState(held, pressed); break;
                 case 0x06: HurtState(held, pressed); break;
-                case 0x04: case 0x0D: HurtAirState(held, pressed); break;
+                case 0x04: case 0x0D: case 0x0E: HurtAirState(held, pressed); break;
                 case 0x0B: case 0x10: AirborneFullState(held, pressed); break;
                 case 0x09: case 0x18: WorldEntryFallState(); break;
                 case 0x0C: HangState(held, pressed); break;
@@ -716,6 +796,7 @@ namespace Darkwing.Core
                 case 0x07: DeathThroesState(); break;
                 case 0x08: ResolveDeath(); break;              // $08 → $D41B through the $CB5F/$CB75 table
                 case 0x12: MaterializeState(); break;
+                case 0x15: VictoryState(); break;              // $DA04, before $D838 owns the process
                 default: break; // remaining states wired during M4/M7
             }
 
@@ -755,6 +836,7 @@ namespace Darkwing.Core
                 }
                 if (hit == 0) return;                       // $D52C/$D52E
                 _matLanded = 1;                             // $D535 INC $04D0
+                if (Objects != null) Objects.Slots[0].StateLow++;
                 Sfx?.Invoke(0x10);                          // $D530
                 return;
             }
@@ -769,7 +851,30 @@ namespace Darkwing.Core
         /// <summary>True while $9630 spins the $FEFF yield loop: it never RTS-es back into
         /// $CA43, so the scroll service, spawner, bank-6/1 tasks and the bank-5 frame engine
         /// (and therefore $95) are skipped for the whole wait.</summary>
-        public bool YieldOnlyFrame => _cardWait != 0;
+        public bool YieldOnlyFrame => _cardWait != 0 || _victoryWait != 0;
+
+        private byte _victoryWait;
+        private void VictoryState()
+        {
+            if (_victoryWait != 0)
+            { if (--_victoryWait == 0) State = 0x11; return; }
+            var s = Objects?.Slots[0]; if (s == null) return;
+            if ((s.StateLow & 15) == 0) { SetAnimPlayer(0x12); s.StateLow++; }
+            if (s.AnimNumber == 0x2D)
+            {
+                if (s.AnimFrame != 0x2B || s.AnimTimer != 4) return;
+            }
+            else if (s.AnimNumber != 0x11)
+            {
+                IntegrateY(); ApplyGravity();
+                if (ProbeFloor() != 3) return;
+                SnapFeetUpToRow(); ChrLatch0 = 0x8E; SetAnimPlayer(0x2D);
+                Sound?.Invoke(2); Flags = 0xD0; FacingRight = 0x40;
+                YVelFrac = 0; YVelInt = 4;
+                return;
+            }
+            _victoryWait = 0x38; // $DA66 JSR $FEFF: 56 pure yields, no engine walk
+        }
 
         /// <summary>True from the first $9600 visit until the $D554 release: the whole
         /// $9605-$9640 phase loop owns the process, so $CAFC never RTS-es back to the
@@ -824,6 +929,7 @@ namespace Darkwing.Core
             SetAnimPlayer(0x01);                            // $D558/$D55A
             ChrLatch0 = CardReleaseChr;                     // $D560-$D565 ($1A = $D589[$31])
             HitLadder = 0;                                  // $D55D JSR $C850
+            ResetHud?.Invoke();
         }
 
         // ---------- State 12: materialize walk-out ($D7F9 → $F539) ----------
@@ -863,6 +969,7 @@ namespace Darkwing.Core
                 if (hit != 0)
                 {
                     _matLanded = 1;                                 // $D535 INC $04D0
+                    if (Objects != null) Objects.Slots[0].StateLow++;
                     Sfx?.Invoke(0x10);                              // $D530 SFX $10
                 }
                 return;
@@ -1058,6 +1165,7 @@ namespace Darkwing.Core
             XVelInt = 1; XVelFrac = 0x80;
 
             // Shared vertical physics first ($CD0E via $CB8B): gravity + landing
+            if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity(); // $CD3E, X=0
             bool landed = VerticalPhysics(held, pressed);
             if (State != 0) return; // jumped inside VerticalPhysics
 
@@ -1335,17 +1443,26 @@ namespace Darkwing.Core
             // stale 4 from an earlier frame re-runs the $CB93 hurt ladder every frame (w01
             // f665 and w05 f635 hurt while the original keeps walking / keeps falling).
             _probeResult = 0;
-            // $CD3E-$CD54 runs BEFORE the $F2E5 sign test: with the velocity integer in
-            // 0..$04 and A released, $F5FC force-sets $FFAB, so a zero velocity (the state
-            // -$12 exit leaves $0560/$0550 = 0) still takes the falling branch and probes
-            // the floor — gold_door_id1 f76 keeps $0560 = $FF instead of rising.
-            if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
+            // $F2D7 never reads the pad. The caller's $CD3E block owns jump release.
             bool falling = YVelInt < 0;
             _vertFalling = falling;
             _wasAirborne = State is 1 or 0x0B or 0x10;
             if (falling)
             {
+                ushort previousY = Y;                                // $F2DB-$F2E3
                 IntegrateY();               // $F2ED JSR $F5A4 (down)
+                if (PushPairOrScan(out byte supportLift))             // $F2F4/$F2F7
+                {
+                    LiftByObject(supportLift);                       // $F2F9-$F316
+                    bool movedUp = Y < previousY;                    // $F49C-$F4A7
+                    byte contact = movedUp ? ProbeCeiling() : ProbeFloor();
+                    _probeResult = contact;
+                    if (movedUp && contact >= 3) SnapBelowHead();
+                    else if (!movedUp && contact >= 2) SnapFeetUpToRow();
+                    CutVelocity();                                   // $F319 -> $F49C -> $F347
+                    LandedFlag = 1;
+                    return true;                                     // no gravity on this branch
+                }
                 // $F31F runs $F5DA unconditionally on the falling path ($F64A is a slot-pair
                 // test, not a ground test): gravity applies every frame and the landing
                 // branch re-cuts to $FF,AB afterwards. On the frame the floor disappears
@@ -1370,11 +1487,6 @@ namespace Darkwing.Core
             }
             else
             {
-                // rising ($F3C4): variable jump cut FIRST ($CD47), then integrate.
-                if (((held & 0x80) == 0) && YVelInt < 5)
-                {
-                    CutVelocity();
-                }
                 // $F3CB JSR $F581 — the RISE integrate, not $F5A4. The two differ exactly on
                 // a page crossing: $F5A4 wraps lo >= $F0 BACK UP by adding $100 (correct while
                 // $0560 is negative), while $F581 borrows $10 off the page. Using $F5A4 here
@@ -1497,7 +1609,11 @@ namespace Darkwing.Core
             }
             // $D6B1/$D6B4: JSR $F64A — with carry set the frame leaves through $D709 and the
             // player is lifted off an armed object instead of reaching the steering.
-            if (PushPairOrScan(out byte lift)) PushUpAndLand(lift);   // $D709 JSR $D7D8, $50 = 0
+            if (PushPairOrScan(out byte lift))
+            {
+                PushUpAndLand(lift);                                // $D709 JSR $D7D8, $50 = 0
+                return false;                                      // $D710 RTS: no hook probe, steering or shot
+            }
             if (State != 0x0B)                                          // $D6B6 CMP #$0B / BEQ $D6C7
             {
                 probe = ProbeHook();                                    // $D6BC-$D6C4: $40 = $3A
@@ -1563,7 +1679,7 @@ namespace Darkwing.Core
         }
 
         /// <summary>$F7A8: measure slot Y and, when the player is inside its touch box, leave
-        /// the vertical push in $11 = $FC09[class] - |ΔY|. $F7CB accepts |ΔY| EQUAL to
+        /// the vertical push in $11 = $FBE9[class] - |ΔY|. $F7CB accepts |ΔY| EQUAL to
         /// $FBE9[class] (the $F772 twin does not), and the SBC at $F7D6 is preceded by SEC so
         /// there is no off-by-one as in the $F679 pair path.</summary>
         private bool PushScanOne(byte y, out byte push)
@@ -1577,8 +1693,8 @@ namespace Darkwing.Core
             if (_push00 >= EnemyBehaviors.TouchXHalf[cls]) return false; // $F7BA BCS $F7DC
             byte dy = PushDy(y, out _);                                 // $F7C1
             if (dy > EnemyBehaviors.TouchYHalf[cls]) return false;      // $F7CB
-            push = (byte)(EnemyBehaviors.TouchXHalf[cls] - dy);         // $F7D3-$F7D9
-            return EnemyBehaviors.TouchXHalf[cls] >= dy;                // carry out of the SBC
+            push = (byte)(EnemyBehaviors.TouchYHalf[cls] - dy);         // $F7D3 LDA $FBE9,Y; SEC; SBC $03
+            return true;                                               // dy <= TouchYHalf, so SBC carries
         }
 
         /// <summary>$F784: the all-slot scan reached from every rejected $F64A pair test (its
@@ -1634,12 +1750,17 @@ namespace Darkwing.Core
         /// armed object a stand: the airborne handler returns here without reaching steering.</summary>
         private void PushUpAndLand(byte push)
         {
+            LiftByObject(push);
+            State = 0;                                                  // $D70C-$D70E
+        }
+
+        private void LiftByObject(byte push)
+        {
             if (push > 4) push = 4;                                     // $D7D8-$D7DE
             int yl = (Y & 0xFF) - push;                                 // $D7E0-$D7E6
             int yh = Y >> 8;
             if (yl < 0) { yl -= 0x10; yh -= 1; }                        // $D7EB-$D7F5
             Y = (ushort)(((yh & 0xFF) << 8) | (yl & 0xFF));
-            State = 0;                                                  // $D70C-$D70E
         }
 
         /// <summary>$D6EE: a type-1 (one-way) support under a falling $0B/$10. $FD and $FE are
@@ -1721,8 +1842,8 @@ namespace Darkwing.Core
             // ride velocity is $0080) already takes the FALLING branch — no ceiling
             // probe, and gravity still applies in the same frame (gold_hook_ride2 f82:
             // $0510 1F→20, $0460 D5→2A, velocity 00,80 → FF,AB → FF,6B).
-            if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0) CutVelocity();
             AirborneControl(held);                        // $CD18: steering runs FIRST
+            if ((held & 0x08) != 0) AirSubState = 1;       // $CD1B-$CD23
             // $CD25-$CD3B: the reach pose $0D vetoes the shot; a firing frame arms $56 = 2
             // (no $FA78 here — $CDBE rewrites the air anim from the velocity sign anyway)
             // and latches $CE39 BEFORE the vertical service.
@@ -1731,6 +1852,15 @@ namespace Darkwing.Core
             {
                 AirSubState = 2;
                 TryLatchFire();
+            }
+            if (YVelInt >= 0 && YVelInt < 5 && (held & 0x80) == 0)
+            {
+                // $CE39 leaves X at the allocated projectile. $CD54's indexed $F5FC
+                // therefore cuts that slot, until $CD5D explicitly restores X=0.
+                int x = HasPendingFire ? PendingFire.SlotPref : 0;
+                while (x >= 2 && Objects != null && Objects.Slots[x].Active) x--;
+                if (x >= 2) { var shot = PendingFire; shot.CutYVelocity = true; PendingFire = shot; }
+                else CutVelocity();
             }
             bool landed = VerticalPhysics(held, pressed); // $CD63: then the vertical service
             SelectAirAnim();                              // $CD82-$CDBE
@@ -1752,8 +1882,21 @@ namespace Darkwing.Core
         private void SelectAirAnim()
         {
             if (Objects == null) return;
+            bool risingPose = YVelInt >= 0 && _probeResult != 2; // $CD82-$CD96: class 2 uses fall pose
             byte anim = AirSubState == 1 ? (byte)0x0D
-                    : YVelInt >= 0 ? (byte)0x11 : (byte)0x12;
+                    : AirSubState == 2 ? (risingPose ? (byte)0x0E : (byte)0x0F)
+                    : risingPose ? (byte)0x11 : (byte)0x12;
+            var s = Objects.Slots[0];
+            if (AirSubState == 2 && s.AnimNumber == anim)
+            {
+                if (s.AnimFrame == 1 && s.AnimTimer == 4) AirSubState = 0; // $CDD5-$CDF3
+                return;
+            }
+            if (AirSubState == 1 && s.AnimNumber == 0x0D)  // $CDB5-$CDD2
+            {
+                if (s.AnimFrame == 3) { s.AnimFrame = 1; s.AnimTimer = 0; }
+                return;
+            }
             SetAnimPlayer(anim);
         }
 
@@ -1763,6 +1906,7 @@ namespace Darkwing.Core
             if ((held & 0x03) != 0)
             {
                 bool right = (held & 0x01) != 0;
+                DirBits = (byte)(held & 0x03);              // $CCBA / $D776: the shot uses this latch
                 FacingRight = right ? (byte)0x40 : (byte)0x00;
                 Flags = (byte)((Flags & ~0x40) | FacingRight);
                 MoveHorizontal(right);
@@ -1774,59 +1918,91 @@ namespace Darkwing.Core
         // ---------- State 2: crouch ($CFD7) ----------
         private void CrouchState(byte held, byte pressed)
         {
-            if ((held & 0x04) == 0) { State = 0; return; } // Down released → stand
-
-            // $CFE0-$D00E: the crouch shot needs the pose on its first frame. $CFF1-$CFF8
-            // re-arms $0410 = 1 and clears $0430 for that pose, then the pad test is an
-            // EXACT $14 == #$40 compare — any other edge bit cancels the shot and falls to
-            // the $D00F A-hop path. ($CFE7 sends the already-fired pose $07 to $D08C, which
-            // the port models through state $0A rather than here.)
+            if ((held & 4) == 0) { State = 0; return; }
             var c0 = Objects?.Slots[0];
-            if (c0 != null && c0.AnimNumber != 0x07 && c0.AnimFrame == 1)
+            if (c0 != null && c0.AnimNumber == 7)
             {
-                c0.AnimTimer = 0;                                       // $CFF8
-                if (pressed == 0x40 && CanFire())
-                {
-                    SetAnimPlayer(0x07);                                // $D006/$D008
-                    TryLatchFire();                                     // $D00B
-                    return;                                             // $D00E
-                }
+                if (c0.AnimFrame == 2 && c0.AnimTimer == 4)
+                { SetAnimPlayer(6); c0.AnimFrame = 1; return; } // $D08C-$D0AC
             }
-            if ((pressed & 0x80) != 0) // A in crouch ($D00F)
+            else if (c0 != null && c0.AnimFrame == 1)
+            { c0.AnimFrame = 1; c0.AnimTimer = 0; }
+            else goto buttons;
+            if (pressed == 0x40 && CanFire())
+            { SetAnimPlayer(7); TryLatchFire(); return; }
+        buttons:
+            if ((pressed & 0x80) != 0)
             {
-                byte below = ProbeFloor();
-                if (below == 1 || below == 2)
+                if (!PushPairOrScan(out _)) // $D018, before integration
                 {
-                    State = 0x0A; // forced hop ($D06F)
-                    CutVelocity();
-                    HopTimer = 0;
+                    IntegrateY(); ApplyGravity();
+                    byte floor = ProbeFloor();
+                    if (floor == 0) return;
+                    if (floor < 3) { BeginCrouchDrop(); return; }
+                    if (floor == 8) { OnHookTileFlag = true; Flags |= 0x20; }
+                    SnapFeetUpToRow(); CutVelocity(); return;
                 }
-                else if (below == 8) OnHookTileFlag = true;
+                // $D04A-$D11B: the two special projectiles can support a crouch.
+                for (int i = 3; i >= 2; i--)
+                {
+                    var t = Objects.Slots[i];
+                    if (!t.Active || (t.AnimNumber != 0x17 && t.AnimNumber != 0x29)) continue;
+                    int dx = System.Math.Abs(X - t.X) & 255;
+                    int dy = System.Math.Abs((byte)Y - (byte)t.Y);
+                    if (dx < 12) return;
+                    if (dy < 8) break;
+                    if (dy < 15) return;
+                    if (i == 2) { BeginCrouchDrop(); return; }
+                }
+                for (int i = 15; i >= 5; i--)
+                    if (Objects.Slots[i].Active && Objects.Slots[i].AnimNumber == 0x33)
+                    { BeginCrouchDrop(); return; }
+                return;
             }
-            // Down pressed edge while crouched ($D0B2 → $D11C): drop-through
-            if ((pressed & 0x04) != 0)
+            if ((pressed & 4) != 0 && !PushPairOrScan(out _))
             {
-                byte below = ProbeFloor();
-                if (below == 2)
-                {
-                    // drop-through ($D166): state 1 with downward velocity
-                    State = 1;
-                    CutVelocity();
-                    Y += 1; // begin descent below the platform surface
-                }
+                if (c0 != null && c0.T490 == 0xFF) VerticalPhysics(held, pressed);
+                return; // $D0BD-$D0CB
             }
+            if (c0 != null) c0.T490 = 0xFF; // $D11C
+            byte below = ProbeFloor();
+            if (below == 0) { VerticalPhysics(held, pressed); return; }
+            if (below == 2) { State = 1; CutVelocity(); return; }
+            if (below == 4) { AirD73C(); return; }
+            if (below == 8) { OnHookTileFlag = true; Flags |= 0x20; }
+            SnapFeetUpToRow(); CutVelocity();
+        }
+
+        private void BeginCrouchDrop()
+        {
+            State = 0x0A; SetAnimPlayer(0x12); CutVelocity();
+            if (Objects != null) Objects.Slots[0].T480 = 0;
+            HopTimer = _dropSupportTimer = 0; // $D06F-$D082
         }
 
         // ---------- State 3: look up ($D16E) ----------
         private void LookUpState(byte held, byte pressed)
         {
             if ((held & 0x08) == 0) { State = 0; return; }
-            if ((pressed & 0x80) != 0) // normal jump impulse ($D18B)
+            var s = Objects?.Slots[0];
+            if (s != null && s.AnimFrame == 2)                       // $D174-$D182
             {
-                YVelInt = 4; YVelFrac = 0xE5;
-                AirSubState = 1; // reach pose
-                State = 1;
+                s.AnimFrame = 2; s.AnimTimer = 0;
+                if ((pressed & 0x80) != 0)                          // $D185-$D199
+                {
+                    YVelInt = 4; YVelFrac = 0xE5;
+                    AirSubState = 1;
+                    State = 1;
+                    AirState(held, pressed);                        // JMP $CD0E, same-frame service
+                    return;
+                }
             }
+            byte floor = ProbeFloor();                             // $D1A1 -> $D121
+            if (floor == 0 || floor == 2) { State = 1; CutVelocity(); return; }
+            if (floor == 4) { AirD73C(); return; }
+            if (floor == 8) OnHookTileFlag = true;
+            SnapFeetUpToRow();                                      // $D15E
+            CutVelocity();                                         // $D161
         }
 
         // ---------- State 6: $D29A gate, then hurt ground/knockback ($D2C3) ----------
@@ -1844,7 +2020,7 @@ namespace Darkwing.Core
             byte anim = Objects?.Slots[0].AnimNumber ?? 0;        // $D29A LDA $0420
             if (anim != 0x0B && anim != 0x0C) goto knockback;     // $D29F/$D2A3
             if (StateTimer != 0) { StateTimer--; return; }        // $D2AA/$D2C0
-            State = SavedState;                                   // $D2B6/$D2B8
+            State = State == 0x0E ? SavedState : (byte)1;          // $D2AC-$D2BD
             return;
         knockback:
             HurtGroundState(held, pressed);
@@ -1918,7 +2094,7 @@ namespace Darkwing.Core
             var s0 = Objects?.Slots[0];
             // $D1BB-$D1D2: the struggle anim, kept only while the $0C hang pose is on its
             // 2nd frame / 4th timer tick (that frame is what the ROM leaves unpoked).
-            if (s0 != null && !(s0.AnimNumber == 0x0C && s0.AnimFrame == 0x02 && s0.AnimTimer == 0x04))
+            if (s0 != null && (s0.AnimNumber != 0x0C || (s0.AnimFrame == 0x02 && s0.AnimTimer == 0x04)))
                 SetAnimPlayer(0x0B);                                // $D1D0-$D1D2
             byte dir = (byte)(held & 0x03);                         // $D1D5-$D1D9 ($16)
             if (dir != 0)
@@ -2071,9 +2247,8 @@ namespace Darkwing.Core
             if (row > 0x7F) { ScrollY = 0; ReloadRow(); return; }        // $DCAF/$DCB1 BPL
             ScrollYRow = (byte)row;                           // $DCB9-$DCBF
             CellIndex = (byte)idx;
-            // The incoming-cell pointer follows the same step in the row-advance frame
-            // (gold_hook_ride2 f80: $22 $1C→$2D while $23 $2D→$3E).
-            CellIndexNext = (byte)(idx + RowStride);
+            // $E936 advances $23 when the streamed tile row wraps; the camera's row
+            // change itself only writes $22 ($DCBF).
             ReloadRow();                                      // $DCC1 JMP $E7C6
         }
 
@@ -2157,6 +2332,7 @@ namespace Darkwing.Core
             public byte Behavior;    // $CF2E[$53]
             public byte Template;    // $CF32[$53] through $FA6C
             public byte SfxId;       // $CF36[$53] through $F850
+            public bool CutYVelocity; // indexed $F5FC when $CE39 left X at this shot
         }
 
         public FireSpawn PendingFire;
@@ -2316,7 +2492,7 @@ namespace Darkwing.Core
         {
             if ((a & 0x80) != 0)
             {
-                int amount = (~a) & 0x7F;
+                int amount = ((~a) & 0x7F) + 1; // $892F CLC / SBC: includes the extra borrow
                 int v = (GasEnergyHi - 0x70) * 10 + (GasEnergyLo - 0x70) - amount;
                 if (v < 0) v = 0;
                 GasEnergyHi = (byte)(0x70 + v / 10);
@@ -2346,7 +2522,7 @@ namespace Darkwing.Core
             int v;
             if ((a & 0x80) != 0)
             {
-                v = (hi - 0x70) * 10 + (lo - 0x70) - ((~a) & 0x7F);
+                v = (hi - 0x70) * 10 + (lo - 0x70) - (((~a) & 0x7F) + 1); // $89AC CLC / SBC
             }
             else
             {
@@ -2363,7 +2539,7 @@ namespace Darkwing.Core
             (hi, lo) => { ActiveGasEnergyHi = hi; ActiveGasEnergyLo = lo; });
 
         /// <summary>$8A7D cascade: add 1/5 to the bonus BCD digits ($05C4-$05CC).</summary>
-        public void AddEnergyDigit(int n) => BonusDigits = (byte)((BonusDigits + n) % 100);
+        public void AddEnergyDigit(int n) => ScoreUnits += n;
 
         /// <summary>$8AF4 add to the HUD energy column ($05E6, codes $70-$79).</summary>
         public void AddHudEnergy(int n)
@@ -2385,17 +2561,35 @@ namespace Darkwing.Core
 
         private void ForcedHopState()
         {
+            // $D590: falling through a one-way surface has two independent 17-frame
+            // guards ($5A/$9D); $0480 is only the final 18-frame empty-space timeout.
             IntegrateY();
+            if (_dropSupportTimer != 0 || PushPairOrScan(out _))
+            {
+                ApplyGravity(); _dropSupportTimer++;
+                if (_dropSupportTimer == 0x11)
+                {
+                    State = 0x0E; SetAnimPlayer(0x0B);
+                    HopTimer = _dropSupportTimer = 0; CutVelocity();
+                }
+                return;
+            }
             ApplyGravity();
             byte floor = ProbeFloor();
-            if (floor == 2 || floor == 3)
+            if (floor >= 2)
             {
-                int py = Y + 12;
-                Y = (ushort)((py - (py & 0x0F) - 12) & 0xFFFF);
-                YVelInt = 0; YVelFrac = 0;
+                SnapFeetUpToRow();
+                if (floor == 2 && (byte)YVelInt < 0xFC) { CutVelocity(); State = 0; return; }
+                State = HopTimer = 0; return;
             }
-            HopTimer++;
-            if (HopTimer >= 0x12) { State = 1; HopTimer = 0; }
+            if (HopTimer != 0 || _probe43 != 0)
+            {
+                if (++HopTimer == 0x11)
+                { State = 4; SetAnimPlayer(0x0B); Sfx?.Invoke(0x12); HopTimer = 0; CutVelocity(); }
+                return;
+            }
+            var s0 = Objects?.Slots[0];
+            if (s0 != null && ++s0.T480 >= 0x12) State = 1;
         }
 
         // ---------- State 0C: hang on hook ($D7F9) ----------

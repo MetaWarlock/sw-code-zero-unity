@@ -53,6 +53,17 @@ namespace Darkwing.Core
         private bool _cleared;           // $AA00's opening JSR $AADD has run
         private bool _running;
         private bool _waiting, _endWait, _mapMode;
+        private bool _initialGate;
+        public bool WalkRequired { get; private set; }
+        public bool DeferWrites;
+        private readonly System.Collections.Generic.List<(int addr, byte tile)> _pendingWrites
+            = new System.Collections.Generic.List<(int, byte)>();
+
+        public void FlushNmiWrites()
+        {
+            foreach (var w in _pendingWrites) _ppu.WriteVram(w.addr, w.tile);
+            _pendingWrites.Clear();
+        }
 
         public TextEngine(Ppu ppu, byte[] bank2)
         {
@@ -103,12 +114,15 @@ namespace Darkwing.Core
             _waiting = _endWait = false;
             _running = true;
             Done = false;
+            _initialGate = true;
+            if (DeferWrites) { ClearTextLines(); _cleared = true; }
         }
 
         /// <summary>One frame of the coroutine. `padHeld` is the live $14 strobe byte.</summary>
         public void Tick(int frameCounter, byte padHeld)
         {
             SfxToPlay = 0;
+            WalkRequired = false;
             if (!_running) return;
             _frame = frameCounter;
 
@@ -117,7 +131,7 @@ namespace Darkwing.Core
             if (_waiting)
             {
                 WriteTile(_mapMode ? 0x2379 : 0x22FE, (byte)((_frame & 0x10) == 0 ? 0xFE : 0x02));
-                if ((padHeld & (_mapMode ? 0xC3 : ConfirmBits)) == 0) return;
+                if ((padHeld & (_mapMode ? 0xC3 : ConfirmBits)) == 0) { WalkRequired = true; return; }
                 _waiting = false;
                 if (_endWait || (!_mapMode && (padHeld & StartBit) != 0))
                 { _running = false; Done = true; return; }
@@ -132,8 +146,15 @@ namespace Darkwing.Core
                 if (_pendingYields > 0) return;
             }
 
-            // $AA1B: outside the auto-advancing intro streams, holding START freezes the text.
-            if (!_mapMode && !AutoAdvance && (padHeld & StartBit) != 0) return;
+            // $AA1B is tested once after the opening clear, before the $AA2C loop.
+            // A Start edge there returns from the dialog; later typing never re-tests it.
+            if (_initialGate)
+            {
+                _initialGate = false;
+                if (!_mapMode && !AutoAdvance && (padHeld & StartBit) != 0)
+                { _running = false; Done = true; return; }
+            }
+            WalkRequired = true;
 
             // $AA2C: one visible character per frame; $FE line breaks are consumed for free
             // and the character after them lands in the same frame.
@@ -178,12 +199,13 @@ namespace Darkwing.Core
             for (int i = 0; i < LineCount; i++)
                 for (int t = 0; t < (_mapMode ? 19 : LineTiles); t++)
                     WriteTile(_lineAddr[i] + t, blank);
-            WriteTile(_mapMode ? 0x2379 : 0x23FE, blank);
+            WriteTile(_mapMode ? 0x2379 : 0x22FE, blank);
         }
 
         /// <summary>One ROM queue entry: [hi][lo][count-1][tile][$FF terminator].</summary>
         private void WriteTile(int addr, byte tile)
         {
+            if (DeferWrites) { _pendingWrites.Add((addr, tile)); return; }
             _queue[0] = (byte)(addr >> 8);
             _queue[1] = (byte)addr;
             _queue[2] = 0;               // $0362 = 0 → the $C119 loop writes exactly one tile

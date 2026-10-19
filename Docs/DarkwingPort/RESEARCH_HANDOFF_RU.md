@@ -262,3 +262,54 @@ python Tools/DarkwingResearch/record_reference.py --out Research/DarkwingDuck/re
 - [Руководство Capcom](https://www.nesfiles.com/NES/Darkwing_Duck/Darkwing_Duck.pdf): перечень механик и интерфейс; противоречия кнопок разрешать экспериментом.
 - [Unity OnAudioFilterRead](https://docs.unity3d.com/6000.0/Documentation/ScriptReference/MonoBehaviour.OnAudioFilterRead.html): требования аудиопотока. По графике в первую очередь смотреть локальные исходники URP 17.6.0 и API установленного Editor.
 - [ZCode Goal Mode](https://zcode.z.ai/en/docs/goal), [ZCode project instructions](https://zcode.z.ai/en/docs/agents): `/goal` задаётся в чате; workspace `AGENTS.md` служит постоянной инструкцией. Не полагаться на автоматическое чтение вложенных документов без явного указания открыть их.
+
+## 8. Стенд ручного прохождения (Tools/DarkwingResearch/stand)
+
+Запуск: `Tools\DarkwingResearch\stand\Start-Playthrough.ps1` (то же самое `python Tools\DarkwingResearch\stand\stand.py record`).
+Открывается штатный Mesen GUI, сам ROM загружается, и с этого же момента работает **штатный же рекордер Movies**: стенд передаёт Mesen опцию `--recordMovie=<сессия>\movie.mmo`, поэтому от человека не требуется ни одного пункта меню. Клавиши игрока 1: стрелки — D-pad, `Z`=A, `X`=B, `Enter`=Start, `LeftShift`=Select; в текущей конфигурации `AllowBackgroundInput=false`, то есть клавиши слышны только когда окно Mesen в фокусе (один клик по нему). Запись заканчивается закрытием окна.
+
+Формат захвата (Mesen 2.1.1, проверено на релизном бинарнике и его исходниках): `.mmo` — это zip из `Input.txt` и `GameSettings.txt`; `MovieRecorder::RecordInput` пишет на каждый кадр эмуляции `"|" + device->GetTextState()` по всем устройствам консоли, поэтому строка выглядит как `|..|........|........` (2-символьное сервисное устройство, порт 1, порт 2). Геймпад — 8 символов в порядке собственного перечисления кнопок (`Core/NES/Input/NesController.h`: `Up = 0, Down, Left, Right, Start, Select, B, A`, литерал `"UDLRSsBA"`), `.` — кнопка не нажата. `input.bin` — это колонка порта 1, пересобранная в байт порядка `NesButtons.ToByte`; ни одного смещения по времени wall-clock в цепочке нет. `GameSettings.txt` внутри `.mmo` дополнительно записывает конфигурацию консоли, с которой шла запись, и она детерминирована: `nes.ramPowerOnState = AllZeros`, `randomizeMapperPowerOnState = false`, `randomizeCpuPpuAlignment = false`, `runAheadFrames = 0`. У mesen-agent нет флага `ramPowerOnState`, он при включении рандомизирует RAM, поэтому первые кадры и остаются непоказуемыми (`powerOnWindowLines`).
+
+Конфигурация GUI стендом **не переписывается**: Mesen на выходе перезаписывает `settings.json` своим (проверено — правки `Preferences.ShowFrameCounter` и `Nes.Port2.Type`, внесённые снаружи, исчезают), поэтому `record` только читает и печатает фактические значения (клавиши, пауза в фоне, `EnableRewind`, `RecordFrom`). Файл лежит рядом с исполняемым: `Tools\DarkwingResearch\vendor\Mesen2\settings.json`; первое окно конфигурации на этой машине уже подтверждено.
+
+Записи лежат в `Playthroughs\<UTC-метка>/` (в `.gitignore`, автоматически не удаляются): `meta.json` (хэши ROM и эмулятора, клавиши, соглашение о кадрах), `movie.mmo` (запись Mesen), `movie.json` (что из неё прочитано: кадры, поля, `nonPadPresses`), `input.bin` (по одному байту NES-геймпада на кадр эмулятора), `trace.csv` и `replayN/` (оригинал), `unity/` (порт), `diff/`.
+
+```
+python Tools\DarkwingResearch\stand\stand.py record                # живая сессия в Mesen GUI
+python Tools\DarkwingResearch\stand\stand.py movie <file.mmo>      # конвертировать запись, сделанную через меню Movies
+python Tools\DarkwingResearch\stand\stand.py replay <сессия> [--state file.mss] [--png 100,200]
+python Tools\DarkwingResearch\stand\stand.py unity  <сессия> [--png 100,200]
+python Tools\DarkwingResearch\stand\stand.py diff   <сессия> --png
+python Tools\DarkwingResearch\stand\stand.py selftest <сессия>
+```
+
+Соглашение: одна строка movie-лога = один кадр NES = один `InputPolled` при повторе; пауза эмулятора кадров не добавляет. Точка старта сравнения — первый кадр после power-on reset, смещения не подбираются. Во время записи **нельзя** грузить состояния и перематывать (`EnableRewind=true`): `.mmo` от этого не портится структурно, но консоль под записанным треком прыгает, и обнаружить это постфактум нечем. При повторе (`stand.lua`) загрузка состояния помечается как `INVALID`, и `replay`/`unity` для такой сессии отказываются; автосохранение — нет (см. ниже).
+
+Что доказано (2026-10-19):
+- захват без ручных шагов: `Mesen.exe <rom> --recordMovie=<путь>` загружает ROM, играет титульную заставку и по закрытию окна пишет `.mmo` (943 и 693 строки `Input.txt` за 16 с и 12 с реального времени — ровно 60 кадров/с);
+- сессия `Playthroughs/movie_probe` (трек из 943 кадров, старт от reset): `movie` → `replay --runs 2` → `unity` → `diff --png` проходят целиком, два независимых повтора байт-идентичны, кроме кадра 1-7 (Mesen рандомизирует work RAM и палитру при включении; измерено и вынесено в `powerOnWindowLines`, а не спрятано);
+- **Человеческая запись** `Playthroughs/20261019T050329Z`: 24261 кадр/1424 диапазона, исходники не изменены. Полный маршрут теперь повторён в Core, штатной DarkwingMain и свежем Player: настоящий Quackerjack → победа/самолёт/счёт → карта count/mask1/1, 8600 очков, 5 жизней. f2033–24261 по всем пяти отображённым группам состояния 22229/22229; детали/ограничения — в ACCEPTANCE_REPORT. Старое заключение «порт блокируется x916» устарело. Повторный поиск пути/перебор прыжков не нужен.
+- `emu.setInput` из Lua попадает в консоль так же, как собственный `--input` агента: кадр 100 из `m1_standing.mss` совпал с эталоном пиксель-в-пиксель (0 различающихся пикселей из 61440);
+- расписание `--input` самого mesen-agent через `emu.getInput` НЕ видно (250 кадров с `right@100-120` записались нулями) — headless-самотест генерирует `input.bin` сам и гоняет его через режим replay;
+- детектор: контрольная пара повторов молчит (1193 кадра), намеренная правка `x+1` в одном кадре найдена ровно на этом кадре (`selftest`);
+- скорость headless-повтора измерена: mesen-agent считает ровно 60 кадров/с wall-clock и с полным отпечатком кадра, и с пустым Lua-callback (`--no-max-speed` не меняет ничего), поэтому `replay` сам подбирает `--timeout` под длину трека (~1.6 с на кадр) вместо жёстких 600 с;
+- `INVALID` теперь ставит только загрузка состояния. Сохранение консоль не трогает: на длинном повторе mesen-agent сам пишет автосейв в изолированный `--home` (`SaveStates/<rom>_11.mss` примерно на 300-й секунде), и раньше это ложно аннулировало сессию;
+- `trace.csv` обрывается на конце трека, а не на останове эмулятора: на длинных треках агент переполняет `--frames` (запрошено 24261 — выполнено 36046 при лимите 600 с и 29809/29810 при лимите 496 с, причина `timeout` вместо `frame_limit`, тогда как `--frames 600/120/6000` останавливались ровно на лимите). Поэтому `replay` сам считает лимит как `длина/60 × 1.15 + 30 с`, терпит `reason=timeout` с его же rc=4 и проверяет другое — что отпечатанных кадров ровно столько, сколько в треке; две записи одной сессии тогда всегда равной длины;
+- `emu.exit()` в Lua Mesen 2.1.1 отсутствует (`attempt to call a nil value (field 'exit')`) — остановить прогон из скрипта нельзя, только досчитать трек;
+- RESET-пролог f8 восстановлен; ранний Start его не обходит, NT/OAM/PAL f8–281 равны. Первые остатки текущего полного захвата: NT f282, PAL f293, OAM f463; G62/физическая NT-раскладка открыты. Суммы байтов — диагностика; строгие команды ниже используют байты/SHA-256, включая отрицательный контроль перестановки с прежней суммой.
+
+Что НЕ проверено: не проверено, запрещает ли сам Mesen загрузку состояния во время записи фильма (`.mmo` от этого структурно не портится, но консоль под треком прыгает). Порядок 8-символьных полей (порт 1 раньше порта 2) теперь подтверждён на живой игре: в записи пользователя из 24261 кадра (10335 кадров с нажатыми кнопками, все восемь кнопок) `nonPadPresses` пуст, то есть все нажатия попадают ровно в 8-символьное поле порта 1.
+
+
+Текущие минимальные данные и команды (без повторного захвата оригинала):
+```
+python Tools/DarkwingResearch/stand/stand.py states --original Temp/stand_original/replay1/buffers.bin --port Temp/stand_port_route/buffers.bin --start 2033
+python Tools/DarkwingResearch/stand/stand.py buffers --original Temp/stand_original/replay1/buffers.bin --port Temp/stand_port_route/buffers.bin --start 8
+python Tools/DarkwingResearch/stand/stand.py scene --session Playthroughs/20261019T050329Z --core Temp/stand_port_route --route Temp/stand_scene/route.json
+python Tools/DarkwingResearch/stand/stand.py scene --session Playthroughs/20261019T050329Z --core Temp/stand_port_route --route Temp/stand_player/route.json
+python Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Contracts --out Temp/m1_contracts
+python Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Regressions --out Temp/m1_regressions
+```
+`buffers.bin`: один record = RAM2048 + физические NT2048 + OAM256 + PAL32 =4384 байта, pre-input poll1-based. `states` проверяет только явно отображённые группы; `buffers` — все байты соответствующих буферов. Снимки ReplayState содержат 4KiB PPU-address window; при сравнении с CIRAM берутся физические первые2KiB, при прямом Editor/Player сравнении проверен весь window. В `scene` номер снимка f означает Game.Frame=f−1 до обработки входа; `final` записан после потребления всех кадров. Смещений/переносов кнопок нет.
+
+Свежий build: `Build/DarkwingDuck/DarkwingDuck.exe`, Development (replay включён условной компиляцией). Без аргумента игра интерактивна. Спецификации штатного повтора — `Temp/stand_scene/spec.json` и `Temp/stand_player/spec.json` (`captureAtStart=true`), обе разворачиваются в исходный input.bin. Editor: до Play установить SessionState `DarkwingReplay` на абсолютный путь scene spec; UseFlow=true, Game.Frame0. Player: `-darkwing-replay <absolute spec>`; окно/render/exit проверяет существующий `verify_player.ps1` с `-ReplayTimeoutSec 1200 -CompletedMission -ShowGameWindow`. После готового route требуется `stand.py scene`, один smoke не доказывает сравнение. Результаты, оставшиеся NT/RGB/audio/Suite расхождения — только в ACCEPTANCE_REPORT.

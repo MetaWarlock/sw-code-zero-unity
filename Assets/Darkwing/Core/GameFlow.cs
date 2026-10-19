@@ -27,10 +27,11 @@ namespace Darkwing.Core
     ///          cleared, since only $998C sets bit7) $69 |= 1 &lt;&lt; $31.
     /// $38 is a counter 0..6 (it is compared with 3 and 6), not a tier index.
     /// </summary>
-    public sealed class GameFlow
+    public sealed partial class GameFlow
     {
         public enum Phase
         {
+            Reset,          // $FE00 → $C595: power-on, fade and copyright hold
             Title,          // $C792: logo + PRESS START, waits for Start
             NewGameDialog, // $C7CF: task 4, $9E00, streams $0A/$0D
             Intro,          // $C5F7: night scene + the $AA00 dialog streams $0E and $0F
@@ -58,7 +59,7 @@ namespace Darkwing.Core
             _game = game;
             _decoder = decoder;
             World = new WorldState(game.Bank7);
-            Stage = Phase.Title;
+            Stage = Phase.Reset;
             // Until the flow enters a mission, the bank-7 loop owns the screen: no player
             // dispatcher, no bank-6 task (the world the host preloaded stays frozen).
             _game.WorldRunning = false;
@@ -67,7 +68,8 @@ namespace Darkwing.Core
             // picture and $9500/$9200 stage the palettes, CHR and the logo/PRESS START sprite slots.
             // LoadTitleScreen does exactly that, so the boot screen is the real title, not a black
             // frame waiting for LoadMapScreen.
-            _game.LoadTitleScreen();
+            _game.BeginPowerOn();
+            _game.ResidentProcess = StepReset;
         }
 
         /// <summary>Which mission the bubble under the cursor starts right now ($38 rules).</summary>
@@ -97,6 +99,7 @@ namespace Darkwing.Core
         /// </summary>
         public Phase Step(in NesButtons pad)
         {
+            if (_game.ResidentProcess != null) return Stage; // the resident process runs after the NMI
             PhaseFrames++;
             byte held = pad.ToByte();
             byte pressed = (byte)(held & ~_prevHeld);
@@ -170,7 +173,8 @@ namespace Darkwing.Core
                 case Phase.Mission:
                     // The gameplay frame itself is stepped by the host; the flow only
                     // watches for the end-of-mission events raised by the world engines.
-                    if (_game.MissionCleared) SetPhase(Phase.MissionCleared);
+                    if (_game.Player.State == 0x11) BeginResidentClear(); // native $D838 dispatch
+                    else if (_game.MissionCleared) SetPhase(Phase.MissionCleared);
                     else if (_game.Player.GameOverRequest)     // $D41D with $64 != 0
                     {
                         _game.Player.GameOverRequest = false;
@@ -228,6 +232,62 @@ namespace Darkwing.Core
         }
 
         private byte _prevHeld;
+        private int _resetStage, _resetWait = 4;
+
+        private void StepReset(NesButtons pad)
+        {
+            _prevHeld = pad.ToByte();
+            switch (_resetStage)
+            {
+                case 0: // $FE0C-$FE19: wait for four complete vblanks before touching RAM
+                    if (--_resetWait != 0) return;
+                    _game.ResetMemoryAndVideo();
+                    _resetStage = 1;
+                    return;
+                case 1: // $FE86/$C595: create the master process, then $C5A2 yields
+                    _game.Ppu.WriteRegister(0x2000, 0x90);
+                    _game.PlaySound(0xF0);
+                    _resetStage = 2;
+                    return;
+                case 2: // $C5A5-$C5AD
+                    EnemyBehaviors.ResetRng();
+                    _game.Player.StateTimer = 0xF0;
+                    _game.BeginResidentFade(false);
+                    _resetStage = 3;
+                    return;
+                case 3:
+                    if (_game.TickResidentFade()) _resetStage = 4; // $C5B0 extra yield
+                    return;
+                case 4: // $C5B3-$C5E5
+                    _game.LoadCopyrightScreen();
+                    _game.Player.StateTimer--;
+                    _resetStage = 5;
+                    return;
+                case 5: // $C5E8-$C5F4: Start is deliberately not read in this loop
+                    if (_game.Player.StateTimer != 0) { _game.Player.StateTimer--; return; }
+                    World.CurrentWorld = 7;
+                    _game.BeginResidentFade(false); // $DD57 begins with $C248
+                    _resetStage = 6;
+                    return;
+                case 6:
+                    if (_game.TickResidentFade()) _resetStage = 7;
+                    return;
+                case 7:
+                    _resetStage = 9; // $C251 JMP $FF06, before $DD5F
+                    return;
+                case 9:
+                    _game.ClearObjectRamAndScroll();
+                    _game.BeginSceneLoad(_decoder, World.CurrentWorld);
+                    _resetStage = 8;
+                    return;
+                case 8:
+                    if (!_game.TickSceneLoad()) return;
+                    SetPhase(Phase.Intro);
+                    _introStage = 0; _introDelay = 30;
+                    _game.ResidentProcess = StepResidentIntro;
+                    return;
+            }
+        }
         private int _introStage;      // 0 = $C601 hold, 1 = stream $0E, 2 = $C612 hold, 3 = stream $0F
         private int _introDelay;      // a $FEFF count: $C601/$C612 both LDX #$1E / JSR $FEFF
 
@@ -275,7 +335,7 @@ namespace Darkwing.Core
         /// <summary>One $AA00 frame: the typewriter plus its $AA77 SFX $3F enqueue through $F850.</summary>
         private void StepText(TextEngine text, byte held)
         {
-            text.Tick(PhaseFrames, held);
+            text.Tick(_game.ResidentProcess != null ? _game.NmiCounter : PhaseFrames, held);
             if (text.SfxToPlay != 0) _game.PlaySfx(text.SfxToPlay);
         }
 

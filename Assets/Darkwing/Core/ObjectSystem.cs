@@ -110,6 +110,7 @@ namespace Darkwing.Core
 
         /// <summary>Raw $0340-mask read (behavior 29's $0301-class checks use indexes).</summary>
         public byte SpawnedBitmask(int cell) => _spawnedMask[cell & 31];
+        public void ClearSpawnMask() => System.Array.Clear(_spawnedMask, 0, _spawnedMask.Length);
 
         /// <summary>$70/$71. The spawner never scans the whole list: it walks entry
         /// indexes from a cursor and stops at the FIRST entry outside the window, so

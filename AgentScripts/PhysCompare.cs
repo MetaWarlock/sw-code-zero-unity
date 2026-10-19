@@ -339,6 +339,11 @@ public static class PhysCompare
             // reproduces it with a shadow + PublishToOam, so the comparison stays same-index and
             // the seed has to fill the SHADOW, not the live buffer.
             game.Oam.SeedShadow(oamAll, seedFrame * 256);
+        Darkwing.Core.EnemyBehaviors.RngE4 = ram0[0xE4];
+        Darkwing.Core.EnemyBehaviors.RngE5 = ram0[0xE5];
+        Darkwing.Core.EnemyBehaviors.RngE6 = ram0[0xE6];
+        Darkwing.Core.EnemyBehaviors.RngE7 = ram0[0xE7];
+        p.LastVerticalRedraw = ram0[0x29]; p.VerticalRedrawRow = ram0[0x2A]; p.PrevVerticalMode = ram0[0x21];
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
             fEnemies = fPal = fOam = true; fieldBadIdx = -1;
@@ -405,7 +410,23 @@ public static class PhysCompare
                 if (hs != null)
                     sb.Append($" HS={game.Enemies.HurtSlot:X2}@{game.Enemies.HurtSlotX:X4},{game.Enemies.HurtSlotY:X4} an{game.Enemies.HurtSlotAnim:X2} bh{game.Enemies.HurtSlotBh:X2} p{game.Enemies.HurtSlotParam:X2} fl{game.Enemies.HurtSlotFlags:X2} st{game.Enemies.HurtSlotState:X2} act{(hs.Active ? 1 : 0)}");
                 if (f >= _enemyDumpLo && f <= _enemyDumpHi)
-                    sb.Append($" E {ListSlots(PackedSlots(game), true)} | {ListSlots(g, true)}");
+                {
+                    sb.Append($" RNG={Darkwing.Core.EnemyBehaviors.RngE4:X2}{Darkwing.Core.EnemyBehaviors.RngE5:X2}{Darkwing.Core.EnemyBehaviors.RngE6:X2}{Darkwing.Core.EnemyBehaviors.RngE7:X2}/{g[0xE4]:X2}{g[0xE5]:X2}{g[0xE6]:X2}{g[0xE7]:X2} E {ListSlots(PackedSlots(game), true)} | {ListSlots(g, true)}");
+                    File.WriteAllBytes(Root + "/Temp/m1_render_nt.bin", game.Ppu.NametableRam);
+                    File.WriteAllBytes(Root + "/Temp/m1_render_oam.bin", game.Ppu.Oam);
+                    File.WriteAllBytes(Root + "/Temp/m1_render_pal.bin", game.Ppu.PaletteRam);
+                    var tex = new Texture2D(256,240,TextureFormat.RGBA32,false);
+                    var px = new Color32[256*240];
+                    byte savedMask = game.Ppu.Mask, savedCtrl = game.Ppu.Ctrl;
+                    game.Ppu.Mask = g[0xFE]; game.Ppu.WriteRegister(0x2000,0x90);
+                    game.Ppu.Render(game.Framebuffer);
+                    game.Ppu.Mask = savedMask; game.Ppu.WriteRegister(0x2000,savedCtrl);
+                    for (int y=0;y<240;y++) for(int x=0;x<256;x++)
+                        px[(239-y)*256+x] = Darkwing.UnityApp.NesPalette.Table[game.Framebuffer[y*256+x]&63];
+                    tex.SetPixels32(px); tex.Apply(false);
+                    File.WriteAllBytes(Root+"/Temp/m1_render.png",ImageConversion.EncodeToPNG(tex));
+                    UnityEngine.Object.DestroyImmediate(tex);
+                }
                 sb.Append('\n');
             }
             if (trace && f == _tileDumpFrame && game.TileMap != null)
@@ -837,6 +858,32 @@ public static class PhysCompare
         },
         camera: true, enemies: true, trace: true, limit: 0, palette: true,
         goldenDir: "m1_trench", scoreEnemies: true);
+
+    /// <summary>Replay the capture's actual button schedule, including releases.
+    /// Temporary diagnostic captures may be passed as an absolute directory.</summary>
+    public static string M1Natural(string capture, int dumpFrame = -1, int seedFrame = 0)
+    {
+        string dir = Path.GetFullPath(capture);
+        var req = JsonUtility.FromJson<CaptureRequest>(File.ReadAllText(dir + "/request.json"));
+        var windows = new System.Collections.Generic.List<(int lo, int hi, byte mask)>();
+        for (int i = 0; i + 1 < req.argv.Length; i++)
+        {
+            if (req.argv[i] != "--input") continue;
+            var m = System.Text.RegularExpressions.Regex.Match(req.argv[++i], @"^0:(a|b|select|start|up|down|left|right)@(\d+)-(\d+)$");
+            if (!m.Success) throw new System.IO.InvalidDataException("Unsupported input schedule");
+            string[] names = { "right", "left", "down", "up", "start", "select", "b", "a" };
+            windows.Add((int.Parse(m.Groups[2].Value), int.Parse(m.Groups[3].Value),
+                (byte)(1 << System.Array.IndexOf(names, m.Groups[1].Value))));
+        }
+        _enemyDumpLo = _enemyDumpHi = dumpFrame;
+        try { return Compare("m1_natural", 0, f => {
+            byte held = 0;
+            foreach (var w in windows) if (f >= w.lo && f <= w.hi) held |= w.mask;
+            return held;
+        }, seedFrame: seedFrame, camera: true, enemies: true, trace: true, palette: true,
+           goldenDir: Path.GetRelativePath(Root + "/Research/DarkwingDuck/reference", dir), scoreEnemies: true); }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
 
     /// <summary>The trench run diverges where the ROM takes an enemy contact. Dump the full
     /// per-slot list (port | ROM) around that frame so the missing $813B hit is attributable
@@ -1452,6 +1499,371 @@ public static class PhysCompare
     }
 
     /// <summary>Synthetic faults only; never mutates ROM or golden files.</summary>
+    private sealed class PushProbeMap : Darkwing.Core.ITileMap
+    {
+        public int Reads;
+        public byte TypeAt(int x, int y) { Reads++; return 0; }
+    }
+
+    private sealed class CrouchDropMap : Darkwing.Core.ITileMap
+    {
+        public byte TypeAt(int x, int y) => 1;
+    }
+
+    public static string CrouchDropContract()
+    {
+        var o=new Darkwing.Core.ObjectSystem(null);
+        var p=new Darkwing.Core.PlayerCore(new CrouchDropMap()) {
+            Objects=o, State=2, X=3888, Y=340, YFrac=0xBD, ScrollYRow=1,
+            YVelInt=-1, YVelFrac=0xAB, Flags=0xD0 };
+        o.Slots[0].AnimNumber=6;o.Slots[0].AnimFrame=1;o.Slots[0].StateLow=0x81;
+        p.Step(0x84,0x80);
+        if(p.State!=0x0A||p.Y!=341||p.YFrac!=0x12||o.Slots[0].AnimNumber!=0x12)
+            throw new System.Exception($"$D018 integrates before entering the drop state: {p.State:X2} {p.Y:X4}:{p.YFrac:X2} anim{o.Slots[0].AnimNumber:X2}");
+        for(int i=0;i<17;i++)p.Step(4,0);
+        if(p.State!=4||p.Y!=380||p.YFrac!=0xB7||p.YVelInt!=-1||p.YVelFrac!=0xAB||o.Slots[0].AnimNumber!=0x0B)
+            throw new System.Exception("$D5E7 middle-probe guard must release after seventeen passes");
+        return "PASS crouch A same-frame integration and seventeen-pass drop guard (human f18770-f18788)";
+    }
+
+    public static string QuackerjackKickContract()
+    {
+        foreach(byte row in new byte[]{0x30,0x90})
+        {
+            var o=new Darkwing.Core.ObjectSystem(null);
+            var p=new Darkwing.Core.PlayerCore(new PushProbeMap()) {Objects=o,Y=(ushort)(0x100+row+4)};
+            var c=new Darkwing.Core.EnemyDispatcher(new byte[16384],o,p);
+            var s=o.Slots[14];s.Active=true;s.StateLow=0x81;s.Flags=0x90;s.Behavior=0x51;
+            s.X=0xF60;s.Y=(ushort)(0x100+row);s.XVelInt=1;s.XVelFrac=0x80;
+            Darkwing.Core.BossBehaviors.Reset();
+            Darkwing.Core.EnemyBehaviors.RngE4=0;Darkwing.Core.EnemyBehaviors.RngE5=1;
+            Darkwing.Core.BossBehaviors.Dispatch(14,s,0x51,c);
+            bool up=row>=0x50;
+            if(s.StateLow!=0x82||s.T4B0!=15||s.YVelInt!=(up?6:-1)||s.YVelFrac!=(up?0x8E:0xAB)||s.T480!=(up?0:255))
+                throw new System.Exception("$98DA ADC must inherit CMP #$50 carry");
+        }
+        return "PASS Quackerjack kick carries both sides of CMP #$50 into RNG";
+    }
+
+    private sealed class LobProbeMap : Darkwing.Core.ITileMap
+    {
+        public byte Type;
+        public System.Collections.Generic.List<int> Ys=new System.Collections.Generic.List<int>();
+        public byte TypeAt(int x,int y){Ys.Add(y);return Type;}
+    }
+
+    public static string LobAndFlashContract()
+    {
+        int checks=0;
+        void Check(bool ok,string label){if(!ok)throw new System.Exception(label);checks++;}
+        var o=new Darkwing.Core.ObjectSystem(null);var p=new Darkwing.Core.PlayerCore(new PushProbeMap()){Objects=o};
+        var map=new LobProbeMap();var c=new Darkwing.Core.EnemyDispatcher(new byte[16384],o,p){Tiles=map};
+        var s=o.Slots[2];s.Active=true;s.StateLow=0x80;s.AnimNumber=0x16;s.Behavior=2;s.X=0xF80;s.Y=0x158;
+        Darkwing.Core.EnemyBehaviors.Dispatch(2,s,2,c);
+        Check(s.Y==0x155&&s.YVelInt==2&&s.YVelFrac==0xC0,"lob initial arc");
+        var b7=File.ReadAllBytes(Root+"/Assets/Darkwing/Data/world_bank7.bytes");
+        Check(map.Ys.Count==2&&map.Ys[0]==s.Y+(sbyte)b7[0x2CAD+0x14]&&map.Ys[1]==s.Y+(sbyte)b7[0x2CAD+0x15],"lob rising probes use $12 + count + 1");
+        o.Slots[4].StateLow=0x83;o.Slots[3].StateLow=0x82;
+        map.Type=3;s.YVelInt=-1;s.YVelFrac=0;
+        Darkwing.Core.EnemyBehaviors.Dispatch(2,s,2,c);
+        Check(s.AnimNumber==0x14,"lob lands into burst");
+        foreach(int i in new[]{4,3})
+            Check(o.Slots[i].Active&&o.Slots[i].StateLow==0x80&&o.Slots[i].AnimNumber==0x18&&o.Slots[i].Behavior==1&&o.Slots[i].BehaviorParam==1,"lob burst spawns real gas clouds and re-arms reused slots");
+        Check(o.Slots[4].Direction==1&&o.Slots[3].Direction==2,"$841A split directions");
+        Darkwing.Core.BossBehaviors.Reset();
+        var boss=o.Slots[14];boss.Flags=0x90;
+        Darkwing.Core.BossBehaviors.InvulnTimer=27;Darkwing.Core.BossBehaviors.ProjectileSlot=14;
+        Darkwing.Core.BossBehaviors.HitFlash(c,boss);
+        Check(boss.Flags==0x98&&Darkwing.Core.BossBehaviors.InvulnTimer==26,"three LSRs blink on bit 2");
+        Darkwing.Core.BossBehaviors.HitFlash(c,o.Slots[15]);
+        Check(Darkwing.Core.BossBehaviors.InvulnTimer==26,"only hit owner decrements the shared timer");
+        Darkwing.Core.BossBehaviors.Reset();
+        boss.Active=true;boss.Flags=0x90;boss.Behavior=0x51;boss.BehaviorParam=1;
+        var cloud=o.Slots[4];cloud.Active=true;cloud.Flags=0x90;cloud.AnimNumber=0x18;cloud.Behavior=1;cloud.X=boss.X;cloud.Y=boss.Y;
+        Check(Darkwing.Core.BossBehaviors.TakeProjectileHit(c,boss)&&cloud.AnimNumber==0x18&&cloud.Behavior==1&&Darkwing.Core.BossBehaviors.DamageAccum==2,"boss takes two damage without consuming persistent cloud");
+        return "PASS "+checks+" checks: lob probe/burst/reused slots and boss flash owner";
+    }
+
+    private sealed class VictoryFloorMap : Darkwing.Core.ITileMap
+    { public byte TypeAt(int x,int y)=>3; }
+
+    public static string BossTailContract()
+    {
+        int checks=0;
+        void Check(bool ok,string label){if(!ok)throw new System.Exception(label);checks++;}
+        var o=new Darkwing.Core.ObjectSystem(null);var p=new Darkwing.Core.PlayerCore(new VictoryFloorMap()){Objects=o,State=1,X=0xF68,Y=0x14E,ScrollYRow=1};
+        var c=new Darkwing.Core.EnemyDispatcher(new byte[16384],o,p);
+        o.Slots[0].Active=true;o.Slots[0].AnimNumber=0x12;o.Slots[0].StateLow=0x81;
+        var boss=o.Slots[14];boss.Active=true;boss.StateLow=0x82;boss.Behavior=0x51;boss.Flags=0x98;boss.BehaviorParam=12;boss.Y=0x17F;
+        int clears=0,sounds=0;c.BossDefeated=()=>clears++;c.Sfx=id=>{if(id==0x1E)sounds++;};
+        Darkwing.Core.BossBehaviors.DamageAccum=17;
+        Darkwing.Core.BossBehaviors.HitFlash(c,boss);
+        Check(p.State==0x0F&&boss.Active&&boss.StateLow==0x80&&boss.Behavior==0x4F&&boss.BehaviorParam==0&&o.Slots[0].StateLow==0x80,"$B315 retasks live body and re-arms player");
+        Check(clears==0,"boss hit must not call mission clear");
+        Darkwing.Core.BossBehaviors.Dispatch(14,boss,0x4F,c);
+        Check(p.State==0x0F&&boss.Y==0x17B&&boss.YVelInt==3&&boss.YVelFrac==4&&boss.XVelFrac==0x80,"defeat pop uses gravity and low-byte exit test");
+        Darkwing.Core.BossBehaviors.Dispatch(14,boss,0x4F,c);
+        Check(sounds==1,"pop sound runs once");
+        boss.Y=0x1DF;boss.YFrac=0;boss.YVelInt=-1;boss.YVelFrac=0;
+        Darkwing.Core.BossBehaviors.Dispatch(14,boss,0x4F,c);
+        Check(p.State==0x15,"pop exits only at low Y >= E0");
+        o.Slots[0].StateLow=0x80;p.Y=0x1D4;p.YFrac=0;p.YVelInt=-1;p.YVelFrac=0;
+        int music=-1;p.Sound=id=>music=id;p.Step(0,0);
+        Check(o.Slots[0].AnimNumber==0x2D&&p.ChrLatch0==0x8E&&music==2&&p.Y==0x1D4,"$DA04 lands into real victory animation/music");
+        o.Slots[0].AnimFrame=0x2B;o.Slots[0].AnimTimer=4;p.Step(0,0);
+        Check(p.YieldOnlyFrame&&p.State==0x15,"victory starts pure FEFF hold");
+        for(int i=0;i<55;i++)p.Step(0,0);
+        Check(p.YieldOnlyFrame&&p.State==0x15,"hold lasts 56 yields");
+        p.Step(0,0);Check(!p.YieldOnlyFrame&&p.State==0x11,"native D838 dispatch follows the hold");
+        return "PASS "+checks+" checks: B315/B3F8/DA04 native boss tail (diagnostic fixture, not route proof)";
+    }
+
+    public static string SceneDescriptorContract()
+    {
+        byte[] D(string n)=>File.ReadAllBytes(Root+"/Assets/Darkwing/Data/"+n+".bytes");
+        var data=Darkwing.Core.DataLoader.Load(D("chr_full"),D("levelsets"),D("screens"),D("levels"),D("anims"));
+        var g=new Darkwing.Core.DarkwingGame(data){Bank5=D("prg_bank5"),Bank7=D("world_bank7"),Bank2=D("prg_bank2")};
+        var decoder=new Darkwing.Core.RoomDecoder(D("prg_bank0"),D("prg_bank1"),D("world_bank7"),D("levelsets"));
+        g.BeginSceneLoad(decoder,8);
+        if(g.Player.CellIndex!=2)throw new System.Exception("$DD7B scene cell must remain the descriptor's 2, though scroll is 0");
+        int frames=0;while(!g.TickSceneLoad()&&++frames<50){}
+        if(frames>=50||g.Player.CellIndex!=2||g.Player.CellIndexNext!=3)
+            throw new System.Exception("staging must finish once, without a second full cursor wrap");
+        g.LoadSection(2);var idle=default(Darkwing.Core.NesButtons);bool applied=false;
+        for(int f=0;f<40;f++){g.Step(in idle);if(g.Ppu.Chr0Bank==10&&g.Ppu.Chr1Bank==16){applied=true;break;}}
+        if(!applied)throw new System.Exception("render-on NMI must apply $1A=8A/$1B=90 before clearing the latches");
+        return "PASS native scene descriptor cell, one staging completion, and real section CHR upload";
+    }
+
+    public static string OffscreenAnimationContract()
+    {
+        byte[] D(string n)=>File.ReadAllBytes(Root+"/Assets/Darkwing/Data/"+n+".bytes");
+        var data=Darkwing.Core.DataLoader.Load(D("chr_full"),D("levelsets"),D("screens"),D("levels"),D("anims"));
+        var g=new Darkwing.Core.DarkwingGame(data){Bank5=D("prg_bank5")};
+        g.Player.ScrollX=0x180;g.Player.ScrollYRow=3;
+        var s=g.Objects.Slots[14];s.Active=true;s.StateLow=0x80;s.Flags=0x90;
+        s.X=0x178;s.Y=0x3B8;s.AnimNumber=0x1C;
+        g.Oam.RunFrame(1);
+        if(!s.Active||s.Flags!=0x10||s.AnimTimer!=0||s.AnimFrame!=0)
+            throw new System.Exception("$80C6 offscreen-surviving object must return before $8100");
+        g.Player.ScrollX=0x100;g.Oam.RunFrame(2);
+        if(s.Flags!=0x90||s.AnimTimer!=1)
+            throw new System.Exception("onscreen negative control must resume animation");
+        var player=g.Objects.Slots[0];player.Active=true;player.StateLow=0x80;player.Flags=0x90;
+        player.X=0x178;player.Y=0x2E0;player.AnimNumber=0x11;
+        g.Oam.RunFrame(3);
+        if((player.Flags&0x80)!=0||player.AnimTimer!=1)
+            throw new System.Exception("$806E player above the camera still reaches animation at $80E1");
+        return "PASS side-offscreen animation freeze, visible resume, and player-above-camera exception";
+    }
+
+    private sealed class AirPoseMap : Darkwing.Core.ITileMap
+    { public byte TypeAt(int x,int y)=>(byte)(x==189?2:0); }
+
+    public static string PlayerPoseContract()
+    {
+        int checks=0;void Check(bool ok,string label){if(!ok)throw new System.Exception(label);checks++;}
+        foreach(byte sub in new byte[]{0,2})
+        {
+            var o=new Darkwing.Core.ObjectSystem(null);
+            var p=new Darkwing.Core.PlayerCore(new AirPoseMap()){Objects=o,State=1,X=200,Y=884,ScrollYRow=3,YVelInt=3,YVelFrac=0x25,AirSubState=sub};
+            o.Slots[0].AnimNumber=sub==0?(byte)0x11:(byte)0x0E;
+            p.Step(0x80,0);
+            Check(p.YVelInt>=0&&o.Slots[0].AnimNumber==(sub==0?0x12:0x0F),"$CD82 probe class 2 selects fall pose even with rising velocity");
+        }
+        var objects=new Darkwing.Core.ObjectSystem(null);
+        var hang=new Darkwing.Core.PlayerCore(new PushProbeMap()){Objects=objects,State=0x0D};
+        var s=objects.Slots[0];s.AnimNumber=0x0C;s.AnimFrame=0;s.AnimTimer=0;
+        hang.Step(0,0);Check(s.AnimNumber==0x0C,"$D1C0 keeps the hanging shot until its last frame");
+        s.AnimFrame=2;s.AnimTimer=4;hang.Step(0,0);
+        Check(s.AnimNumber==0x0B&&s.AnimFrame==0&&s.AnimTimer==0,"$D1C5/$D1CE release the completed hanging shot");
+        return "PASS "+checks+" checks: rising class-2 contact and hanging firing pose";
+    }
+
+    public static string ResidentReturnContract()
+    {
+        byte[] D(string n)=>File.ReadAllBytes(Root+"/Assets/Darkwing/Data/"+n+".bytes");
+        var data=Darkwing.Core.DataLoader.Load(D("chr_full"),D("levelsets"),D("screens"),D("levels"),D("anims"));
+        var g=new Darkwing.Core.DarkwingGame(data){Bank5=D("prg_bank5"),WorldRunning=false};
+        var p=g.Player;p.State=1;p.Y=0x360;p.YVelInt=-1;p.YVelFrac=0;p.ScrollYRow=3;
+        g.Objects.Slots[0].Active=true;g.Objects.Slots[0].StateLow=0x80;g.Objects.Slots[0].AnimNumber=0x12;
+        g.Ppu.Ctrl=0x90;g.Ppu.Mask=0x1E;
+        g.ResidentProcess=pad=>{g.ResidentProcess=null;g.WorldRunning=true;};
+        var idle=default(Darkwing.Core.NesButtons);g.Step(in idle);
+        if(p.Y!=0x361||g.FrameParity!=1||g.Frame!=1||g.NmiCounter!=1)
+            throw new System.Exception("resident RTS must reach the same player/engine pass with one NMI and one frame");
+        return "PASS resident return continues player/engine in the same frame, without another NMI";
+    }
+
+    public static string CompletedMapContract()
+    {
+        byte[] D(string n)=>File.ReadAllBytes(Root+"/Assets/Darkwing/Data/"+n+".bytes");
+        var data=Darkwing.Core.DataLoader.Load(D("chr_full"),D("levelsets"),D("screens"),D("levels"),D("anims"));
+        var g=new Darkwing.Core.DarkwingGame(data){Bank5=D("prg_bank5"),Bank7=D("world_bank7"),Bank2=D("prg_bank2"),MapPalette=D("map_palette"),MapChrBank0=31,MapChrBank1=26};
+        var decoder=new Darkwing.Core.RoomDecoder(D("prg_bank0"),D("prg_bank1"),D("world_bank7"),D("levelsets"));
+        var flow=new Darkwing.Core.GameFlow(g,decoder);flow.World.CompletedCount=1;g.Objects.Slots[2].Behavior=2;
+        var flags=System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance;
+        typeof(Darkwing.Core.GameFlow).GetMethod("BeginResidentMap",flags).Invoke(flow,new object[]{false});
+        if(flow.World.CompletedMask!=1||flow.World.CompletedCount!=1||g.Objects.Slots[2].AnimNumber!=0xBD||g.Objects.Slots[2].Behavior!=2)
+            throw new System.Exception("clear map sets progress and preserves unwritten object bytes");
+        typeof(Darkwing.Core.GameFlow).GetMethod("SelectMapBubble",flags).Invoke(flow,null);
+        if(flow.World.StreamId!=16||g.Objects.Slots[2].AnimNumber!=0xC4||flow.BubbleAvailable(0))
+            throw new System.Exception("cleared selected bubble uses C4 and already-cleared stream 16");
+        flow.World.CursorBubble=1;typeof(Darkwing.Core.GameFlow).GetMethod("SelectMapBubble",flags).Invoke(flow,null);
+        if(flow.World.StreamId!=1||g.Objects.Slots[2].AnimNumber!=0xBD||!flow.BubbleAvailable(1))
+            throw new System.Exception("uncleared bubble remains selectable");
+        g.Player.X=0x100;g.Player.Y=0x300;g.Player.ResetHud();g.Oam.HudActive=true;g.ResidentWalk();
+        if(g.Objects.Slots[1].ScreenX!=24||g.Objects.Slots[1].ScreenY!=28)
+            throw new System.Exception("HUD still executes the absolute-position update");
+        return "PASS cleared-map progression, C4 selection, preserved behavior, and HUD screen position (diagnostic fixture)";
+    }
+
+    public static string Mission1Contracts()
+    {
+        return string.Join("\n",new[]{G92Exit(),AirShotContract(),PickupContract(),WeaponSwitchContract(),
+            CrouchDropContract(),QuackerjackKickContract(),LobAndFlashContract(),BossTailContract(),
+            SceneDescriptorContract(),OffscreenAnimationContract(),PlayerPoseContract(),
+            ResidentReturnContract(),CompletedMapContract()});
+    }
+
+    public static string Mission1Regressions()
+    {
+        var sb=new System.Text.StringBuilder();
+        foreach(var test in new System.Func<string>[]{M1Trench,M1Cling,M1Climb})
+        {
+            string tail=VerdictTail(test());sb.AppendLine(tail);
+            if(!tail.Contains("RESULT: MATCH")||!tail.Contains("STRICT: MATCH"))
+                throw new System.Exception("Mission-1 regression: "+tail);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>Explicit diagnostic fixtures for the successful $D6B4 -> $D709 exit.
+    /// Runs the public dispatcher with RIGHT+B so fallthrough is observable in both
+    /// movement and fire. This is branch coverage, not a natural-route golden.</summary>
+    public static string AirShotContract()
+    {
+        int checks = 0;
+        void Check(bool value, string label) { if (!value) throw new System.Exception(label); checks++; }
+        Darkwing.Core.PlayerCore Setup(out Darkwing.Core.ObjectSystem objects)
+        {
+            objects = new Darkwing.Core.ObjectSystem(null);
+            objects.Slots[0].AnimNumber = 0x11;
+            return new Darkwing.Core.PlayerCore(new PushProbeMap()) {
+                Objects=objects, State=1, X=302, Y=804, YFrac=0x9C,
+                YVelInt=0, YVelFrac=0xE5, Flags=0xD0, DirBits=1 };
+        }
+        // Human original f4454 -> f4455: B replaces A with the player still rising.
+        var p=Setup(out var o);
+        p.Step(0x40,0x40);
+        Check(p.Y==803 && p.YFrac==0xB7 && p.YVelInt==0 && p.YVelFrac==0xA5,"CE39 preserves player rise");
+        Check(p.HasPendingFire && p.PendingFire.CutYVelocity,"F5FC targets allocated projectile");
+        Check(o.Slots[0].AnimNumber==0x0E,"rising firing pose");
+        var dispatcher=new Darkwing.Core.EnemyDispatcher(new byte[16384],o,p);
+        dispatcher.SpawnWeapon(p.PendingFire);p.HasPendingFire=false;
+        Check(o.Slots[4].YVelInt==-1 && o.Slots[4].YVelFrac==0xAB,"projectile receives indexed cut");
+        p.Step(0x40,0);
+        Check(p.Y==804 && p.YFrac==0x0C && p.YVelInt==-1 && p.YVelFrac==0x6B,"next frame cuts player");
+        Check(o.Slots[0].AnimNumber==0x0F,"falling firing pose");
+        var control=Setup(out _);control.Step(0x40,0);
+        Check(control.Y==804 && control.YFrac==0xF1 && control.YVelInt==-1,"without a fresh shot release cuts player");
+        return "PASS "+checks+" checks: original f4454/f4455 shot contract and negative control";
+    }
+
+    public static string PickupContract()
+    {
+        int checks=0;
+        foreach(byte anim in new byte[]{0x22,0x23})
+        foreach(byte damage in new byte[]{0,1,3})
+        {
+            var o=new Darkwing.Core.ObjectSystem(null);
+            var p=new Darkwing.Core.PlayerCore(new PushProbeMap()) {
+                Objects=o, X=0x100,Y=0x100, Flags=0xD0, HitLadder=damage, WeaponSelected=3 };
+            var ctx=new Darkwing.Core.EnemyDispatcher(new byte[16384],o,p);
+            var s=o.Slots[2];s.Active=true;s.Flags=0x80;s.Behavior=8;s.BehaviorParam=0x40;
+            s.AnimNumber=anim;s.X=p.X;s.Y=p.Y;
+            Darkwing.Core.EnemyBehaviors.Dispatch(2,s,8,ctx);
+            byte expected=anim==0x22?(byte)0:(byte)System.Math.Max(0,damage-1);
+            if(s.Active||p.HitLadder!=expected||p.ActiveGasEnergyLo!=0||p.ActiveGasEnergyHi!=0||p.WeaponActive!=0)
+                throw new System.Exception("$89D6 health pickup altered gas or failed to heal");
+            checks++;
+        }
+        Darkwing.Core.EnemyBehaviors.LoadTypeTable(File.ReadAllBytes(Root+"/Assets/Darkwing/Data/object_types.bytes"));
+        Darkwing.Core.EnemyBehaviors.TryGetType(9,out _,out _,out _,out _,out byte hp);
+        if(hp!=0x83)throw new System.Exception("$8175 strided HP for placed frog type 9");
+        return "PASS "+(checks+1)+" checks: repair pickups preserve inactive gas; native frog HP83";
+    }
+
+    public static string WeaponSwitchContract()
+    {
+        int checks=0;
+        void Check(bool ok,string label){if(!ok)throw new System.Exception(label);checks++;}
+        var g=new Darkwing.Core.DarkwingGame();var p=g.Player;
+        g.Objects.Slots[0].Active=true;g.Objects.Slots[0].StateLow=0x80;
+        p.State=0x0F;p.LevelActive=0;p.WeaponSelected=1;p.GasEnergyHi=0x74;p.GasEnergyLo=0x70;
+        var select=Darkwing.Core.NesButtons.FromByte(0x20);var idle=default(Darkwing.Core.NesButtons);
+        g.Step(in select);
+        Check(p.WeaponActive==1&&p.GasActive==1&&p.GasToggle==1&&p.ActiveGasEnergyHi==0x74&&p.ActiveGasEnergyLo==0x70,"Select equips saved weapon/meter");
+        g.Step(in select);Check(p.GasActive==1&&p.GasToggle==1,"held Select has no second edge");
+        p.DrainActiveMeter(0xFE);
+        Check(p.ActiveGasEnergyHi==0x73&&p.ActiveGasEnergyLo==0x78,"CLC/SBC FE drains two units");
+        g.Step(in idle);g.Step(in select);
+        Check(p.WeaponActive==0&&p.GasActive==0&&p.ActiveGasEnergyLo==0&&p.GasEnergyHi==0x73&&p.GasEnergyLo==0x78,"Select stows remaining meter");
+        p.GasEnergyHi=0x74;p.GasEnergyLo=0x70;p.AddSavedMeter(0xFE);
+        Check(p.GasEnergyHi==0x73&&p.GasEnergyLo==0x78,"saved meter uses the same borrow");
+        g.Step(in idle);p.State=9;g.Step(in select);
+        Check(p.WeaponActive==0&&p.GasToggle==0,"mission entry guards Select");
+        return "PASS "+checks+" checks: $C9B3 Select and indexed meter subtraction";
+    }
+
+    public static string G92Exit()
+    {
+        int checks = 0;
+        void Check(bool ok, string name) { if (!ok) throw new System.Exception("G92: " + name); checks++; }
+        foreach (bool scan in new[] { false, true })
+        foreach (ushort y in new ushort[] { 0x0360, 0x0300 })
+        {
+            var map = new PushProbeMap();
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var p = new Darkwing.Core.PlayerCore(map) {
+                Objects = objects, State = 0x0B, AirSubState = 2,
+                X = 0x0100, Y = y, YVelInt = -1, YVelFrac = 0, Flags = 0xD0
+            };
+            var support = objects.Slots[scan ? 2 : 1];
+            support.Active = true; support.Flags = 0x80; support.Behavior = 1;
+            support.AnimNumber = 1; support.BehaviorParam = 0x87;
+            support.X = p.X; support.Y = (ushort)(y + 8);
+            p.Step(0x41, 0x40);
+            Check(p.State == 0, "successful support branch reached");
+            Check(p.X == 0x0100 && p.XFrac == 0, "RTS suppresses steering");
+            Check(!p.HasPendingFire, "RTS suppresses airborne fire");
+            Check(map.Reads == 3, "only initial floor probes; no hook/side probe");
+            Check(p.Y == (y == 0x0300 ? 0x02ED : 0x035D), "lift clamp and 240px row borrow");
+            Check(p.AirSubState == 2, "$56 preserved");
+            // Same geometry without an active support must reach normal airborne control.
+            support.Active = false; p.State = 0x0B; p.X = 0x0100; p.Y = y;
+            p.YVelInt = -1; p.YVelFrac = 0; map.Reads = 0;
+            p.Step(0x41, 0x40);
+            Check(p.State == 0x0B && p.X > 0x0100 && p.HasPendingFire,
+                "negative control reaches steering and fire");
+        }
+        // Class 7 is taller than it is wide ($FBE9=28, $FC09=16). The exact Y edge
+        // must accept a zero lift; using the X half-size here wrongly rejects it.
+        var edgeMap = new PushProbeMap();
+        var edgeObjects = new Darkwing.Core.ObjectSystem(null);
+        var edge = new Darkwing.Core.PlayerCore(edgeMap) {
+            Objects = edgeObjects, State = 0x0B, X = 0x0100, Y = 0x0360,
+            YVelInt = -1, Flags = 0xD0
+        };
+        var tall = edgeObjects.Slots[2];
+        tall.Active = true; tall.Flags = 0x80; tall.BehaviorParam = 0x87;
+        tall.X = edge.X; tall.Y = 0x037D;
+        edge.Step(0x41, 0x40);
+        Check(edge.State == 0 && edge.Y == 0x0361 && edge.X == 0x0100 && !edge.HasPendingFire,
+            "tall support Y edge accepts zero lift");
+        return $"PASS G92 successful pair+scan exits, row borrow, tall Y edge and negative controls: {checks} checks";
+    }
+
     public static string AuditSelfTests()
     {
         int count = 0;

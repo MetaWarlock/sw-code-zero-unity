@@ -21,6 +21,9 @@ namespace Darkwing.Core
         private byte[][] _roomAttrs;   // [cell] -> metatile id -> attr byte
         private byte[][] _roomMeta;    // [cell] -> 16x16 metatile ids
         private int _row;
+        private readonly System.Collections.Generic.Dictionary<int, byte[]> _collisionRooms = new();
+        private readonly System.Collections.Generic.Dictionary<int, (byte[] tiles, byte[] meta, byte[] attrs)> _visualRooms = new();
+        public byte CameraY;
 
         public LevelTileMap(RoomDecoder decoder, Ppu ppu, RoomDecoder.World world)
         {
@@ -57,7 +60,6 @@ namespace Darkwing.Core
                 for (int m = 0; m < 256; m++) attrs[m] = (byte)(tb[m] & 3);
                 _roomAttrs[col] = attrs;
             }
-            _lastStreamed = -1;
         }
 
         /// <summary>Current grid row ($FB).</summary>
@@ -66,7 +68,12 @@ namespace Darkwing.Core
         /// <summary>$36 — the section loader rewrites the metatile-set bank before it
         /// rebuilds the row ($E38F STA $36 ... JSR $DE24 → $E698), so decoding must
         /// use the new set. Same-world only: $E388 never touches $32/$34/$2E.</summary>
-        public void ApplyTilesetBank(byte setBank) => _world.SetBank = setBank;
+        public void ApplyTilesetBank(byte setBank)
+        {
+            _world.SetBank = setBank;
+            _collisionRooms.Clear();
+            _visualRooms.Clear();
+        }
 
         /// <summary>Grid row stride = $2E: linear cell index $22 = row*GridWidth + column.</summary>
         public int GridWidth => _world.RowWidth;
@@ -88,38 +95,56 @@ namespace Darkwing.Core
         /// <summary>Stream nametable columns so the window covers scroll..scroll+256.</summary>
         public void StreamColumns(ushort scrollX)
         {
-            int firstCol = scrollX >> 3;                  // world tile column at the left edge
-            for (int k = 0; k < 32; k++)                  // exactly the 32-column window
+            int firstCell = scrollX >> 8;
+            _ppu.ScrollX = (byte)scrollX;
+            _ppu.ScrollY = CameraY;
+            for (int page = 0; page < 2; page++)
+            for (int col = 0; col < 32; col++)
             {
-                StreamColumn(firstCol + k);
+                // Horizontal rooms need two adjacent columns; an aligned vertical ride
+                // needs the current 240px row plus the next row below it.
+                int cell = firstCell + (CameraY == 0 ? page : 0);
+                int sourceRow = _row + (CameraY == 0 ? 0 : page);
+                StreamColumn(cell * 32 + col, sourceRow, page);
             }
         }
 
-        private int _lastStreamed = -1;
-
-        private void StreamColumn(int worldTileCol)
+        private void StreamColumn(int worldTileCol, int sourceRow, int page)
         {
-            if (worldTileCol == _lastStreamed) return;
-            _lastStreamed = worldTileCol;
             int inRoomCol = worldTileCol & 31;            // 32 tile columns per 256px cell
             int cell = worldTileCol >> 5;
-            if (cell >= _world.RowWidth) return;
-            var tiles = _roomTiles[cell];
-            var meta = _roomMeta[cell];
+            if (cell >= _world.RowWidth || sourceRow >= _world.GridRows) return;
+            byte[] tiles, meta, attrs;
+            if (sourceRow == _row) { tiles = _roomTiles[cell]; meta = _roomMeta[cell]; attrs = _roomAttrs[cell]; }
+            else
+            {
+                int key = sourceRow * _world.RowWidth + cell;
+                if (!_visualRooms.TryGetValue(key, out var room))
+                {
+                    tiles = new byte[1024]; attrs = new byte[256];
+                    byte roomId = _world.CellAt(sourceRow, cell);
+                    if (roomId != 0) _decoder.Decode(_world, roomId, new byte[64], tiles, new byte[256]);
+                    meta = (byte[])_decoder.MetaGrid.Clone();
+                    for (int m = 0; m < 256; m++) attrs[m] = (byte)(_decoder.TypeBytes[m] & 3);
+                    room = (tiles, meta, attrs); _visualRooms[key] = room;
+                }
+                (tiles, meta, attrs) = room;
+            }
             var nt = _ppu.NametableRam;
+            int baseNt = page * 0x400;
             int ringCol = inRoomCol;
             for (int row = 0; row < 30; row++)
             {
-                nt[row * 32 + ringCol] = tiles[row * 32 + inRoomCol];
+                nt[baseNt + row * 32 + ringCol] = tiles[row * 32 + inRoomCol];
             }
             // Attributes: the 2-bit palette per 16px cell, packed per NES quadrant.
             for (int mrow = 0; mrow < 15; mrow++)
             {
                 int mcol = inRoomCol >> 1;
                 int metaIndex = meta[mrow * 16 + mcol];
-                int attrByteIndex = 0x3C0 + (mrow >> 1) * 8 + (mcol >> 1);
+                int attrByteIndex = baseNt + 0x3C0 + (mrow >> 1) * 8 + (mcol >> 1);
                 int shift = ((mrow & 1) << 2) | ((mcol & 1) << 1);
-                byte pal = (byte)(_roomAttrs[cell][metaIndex] & 3);
+                byte pal = (byte)(attrs[metaIndex] & 3);
                 nt[attrByteIndex] = (byte)((nt[attrByteIndex] & ~(3 << shift)) | (pal << shift));
             }
         }
@@ -143,7 +168,24 @@ namespace Darkwing.Core
             int cell = (worldX >> 8) & 0xFFFF;
             if ((uint)cell >= (uint)_world.RowWidth) return 0;
             int row = (worldY & 0xFF) >> 4;
-            return _roomTypes[cell][row * 16 + ((worldX & 0xFF) >> 4)];
+            int worldRow = (worldY >> 8) & 0xFF;
+            if ((uint)worldRow >= (uint)GridRows) return 0;
+            byte[] types;
+            if (worldRow == _row) types = _roomTypes[cell];
+            else
+            {
+                // A vertical camera window spans two 240px rows. Its lower strip still
+                // contains the old row after $FB changes; use the probe's actual room.
+                int key = worldRow * _world.RowWidth + cell;
+                if (!_collisionRooms.TryGetValue(key, out types))
+                {
+                    types = new byte[256];
+                    byte room = _world.CellAt(worldRow, cell);
+                    if (room != 0) _decoder.Decode(_world, room, new byte[64], new byte[1024], types);
+                    _collisionRooms[key] = types;
+                }
+            }
+            return types[row * 16 + ((worldX & 0xFF) >> 4)];
         }
     }
 }

@@ -6,7 +6,10 @@ param(
   [int]$SecondWaitSec = 30,
   [string]$PlayerLog,
   [string]$Report,
-  [string]$Replay
+  [string]$Replay,
+  [int]$ReplayTimeoutSec = 0,
+  [switch]$CompletedMission,
+  [switch]$ShowGameWindow = $true
 )
 $ErrorActionPreference = 'Stop'
 function MeasureClient($bmp, [int]$left, [int]$top, [int]$width, [int]$height) {
@@ -44,16 +47,31 @@ using System.Runtime.InteropServices;
 public struct WINRECT { public int Left, Top, Right, Bottom; }
 public struct WINPOINT { public int X, Y; }
 public class Win32Cap {
+  public delegate bool EnumWindowProc(IntPtr h, IntPtr data);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowProc proc, IntPtr data);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out WINRECT r);
   [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out WINRECT r);
   [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref WINPOINT p);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
+  public static IntPtr PlayerWindow(int processId) {
+    IntPtr found=IntPtr.Zero; int area=0;
+    EnumWindows((h,unused) => {
+      uint pid; GetWindowThreadProcessId(h,out pid); WINRECT r;
+      if(pid==processId && GetClientRect(h,out r) && r.Right*r.Bottom>area) {
+        found=h; area=r.Right*r.Bottom;
+      }
+      return true;
+    },IntPtr.Zero);
+    return found;
+  }
 }
 "@
   function CaptureWindow([System.Diagnostics.Process]$proc, [string]$out) {
     $proc.Refresh()
     if ($proc.HasExited) { throw 'Player exited before capture' }
     $h = $proc.MainWindowHandle
+    if ($h -eq [IntPtr]::Zero) { $h = [Win32Cap]::PlayerWindow($proc.Id) }
     if ($h -eq [IntPtr]::Zero) { throw 'Player has no window' }
     $r = New-Object WINRECT
     if (-not [Win32Cap]::GetWindowRect($h, [ref]$r)) { throw 'GetWindowRect failed' }
@@ -84,18 +102,39 @@ public class Win32Cap {
     $result.scope = 'Standalone buttons-only route from Awake; compare route state separately against original'
   }
   $result.arguments = $playerArgs
-  $p = Start-Process -FilePath $Exe -ArgumentList $playerArgs -PassThru
+  # Viewport verification needs the interactive game visible; background helpers stay hidden.
+  $windowStyle = if ($ShowGameWindow) { 'Normal' } else { 'Hidden' }
+  $p = Start-Process -FilePath $Exe -ArgumentList $playerArgs -PassThru -WindowStyle $windowStyle
   $result.pid = $p.Id
   Start-Sleep -Seconds $FirstWaitSec
   $result.captureA = CaptureWindow $p $PngA
   Start-Sleep -Seconds $SecondWaitSec
+  if ($Replay -and $ReplayTimeoutSec -gt 0) {
+    $spec = Get-Content -LiteralPath $Replay -Raw | ConvertFrom-Json
+    $route = Join-Path $spec.output 'route.json'
+    $deadline = [DateTime]::UtcNow.AddSeconds($ReplayTimeoutSec)
+    while (-not (Test-Path -LiteralPath $route -PathType Leaf)) {
+      $p.Refresh()
+      if ($p.HasExited) { throw 'Player exited during replay' }
+      if ([DateTime]::UtcNow -ge $deadline) { throw "Replay timeout: $route" }
+      Start-Sleep -Seconds 2
+    }
+    Start-Sleep -Milliseconds 500
+  }
   $result.captureB = CaptureWindow $p $PngB
   if ($Replay) {
     $spec = Get-Content -LiteralPath $Replay -Raw | ConvertFrom-Json
     $route = Join-Path $spec.output 'route.json'
     if (-not (Test-Path -LiteralPath $route -PathType Leaf)) { throw "Replay did not finish: $route" }
     $routeData = Get-Content -LiteralPath $route -Raw | ConvertFrom-Json
-    if ($routeData.editor -or $routeData.states[-1].phase -ne 'Mission') { throw 'Standalone replay did not reach mission' }
+    if ($routeData.editor) { throw 'Replay came from Editor' }
+    if ($CompletedMission) {
+      $f = $routeData.final
+      if ($f.gameFrame -ne $spec.frames -or $f.phase -ne 'MapCursor' -or $f.completed -ne 1 -or $f.maskCompleted -ne 1) {
+        throw 'Standalone replay did not complete the first mission and return to map'
+      }
+      $result.final = $f | Select-Object gameFrame,phase,world,x,y,state,completed,maskCompleted,scoreUnits,livesLeft,livesRight
+    } elseif ($routeData.states[-1].phase -ne 'Mission') { throw 'Standalone replay did not reach mission' }
     $result.route = $route
   }
   $result.framesDiffer = $result.captureA.sha256 -ne $result.captureB.sha256

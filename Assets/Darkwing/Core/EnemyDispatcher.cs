@@ -85,6 +85,7 @@ namespace Darkwing.Core
             s.Behavior = spawn.Behavior;               // $CEDD $CF2E[$53]
             EnemyBehaviors.SetAnim(s, spawn.Template); // $CEE3 $FA6C with $CF32[$53]
             s.BehaviorParam = 0x01;                    // $CEEE $0570,X = #1
+            if (spawn.CutYVelocity) { s.YVelInt = -1; s.YVelFrac = 0xAB; }
             Sfx?.Invoke(spawn.SfxId);                  // $CEE9 $F850 with $CF36[$53]
         }
 
@@ -135,7 +136,7 @@ namespace Darkwing.Core
             // (m1_trench slot 0D died at f293 while the ROM keeps it walking).
             if (s.HitFlash != 0)
             {
-                if (((s.HitFlash >> 3) & 1) != 0) s.Flags &= 0xF7;   // compose off
+                if ((s.HitFlash & 4) != 0) s.Flags &= 0xF7;   // $8041-$8044: three LSRs, original bit 2
                 else s.Flags |= 0x08;
                 s.HitFlash--;
                 ContactCheck(slot, s); // $805B JMP $8039 → $813B
@@ -380,8 +381,6 @@ namespace Darkwing.Core
         public void RestorePlayerIdle()
         {
             Player.State = 0;
-            Player.SetAnimPlayer(0x01);
-            EnemyBehaviors.SetAnim(Objects.Slots[0], 0x01);
         }
 
         /// <summary>

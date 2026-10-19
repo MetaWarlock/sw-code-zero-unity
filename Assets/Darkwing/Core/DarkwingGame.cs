@@ -20,6 +20,8 @@ namespace Darkwing.Core
         /// <summary>$95: the NMI frame counter. Bit 2 gates the player's invulnerability
         /// blink (bank5 $80EB) and bit 0 alternates the slot update order.</summary>
         public byte FrameParity;
+        /// <summary>Resident bank-7 process; runs after NMI uploads and owns this frame.</summary>
+        public System.Action<NesButtons> ResidentProcess;
         public readonly PlayerCore Player;
         public readonly Ppu Ppu;
         public readonly ObjectSystem Objects;
@@ -45,6 +47,9 @@ namespace Darkwing.Core
                 : null;
             Oam?.SetHud(Hud);
             Player.Oam = Oam;   // $9605 mission-card composition reaches the dispatcher
+            Player.ResetHud = SeedHudSlot;
+            Player.Sound = PlaySound;
+            Player.RestoreHud = RestoreHudSlot;
         }
 
         /// <summary>Raw PRG bank 5 (anim/frame/coord tables) for the OAM dispatcher.</summary>
@@ -66,7 +71,6 @@ namespace Darkwing.Core
                 if (Enemies != null)
                 {
                     Enemies.Tiles = TileMap;   // $EB52 probe backend
-                    Enemies.BossDefeated = () => MissionCleared = true;  // $B315 → $D838
                 }
             }
         }
@@ -116,7 +120,7 @@ namespace Darkwing.Core
         private LevelTileMap _tileMap;
 
         /// <summary>Wire the player's level-table feeds ($32/$34 readers, $E7C6 row
-        /// redraw) and seed the camera cell index ($22 = $FB*$2E + $FD).</summary>
+        /// redraw). $22 is the descriptor/streamer's index, not a derived camera position.</summary>
         public void WireWorldFeed()
         {
             if (TileMap == null) return;
@@ -129,10 +133,10 @@ namespace Darkwing.Core
             p.BottomRow = TileMap.World.TopRow;
             p.ReloadRow = () =>
             {
+                p.VerticalStreamPass();
                 TileMap.LoadRow(p.ScrollYRow);
                 TileMap.StreamColumns(p.ScrollX);
             };
-            p.CellIndex = (byte)(p.ScrollYRow * p.RowStride + (p.ScrollX >> 8)); // $22
         }
 
         private SectionTable _sections;
@@ -193,6 +197,7 @@ namespace Darkwing.Core
             _gridByte = null; _flagByte = null;             // ($32)/($34) now point at this world
             RenderOff();                                    // $DE24 → $C14E: blank while it streams
             Player.ApplyWorldPrelude(w);
+            BossBehaviors.DamageAccum = BossBehaviors.InvulnTimer = 0; // $DE54/$DE56
             if (Bank7 != null)
                 Player.CardReleaseChr = RoomDecoder.DescByte(Bank7, 0xD589, _worldId);  // $D562 ($1A on $9600 release)
             WireWorldFeed();
@@ -214,7 +219,7 @@ namespace Darkwing.Core
             Ppu.Chr1Bank = (byte)(w.ChrReq1 & 0x7F);        // $FF3B applies the $1B request
             Player.ChrLatch0 = 0; Player.ChrLatch1 = 0;
             // $DDA0-$DDAA: the ring event is only re-queued when $D9 was still non-zero.
-            if (Player.SectionRingEvent != 0) PlaySfx(Player.SectionRingEvent);
+            if (Player.SectionRingEvent != 0) PlaySound(Player.SectionRingEvent); // $DDAA calls generic $F84E
         }
 
         /// <summary>$DE93-$DEA1 tail plus $DDCE-$DDFE + $DE00: the placement anchor, the CHR
@@ -338,8 +343,10 @@ namespace Darkwing.Core
         {
             var t = Sections;
             if (t == null) return;
+            RenderOff();                                    // $DE24, after the caller's $C248 fade
             Objects?.ClearForSectionLoad();               // $C248 → $C235
             Player.ApplySectionLoad(t, sectionId);        // $E38F-$E3D3 + $DE24
+            BossBehaviors.DamageAccum = BossBehaviors.InvulnTimer = 0; // $E3C8/$E3CA
             if (TileMap != null)
             {
                 TileMap.ApplyTilesetBank(Player.TilesetBank);
@@ -352,11 +359,7 @@ namespace Darkwing.Core
             t.ReadSpritePalette(sectionId, sp);           // $C319 → $0310/$0330
             SetPaletteSource(bg, 0);
             SetPaletteSource(sp, 16);
-            // $E454-$E476: checkpoint ids $02,$04,$06,$08,$0A,$0C,$0E set the $3B intro
-            // hold, which redirects the state-$12 exit to $50=$0F instead of $50=$00.
-            Player.IntroHoldFlag =
-                (Player.CheckpointId >= 0x02 && Player.CheckpointId <= 0x0E
-                 && (Player.CheckpointId & 1) == 0) ? (byte)0x78 : (byte)0x00;
+            BossBehaviors.DefeatTimer = 0; // $DE62 already cleared the shared $3B
             SectionUsesInternalEngine = SectionTable.UsesInternalEngine(sectionId);
             _sectionStage = 1;
         }
@@ -417,13 +420,13 @@ namespace Darkwing.Core
         /// $A475/$A492 freeze the cursor at 6.</summary>
         public byte MapTier;
 
-        /// <summary>Raised by $B315 (<see cref="BossBehaviors.BossDefeat"/>) when the world's
-        /// boss dies — the end-of-mission event that <see cref="GameFlow"/> watches.</summary>
+        /// <summary>Legacy diagnostic hook. Natural victory runs $B315, $B3F8,
+        /// $DA04 and state $11/$D838; the boss does not set this flag.</summary>
         public bool MissionCleared;
 
         /// <summary>$C7E5-$C804: clear VRAM, bank-2 task 2, $8E00 palette/CHR,
         /// then $A100 map sprites. GameFlow drives the $A300 text independently.</summary>
-        public void LoadMapScreen()
+        public void LoadMapScreen(bool fixtureHiddenRecord = true)
         {
             // $C7E5/$C7FA: rebuild from bank-2 task 2. The old exported snapshot
             // included the preceding intro's dialog, which is not map initialization.
@@ -446,7 +449,7 @@ namespace Darkwing.Core
             Player.ScrollX = 0; Player.ScrollY = 0; Player.ScrollYRow = 0;
             Ppu.WriteRegister(0x2001, 0x1E);    // $C158: rendering back on for the map screen
             Objects?.ClearForSectionLoad();
-            Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x10);  // the map captures hold the boot value
+            if (fixtureHiddenRecord) Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x10);
             MissionCleared = false;
             WorldRunning = false;
             MapScreen = true;
@@ -486,9 +489,7 @@ namespace Darkwing.Core
             s.Active = true;                     // $8E30/$A1A0 STA $04D0 = $80
             s.StateLow = 0x80;
             s.Flags = flags;                     // $8E28/$A1A9 STA $0400
-            s.Behavior = 0;
             s.X = x; s.Y = y;                    // $04F0/$0500 and $0510/$0520 ($A19B/$A1B4)
-            s.ScreenX = (byte)x; s.ScreenY = (byte)y;
             EnemyBehaviors.SetAnim(s, anim);     // $FA6C/$FA78: number, timer and frame to 0
         }
 
@@ -544,7 +545,7 @@ namespace Darkwing.Core
         /// (palettes + CHR + the logo slot) and $9200 (the PRESS START slot), then $C158.
         /// The picture is therefore a bank-2 record stream, not an exported nametable — the
         /// "title art is missing from the port" note in GAPS was a false premise.</summary>
-        public void LoadTitleScreen()
+        public void LoadTitleScreen(bool fixtureHiddenRecords = true)
         {
             if (Bank2 == null || Objects == null) return;
             FillVramPages(0x20, 0x00, 0x00);                   // $C979-$C97F JSR $C1BA(#$20,$00,$00)
@@ -569,9 +570,12 @@ namespace Darkwing.Core
             // its Y byte, so tile/attr/X keep what the previous screen composed. gold_title2 shows
             // F8 C0 00 64 on every title frame — the attract screen's last composition, which the
             // port does not have, so the captured value is seeded directly.
-            Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x64);
-            Oam?.SeedHiddenRecord(53, 0xFC, 0x01, 0x84);
-            Oam?.SeedHiddenRecord(54, 0x30, 0x41, 0x86);
+            if (fixtureHiddenRecords)
+            {
+                Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x64);
+                Oam?.SeedHiddenRecord(53, 0xFC, 0x01, 0x84);
+                Oam?.SeedHiddenRecord(54, 0x30, 0x41, 0x86);
+            }
             RenderOn();                                         // $C7AA JSR $C158
             TitleScreen = true;
             MapScreen = false;
@@ -684,6 +688,7 @@ namespace Darkwing.Core
             {
                 var s0 = Objects.Slots[0];
                 s0.Flags = 0;                                          // $C961 STA $0400
+                Player.Flags = 0;                                    // shared $0400
                 s0.Active = false; s0.StateLow = 0;                    // $C964 STA $04D0
             }
             Player.ScrollX = 0; Player.ScrollY = 0;                   // $FC/$FA
@@ -1070,8 +1075,44 @@ namespace Darkwing.Core
         {
             _parityStepped = false;
             _oamPublished = false;
+            if ((Ppu.Ctrl & 0x80) != 0) NmiCounter++;
             NmiChrUpload();                // $C047/$C050, before $C059 palette upload
             NmiPaletteUpload();            // $C059: $18-flagged $0300 → $3F00, every frame
+            Text?.FlushNmiWrites();
+            if (ResidentProcess != null)
+            {
+                PublishToOamOnce();
+                ResidentProcess(pad1);
+                if (ResidentProcess != null || !WorldRunning)
+                {
+                    Ppu.Render(Framebuffer);
+                    Frame++;
+                    return;
+                }
+                // $C8B5/$DD57 RTS-es into $C820 and the SAME $C9AC iteration.
+                // Resume after this NMI; neither discard the player pass nor run another NMI.
+            }
+            if (_sectionFadeStage != 0)
+            {
+                if (Ppu.Mask != 0) PublishToOamOnce();
+                if (_sectionFadeStage == 1)
+                {
+                    if (TickResidentFade())
+                    {
+                        Objects.ClearForSectionLoad(); Oam.HideShadow(); // $C24B/$C24E, before the yield
+                        _sectionFadeStage = 2;
+                    }
+                }
+                else
+                {
+                    Oam.HideShadow();                         // $C248/$C21E after the fade
+                    LoadSection(_sectionRequested);
+                    _sectionFadeStage = 0;
+                    AdvanceSectionStage();                    // $DE86 runs inline before its first yield
+                }
+                Ppu.Render(Framebuffer); Frame++;
+                return;
+            }
             // $DE03 JSR $FF06 + $DE06 JMP $C254 → $C270: the world loader stays in its
             // palette fade for 17 NMIs, so neither the input read nor $CAFC/$CB41 runs
             // (gold_w00: $50=$09 from f328, first dispatch tick f345, $95 parked at 01).
@@ -1098,11 +1139,13 @@ namespace Darkwing.Core
             // $C2A7/$FF06 — so no input, player or anim update happens until it returns.
             if (_sectionStage != 0)
             {
+                if (Ppu.Mask != 0) PublishToOamOnce();
                 // The NMI of this frame consumes any latch set on a previous frame; do it
                 // before the stage advances so the tail frame keeps $1A/$1B = $80/$90.
                 ConsumeChrLatch();
                 if (!AdvanceSectionStage())
                 {
+                    Ppu.Render(Framebuffer);
                     Frame++;
                     return;
                 }
@@ -1120,6 +1163,7 @@ namespace Darkwing.Core
                 ConsumeChrLatch();
                 bool returned = AdvanceReloadStage();
                 if (returned) RunWorldServices();
+                else Ppu.Render(Framebuffer);
                 Frame++;
                 return;
             }
@@ -1144,6 +1188,8 @@ namespace Darkwing.Core
                 Frame++;
                 return;
             }
+            if (!_pauseActive && (pressed & 0x20) != 0 && Player.LevelActive >= 0 && PauseGuardAllows(Player.State)
+                && Player.GasEnergyLo != 0) ToggleSpecialWeapon(); // $C9B3-$CA14
             // $CA17…$CA3D: a fresh Start outside the four guarded $50 states plays SFX $1C and
             // calls JSR $8F00, which holds the process. Its loop ($8FB7) re-reads $14 each frame
             // after passing through $F89A's JSR $FF06 yield, so the press that OPENED the screen
@@ -1223,6 +1269,7 @@ namespace Darkwing.Core
             if (Player.YieldOnlyFrame)
             {
                 ConsumeChrLatch();
+                Ppu.Render(Framebuffer);
                 Frame++;
                 return;
             }
@@ -1238,7 +1285,12 @@ namespace Darkwing.Core
             }
             // $CA6E: LDX $5B / JSR $E388 — consume the door request raised by the
             // probe tail ($EBAA/$EBC8) in the same frame.
-            if (Player.PendingEvent != 0) LoadSection(Player.PendingEvent);
+            if (Player.PendingEvent != 0)
+            {
+                BeginSectionTransition(Player.PendingEvent);
+                Ppu.Render(Framebuffer); Frame++;
+                return;
+            }
             if (_sectionStage != 0)
             {
                 AdvanceSectionStage();
@@ -1271,6 +1323,8 @@ namespace Darkwing.Core
         private void ConsumeChrLatch()
         {
             if (!_chrPending) return;
+            if (Player.ChrLatch0 != 0) Ppu.Chr0Bank = Player.ChrLatch0 & 0x1F;
+            if (Player.ChrLatch1 != 0) Ppu.Chr1Bank = Player.ChrLatch1 & 0x1F;
             // NMI $FF21/$FF3B consumes the CHR request latches once rendering is on
             // again (gold_door_id1: $1A/$1B = $80/$90 through the tail frame, 0 after —
             // and rendering is already on during the fade frames).
@@ -1300,7 +1354,7 @@ namespace Darkwing.Core
             s0.X = Player.X;
             s0.Y = Player.Y;
             // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
-            TileMap?.StreamColumns(Player.ScrollX);
+            if (TileMap != null) { TileMap.CameraY = Player.ScrollY; TileMap.StreamColumns(Player.ScrollX); }
             if (Objects?.Placements != null)
             {
                 // Spawner ($8090); culling happens per-slot in OamDispatcher
@@ -1332,7 +1386,9 @@ namespace Darkwing.Core
             // and no hard-coded entry (GAPS G44.1 closed).
             Hud.Refresh(Player);
             Oam.RunFrame(FrameParity);
+            Player.Flags = Objects.Slots[0].Flags; // the walk and controller share RAM $0400
             Ppu.Render(Framebuffer);
+            if (!Player.IntroCardPhase) EnemyBehaviors.AdvanceRng(); // $CAD8; resident $9605 bypasses it
         }
 
         // ==================================================================
@@ -1630,6 +1686,7 @@ namespace Darkwing.Core
                     return false;
                 case 2:
                     Player.FinishSectionLoad();          // $E3F0-$E406
+                    RenderOn();                         // $E44E JSR $C158
                     _chrPending = true;                  // $E44E JSR $C158 re-enables rendering
                     // $C270 LDA #$30/$C272 LDX #$F0: $0F is decremented by $0D on the
                     // FIRST frame of each 4-yield step ($C2A4 loop + $C2B0), so prime one
@@ -1641,6 +1698,14 @@ namespace Darkwing.Core
                     _sectionStage = 3;
                     return false;
                 default:
+                    if (_fadeFrame == 0)
+                    {
+                        // $E451 yields before $E454-$E476 can arm the entrance countdown.
+                        if (Player.CheckpointId >= 2 && Player.CheckpointId <= 0x0E && (Player.CheckpointId & 1) == 0)
+                            Player.IntroHoldFlag = 0x78;
+                        BossBehaviors.DefeatTimer = Player.IntroHoldFlag;
+                        ResidentWalk(); // $E478/$C254 engine once before $C270
+                    }
                     if (!StepFade()) return false;
                     _sectionStage = 0;
                     return true;
@@ -1778,7 +1843,7 @@ namespace Darkwing.Core
         {
             using var ms = new System.IO.MemoryStream();
             using var w = new System.IO.BinaryWriter(ms);
-            w.Write((int)3); // schema version
+            w.Write((int)4); // schema version
             w.Write(Frame);
             w.Write(FrameParity);
             w.Write(Player.HitLadder);
@@ -1789,6 +1854,7 @@ namespace Darkwing.Core
             w.Write(Player.ActiveGasEnergyLo);
             w.Write(Player.WeaponActive);
             w.Write(Player.WeaponSelected);
+            w.Write(Player.LastVerticalRedraw); w.Write(Player.VerticalRedrawRow); w.Write(Player.PrevVerticalMode);
             foreach (var s in Objects.Slots)
             {
                 w.Write(s.Active);
@@ -1809,7 +1875,7 @@ namespace Darkwing.Core
             using var ms = new System.IO.MemoryStream(data);
             using var r = new System.IO.BinaryReader(ms);
             int version = r.ReadInt32();
-            if (version != 3) throw new System.InvalidOperationException($"State schema {version} unsupported");
+            if (version != 4) throw new System.InvalidOperationException($"State schema {version} unsupported");
             Frame = r.ReadInt64();
             FrameParity = r.ReadByte();
             Player.HitLadder = r.ReadByte();
@@ -1820,6 +1886,7 @@ namespace Darkwing.Core
             Player.ActiveGasEnergyLo = r.ReadByte();
             Player.WeaponActive = r.ReadByte();
             Player.WeaponSelected = r.ReadByte();
+            Player.LastVerticalRedraw = r.ReadByte(); Player.VerticalRedrawRow = r.ReadByte(); Player.PrevVerticalMode = r.ReadByte();
             foreach (var s in Objects.Slots)
             {
                 s.Active = r.ReadBoolean();

@@ -1,5 +1,7 @@
 """Generate Research/DarkwingDuck/object_catalog.csv from bank4 type tables + behavior jump tables."""
 import json
+import sys
+from pathlib import Path
 
 ROM = open('Research/DarkwingDuck/extracted/raw/prg.bin', 'rb').read()
 
@@ -7,6 +9,15 @@ ROM = open('Research/DarkwingDuck/extracted/raw/prg.bin', 'rb').read()
 def rd(bank, addr, n):
     off = bank * 0x4000 + (addr - 0x8000)
     return list(ROM[off:off + n])
+
+
+if '--export-types' in sys.argv:
+    # $815B-$8177 use the same type*4 Y index for both source pointers.
+    payload = bytes(rd(4, 0x8AB3, 105 * 4) +
+                    [rd(4, 0x8C57 + t * 4, 1)[0] for t in range(105)])
+    Path('Assets/Darkwing/Data/object_types.bytes').write_bytes(payload)
+    print('object_types.bytes: 105 four-byte types + 105 strided HP bytes')
+    raise SystemExit(0)
 
 
 BT = json.load(open('Research/DarkwingDuck/extracted/behavior_tables.json'))

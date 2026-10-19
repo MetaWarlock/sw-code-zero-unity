@@ -154,10 +154,12 @@ namespace Darkwing.UnityApp
             public ReplayInput[] inputs;
             public int[] captures;
             public string output;
+            public bool captureAtStart; // poll boundary used by stand.py; default preserves older after-step captures
         }
         [System.Serializable] public sealed class ReplayState
         {
             public int frame, gameFrame, phaseFrames, world, x, y, state, scrollX, scrollY, chr0, chr1, ctrl, mask;
+            public int completed, maskCompleted, scoreUnits, livesLeft, livesRight, bossDamage;
             public string phase, framebuffer, nametable, palette, oam, slots;
         }
         [System.Serializable] public sealed class ReplayResult
@@ -166,6 +168,7 @@ namespace Darkwing.UnityApp
             public bool editor;
             public ReplaySpec input;
             public ReplayState[] states;
+            public ReplayState final; // after every recorded input byte has actually been consumed
         }
         private ReplaySpec _replay;
         private int _replayFrame;
@@ -201,29 +204,44 @@ namespace Darkwing.UnityApp
             foreach (var entry in _replay.inputs)
                 if (f >= entry.first && f <= entry.last) bits |= entry.buttons;
             var pad = NesButtons.FromByte((byte)bits);
+            if (_replay.captureAtStart) CaptureReplayState(f);
             AdvanceFrame(in pad);
+            if (!_replay.captureAtStart) CaptureReplayState(f);
+            if (ReplayFinished)
+                File.WriteAllText(Path.Combine(_replay.output, "route.json"), JsonUtility.ToJson(new ReplayResult {
+                    editor=Application.isEditor, input=_replay, states=_replayStates.ToArray(), final=ReadReplayState(f)
+                }));
+        }
+
+        private ReplayState ReadReplayState(int f)
+        {
+            var p = _game.Player; var ppu = _game.Ppu;
+            return new ReplayState {
+                frame=f, gameFrame=(int)_game.Frame, phase=_flow == null ? "DirectWorld" : _flow.Stage.ToString(),
+                phaseFrames=_flow == null ? 0 : _flow.PhaseFrames,
+                world=_flow == null ? WorldId : _flow.World.CurrentWorld,
+                completed=_flow == null ? 0 : _flow.World.CompletedCount,
+                maskCompleted=_flow == null ? 0 : _flow.World.CompletedMask,
+                scoreUnits=p.ScoreUnits, livesLeft=p.EnergyColLeft, livesRight=p.EnergyColRight,
+                bossDamage=BossBehaviors.DamageAccum,
+                x=p.X, y=p.Y, state=p.State, scrollX=p.ScrollX, scrollY=(p.ScrollYRow << 8) | p.ScrollY,
+                chr0=ppu.Chr0Bank, chr1=ppu.Chr1Bank, ctrl=ppu.Ctrl, mask=ppu.Mask, slots=ReplaySlots(),
+                framebuffer=System.Convert.ToBase64String(_game.Framebuffer),
+                nametable=System.Convert.ToBase64String(ppu.NametableRam),
+                palette=System.Convert.ToBase64String(ppu.PaletteRam), oam=System.Convert.ToBase64String(ppu.Oam)
+            };
+        }
+
+        private void CaptureReplayState(int f)
+        {
             string phase = _flow == null ? "DirectWorld" : _flow.Stage.ToString();
             bool capture = System.Array.IndexOf(_replay.captures, f) >= 0;
             if (capture || phase != _lastPhase)
             {
-                var p = _game.Player; var ppu = _game.Ppu;
-                _replayStates.Add(new ReplayState {
-                    frame=f, gameFrame=(int)_game.Frame, phase=phase, phaseFrames=_flow == null ? 0 : _flow.PhaseFrames,
-                    world=_flow == null ? WorldId : _flow.World.CurrentWorld,
-                    x=p.X, y=p.Y, state=p.State, scrollX=p.ScrollX, scrollY=(p.ScrollYRow << 8) | p.ScrollY,
-                    chr0=ppu.Chr0Bank, chr1=ppu.Chr1Bank, ctrl=ppu.Ctrl, mask=ppu.Mask,
-                    slots=ReplaySlots(),
-                    framebuffer=System.Convert.ToBase64String(_game.Framebuffer),
-                    nametable=System.Convert.ToBase64String(ppu.NametableRam),
-                    palette=System.Convert.ToBase64String(ppu.PaletteRam), oam=System.Convert.ToBase64String(ppu.Oam)
-                });
+                _replayStates.Add(ReadReplayState(f));
                 _lastPhase = phase;
                 if (capture) DumpFramebuffer(Path.Combine(_replay.output, "frame_" + f + ".png"));
             }
-            if (ReplayFinished)
-                File.WriteAllText(Path.Combine(_replay.output, "route.json"), JsonUtility.ToJson(new ReplayResult {
-                    editor=Application.isEditor, input=_replay, states=_replayStates.ToArray()
-                }));
         }
 #endif
 

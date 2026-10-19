@@ -46,7 +46,7 @@
     },
     "object_types.bytes": {
       "bytes": 525,
-      "source": "bank4 $8AB3 (105x4: flags,behavior,anim,param) + $8C57 (105 HP); verified vs manifest placed_type_ids"
+      "source": "bank4 $8AB3 (105x4: flags,behavior,anim,param) + HP[i]=$8C57+i*4; $815B-$8177; make_object_catalog.py --export-types"
     },
     "prg_bank0.bytes": {
       "bytes": 16384,
