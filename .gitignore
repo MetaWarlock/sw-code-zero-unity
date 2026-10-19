@@ -32,6 +32,12 @@ __pycache__/
 # Duplicate download; extracted tools, license, release metadata and checksums stay tracked.
 /Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent-windows-x64.zip
 
+# Vendored Mesen 2.1.1 GUI build used by the playthrough stand (SHA-256 pinned in Docs).
+/Tools/DarkwingResearch/vendor/Mesen2/
+
+# The user's own playthrough recordings: never committed, never auto-deleted.
+/Playthroughs/
+
 # Ad hoc output written to the project root.
 /trace.txt
 /m1z_pit*_report.txt
