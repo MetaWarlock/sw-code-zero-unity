@@ -796,12 +796,29 @@ namespace Darkwing.Core
                 case 0x07: DeathThroesState(); break;
                 case 0x08: ResolveDeath(); break;              // $08 → $D41B through the $CB5F/$CB75 table
                 case 0x12: MaterializeState(); break;
+                case 0x13: FlyerCarryState(held, pressed); break;  // $D994
                 case 0x15: VictoryState(); break;              // $DA04, before $D838 owns the process
                 default: break; // remaining states wired during M4/M7
             }
 
             // $DA70 (the scroll service) runs at $CA59, after the dispatcher returns, so it
             // sees this frame's X but is called by DarkwingGame.Step, not here.
+        }
+
+        // ---------- State 13: carried by the flyer ($D994) ----------
+        /// <summary>$D994: the grab hold set by <c>$9FCB</c> behavior 3A ($51=$78, vy=-1.$AB).
+        /// No steering and no horizontal move — only the vertical service, which re-lands on
+        /// the support every frame, so X stays put and $0550/$0560 stay $AB,$FF.</summary>
+        private void FlyerCarryState(byte held, byte pressed)
+        {
+            if (StateTimer == 0x73) SetAnimPlayer(0x08);   // $D994-$D99C
+            VerticalPhysics(held, pressed);                // $D9A3: A=$06, Y=$02
+            if (StateTimer == 0)                           // $D9A6-$D9AE
+            {
+                State = 0;
+                return;                                    // the RTS skips $D9AF: no decrement
+            }
+            StateTimer--;                                  // $D9AF
         }
 
         // ---------- States 9/18: world-entry drop ($D517) ----------
@@ -1590,7 +1607,11 @@ namespace Darkwing.Core
             _probeResult = probe;
             if (probe == 3) return AirD711();                         // $D656 BEQ $D711
             if (probe == 4) { AirD73C(); return false; }               // $D65F BEQ $D73C
-            if (!rising && probe == 1) return AirD6EE();               // $D666 BPL / $D66F BEQ $D6EE
+            // $D666 re-reads $0560 AFTER $F5C9, so a frame whose gravity flips the sign
+            // (rising $0025 → falling $FF8C) falls through to $D6EE even though the arc
+            // started rising. At city f6113 that is the ledge grab: the pre-service sign
+            // sent the port to $D756 steering instead and it dropped off the ledge.
+            if (YVelInt < 0 && probe == 1) return AirD6EE();          // $D666 BPL / $D66F BEQ $D6EE
             if (YVelInt >= 0) return true;                             // $D671 BPL $D676 → $D756
             // $D679-$D6AC: falling onto a class the floor set cannot catch. Only the plain
             // falling poses are rewritten to $12; the shot poses keep their frames until

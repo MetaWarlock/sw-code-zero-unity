@@ -124,10 +124,11 @@ namespace Darkwing.Core
         /// <summary>
         /// $72-$7B. Bank-4's <c>$8000</c> (<c>ObjectPointerInit</c>) points the five
         /// parallel placement arrays at the lists of world <c>$31</c>, and the spawner
-        /// only ever dereferences those pointers. The pointers are STATE: the world-load
-        /// path does not re-run $8000 — gold_w01-$23 latch $31 to $01..$06 at f314 and the
-        /// pointers keep the $31=$00 values ($72/$73 = $826C, $74/$75 = $8239) for the
-        /// whole capture, so every mission's first section spawns from mission 1's list.
+        /// only ever dereferences those pointers. It runs once per world load: the city
+        /// capture holds $8374/$8338/$83EC/$83B0/$8428 ($31=$01) from f1897, the frame the
+        /// mission starts, to the end of the route and nowhere earlier — the title and map
+        /// frames keep the power-on 0000, so a later $31 change alone never re-points them.
+        /// The world-load path in <c>DarkwingGame</c> is the port's only caller.
         /// </summary>
         public GameData.LevelDef Placements { get; private set; }
 

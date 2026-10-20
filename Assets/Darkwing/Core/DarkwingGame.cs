@@ -191,6 +191,7 @@ namespace Darkwing.Core
         {
             var w = _worldDecoder.GetWorld(_worldId);
             _world = w;
+            Objects?.SelectPlacementList(_worldId);         // $DD57 → $8000: LDX $31, re-point $72-$7B
             Objects?.ClearForSectionLoad();                 // $DD57 → $C248 → $C235
             TileMap = new LevelTileMap(_worldDecoder, Ppu, w);
             Player.TileMap = TileMap;
