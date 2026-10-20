@@ -641,7 +641,7 @@ namespace Darkwing.Core
             if (y < 0) return;
             var t = ctx.Objects.Slots[y];
             t.Direction = s.Direction;
-            int off = (s.Direction & 2) != 0 ? 0xFF12 : 0x0012; // $8DAB/$8DAC {12 00, EE FF}
+            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFFEE) : 0x0012; // $8DAB {$0012, $FFEE}
             int px = (short)(s.X + off);
             t.X = (ushort)px;
             t.Y = (ushort)(s.Y - 2);
@@ -2040,7 +2040,7 @@ namespace Darkwing.Core
             if (y < 0) return;
             var t = ctx.Objects.Slots[y];
             t.Direction = s.Direction;
-            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFF12) : 0x12; // $8DAB
+            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFFEE) : 0x12; // $8DAB
             t.X = (ushort)((short)(s.X + off));
             t.Y = (ushort)(s.Y - 2);
             SpawnInit(ctx, y, 0x62);
@@ -2104,9 +2104,9 @@ namespace Darkwing.Core
             s.T4A0 = 0;
         }
 
-        /// <summary>$9F4C behaviors 21/22: vine snapper. Aggro |dx| < $10, |dy| < $17
-        /// → drop; bite probe ($F2D7 $06,$02) + walk 0/3 px/f; touch class $00/$95
-        /// by proximity; behavior 22 mirrors directions.</summary>
+        /// <summary>bank6 $9F4C behaviors 21/22: vine snapper. Aggro |dx| < $10, |dy| < $17
+        /// → drop; bite probe ($F2D7 $06,$02) + 1 px/f walk; touch class $00/$95 by
+        /// proximity. $9F95 mirrors the direction test for behavior 22.</summary>
         private static void VineSnapper(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             if ((s.StateLow & 0x0F) == 0)
@@ -2121,23 +2121,20 @@ namespace Darkwing.Core
                 return;
             }
             if (ctx.Player.State == 7) return;
-            bool landed = FallAndLand(ctx, s, 6, 2); // $F2D7($06,$02)
+            FallAndLand(ctx, s, 6, 2); // $F2D7($06,$02)
             s.BehaviorParam = DistY(ctx, s) < 6 ? (byte)0x00 : (byte)0x95;
-            if (s.Behavior == 0x22)
-            {
-                if ((s.Direction & 1) != 0) { VineMove(ctx, s, 0, 2); }
-                else { VineMove(ctx, s, 3, 2); }
-                return;
-            }
-            if ((s.Direction & 1) != 0) { VineMove(ctx, s, 0, 2); }
-            else { VineMove(ctx, s, 3, 2); }
+            // $9F9C even dir → $F200, odd → $F254; $9FB7 flips the test for behavior 22.
+            bool odd = (s.Direction & 1) != 0;
+            VineWalk(ctx, s, s.Behavior == 0x22 ? odd : !odd);
         }
 
-        private static void VineMove(EnemyDispatcher ctx, ObjectSystem.Slot s, int probeSet, int probeY)
+        /// <summary>$9FA3/$9FBE: the chosen service fixes both the probe set and the flip
+        /// bit — $F200 probes set 0 and sets $0400 bit6, $F254 probes set 3 and clears it.
+        /// A non-zero probe code turns the walker ($9FAC/$9FC7, EOR #$03).</summary>
+        private static void VineWalk(EnemyDispatcher ctx, ObjectSystem.Slot s, bool serviceF200)
         {
-            if ((s.Direction & 1) != 0) WalkRight(ctx, s, probeSet, probeY);
-            else WalkLeft(ctx, s, probeSet, probeY);
-            if (ctx.ProbeResult != 0) s.Direction ^= 3;
+            byte code = serviceF200 ? WalkRight(ctx, s, 0, 2) : WalkLeft(ctx, s, 3, 2);
+            if (code != 0) s.Direction ^= 3;
         }
 
         /// <summary>$9BC9 behavior 23: sinking riser — rises 1 px/f while close, sinks
@@ -2292,7 +2289,7 @@ namespace Darkwing.Core
                 s.BehaviorParam = 0x50;
                 if (s.AnimFrame == 0x0D)
                 {
-                    s.StateLow |= 0x02;
+                    s.StateLow = 2;   // the ROM leaves $04D0=$82 here: the transition sets state 2
                     s.Health = s.T490;
                 }
                 return;
@@ -2324,7 +2321,7 @@ namespace Darkwing.Core
             if (y < 0) return;
             var t = ctx.Objects.Slots[y];
             t.Direction = s.Direction;
-            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFF12) : 0x12;
+            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFFEE) : 0x12;
             t.X = (ushort)((short)(s.X + off));
             t.Y = (ushort)(s.Y - 2);
             SpawnInit(ctx, y, 0xA1);
@@ -2468,7 +2465,7 @@ namespace Darkwing.Core
             if (y < 0) return;
             var t = ctx.Objects.Slots[y];
             t.Direction = s.Direction;
-            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFF12) : 0x12;
+            int off = (s.Direction & 2) != 0 ? unchecked((short)0xFFEE) : 0x12;
             t.X = (ushort)((short)(s.X + off));
             t.Y = (ushort)(s.Y - 2);
             SpawnInit(ctx, y, 0x7D);
@@ -3683,7 +3680,7 @@ namespace Darkwing.Core
                 case 0x74: case 0x75: case 0x76: case 0x77:
                 case 0x78: case 0x79: case 0x7A: case 0x7B:
                 case 0x7C: case 0x7D: MissionDoor(s, ctx); break;   // $96C9
-                case 0x7E: DoorChild(s, ctx); break;                // $9083
+                case 0x7E: DroidSmashChild(s, ctx); break;            // $9083
                 case 0x7F: CageDroid(s, ctx); break;                // $8F71
                 default: break;
             }
@@ -3795,26 +3792,123 @@ namespace Darkwing.Core
             EnemyBehaviors.Dispatch(0, s, 0x0B, ctx); // shares the 8-dir mover
         }
 
-        private static void DoorChild(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        /// <summary>$9083: the droid's smash child. One-pixel-per-frame X lobe at 1.$00
+        /// plus the $F2D7($28,$01) arc; the first non-zero probe ($10) turns it into the
+        /// impact sprite (anim $14) and hands the slot to behavior $00.</summary>
+        private static void DroidSmashChild(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.StateLow == 0)
+            if ((s.StateLow & 0x0F) == 0)                              // $9083 AND #$0F / BNE $909F
             {
-                s.StateLow = 1;
-                s.YVelFrac = 0; s.YVelInt = 3;
+                s.XVelFrac = 0x00;                                     // $908A STA $0530,X (A is the 0)
+                s.YVelFrac = 0x6E;   s.YVelInt = 1;                    // $908D-$9094
+                s.XVelInt = 1;                                         // $9097
+                s.StateLow++;                                          // $909C INC $04D0,X
             }
-            EnemyBehaviors.IntegrateYSub(s);
+            if ((s.Direction & 1) != 0) EnemyBehaviors.IntegrateXPos(s); // $909F/$90A6
+            else EnemyBehaviors.IntegrateXNeg(s);                        // $90AC
+            EnemyBehaviors.FallAndLand(ctx, s, 0x28, 1);               // $90AF JSR $F2D7($28,$01)
+            if (ctx.ProbeResult == 0) return;                          // $90B6 LDA $10 / BEQ $90C4
+            EnemyBehaviors.SetAnim(s, 0x14);                           // $90BA JSR $FA6C
+            s.Behavior = 0;                                            // $90BF STA $04E0,X
         }
 
-        /// <summary>$8F71 cage droid (city $27): rises from the cage and hovers.</summary>
+        /// <summary>bank1 $8F71 behavior $7F: the city cage droid. Init ($0490=0, X vel
+        /// 0.$92, Y vel 1.$62, $0480=$3C, state++) falls through into the mover, so the
+        /// spawn frame already takes one step. Anim A4 ($8FF5) walks with the X service
+        /// picked by dir bit0 and reverses Y on $0490 bit0, which flips — with the switch
+        /// to the A5 attack anim — every time $0480 counts down and reloads to $3D.</summary>
         private static void CageDroid(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.StateLow == 0)
+            if ((s.StateLow & 0x0F) == 0)                              // $8F71 AND #$0F / BNE $8FA6
             {
-                s.StateLow = 1;
-                s.YVelFrac = 0x80; s.YVelInt = 0;
+                s.T490 = 0;      s.XVelInt = 0;                        // $8F78/$8F7B (A is the 0)
+                s.YVelFrac = 0x62; s.YVelInt = 1;                      // $8F7E-$8F85
+                s.XVelFrac = 0x92;                                     // $8F88 STA $0530,X
+                s.StateLow++;                                          // $8F8D INC $04D0,X
+                s.T480 = 0x3C;                                         // $8F90 STA $0480,X
             }
-            EnemyBehaviors.IntegrateYSub(s);
-            if (s.Y < 0x40) { s.YVelFrac = 0; s.YVelInt = 0; }
+            // $8F95-$8FA3 is NOT modelled: on the init frame it despawns a placement whose
+            // type byte ($32),Y with Y=$22 the spawner cursor) is $27 while $2F == 2, i.e. a
+            // droid picked up on the reverse scroll pass. Modelling it needs the $22 cursor
+            // read, which the port's spawner does not keep; this route spawns our droid on a
+            // forward pass, where the original reaches $8FA6 exactly as the code below does.
+            if ((ctx.Objects.Parity & 3) == 0) ctx.Sfx?.Invoke(0x2A);  // $8FA6 LDA $95 / AND #$03 / $8FAC
+            if (s.AnimNumber != 0xA5 && s.AnimNumber != 0xA4) EnemyBehaviors.SetAnim(s, 0xA5); // $8FBF
+            if (s.AnimNumber == 0xA5) { DroidAttack(s, ctx); return; } // $8FB6 BEQ $8FC1
+            DroidHover(s, ctx);                                        // $8FBA BEQ $8FF5
+        }
+
+        /// <summary>$8FC1 attack anim. The dead/hurt flag values $50 and $10 freeze it.
+        /// Frame $10 with timer $2 faces the player, throws the $7E child and restores the
+        /// direction saved in $00; frame $15 goes back to the A4 hover.</summary>
+        private static void DroidAttack(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if (s.Flags == 0x50 || s.Flags == 0x10) return;            // $8FC4/$8FC8
+            if (s.AnimFrame == 0x10)
+            {
+                if (s.AnimTimer == 0x02)
+                {
+                    EnemyBehaviors.FacePlayerApply(ctx, s);            // $8FDF JSR $F81D
+                    SpawnDroidChild(s, ctx);                           // $8FE2 JSR $9039
+                    // $8FE5/$8FE7 restore $00 into $0580,X — but $8FDA's save of the real
+                    // direction was overwritten by $F808 ($810 STA $00), which leaves the
+                    // bit6 value there: dir 2 → $00=00, dir 1 → $00=$40. So the droid keeps
+                    // the child's facing only in that clobbered form.
+                    s.Direction = (byte)((s.Direction & 1) << 6);
+                    return;                                            // $8FEA
+                }
+                // $8FEB is reached from $8FD1 with A = $0410 but from $8FD8 with A = $0430,
+                // so the CMP #$15 that decides the return to A4 tests the TIMER here.
+                if (s.AnimTimer == 0x15) EnemyBehaviors.SetAnim(s, 0xA4);
+                return;
+            }
+            if (s.AnimFrame == 0x15) EnemyBehaviors.SetAnim(s, 0xA4);  // $8FEB-$8FF1
+        }
+
+        /// <summary>$8FF5 hover path. dir bit0 selects the X service — set → $F4FD and
+        /// $F24B (bit6 on), clear → $F51B and $F2A6 (bit6 off) — and $0490 bit0 then jumps
+        /// to $F539 (add) or $F55E (sub). $900C still runs on the reload frame.</summary>
+        private static void DroidHover(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if (s.T480 == 0)                                           // $8FF5 BNE $900C
+            {
+                s.T480 = 0x3D;                                         // $8FFA
+                s.T490 ^= 1;                                           // $8FFF EOR #$01
+                EnemyBehaviors.SetAnim(s, 0xA5);                       // $9007 JSR $FA6C
+            }
+            s.T480--;                                                  // $900C DEC $0480,X
+            if ((s.Direction & 1) != 0)                                // $900F AND #$01 / BEQ $9029
+            {
+                EnemyBehaviors.IntegrateXPos(s);                       // $9016 JSR $F4FD
+                s.Flags |= 0x40;                                       // $9019 JSR $F24B
+            }
+            else
+            {
+                EnemyBehaviors.IntegrateXNeg(s);                       // $9029 JSR $F51B
+                s.Flags = (byte)(s.Flags & ~0x40);                     // $902C JSR $F2A6
+            }
+            // $901C/$902F re-read $0490 after the X move, so the reload above already
+            // reversed this frame's vertical step.
+            if ((s.T490 & 1) != 0) EnemyBehaviors.IntegrateYRising(s); // $9026 JMP $F55E
+            else EnemyBehaviors.IntegrateYRideSlot(s);                 // $9023/$9036 JMP $F539
+        }
+
+        /// <summary>$9039: throws a smash child into a free slot ($FA4C, none → RTS).
+        /// It copies the droid's direction, sits 12 px ahead of it in the direction bit1
+        /// says ($907F table: dir&2 → −$0C, else +$0C) four pixels lower — the low byte
+        /// add carries nothing into $0520, which is copied as is — and becomes anim $A6,
+        /// behavior $7E, param $0A through the $FA84 init.</summary>
+        private static void SpawnDroidChild(ObjectSystem.Slot droid, EnemyDispatcher ctx)
+        {
+            int y = EnemyBehaviors.FindFreeSlot(ctx);                  // $9039 JSR $FA4C / BCS $907E
+            if (y < 0) return;
+            var c = ctx.Objects.Slots[y];
+            c.Direction = droid.Direction;                             // $9040/$9043
+            c.X = (ushort)(droid.X + ((droid.Direction & 2) != 0 ? -12 : 12)); // $9049-$905D
+            c.Y = (ushort)((droid.Y & 0xFF00) | (((droid.Y & 0xFF) + 4) & 0xFF)); // $9060-$906C
+            EnemyBehaviors.SpawnInit(ctx, y, 0xA6);                    // $906F JSR $FA84
+            c.Behavior = 0x7E;                                         // $9074 STA $04E0,Y
+            c.BehaviorParam = 0x0A;                                    // $9079 STA $0570,Y
         }
 
         // ---- 2.1 Quackerjack (mission 0) ----

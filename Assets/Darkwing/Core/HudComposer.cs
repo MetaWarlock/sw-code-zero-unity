@@ -26,17 +26,25 @@ namespace Darkwing.Core
             0x00, 0x00, 0x00, 0x00,     // $05BE, $05C0 (gas meter digits)
         };
 
-        private readonly byte[] _param = (byte[])Template.Clone();
+        // RAM, not a constant: $FE26 clears $05B0…$05C1 at reset and only $C850 puts the template
+        // there, so the block stays empty until the world HUD is installed.
+        private readonly byte[] _param = new byte[Template.Length];
+        private bool _installed;
 
         /// <summary>The $05B0…$05C1 block the walk reads as this slot's part table.</summary>
         public byte[] Param => _param;
 
         /// <summary>$C850 as called by $D55D/$E40C: template (and therefore a full heart) restored.</summary>
-        public void Reset() => Template.CopyTo(_param, 0);
+        public void Reset()
+        {
+            Template.CopyTo(_param, 0);
+            _installed = true;
+        }
 
         /// <summary>Rewrites the tile bytes from the state that owns them.</summary>
         public void Refresh(PlayerCore p)
         {
+            if (!_installed) return;   // $F9EA/$89D6 only reach the block once $C850 has written it
             // $F9EA…$FA13 drains TR→BR→BL→TL ($80→$82, $81→$83); bank 6 $89D6 refills the same
             // rungs backwards, so the four quadrants are a pure function of the rung count.
             byte rung = p.HitLadder > 4 ? (byte)4 : p.HitLadder;
