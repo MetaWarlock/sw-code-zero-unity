@@ -269,6 +269,14 @@ namespace Darkwing.Core
         private bool _fadeExitAt50;
         private readonly byte[] _paletteSrc = new byte[32]; // $0320 un-faded palette
         private readonly byte[] _palMirror = new byte[32];  // $0300 faded palette mirror
+        /// <summary>$F0: the blank depth counted by $C14E/$C158. Non-zero makes the NMI take
+        /// $C006 <code>LDA $F0 / ORA $9A / BEQ $C00F / JMP $C0A1</code>, which skips the whole
+        /// publish path (OAM DMA, $1C/$1D and $19 VRAM uploads, CHR, palette, $2005/$2001/$2000)
+        /// while the scheduler services still run. Verified on the city capture: $F0 is non-zero
+        /// on 101 frames in 14 runs and the captured palette changes on none of them (97 of the
+        /// other frames do), OAM on only the five run-first frames where $C14E ran after that
+        /// frame's NMI.</summary>
+        private int _blankDepth;
         private byte _palDirty;     // $18: set by $C2A2 STY $18, consumed by the NMI $C059 upload
         public bool SectionLoading => _sectionStage != 0;
 
@@ -297,11 +305,21 @@ namespace Darkwing.Core
 
         /// <summary>$C14E: <code>INC $F0 / LDA #$00 / STA $FE / STA $2001</code>. The port keeps
         /// the mask only in the PPU register, so the black window comes from
-        /// <see cref="Ppu.Render"/> filling with $3F00 while bit3-4 of $2001 are clear.</summary>
-        public void RenderOff() => Ppu.WriteRegister(0x2001, 0x00);
+        /// <see cref="Ppu.Render"/> filling with $3F00 while bit3-4 of $2001 are clear. The
+        /// depth is mirrored too, because it is what suppresses the NMI publish path.</summary>
+        public void RenderOff()
+        {
+            _blankDepth++;                                      // $C14E INC $F0
+            Ppu.WriteRegister(0x2001, 0x00);
+        }
 
-        /// <summary>$C158: <code>DEC $F0 / LDA #$1E / STA $FE / STA $2001</code>.</summary>
-        public void RenderOn() => Ppu.WriteRegister(0x2001, 0x1E);
+        /// <summary>$C158: <code>DEC $F0 / LDA #$1E / STA $FE / STA $2001</code>. DEC is
+        /// unconditional in the ROM, so a mis-paired call leaves $F0 non-zero there as well.</summary>
+        public void RenderOn()
+        {
+            _blankDepth--;                                      // $C158 DEC $F0
+            Ppu.WriteRegister(0x2001, 0x1E);
+        }
 
         /// <summary>Host/harness boot palette: the ROM keeps THREE palette states — the un-faded
         /// source $0320, the faded working copy $0300 and the PPU mirror $3F00 that only the NMI
@@ -1054,7 +1072,7 @@ namespace Darkwing.Core
         /// shadow (gold_pause_resume f45: 79/256 bytes).</summary>
         private void PublishToOamOnce()
         {
-            if (_oamPublished) return;
+            if (_oamPublished || _blankDepth != 0) return;
             _oamPublished = true;
             Oam.PublishToOam();
         }
@@ -1077,9 +1095,15 @@ namespace Darkwing.Core
             _parityStepped = false;
             _oamPublished = false;
             if ((Ppu.Ctrl & 0x80) != 0) NmiCounter++;
-            NmiChrUpload();                // $C047/$C050, before $C059 palette upload
-            NmiPaletteUpload();            // $C059: $18-flagged $0300 → $3F00, every frame
-            Text?.FlushNmiWrites();
+            // $C006: LDA $F0 / ORA $9A / BEQ $C00F / JMP $C0A1 — a blanked frame keeps the last
+            // latched picture, and the $18/$19/$1A/$1B/$1C/$1D latches stay armed for the next
+            // NMI that is allowed to publish.
+            if (_blankDepth == 0)
+            {
+                NmiChrUpload();            // $C047/$C050, before $C059 palette upload
+                NmiPaletteUpload();        // $C059: $18-flagged $0300 → $3F00, every frame
+                Text?.FlushNmiWrites();
+            }
             if (ResidentProcess != null)
             {
                 PublishToOamOnce();
