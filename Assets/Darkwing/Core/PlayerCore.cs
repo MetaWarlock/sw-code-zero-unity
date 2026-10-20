@@ -2172,15 +2172,18 @@ namespace Darkwing.Core
         /// $DAFD, the per-frame level-script check. Cell script byte ($34),$22 bits:
         /// 6 = the camera may cross this cell horizontally, 7 = the vertical scroll may
         /// not advance the grid row here, low nibble 1 = hook column (ride one row
-        /// down), 2 = snap column (ride up). $6D gets script &amp; $CF when that value is
-        /// >= $C1 and not one of the even $C2..$CE pairs.
+        /// down), 2 = snap column (ride up). $6D is armed from the RAW script byte: the ROM
+        /// masks with $CF only for the lower-bound test ($DB03/$DB05), reloads the raw
+        /// value for every even $C2..$CE exclusion ($DB09-$DB25) and stores it unmasked
+        /// ($DB27). $D461/$D463 later takes $6D &amp; $1F, so a raw $D3 arms $6D=$D3 and
+        /// reloads cell $13, not $C3/cell $03.
         /// </summary>
         public void HookGrabCheck()
         {
-            byte script = CellScriptByte;                     // ($34),$22
-            byte section = (byte)(script & 0xCF);             // $DB01/$DB03
-            if (section >= 0xC1 && !(section >= 0xC2 && section <= 0xCE && (section & 1) == 0))
-                CheckpointId = section;                       // $DB05-$DB27
+            byte script = CellScriptByte;                                 // $DB01 ($34),$22
+            if ((byte)(script & 0xCF) >= 0xC1                             // $DB03-$DB07
+                && !(script >= 0xC2 && script <= 0xCE && (script & 1) == 0)) // $DB09-$DB25
+                CheckpointId = script;                                    // $DB27 STA $6D
             if ((byte)(ScrollX & 0xFF) != 0) return;          // $DB29/$DB2B
             ScrollStep = 1;                                   // $DB2D/$DB2F
             switch (script & 0x0F)                            // $DB31-$DB3D

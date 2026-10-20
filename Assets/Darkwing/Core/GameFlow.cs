@@ -195,6 +195,7 @@ namespace Darkwing.Core
                     {
                         _game.PlaySound(0xF0);                   // $D4BE LDA #$F0 / JSR $F84E
                         World.LastOutcome = 0x00;
+                        _game.Player.CheckpointId = 0;            // $D4EC/$D4F4 STA $6D (and $C8C2 again)
                         SetPhase(Phase.Mission);
                         _game.LoadWorld(_decoder, World.CurrentWorld);   // $D4FD JSR $C8B5
                         _game.PlayMusic(World.MusicId(World.CurrentWorld));
@@ -203,6 +204,7 @@ namespace Darkwing.Core
                     {
                         World.LastOutcome = 0xFF;              // $998C STA $F8
                         World.StreamId = 0x07;                 // $D4CD LDA #$07 / STA $62
+                        _game.Player.CheckpointId = 0;         // $D4D8-$D4E4 zero block, before $D95D
                         EnterMap();                            // $D95D → $C8B5 with the map built
                         _game.PlaySound(0x01);                   // $D95F LDA #$01 / JSR $F84E
                         _game.PlaySfx(0x23);                   // $D974 LDA #$23 / JSR $F850
