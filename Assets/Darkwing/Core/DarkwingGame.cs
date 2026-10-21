@@ -135,7 +135,15 @@ namespace Darkwing.Core
             {
                 p.VerticalStreamPass();
                 TileMap.LoadRow(p.ScrollYRow);
-                TileMap.StreamColumns(p.ScrollX);
+                // $E7C6 never paints a page: $E7D4-$E7DB returns when the camera moved less
+                // than 8 px, and the rest only queues rows of the room at $23 ($E821 LDY $23 /
+                // JSR $EB27, records into $0360/$0383/$0384). The whole-window repaint here
+                // overwrote the back page with the next grid row, which is empty at the bottom
+                // of a world: on m1 f12248-13269 page $2400 sat at $00 for 1022 frames while
+                // the original left it stale (10 name bytes changed across the section, max 8
+                // per frame = one band). The $E698 band stream owns the nametable.
+                TileMap.CameraY = p.ScrollY;
+                TileMap.SetScroll(p.ScrollX);
             };
             // $E698 paints one band per pass; the cursor sequence in PlayerCore is the ROM's,
             // so the nametable advances like the original instead of a per-frame repaint.
