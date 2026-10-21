@@ -395,7 +395,14 @@ namespace Darkwing.Core
             {
                 TileMap.ApplyTilesetBank(Player.TilesetBank);
                 TileMap.LoadRow(Player.ScrollYRow);       // $E698 row rebuild
-                TileMap.StreamColumns(Player.ScrollX);
+                // The staging window's $E698 ring owns the nametable here too: with $25
+                // starting at $00 (or $80 after $DE6C) and running to $0F|$70 it paints one
+                // whole page plus ~9 bands of the other, so the second page keeps the
+                // previous screen — measured at m1 f1847 (840 untouched name bytes). A
+                // whole-window repaint also wrote page 1 and used scrollX/cell pairing rather
+                // than $23, which is why the door transition diverged. Publish scroll only.
+                TileMap.CameraY = Player.ScrollY;
+                TileMap.SetScroll(Player.ScrollX);
             }
             var bg = new byte[16];
             var sp = new byte[16];

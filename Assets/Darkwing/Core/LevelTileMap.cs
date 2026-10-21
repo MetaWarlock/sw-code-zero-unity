@@ -98,10 +98,14 @@ namespace Darkwing.Core
         /// does — measured on the original, the staging window leaves the back page at its
         /// previous-screen bytes and the $E698 ring adds only its own band stripes (m1 f1847:
         /// page 1 = 840 untouched name bytes plus the two stripes of cursors $F8-$FF and
-        /// $80-$87, and that state is still unchanged at f2600). Only the row redraw
-        /// ($E7C6, through <see cref="ReloadRow"/>) and the resident map fly-through still
-        /// use it; the staging paths publish scroll only and let <see cref="StreamBand"/>
-        /// own the nametable.
+        /// $80-$87, and that state is still unchanged at f2600). No scrolling-world entry
+        /// repaints through here any more: the world load ($DD57) and the section load ($E388)
+        /// publish scroll only and let <see cref="StreamBand"/> own the nametable, and the row
+        /// service ($E7C6, through <see cref="ReloadRow"/>) stopped painting pages here — its
+        /// own whole-row writes are still unported. Remaining callers are the resident map
+        /// fly-through and the non-scrolling pseudo
+        /// scenes, whose own blit is not modelled. The cell/row formula here ($22 from
+        /// scrollX, `_row + page`) is still the pre-$23 approximation.
         /// </summary>
         public void StreamColumns(ushort scrollX)
         {
@@ -119,9 +123,11 @@ namespace Darkwing.Core
             }
         }
 
-        /// <summary>Per-frame PPU scroll registers only. The nametable bytes belong to the
-        /// $E698 band stream (`StreamBand`); a whole-window repaint is due on the loader's
-        /// staging window ($DE86–$DE91), a row redraw ($E7C6) and a world load.</summary>
+        /// <summary>Per-frame PPU scroll registers only. Scrolling-world nametable bytes belong
+        /// to the $E698 band stream (<see cref="StreamBand"/>), so neither the world load
+        /// ($DD57) nor the section load ($E388) repaints a window. The $E7C6 row service does
+        /// paint whole rows of the room at $23 and is not ported yet — see
+        /// <see cref="ReloadRow"/>.</summary>
         public void SetScroll(ushort scrollX)
         {
             _ppu.ScrollX = (byte)scrollX;
