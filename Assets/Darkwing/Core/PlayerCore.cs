@@ -79,7 +79,11 @@ namespace Darkwing.Core
         public byte PendingScreenEffect;// $1A screen-effect trigger ($8A/$8B/$88/$FF)
         public byte PendingSpawnType;   // $042E boss drop request (Bushroot vines $52)
         public byte PendingMissionFlag; // $66 door mission flag ($FF/$F0)
-        public readonly byte[] ScoreDigits = { 0x70,0x70,0x70,0x70,0x70 }; // $05C4/$C6/$C8/$CA/$CC
+        /// <summary>$05C4/$C6/$C8/$CA/$CC. Kept at the boot-cleared $00 until $C92A copies the
+        /// status template ($C936) on mission entry: measured on both recordings, the whole block
+        /// $05C2-$05E7 is $00 from frame 5 and becomes $11 25 70 00 70 00 … 70 00 73 00 on exactly
+        /// one frame — f1865 for mission 1, f1942 for the city.</summary>
+        public readonly byte[] ScoreDigits = { 0x00,0x00,0x00,0x00,0x00 };
         public int ScoreUnits
         {
             get { int value=0; foreach(byte d in ScoreDigits) value=value*10+(d&15); return value; }
@@ -2328,8 +2332,11 @@ namespace Darkwing.Core
         public Action ReloadRow;                // $E7C6 row redraw
 
         // ---------- Energy HUD drain ($CB0E-$CB3B / state 7 $D3D9-$D407) ----------
-        public byte EnergyColRight = 0x79; // $05E6 (tile code $70-$79 = 9..0)
-        public byte EnergyColLeft = 0x79;  // $05E4
+        /// <summary>$05E6 (tile code $70-$79 = 9..0) and $05E4. Boot keeps them at the cleared
+        /// $00; only the $C92A status-template copy at mission entry fills them ($05E4=$70,
+        /// $05E6=$73 on the city recording, f1942 — the same frame as $05C4…$05CC).</summary>
+        public byte EnergyColRight; // $05E6
+        public byte EnergyColLeft;  // $05E4
 
         /// <summary>Per-frame energy drain; both columns empty → death ($64 → $D41B).</summary>
         public void DrainEnergy()
