@@ -23,6 +23,19 @@ namespace Darkwing.Core
         private int _row;
         private readonly System.Collections.Generic.Dictionary<int, byte[]> _collisionRooms = new();
         private readonly System.Collections.Generic.Dictionary<int, (byte[] tiles, byte[] meta, byte[] attrs)> _visualRooms = new();
+        /// <summary>
+        /// $0140..$014F — the 4×4 tile block of the macro the last band pass read, plus
+        /// $11/$12 — its four quadrant palettes (TL, TR, BL, BR). $EA36 opens with
+        /// <c>LDA $27 / BMI $EA3B / RTS</c>: room id 0 leaves the chunk pointer at $7FC0
+        /// (hi byte $7F, bit 7 clear), so the routine returns before touching this state and
+        /// the pass paints the block the previous refresh left. Goldens m1 f18540..18551:
+        /// $23 = $32, world 0 <c>Grid[$32] = $00</c>, $26/$27 = $C0/$7F and $0140..$014F held
+        /// uniform $10 (the same bytes in two independent captures), so every pass in that
+        /// stretch painted $10 — the stale paint, not a room read. $0140 is not part of the
+        /// port's RAM mirror, so only the nametable bytes are directly comparable.
+        /// </summary>
+        private readonly byte[] _bandTable = new byte[16];
+        private readonly byte[] _bandPalettes = new byte[4];
         public byte CameraY;
 
         public LevelTileMap(RoomDecoder decoder, Ppu ppu, RoomDecoder.World world)
@@ -156,23 +169,45 @@ namespace Darkwing.Core
             int halfCol = (cursor >> 3) & 1;
             int cell = gridIndex % _world.RowWidth;
             int sourceRow = gridIndex / _world.RowWidth;
-            int inRoomCol = 4 * attrCol + 2 * halfCol;
-            if (!TryGetRoom(cell * 32 + inRoomCol, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs)) return;
+            byte roomId = (uint)gridIndex < (uint)_world.Grid.Length ? _world.Grid[gridIndex] : (byte)0;
+            if (roomId != 0 && TryGetRoom(cell * 32 + 4 * attrCol, sourceRow,
+                                          out byte[] tiles, out byte[] meta, out byte[] attrs))
+                RefreshBandTable(bandRow, attrCol, tiles, meta, attrs);
             var nt = _ppu.NametableRam;
             int baseNt = page * 0x400;
+            int inRoomCol = 4 * attrCol + 2 * halfCol;
             for (int k = 0; k < 4; k++)
             {
                 int row = bandRow * 4 + k;
                 if (row >= 30) continue;                 // the status-bar rows are not streamed
-                nt[baseNt + row * 32 + inRoomCol] = tiles[row * 32 + inRoomCol];
-                nt[baseNt + row * 32 + inRoomCol + 1] = tiles[row * 32 + inRoomCol + 1];
+                nt[baseNt + row * 32 + inRoomCol] = _bandTable[2 * halfCol + 4 * k];
+                nt[baseNt + row * 32 + inRoomCol + 1] = _bandTable[2 * halfCol + 4 * k + 1];
             }
-            for (int mrow = bandRow * 2; mrow < bandRow * 2 + 2; mrow++)
+            // $11 carries TL(bits 0-1)+BL(bits 4-5) and $12 TR+BR; each pass merges its own
+            // half of the attribute byte at $3C0 + 8·bandRow + attrCol ($33 / $CC masks).
+            int attrIndex = baseNt + 0x3C0 + bandRow * 8 + attrCol;
+            int mask = halfCol == 0 ? 0x33 : 0xCC;
+            int value = halfCol == 0 ? _bandPalettes[0] | (_bandPalettes[2] << 4)
+                                     : (_bandPalettes[1] << 2) | (_bandPalettes[3] << 6);
+            nt[attrIndex] = (byte)((nt[attrIndex] & ~mask) | value);
+        }
+
+        /// <summary>$EA36/$EA5F: the macro at chunk slot 8·bandRow + attrCol of the room the
+        /// cursor points at, expanded into the row-major 4×4 tile block and its palettes.
+        /// $EAC4 clears the two lower palettes for bandRow 7, whose rows 30/31 are the status
+        /// bar, so only the top half of that attribute byte survives.</summary>
+        private void RefreshBandTable(int bandRow, int attrCol, byte[] tiles, byte[] meta, byte[] attrs)
+        {
+            for (int row = 0; row < 4; row++)
+                for (int col = 0; col < 4; col++)
+                    _bandTable[row * 4 + col] = tiles[(bandRow * 4 + row) * 32 + attrCol * 4 + col];
+            for (int q = 0; q < 4; q++)
             {
-                if (mrow >= 15) continue;
-                for (int q = 0; q < 2; q++)
-                    WriteAttrQuadrant(nt, baseNt, meta, attrs, mrow, 2 * attrCol + q);
+                int mrow = bandRow * 2 + (q >> 1);
+                int mcol = attrCol * 2 + (q & 1);
+                _bandPalettes[q] = mrow >= 15 ? (byte)0 : attrs[meta[mrow * 16 + mcol]];
             }
+            if (bandRow == 7) { _bandPalettes[2] = 0; _bandPalettes[3] = 0; }
         }
 
         private void StreamColumn(int worldTileCol, int sourceRow, int page)
