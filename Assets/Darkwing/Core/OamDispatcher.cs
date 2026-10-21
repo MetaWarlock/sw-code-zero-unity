@@ -8,7 +8,7 @@ namespace Darkwing.Core
     /// (pointer semantics identical to the original: CPU $8000+off).
     /// OAM cursor starts at 4 ($97): entry 0 is reserved (hidden marker, $C21E path).
     /// </summary>
-    public sealed class OamDispatcher
+    public sealed partial class OamDispatcher
     {
         private byte[] _bank5;
         private readonly ObjectSystem _objects;
