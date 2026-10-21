@@ -173,7 +173,11 @@ namespace Darkwing.Core
             _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
             WorldPrelude();
             Player.StageSectionToEnd();     // $DE86-$DE91: the inline entry has no frame machine
-            TileMap.StreamColumns(Player.ScrollX); // staging must publish the newly decoded world
+            // Same rule as the staged loader's third stage: a $31 <= 6 world gets scroll-only
+            // (its nametable is the $E698 ring's), an intro/title pseudo-scene keeps the
+            // whole-window repaint until its own blit is modelled.
+            if (worldId <= 6) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
+            else TileMap.StreamColumns(Player.ScrollX);
             WorldSpawn();
             // $C2F9/$C319 never flag $18 — the PPU only sees a new table through a fade step's
             // $C2A2 STY $18. Inside the staged loader that is the $DE06/$C270 fade-in; this

@@ -92,7 +92,17 @@ namespace Darkwing.Core
         public byte FlagByte(int index) =>
             (uint)index < (uint)_world.Flags.Length ? _world.Flags[index] : (byte)0;
 
-        /// <summary>Stream nametable columns so the window covers scroll..scroll+256.</summary>
+        /// <summary>
+        /// Whole-window repaint: page 0 = the camera cell, page 1 = the cell below (a
+        /// vertical ride) or the next one (a horizontal room). This is NOT what the loader
+        /// does — measured on the original, the staging window leaves the back page at its
+        /// previous-screen bytes and the $E698 ring adds only its own band stripes (m1 f1847:
+        /// page 1 = 840 untouched name bytes plus the two stripes of cursors $F8-$FF and
+        /// $80-$87, and that state is still unchanged at f2600). Only the row redraw
+        /// ($E7C6, through <see cref="ReloadRow"/>) and the resident map fly-through still
+        /// use it; the staging paths publish scroll only and let <see cref="StreamBand"/>
+        /// own the nametable.
+        /// </summary>
         public void StreamColumns(ushort scrollX)
         {
             int firstCell = scrollX >> 8;

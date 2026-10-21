@@ -175,7 +175,15 @@ namespace Darkwing.Core
             }
             if (_sceneLoadStage == 3)
             {
-                TileMap.StreamColumns(Player.ScrollX);
+                // $31 <= 6 is a real $DD57 world: the loader owns its nametable, because
+                // $DE86-$DE91 already ran the $E698 bands through StageBand and the original
+                // leaves the back page at its previous-screen bytes. A whole-window repaint
+                // here pre-paints it with the NEXT cell and desynchronises every later
+                // plateau (measured on the city capture, f2140-2600: 473.3 -> 61.0 mean
+                // name-byte diffs). Ids 7+ are the intro/title pseudo-scenes: the port has no
+                // model of their blit yet, so they keep the repaint (f289-400: 1.0 vs 9.7).
+                if (_worldId <= 6) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
+                else TileMap.StreamColumns(Player.ScrollX);
                 WorldSpawn();
                 Player.EntryFreezeFrames = 0;
                 _sceneLoadStage = 1;
