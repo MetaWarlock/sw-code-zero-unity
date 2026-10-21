@@ -88,6 +88,9 @@ public static class StandRoute
             ram[0xE4]=EnemyBehaviors.RngE4;ram[0xE5]=EnemyBehaviors.RngE5;
             ram[0xE6]=EnemyBehaviors.RngE6;ram[0xE7]=EnemyBehaviors.RngE7;
             ram[0x25]=p.StageCursor;ram[0x22]=p.CellIndex;ram[0x23]=p.CellIndexNext;
+            // The port never maintains the band driver's bookkeeping, so these mirror 0 while
+            // ORIG holds $1F=1 and $28=$FC every ordinary frame. None is in a compared group.
+            ram[0x1F]=p.ColsToStream;ram[0x28]=p.LastRedrawScroll;ram[0x20]=p.PrevScrollMode;
             ram[0x2B]=p.ScrollState;ram[0x2F]=p.ScrollMode;
             // $6D armed from the raw cell script byte at $DB27 (and $EBAA/$EBC8 for door
             // type 5), $5B is the door request $CA6E consumes. Both sit in $0000..$07FF but
