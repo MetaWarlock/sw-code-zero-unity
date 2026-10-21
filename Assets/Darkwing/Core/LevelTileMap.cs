@@ -109,27 +109,57 @@ namespace Darkwing.Core
             }
         }
 
+        /// <summary>Per-frame PPU scroll registers only. The nametable bytes belong to the
+        /// $E698 band stream (`StreamBand`); a whole-window repaint is due on the loader's
+        /// staging window ($DE86–$DE91), a row redraw ($E7C6) and a world load.</summary>
+        public void SetScroll(ushort scrollX)
+        {
+            _ppu.ScrollX = (byte)scrollX;
+            _ppu.ScrollY = CameraY;
+        }
+
+        /// <summary>
+        /// One $E698 pass, addressed by the cursor as it stood when the pass entered
+        /// ($E69C reads $25 for the records; $E78A–$E790 only advances it afterwards): the
+        /// two tile columns 4a+2h, 4a+2h+1 (a = ($25&gt;&gt;4)&amp;7, h = ($25&gt;&gt;3)&amp;1)
+        /// on the four rows 4c…4c+3 (c = $25&amp;7) of page bit7($25), plus that page's
+        /// attribute byte $3C0+8c+a — the h half of it ($33/$CC masks merge the two halves
+        /// across the two passes). Measured on the original buffers: every scroll frame's NT
+        /// delta is exactly this band (8 tiles in 57 % of the changed frames) and no other
+        /// attribute byte changes in the frame.
+        /// </summary>
+        public void StreamBand(byte cursor, ushort scrollX)
+        {
+            int page = (cursor >> 7) & 1;
+            int bandRow = cursor & 7;
+            int attrCol = (cursor >> 4) & 7;
+            int halfCol = (cursor >> 3) & 1;
+            int cell = (scrollX >> 8) + (CameraY == 0 ? page : 0);
+            int sourceRow = _row + (CameraY == 0 ? 0 : page);
+            int inRoomCol = 4 * attrCol + 2 * halfCol;
+            if (!TryGetRoom(cell * 32 + inRoomCol, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs))
+                return;
+            var nt = _ppu.NametableRam;
+            int baseNt = page * 0x400;
+            for (int k = 0; k < 4; k++)
+            {
+                int row = bandRow * 4 + k;
+                if (row >= 30) continue;                 // the status-bar rows are not streamed
+                nt[baseNt + row * 32 + inRoomCol] = tiles[row * 32 + inRoomCol];
+                nt[baseNt + row * 32 + inRoomCol + 1] = tiles[row * 32 + inRoomCol + 1];
+            }
+            for (int mrow = bandRow * 2; mrow < bandRow * 2 + 2; mrow++)
+            {
+                if (mrow >= 15) continue;
+                for (int q = 0; q < 2; q++)
+                    WriteAttrQuadrant(nt, baseNt, meta, attrs, mrow, 2 * attrCol + q);
+            }
+        }
+
         private void StreamColumn(int worldTileCol, int sourceRow, int page)
         {
             int inRoomCol = worldTileCol & 31;            // 32 tile columns per 256px cell
-            int cell = worldTileCol >> 5;
-            if (cell >= _world.RowWidth || sourceRow >= _world.GridRows) return;
-            byte[] tiles, meta, attrs;
-            if (sourceRow == _row) { tiles = _roomTiles[cell]; meta = _roomMeta[cell]; attrs = _roomAttrs[cell]; }
-            else
-            {
-                int key = sourceRow * _world.RowWidth + cell;
-                if (!_visualRooms.TryGetValue(key, out var room))
-                {
-                    tiles = new byte[1024]; attrs = new byte[256];
-                    byte roomId = _world.CellAt(sourceRow, cell);
-                    if (roomId != 0) _decoder.Decode(_world, roomId, new byte[64], tiles, new byte[256]);
-                    meta = (byte[])_decoder.MetaGrid.Clone();
-                    for (int m = 0; m < 256; m++) attrs[m] = (byte)(_decoder.TypeBytes[m] & 3);
-                    room = (tiles, meta, attrs); _visualRooms[key] = room;
-                }
-                (tiles, meta, attrs) = room;
-            }
+            if (!TryGetRoom(worldTileCol, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs)) return;
             var nt = _ppu.NametableRam;
             int baseNt = page * 0x400;
             int ringCol = inRoomCol;
@@ -139,14 +169,40 @@ namespace Darkwing.Core
             }
             // Attributes: the 2-bit palette per 16px cell, packed per NES quadrant.
             for (int mrow = 0; mrow < 15; mrow++)
+                WriteAttrQuadrant(nt, baseNt, meta, attrs, mrow, inRoomCol >> 1);
+        }
+
+        /// <summary>The decoded 32×32 tile / 16×16 metatile / metatile-palette arrays that
+        /// own this world tile column, building an off-row room on demand.</summary>
+        private bool TryGetRoom(int worldTileCol, int sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs)
+        {
+            int cell = worldTileCol >> 5;
+            tiles = meta = attrs = null;
+            if (cell >= _world.RowWidth || sourceRow >= _world.GridRows) return false;
+            if (sourceRow == _row) { tiles = _roomTiles[cell]; meta = _roomMeta[cell]; attrs = _roomAttrs[cell]; return true; }
+            int key = sourceRow * _world.RowWidth + cell;
+            if (!_visualRooms.TryGetValue(key, out var room))
             {
-                int mcol = inRoomCol >> 1;
-                int metaIndex = meta[mrow * 16 + mcol];
-                int attrByteIndex = baseNt + 0x3C0 + (mrow >> 1) * 8 + (mcol >> 1);
-                int shift = ((mrow & 1) << 2) | ((mcol & 1) << 1);
-                byte pal = (byte)(attrs[metaIndex] & 3);
-                nt[attrByteIndex] = (byte)((nt[attrByteIndex] & ~(3 << shift)) | (pal << shift));
+                tiles = new byte[1024]; attrs = new byte[256];
+                byte roomId = _world.CellAt(sourceRow, cell);
+                if (roomId != 0) _decoder.Decode(_world, roomId, new byte[64], tiles, new byte[256]);
+                meta = (byte[])_decoder.MetaGrid.Clone();
+                for (int m = 0; m < 256; m++) attrs[m] = (byte)(_decoder.TypeBytes[m] & 3);
+                room = (tiles, meta, attrs); _visualRooms[key] = room;
             }
+            (tiles, meta, attrs) = room;
+            return true;
+        }
+
+        /// <summary>One 2-bit attribute quadrant: the palette of the 16px metatile at
+        /// (mrow, mcol) merged into its byte at $3C0 + (mrow&gt;&gt;1)·8 + (mcol&gt;&gt;1).</summary>
+        private static void WriteAttrQuadrant(byte[] nt, int baseNt, byte[] meta, byte[] attrs, int mrow, int mcol)
+        {
+            int metaIndex = meta[mrow * 16 + mcol];
+            int attrByteIndex = baseNt + 0x3C0 + (mrow >> 1) * 8 + (mcol >> 1);
+            int shift = ((mrow & 1) << 2) | ((mcol & 1) << 1);
+            byte pal = (byte)(attrs[metaIndex] & 3);
+            nt[attrByteIndex] = (byte)((nt[attrByteIndex] & ~(3 << shift)) | (pal << shift));
         }
 
         /// <summary>Level script byte ($34 flag table) for the player's cell column ($DAFD feed).</summary>

@@ -499,6 +499,11 @@ namespace Darkwing.Core
         public byte StageBoundary;                          // $E7BF,X
         public sbyte StageStep;                             // $E7BE,X
 
+        /// <summary>The $E698 band produced by each pass, called with the cursor $25 holds
+        /// when the pass enters. The host wires it to <c>LevelTileMap.StreamBand</c>; with no
+        /// host (fixture harnesses) the cursors still advance and nothing is painted.</summary>
+        public System.Action<byte> StageBand;
+
         /// <summary>
         /// $E698 passes per frame — a CYCLE-RATE APPROXIMATION, not a ROM mechanism (G62).
         /// $DE24 opens with `JSR $C14E` (INC $F0, $2001=0) and contains the whole
@@ -527,6 +532,7 @@ namespace Darkwing.Core
         {
             for (int i = 0; i < StagePassesPerFrame; i++)
             {
+                StageBand?.Invoke(StageCursor);             // $E69C builds the band from the cursor as it stands
                 StageCursor = (byte)(StageCursor + StageStep);
                 if ((StageCursor & 0x7F) == StageBoundary)
                     CellIndexNext = (byte)(CellIndexNext + StageStep);
@@ -608,6 +614,7 @@ namespace Darkwing.Core
             byte boundary = (byte)(x == 0 ? 0x00 : 0x7F);           // $E7BF,X
             for (int i = 0; i < passes; i++)                        // $E698 → $E7A5
             {
+                StageBand?.Invoke(StageCursor);                     // $E69C: the band of the cursor as it enters
                 StageCursor = (byte)(StageCursor + step);           // $E78A-$E790
                 if ((StageCursor & 0x7F) == boundary)
                     CellIndexNext = (byte)(CellIndexNext + step);   // $E792-$E79F

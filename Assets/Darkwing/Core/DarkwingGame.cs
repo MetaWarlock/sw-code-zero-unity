@@ -137,6 +137,13 @@ namespace Darkwing.Core
                 TileMap.LoadRow(p.ScrollYRow);
                 TileMap.StreamColumns(p.ScrollX);
             };
+            // $E698 paints one band per pass; the cursor sequence in PlayerCore is the ROM's,
+            // so the nametable advances like the original instead of a per-frame repaint.
+            p.StageBand = u =>
+            {
+                TileMap.CameraY = p.ScrollY;
+                TileMap.StreamBand(u, p.ScrollX);
+            };
         }
 
         private SectionTable _sections;
@@ -1403,7 +1410,9 @@ namespace Darkwing.Core
             s0.X = Player.X;
             s0.Y = Player.Y;
             // Spawner + cull ($8090/$802F): placements activate as their cell scrolls in.
-            if (TileMap != null) { TileMap.CameraY = Player.ScrollY; TileMap.StreamColumns(Player.ScrollX); }
+            // The nametable itself is only written by the $E698 band stream (Player.StageBand)
+            // and by the redraw services; this frame updates the scroll registers.
+            if (TileMap != null) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
             if (Objects?.Placements != null)
             {
                 // Spawner ($8090); culling happens per-slot in OamDispatcher
