@@ -59,7 +59,7 @@ public static class StandRoute
         var flow = new GameFlow(game, decoder);
 
         var sb = new System.Text.StringBuilder();
-        sb.Append("frame,x,y,state,ctrl,mask,pal_sum,phase,phaseFrames,timer,parity,stream,textByte,scrollX,scrollY,cell,next,world,completed,maskCompleted,chr0,chr1,blank,flag18\n");
+        sb.Append("frame,x,y,state,ctrl,mask,pal_sum,phase,phaseFrames,timer,parity,stream,textByte,scrollX,scrollY,cell,next,world,completed,maskCompleted,chr0,chr1,blank,flag18,mapScr,mapCh,worldRun\n");
         using var buffers = new BinaryWriter(File.Create(Path.Combine(outDir,"buffers.bin")));
         var ram = new byte[2048]; // Only explicitly mapped fields below; other RAM is not claimed.
         var shots = new HashSet<int>(cfg.shots ?? new int[0]);
@@ -71,7 +71,7 @@ public static class StandRoute
             // emulator's input poll (and therefore the recorded byte) belongs.
             var p = game.Player;
             sb.Append($"{f},{p.X},{p.Y},{p.State},{game.Ppu.Ctrl},{game.Ppu.Mask}," +
-                $"{Sum(game.Ppu.PaletteRam, 32)},{flow.Stage},{flow.PhaseFrames},{p.StateTimer},{game.FrameParity},{flow.World.StreamId},{game.Text.ByteIndex},{p.ScrollX},{p.ScrollY},{p.CellIndex},{p.CellIndexNext},{flow.World.CurrentWorld},{flow.World.CompletedCount},{flow.World.CompletedMask},{game.Ppu.Chr0Bank},{game.Ppu.Chr1Bank},{game.BlankDepth},{game.PaletteUploadFlag}\n");
+                $"{Sum(game.Ppu.PaletteRam, 32)},{flow.Stage},{flow.PhaseFrames},{p.StateTimer},{game.FrameParity},{flow.World.StreamId},{game.Text.ByteIndex},{p.ScrollX},{p.ScrollY},{p.CellIndex},{p.CellIndexNext},{flow.World.CurrentWorld},{flow.World.CompletedCount},{flow.World.CompletedMask},{game.Ppu.Chr0Bank},{game.Ppu.Chr1Bank},{game.BlankDepth},{game.PaletteUploadFlag},{game.MapScreen},{game.MapChooser},{game.WorldRunning}\n");
             ram[0x50]=p.State;ram[0x51]=p.StateTimer;ram[0x95]=game.FrameParity;
             // $C162 latches $14/$16 at the input poll, so the frame's own poll cannot see its own
             // byte: record f (written before Step(f)) carries the read made during frame f-1.

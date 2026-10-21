@@ -135,7 +135,16 @@ namespace Darkwing.Core
                 _waiting = false;
                 if (_endWait || (!_mapMode && (padHeld & StartBit) != 0))
                 { _running = false; Done = true; return; }
+                // $AA85 → $AB57 returns on the strobe, then $AA88 falls to $AA98 `JSR $AADD`,
+                // and $AADD ends in `JMP $FF06`: the frame the page confirm arrives in spends
+                // itself on the box clear and never reaches the $AA60 `STA $97 / JSR $F89A`
+                // walk. Only the next frame resumes at $AA13 and types with a walk. Measured
+                // on the city route at the briefing page break f1486 ($14=$80): the original
+                // held $95 $7B→$7B and the selected bubble's anim fields $0430/$0432/$0434 =
+                // $00/$08/$0C/$08 over f1485→f1486, then stepped both on f1487.
                 ClearTextLines(); _line = _column = 0;
+                _pendingYields = 1; _cleared = true;
+                return;
             }
 
             if (_pendingYields > 0)
