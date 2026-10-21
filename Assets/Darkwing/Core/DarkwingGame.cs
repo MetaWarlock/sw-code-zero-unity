@@ -1061,6 +1061,21 @@ namespace Darkwing.Core
         }
 
         private byte _prevHeld;
+        /// <summary>$14: P1 press edge latched by the last input poll that ran.</summary>
+        public byte PressedP1 { get; private set; }
+        /// <summary>$16 as seen by the next poll: P1 held byte from that same poll. Frames that
+        /// return before reaching a poll (loader, reload, entry freeze) leave both latched.</summary>
+        public byte HeldP1 => _prevHeld;
+
+        /// <summary>$C162–$C1B9: strobe the pads, latch held into $16 and its edge into $14.
+        /// Bank 7's resident loop ($C9AC/$C792) polls at the head of its own iteration, so the
+        /// title/dialog/map/mission-load frames poll too, not only the world dispatcher.</summary>
+        private void PollInput(in NesButtons pad1)
+        {
+            byte held = pad1.ToByte();
+            PressedP1 = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
+            _prevHeld = held;
+        }
         private System.Func<int, byte> _gridByte, _flagByte;   // cached ($32)/($34) lookups for $DA70
         // The pause phase lives in DarkwingGame.Pause.cs (bank 4 $8F00…$9025).
         private bool _parityStepped;
@@ -1106,6 +1121,7 @@ namespace Darkwing.Core
             }
             if (ResidentProcess != null)
             {
+                PollInput(in pad1);
                 PublishToOamOnce();
                 ResidentProcess(pad1);
                 if (ResidentProcess != null || !WorldRunning)
@@ -1192,9 +1208,8 @@ namespace Darkwing.Core
                 Frame++;
                 return;
             }
-            byte held = pad1.ToByte();
-            byte pressed = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
-            _prevHeld = held;
+            PollInput(in pad1);
+            byte pressed = PressedP1;
             if (!WorldRunning)
             {
                 // The title/map/briefing phase is bank 7's own loop ($C792/$C9AC): no player
@@ -1243,7 +1258,7 @@ namespace Darkwing.Core
             // spawner, door check and animation engine are all skipped for that frame.
             if ((Objects.Slots[0].StateLow & 0x80) != 0)
             {
-                Player.Step(held, pressed);
+                Player.Step(HeldP1, pressed);
                 // $CE39 is called from inside the player's state machine and writes the
                 // projectile slot there, so the bank-6 dispatch finds it live in the SAME
                 // frame: gold_b_attack f30 has $04D0 = $81 and $0540 = $04 (the $82F0 init

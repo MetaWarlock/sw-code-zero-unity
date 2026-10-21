@@ -73,6 +73,10 @@ public static class StandRoute
             sb.Append($"{f},{p.X},{p.Y},{p.State},{game.Ppu.Ctrl},{game.Ppu.Mask}," +
                 $"{Sum(game.Ppu.PaletteRam, 32)},{flow.Stage},{flow.PhaseFrames},{p.StateTimer},{game.FrameParity},{flow.World.StreamId},{game.Text.ByteIndex},{p.ScrollX},{p.ScrollY},{p.CellIndex},{p.CellIndexNext},{flow.World.CurrentWorld},{flow.World.CompletedCount},{flow.World.CompletedMask},{game.Ppu.Chr0Bank},{game.Ppu.Chr1Bank}\n");
             ram[0x50]=p.State;ram[0x51]=p.StateTimer;ram[0x95]=game.FrameParity;
+            // $C162 latches $14/$16 at the input poll, so the frame's own poll cannot see its own
+            // byte: record f (written before Step(f)) carries the read made during frame f-1.
+            // Frames that return before $C162 (loader, reload, entry freeze) leave both stale.
+            ram[0x14]=game.PressedP1;ram[0x16]=game.HeldP1;
             ram[0x52]=p.DirBits;ram[0x56]=p.AirSubState;ram[0x7C]=p.InvulnFrames;
             ram[0x53]=p.WeaponActive;ram[0x54]=p.WeaponSelected;ram[0x5F]=p.GasActive;
             ram[0x60]=p.GasEnergyHi;ram[0x61]=p.GasEnergyLo;ram[0x98]=p.GasToggle;
