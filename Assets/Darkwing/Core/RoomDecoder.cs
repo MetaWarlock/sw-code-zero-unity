@@ -89,6 +89,12 @@ namespace Darkwing.Core
                            byte[] types16x16)      // 256 out (row-major)
         {
             var roomBank = RoomBank(w.RoomBank);
+            // $EB27 reads the room id from ($32),Y and scales it with six ASL/ROL pairs:
+            // chunk = $7FC0 + room·64. Room 0 therefore points at the WRAM tail
+            // $7FC0-$7FFF, which no code writes, so its 64 macrotiles all read $00 and every
+            // cell expands through the set's macrotile 0. Rooms >= 1 live in the PRG room
+            // bank at (room-1)·64.
+            bool wramTail = cell == 0;
             int off = (cell - 1) * 64;
             // levelsets.bytes is 7 x 2304: macrotile table (1024) + 4 metatile tile
             // quadrants (4x256) + type byte per metatile (256). Sets 1-6 need the stride.
@@ -97,7 +103,7 @@ namespace Darkwing.Core
             {
                 for (int mc = 0; mc < 8; mc++)
                 {
-                    byte m = roomBank[off + mr * 8 + mc];
+                    byte m = wramTail ? (byte)0 : roomBank[off + mr * 8 + mc];
                     macrotiles8x8[mr * 8 + mc] = m;
                     for (int q = 0; q < 4; q++)
                     {

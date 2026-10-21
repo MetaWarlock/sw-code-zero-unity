@@ -50,8 +50,7 @@ namespace Darkwing.Core
                 var tiles = new byte[1024];
                 var types = new byte[256];
                 var macros = new byte[64];
-                if (cell != 0)
-                    _decoder.Decode(_world, cell, macros, tiles, types);
+                _decoder.Decode(_world, cell, macros, tiles, types);
                 _roomTiles[col] = tiles;
                 _roomTypes[col] = types;
                 _roomMeta[col] = (byte[])_decoder.MetaGrid.Clone();
@@ -158,8 +157,7 @@ namespace Darkwing.Core
             int cell = gridIndex % _world.RowWidth;
             int sourceRow = gridIndex / _world.RowWidth;
             int inRoomCol = 4 * attrCol + 2 * halfCol;
-            if (!TryGetRoom(cell * 32 + inRoomCol, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs))
-                return;
+            if (!TryGetRoom(cell * 32 + inRoomCol, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs)) return;
             var nt = _ppu.NametableRam;
             int baseNt = page * 0x400;
             for (int k = 0; k < 4; k++)
@@ -205,8 +203,7 @@ namespace Darkwing.Core
             if (!_visualRooms.TryGetValue(key, out var room))
             {
                 tiles = new byte[1024]; attrs = new byte[256];
-                byte roomId = _world.CellAt(sourceRow, cell);
-                if (roomId != 0) _decoder.Decode(_world, roomId, new byte[64], tiles, new byte[256]);
+                _decoder.Decode(_world, _world.CellAt(sourceRow, cell), new byte[64], tiles, new byte[256]);
                 meta = (byte[])_decoder.MetaGrid.Clone();
                 for (int m = 0; m < 256; m++) attrs[m] = (byte)(_decoder.TypeBytes[m] & 3);
                 room = (tiles, meta, attrs); _visualRooms[key] = room;
@@ -257,8 +254,7 @@ namespace Darkwing.Core
                 if (!_collisionRooms.TryGetValue(key, out types))
                 {
                     types = new byte[256];
-                    byte room = _world.CellAt(worldRow, cell);
-                    if (room != 0) _decoder.Decode(_world, room, new byte[64], new byte[1024], types);
+                    _decoder.Decode(_world, _world.CellAt(worldRow, cell), new byte[64], new byte[1024], types);
                     _collisionRooms[key] = types;
                 }
             }
