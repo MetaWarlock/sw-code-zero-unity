@@ -428,8 +428,9 @@ namespace Darkwing.Core
             // until $25 == $0F. The loop is INLINE inside $DE24 and never yields — $E7A8's
             // $F0 test is the render-off nesting counter, so the pass leaves through the
             // $C115 queue flush, not through a frame wait. The frame split that the reload
-            // captures show is CPU-time only (9-17 passes/frame), which $StageSectionPass
-            // approximates with a constant; see StagePassesPerFrame and G62.
+            // captures show is CPU-time only (10-19 passes/frame, 23 in the first window),
+            // which $StageSectionPass approximates with a constant; see StagePassesPerFrame
+            // and G62.
             StageSectionPass();
         }
 

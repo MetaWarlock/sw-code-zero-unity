@@ -354,6 +354,11 @@ namespace Darkwing.Core
         /// <summary>$18, the pending NMI $C059 upload flag.</summary>
         public byte PaletteUploadFlag => _palDirty;
 
+        /// <summary>$F0, the blank depth that gates the whole NMI publish path. A stuck non-zero
+        /// value suppresses palette, CHR, the VRAM queues and the OAM DMA at once, so a harness
+        /// that sees a frozen picture has to be able to tell it apart from a wrong table.</summary>
+        public int BlankDepth => _blankDepth;
+
         /// <summary>$E388 with X = section id ($CA6E calls it from the $5B door
         /// request, $D461 for the respawn after death). The loader does not return
         /// for ~11 frames, so only the descriptor tables are written here; <see cref="Step"/>
@@ -466,7 +471,11 @@ namespace Darkwing.Core
             // plate through the $8062 offscreen branch (bit 7 cleared) and every bubble
             // through a page difference.
             Player.ScrollX = 0; Player.ScrollY = 0; Player.ScrollYRow = 0;
-            Ppu.WriteRegister(0x2001, 0x1E);    // $C158: rendering back on for the map screen
+            RenderOn();                       // $A1D7 JSR $F90C → $C158: DEC $F0 plus $2001=$1E.
+            // Writing only the register left $F0 at 1 for the rest of the run, and a non-zero $F0
+            // sends every later NMI to $C0A1, so the palette, CHR, VRAM queues and OAM DMA stopped
+            // publishing entirely (city capture: $3F00 pinned to $0F from f1026 to f18489 while the
+            // $18 upload flag stayed armed at $FF).
             Objects?.ClearForSectionLoad();
             if (fixtureHiddenRecord) Oam?.SeedHiddenRecord(0, 0xC0, 0x00, 0x10);
             MissionCleared = false;
@@ -1797,7 +1806,9 @@ namespace Darkwing.Core
                     // G37: the $DE86-$DE91 loop streams one $E698 pass per iteration and only
                     // leaves when $25 hits $0F ($DE8F CMP $0F), so the window length is derived
                     // from the cursor distance the prelude seeds at $DE84 ($0F | $70) — a world
-                    // load streams 144 passes and $StageSectionPass delivers 15 per frame.
+                    // load streams 144 passes and $StageSectionPass delivers a constant 15 per
+                    // frame; the ROM splits the same window 10...19 (23 in the first window) by
+                    // CPU time, which is the open half of G62.
                     return false;
                 case 3:
                     if (!Player.StageSectionPass()) return false;
