@@ -127,15 +127,20 @@ namespace Darkwing.Core
         /// across the two passes). Measured on the original buffers: every scroll frame's NT
         /// delta is exactly this band (8 tiles in 57 % of the changed frames) and no other
         /// attribute byte changes in the frame.
+        /// The room the band reads from is the grid byte at <c>gridIndex</c>: $E703 does
+        /// <c>LDY $23 / JSR $EB27</c> and $EB27 fetches <c>($32),Y</c> (room id) then scales
+        /// it by 64 for the metatile chunk. $23 is the loader's linear cell index (row stride
+        /// $2E), so the source cell follows the cursor chain — never scrollX plus page — while
+        /// bit7 of the cursor only picks the destination page.
         /// </summary>
-        public void StreamBand(byte cursor, ushort scrollX)
+        public void StreamBand(byte cursor, int gridIndex)
         {
             int page = (cursor >> 7) & 1;
             int bandRow = cursor & 7;
             int attrCol = (cursor >> 4) & 7;
             int halfCol = (cursor >> 3) & 1;
-            int cell = (scrollX >> 8) + (CameraY == 0 ? page : 0);
-            int sourceRow = _row + (CameraY == 0 ? 0 : page);
+            int cell = gridIndex % _world.RowWidth;
+            int sourceRow = gridIndex / _world.RowWidth;
             int inRoomCol = 4 * attrCol + 2 * halfCol;
             if (!TryGetRoom(cell * 32 + inRoomCol, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs))
                 return;

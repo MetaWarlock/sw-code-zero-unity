@@ -557,7 +557,14 @@ namespace Darkwing.Core
             if (passes == 0) return;
             bool down = (ScrollMode & 4) != 0;
             int step = down ? 1 : -1;
-            void NextRoom() => CellIndexNext = (byte)(CellIndexNext + ((ScrollMode & 8) != 0 ? -RowStride : RowStride));
+            // $E936: $2F bit7-ish direction bit 3 picks the sign, and only the downward
+            // branch carries the $E943 grid-height wrap ($23 == 5 → 0).
+            void NextRoom()
+            {
+                if ((ScrollMode & 8) != 0) { CellIndexNext = (byte)(CellIndexNext - RowStride); return; } // $E94C-$E951
+                CellIndexNext = (byte)(CellIndexNext + RowStride);                                          // $E93C-$E941
+                if (CellIndexNext == 5) CellIndexNext = 0;                                                  // $E943-$E949
+            }
             if (ScrollMode != PrevVerticalMode)
             {
                 int row = (byte)(VerticalRedrawRow + step);
@@ -2248,13 +2255,20 @@ namespace Darkwing.Core
 
         /// <summary>$DD36: a vertical scroll may start only with no horizontal scroll in
         /// progress ($2B &amp; $0C == 0) and the camera on a cell boundary ($FC == 0); it
-        /// then arms the incoming cell ($23) and marks $2B = 4.</summary>
+        /// then arms the incoming cell ($23), resets the row cursor ($2A/$29) and seeds
+        /// $21 = $2B = 4. $21 is seeded unconditionally — even for an upward ride — so
+        /// $E7C6's `$2F CMP $21` gate does not read the first streamed frame as a direction
+        /// change and double-step $23 through $E936 (gold_m1_fullroute f12171: original
+        /// keeps $23 = $22+17, a port without this write jumped it to $22+51 for 295 frames).</summary>
         private bool BeginVerticalScroll()
         {
             if ((ScrollState & 0x0C) != 0) return true;       // $DD38/$DD3A → $DD53 SEC
             if ((byte)(ScrollX & 0xFF) != 0) return false;    // $DD3C-$DD3E → $DD55 CLC
             CellIndexNext = (byte)(CellIndex + RowStride);    // $DD40-$DD45 → $23
-            ScrollState = 4;                                  // $DD4D-$DD51 → $2B
+            VerticalRedrawRow = 0;                            // $DD47-$DD49 → $2A
+            LastVerticalRedraw = 0;                           // $DD4B → $29
+            PrevVerticalMode = 4;                             // $DD4D-$DD4F → $21
+            ScrollState = 4;                                  // $DD51 → $2B
             return true;
         }
 

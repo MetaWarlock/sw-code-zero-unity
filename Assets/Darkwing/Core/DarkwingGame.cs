@@ -139,10 +139,11 @@ namespace Darkwing.Core
             };
             // $E698 paints one band per pass; the cursor sequence in PlayerCore is the ROM's,
             // so the nametable advances like the original instead of a per-frame repaint.
+            // $E703 fetches the band's room from ($32),$23, i.e. from the loader's next cell.
             p.StageBand = u =>
             {
                 TileMap.CameraY = p.ScrollY;
-                TileMap.StreamBand(u, p.ScrollX);
+                TileMap.StreamBand(u, p.CellIndexNext);
             };
         }
 
