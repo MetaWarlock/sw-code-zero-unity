@@ -421,6 +421,7 @@ namespace Darkwing.Audio
                 W(0x28 + x, F_StreamHi, 0);                    // $81E8: STA $0754,X
                 W(0x28 + x, F_StreamLo, 0);                    // $81EB: STA $0750,X
             }
+            SilenceMasked();
         }
 
         /// <summary>$81F1-$821D: silence every channel NOT in $CF, invalidate their $4003

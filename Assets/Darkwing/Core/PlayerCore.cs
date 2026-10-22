@@ -955,6 +955,7 @@ namespace Darkwing.Core
                 if (Oam != null) Oam.MissionCardHold = true;
                 if (s0.AnimNumber != 0x2B)                  // $9600/$9602 first visit
                 {
+                    Oam?.HideShadow();
                     SetAnimPlayer(0x2B);
                     return;
                 }

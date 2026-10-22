@@ -3,6 +3,37 @@ using UnityEngine;
 
 public static class PhysCompare
 {
+    public static string MissionCardEntryContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var data = Darkwing.Core.DataLoader.Load(Read("chr_full"), Read("levelsets"), Read("screens"), Read("levels"), Read("anims"));
+        var game = new Darkwing.Core.DarkwingGame(data) { Bank5 = Read("prg_bank5") };
+        var slot = game.Objects.Slots[0];
+        slot.AnimNumber = 1;
+        for (int offset = 0; offset < 256; offset += 4)
+        {
+            game.Oam.WriteShadowByte(offset, 104);
+            game.Oam.WriteShadowByte(offset + 1, 0xA5);
+        }
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        typeof(Darkwing.Core.PlayerCore).GetMethod("MissionIntroCard", binding).Invoke(game.Player, null);
+        int failures = 0;
+        for (int offset = 0; offset < 256; offset += 4)
+        {
+            if (game.Oam.ReadShadowByte(offset) != 0xF8) failures++;
+            if (game.Oam.ReadShadowByte(offset + 1) != 0xA5) throw new System.Exception("C21E altered tile bytes");
+        }
+        if (!game.Oam.MissionCardHold || slot.AnimNumber != 0x2B) throw new System.Exception("Card entry not armed");
+        game.Oam.BlitMissionCard(Read("prg_bank2"), 0);
+        byte[] expected = new byte[160];
+        for (int offset = 0; offset < 160; offset++) expected[offset] = game.Oam.ReadShadowByte(offset);
+        typeof(Darkwing.Core.PlayerCore).GetMethod("MissionIntroCard", binding).Invoke(game.Player, null);
+        for (int offset = 0; offset < 160; offset++)
+            if (expected[offset] != game.Oam.ReadShadowByte(offset)) throw new System.Exception("Card re-entry wiped existing text");
+        return failures == 0 ? "PASS D545/C21E hides prior hero once before card reservation; preserves tile bytes and later card"
+            : $"FAIL card entry retains {failures} previous visible records";
+    }
+
     public static string ReloadWalkContract()
     {
         byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");

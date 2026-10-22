@@ -17,6 +17,38 @@ using Darkwing.Audio;
 
 public static class AudioPortRender
 {
+    public static string StopSilenceContract()
+    {
+        byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        int checks = 0, failures = 0;
+        foreach (byte task in new byte[] { 0xF0, 0xF2 })
+        foreach (byte mask in new byte[] { 0, 1, 5, 15 })
+        {
+            var sequencer = new AudioSequencer(bank);
+            typeof(AudioSequencer).GetField("_cf", binding).SetValue(sequencer, mask);
+            var page = (byte[])typeof(AudioSequencer).GetField("_p7", binding).GetValue(sequencer);
+            for (int index = 0x50; index < 0x58; index++) page[index] = 0xA5;
+            sequencer.Apu.Write(0x4000, 0x3F); sequencer.Apu.Write(0x4004, 0x3F);
+            sequencer.Apu.Write(0x4008, 0x8F); sequencer.Apu.Write(0x400C, 0x3F);
+            sequencer.Task(task);
+            foreach (var channel in new[] { ("_p1", "VolumeOrEnvelope"), ("_p2", "VolumeOrEnvelope"),
+                                            ("_tri", "LinearReload"), ("_noise", "VolumeOrEnvelope") })
+            {
+                object state = typeof(Apu).GetField(channel.Item1, binding).GetValue(sequencer.Apu);
+                int actual = (int)state.GetType().GetField(channel.Item2).GetValue(state);
+                int channelIndex = channel.Item1 == "_p1" ? 0 : channel.Item1 == "_p2" ? 1 : channel.Item1 == "_tri" ? 2 : 3;
+                int expected = task == 0xF2 && (mask & (1 << channelIndex)) != 0 ? 15 : 0;
+                if (actual != expected) failures++;
+                checks++;
+            }
+            for (int index = 0x50; index < 0x58; index++)
+                if (page[index] != 0) throw new Exception("Stop task retained a music stream pointer");
+        }
+        return failures == 0 ? $"PASS {checks}/{checks} F0/F2 silence controls; SFX masks preserved only by F2"
+            : $"FAIL {failures}/{checks} F0/F2 silence controls";
+    }
+
     const string Proj = @"D:\Art\SW Code Zero Unity";
     const int Frames = 600;
 
