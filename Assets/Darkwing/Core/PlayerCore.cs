@@ -508,6 +508,11 @@ namespace Darkwing.Core
         /// host (fixture harnesses) the cursors still advance and nothing is painted.</summary>
         public System.Action<byte> StageBand;
 
+        /// <summary>$E7C6 row service: (nametable row $2A, source cell $23). The callback
+        /// paints one 32-tile row and its 8 attribute bytes; the cursor state advances as
+        /// in the ROM so the same event fires once per 8 pixels of camera travel.</summary>
+        public System.Action<byte, int> RowService;
+
         /// <summary>
         /// $E698 passes per frame — a CYCLE-RATE APPROXIMATION, not a ROM mechanism (G62).
         /// $DE24 opens with `JSR $C14E` (INC $F0, $2001=0) and contains the whole
@@ -574,11 +579,13 @@ namespace Darkwing.Core
                 int row = (byte)(VerticalRedrawRow + step);
                 if (row >= 30) { row = (byte)(row + (down ? 2 : -2)) & 31; NextRoom(); }
                 VerticalRedrawRow = (byte)row;
-                NextRoom();
+                NextRoom();                                     // $E7FC, after the $E7F6 wrap step
+                RowService?.Invoke(VerticalRedrawRow, CellIndexNext); // $E801 row at the adjusted cursor
             }
             PrevVerticalMode = ScrollMode;
             while (passes-- > 0)
             {
+                RowService?.Invoke(VerticalRedrawRow, CellIndexNext); // $E801 draws the current row, then advances
                 int row = (byte)(VerticalRedrawRow + step);
                 if (row >= 30) { NextRoom(); row = down ? 0 : 29; }
                 VerticalRedrawRow = (byte)row;

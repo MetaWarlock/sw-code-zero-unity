@@ -314,6 +314,8 @@ python Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Regressio
 
 Свежий build: `Build/DarkwingDuck/DarkwingDuck.exe`, Development (replay включён условной компиляцией). Без аргумента игра интерактивна. Спецификации штатного повтора — `Temp/stand_scene/spec.json` и `Temp/stand_player/spec.json` (`captureAtStart=true`), обе разворачиваются в исходный input.bin. Editor: до Play установить SessionState `DarkwingReplay` на абсолютный путь scene spec; UseFlow=true, Game.Frame0. Player: `-darkwing-replay <absolute spec>`; окно/render/exit проверяет существующий `verify_player.ps1` с `-ReplayTimeoutSec 1200 -CompletedMission -ShowGameWindow`. После готового route требуется `stand.py scene`, один smoke не доказывает сравнение. Результаты, оставшиеся NT/RGB/audio/Suite расхождения — только в ACCEPTANCE_REPORT.
 
+Текущий checkpoint 2026-10-22 после смены 112: `Ppu.Render` вертикально заворачивает в ту же NT-страницу, строки `$E7C6` перенесены; полный m1 state не изменился, city trace равен. Нужен короткий ручной прогон м1 (ходьба вправо + прыжок вверх, вертикальная поездка) на пересобранном Player; музыка и остаток HUD/спрайтов ещё открыты. Это не полная приёмка изображения.
+
 ### Подключение времени к игровому выполнению: следующий этап для DeepSeek (2026-10-22)
 
 **Итог текущего этапа — план оставшейся реализации, не интегрированное исправление.** В `DarkwingGame.Step` по-прежнему нет продолжения прохода: город впервые расходится на f6388 `$E4` CC/E6, Wolfduck/карта не достигнуты. `OamDispatcher.Timing.cs` уже проверяет вычисляемую стоимость обоих движков, но не временной порядок их записей. Нельзя включить только этот счётчик и заполнить остальной бюджет средними значениями.

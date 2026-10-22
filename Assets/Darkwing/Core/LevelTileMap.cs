@@ -113,9 +113,9 @@ namespace Darkwing.Core
         /// $80-$87, and that state is still unchanged at f2600). No scrolling-world entry
         /// repaints through here any more: the world load ($DD57) and the section load ($E388)
         /// publish scroll only and let <see cref="StreamBand"/> own the nametable, and the row
-        /// service ($E7C6, through <see cref="ReloadRow"/>) stopped painting pages here — its
-        /// own whole-row writes are still unported. Remaining callers are the resident map
-        /// fly-through and the non-scrolling pseudo
+        /// service ($E7C6, through <see cref="ReloadRow"/>) stopped painting pages here; its
+        /// queued whole rows are written by <see cref="PaintRow"/>. Remaining callers are the
+        /// resident map fly-through and the non-scrolling pseudo
         /// scenes, whose own blit is not modelled. The cell/row formula here ($22 from
         /// scrollX, `_row + page`) is still the pre-$23 approximation.
         /// </summary>
@@ -136,9 +136,8 @@ namespace Darkwing.Core
 
         /// <summary>Per-frame PPU scroll registers only. Scrolling-world nametable bytes belong
         /// to the $E698 band stream (<see cref="StreamBand"/>), so neither the world load
-        /// ($DD57) nor the section load ($E388) repaints a window. The $E7C6 row service does
-        /// paint whole rows of the room at $23 and is not ported yet — see
-        /// <see cref="ReloadRow"/>.</summary>
+        /// ($DD57) nor the section load ($E388) repaints a window. The $E7C6 row service writes
+        /// whole rows of the room at $23 through <see cref="PaintRow"/>.</summary>
         public void SetScroll(ushort scrollX)
         {
             _ppu.SetScroll(scrollX, CameraY);
@@ -188,6 +187,41 @@ namespace Darkwing.Core
             int value = halfCol == 0 ? _bandPalettes[0] | (_bandPalettes[2] << 4)
                                      : (_bandPalettes[1] << 2) | (_bandPalettes[3] << 6);
             nt[attrIndex] = (byte)((nt[attrIndex] & ~mask) | value);
+        }
+
+        /// <summary>$E7C6 row service: paint the 32-tile row <paramref name="ntRow"/> from
+        /// the room at <paramref name="gridIndex"/> into nametable page <paramref name="page"/>,
+        /// plus the eight attribute bytes for that row group. The ROM queues the same row at
+        /// $0360 and its attribute run at $0383; direct writes land before the next NMI publish.
+        /// Room 0 is the $7FC0 guard: $EB27 returns $7FC0/$7F and $EA36 leaves the previous
+        /// 4×4 block in $0140, so the row keeps the last band content and is not overwritten.</summary>
+        public void PaintRow(int ntRow, int gridIndex, int page)
+        {
+            if ((uint)ntRow >= 30u) return;                   // $E7C6 wraps at 30; status rows stay untouched
+            if ((uint)gridIndex >= (uint)_world.Grid.Length) return;
+            byte roomId = _world.Grid[gridIndex];
+            if (roomId == 0) return;                          // $EB27 → $7FC0, $EA36 early RTS
+            int cell = gridIndex % _world.RowWidth;
+            int sourceRow = gridIndex / _world.RowWidth;
+            if (!TryGetRoom(cell * 32, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs))
+                return;
+            var nt = _ppu.NametableRam;
+            int baseNt = (page & 1) * 0x400;
+            int dst = baseNt + ntRow * 32;
+            int src = ntRow * 32;
+            for (int col = 0; col < 32; col++) nt[dst + col] = tiles[src + col];
+            int attrRow = ntRow >> 2;
+            for (int attrCol = 0; attrCol < 8; attrCol++)
+            {
+                int value = 0;
+                for (int q = 0; q < 4; q++)
+                {
+                    int mrow = attrRow * 2 + (q >> 1);
+                    int mcol = attrCol * 2 + (q & 1);
+                    value |= (attrs[meta[mrow * 16 + mcol]] & 3) << (q * 2);
+                }
+                nt[baseNt + 0x3C0 + attrRow * 8 + attrCol] = (byte)value;
+            }
         }
 
         /// <summary>$EA36/$EA5F: the macro at chunk slot 8·bandRow + attrCol of the room the

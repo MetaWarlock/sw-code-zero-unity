@@ -129,14 +129,15 @@ namespace Darkwing.Core
                 for (int i = 0; i < W * H; i++) framebuffer[i] = bg;
                 return;
             }
-            // Mirroring: horizontal (MMC1 ctrl bit0=1 would be vertical; game uses horizontal).
+            // This game keeps one vertical band per nametable page: a scroll past row 29
+            // wraps to row 0 of the SAME page (verified at f12240: page1 rows 0-2 are the
+            // new lattice; flipping to page0 shows the stale sky band).
             int scrollX = ScrollX, scrollY = ScrollY;
             for (int py = 0; py < H; py++)
             {
-                int wy = py + scrollY;
-                bool ntB = wy >= 240;                    // second nametable vertically
-                int row = ntB ? wy - 240 : wy;
-                int baseNt = (ntB ? 0x0400 : 0x0000) ^ (NametableX != 0 ? 0x0400 : 0);
+                int wy = (py + scrollY) % 240;
+                int row = wy;
+                int baseNt = NametableX != 0 ? 0x0400 : 0;
                 for (int px = 0; px < W; px++)
                 {
                     int wx = px + scrollX;

@@ -142,7 +142,8 @@ namespace Darkwing.Core
                 // overwrote the back page with the next grid row, which is empty at the bottom
                 // of a world: on m1 f12248-13269 page $2400 sat at $00 for 1022 frames while
                 // the original left it stale (10 name bytes changed across the section, max 8
-                // per frame = one band). The $E698 band stream owns the nametable.
+                // per frame = one band). The $E698 band stream owns the nametable, and the
+                // queued rows are published by RowService -> LevelTileMap.PaintRow.
                 TileMap.CameraY = p.ScrollY;
                 TileMap.SetScroll(p.ScrollX);
             };
@@ -154,6 +155,11 @@ namespace Darkwing.Core
                 TileMap.CameraY = p.ScrollY;
                 TileMap.StreamBand(u, p.CellIndexNext);
             };
+            // $E7C6 queues one full tile row (and its attribute run) from the incoming
+            // room at $23; the page is $FD bit0. Writing it into the nametable here is
+            // equivalent to the NMI draining the queue before the next frame's capture.
+            p.RowService = (row, gridIndex) =>
+                TileMap.PaintRow(row, gridIndex, (p.ScrollX >> 8) & 1);
         }
 
         private SectionTable _sections;
