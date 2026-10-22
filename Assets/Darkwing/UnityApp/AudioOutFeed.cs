@@ -18,16 +18,16 @@ namespace Darkwing.UnityApp
         private int _write, _read;
         private readonly float[] _scratch = new float[800];    // RenderFrame: ~798.68 samples/frame
 
-        /// <summary>Render one 60 Hz frame of the sequencer into the ring. Called once per game
-        /// frame by <see cref="DarkwingLauncher"/>; drops the frame rather than wrapping onto
-        /// samples the audio thread has not read yet.</summary>
+        /// <summary>Render one 60 Hz frame of APU samples into the ring. The sequencer tick is
+        /// driven by the Core NMI, so this is samples-only. If the consumer has not freed a
+        /// full frame the samples are advanced and dropped, keeping APU time aligned with the
+        /// simulation instead of letting musical time run ahead of what was output.</summary>
         public void PushFrame()
         {
             if (Source == null) return;
+            int n = Source.RenderSamples(_scratch, 0);
             int free = (_read - _write - 1 + _ring.Length) % _ring.Length;
-            if (free < _scratch.Length) return;   // stalled consumer: skip the Tick too, so musical
-                                                  // time never runs ahead of what was actually output
-            int n = Source.RenderFrame(_scratch, 0);
+            if (free < n) return;
             for (int i = 0; i < n; i++)
             {
                 _ring[_write] = _scratch[i];

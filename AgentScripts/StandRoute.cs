@@ -120,8 +120,7 @@ public static class StandRoute
                 sb.Append($"# full {f} nt={Sum(game.Ppu.NametableRam, 0x800)} oam={Sum(game.Ppu.Oam, 256)}\n");
             if (shots.Contains(f)) DumpFramebuffer(game, Path.Combine(outDir, $"frame_{f}.png"));
             var pad = NesButtons.FromByte(track[f - 1]);
-            flow.Step(in pad);
-            game.Step(in pad);
+            game.AdvanceFrame(in pad);
             if (f % 1000 == 0) File.WriteAllText(Path.Combine(outDir,"trace.csv"),sb.ToString());
         }
         }

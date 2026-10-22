@@ -57,6 +57,7 @@ namespace Darkwing.Core
         public GameFlow(DarkwingGame game, RoomDecoder decoder)
         {
             _game = game;
+            _game.Flow = this;
             _decoder = decoder;
             World = new WorldState(game.Bank7);
             Stage = Phase.Reset;

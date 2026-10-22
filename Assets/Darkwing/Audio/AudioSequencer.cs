@@ -229,15 +229,13 @@ namespace Darkwing.Audio
         // ------------------------------------------------------------------ //
 
         /// <summary>
-        /// Run one frame of audio: one sequencer Tick(), then 29780/29781 alternating
-        /// CPU cycles of APU stepping, sampling <see cref="Apu.CurrentOutput"/> at exactly
-        /// 48 kHz through the fixed rational resampler. Writes into
-        /// <paramref name="dest"/> at <paramref name="offset"/> and returns the sample
-        /// count (~798.68/frame — alternating 798/799; provide room for 800 floats).
+        /// Step CPU/APU cycles for one frame and write resampled output into
+        /// <paramref name="dest"/>. The sequencer tick itself is driven by the NMI
+        /// (<see cref="Tick"/>), so a host that already ran the frame must call this
+        /// samples-only entry point.
         /// </summary>
-        public int RenderFrame(float[] dest, int offset)
+        public int RenderSamples(float[] dest, int offset)
         {
-            Tick();
             _halfAccum += HalfCyclesPerFrame;
             int cycles = (int)(_halfAccum / 2);
             _halfAccum -= (long)cycles * 2;
@@ -254,6 +252,19 @@ namespace Darkwing.Audio
                 _apu.StepCpu();
             }
             return n;
+        }
+
+        /// <summary>
+        /// Run one frame of audio: one sequencer Tick(), then 29780/29781 alternating
+        /// CPU cycles of APU stepping, sampling <see cref="Apu.CurrentOutput"/> at exactly
+        /// 48 kHz through the fixed rational resampler. Writes into
+        /// <paramref name="dest"/> at <paramref name="offset"/> and returns the sample
+        /// count (~798.68/frame — alternating 798/799; provide room for 800 floats).
+        /// </summary>
+        public int RenderFrame(float[] dest, int offset)
+        {
+            Tick();
+            return RenderSamples(dest, offset);
         }
 
         /// <summary>Allocating variant of <see cref="RenderFrame(float[],int)"/>.</summary>

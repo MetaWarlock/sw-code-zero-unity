@@ -50,6 +50,7 @@ namespace Darkwing.Core
             Player.ResetHud = SeedHudSlot;
             Player.Sound = PlaySound;
             Player.RestoreHud = RestoreHudSlot;
+            InitializeAudioQueue();
         }
 
         /// <summary>Raw PRG bank 5 (anim/frame/coord tables) for the OAM dispatcher.</summary>
@@ -1074,13 +1075,57 @@ namespace Darkwing.Core
         public const int SfxDeath = 0x25;
         public const int SfxTextBlip = 0x3F;
 
-        public void PlaySfx(int id) => Audio?.PlaySfx(id);
-        public void PlayMusic(int id) => Audio?.PlayMusic(id);
+        // $DA/$DB/$DC-$E3: the NMI-visible task ring. $88 is the empty marker; the
+        // writer only advances when the slot is empty, so an enqueue during a full
+        // ring is dropped exactly like $F84E. $D9 keeps the last id even when dropped.
+        private readonly byte[] _audioQueue = new byte[8];
+        private int _audioWrite, _audioRead;
+        private byte _audioLastId;
+        private const byte AudioQueueEmpty = 0x88;
+
+        private void InitializeAudioQueue()
+        {
+            for (int i = 0; i < _audioQueue.Length; i++) _audioQueue[i] = AudioQueueEmpty;
+            _audioWrite = _audioRead = 0;
+        }
+
+        private void EnqueueAudio(byte id)
+        {
+            _audioLastId = id;
+            if (_audioQueue[_audioWrite] != AudioQueueEmpty) return;
+            _audioQueue[_audioWrite] = id;
+            _audioWrite = (_audioWrite + 1) & 7;
+        }
+
+        /// <summary>$C0DC/$FF8C: drain every queued task, then run the $8000 NMI tick.</summary>
+        private void DrainAudioQueue()
+        {
+            while (_audioQueue[_audioRead] != AudioQueueEmpty)
+            {
+                byte id = _audioQueue[_audioRead];
+                _audioQueue[_audioRead] = AudioQueueEmpty;
+                _audioRead = (_audioRead + 1) & 7;
+                Audio?.Task(id);            // $8003 Audio_Task_Queued
+            }
+            Audio?.Tick();                  // $8000 Audio_Tick, once per NMI
+        }
+
+        public void PlaySfx(int id)
+        {
+            if (id < 16 || id > 63) throw new System.ArgumentOutOfRangeException(nameof(id), "SFX ids are 16-63");
+            EnqueueAudio((byte)id);
+        }
+
+        public void PlayMusic(int id)
+        {
+            if (id < 0 || id > 15) throw new System.ArgumentOutOfRangeException(nameof(id), "music ids are 0-15");
+            EnqueueAudio((byte)id);
+        }
 
         /// <summary>The generic $F84E enqueue: the ROM passes the raw id through, so it covers
         /// sound-table entries ($10-$3F), music-table ids ($00-$0F) and the special engine
         /// tasks ($F0-$F7) — e.g. $D4BE's #$F0 stop and $D4A7's #$0C.</summary>
-        public void PlaySound(int id) => Audio?.Task(id);
+        public void PlaySound(int id) => EnqueueAudio((byte)id);
 
         /// <summary>Load a room's nametable directly (test fixture path; the level
         /// loader normally streams it via the VRAM queue).</summary>
@@ -1140,8 +1185,30 @@ namespace Darkwing.Core
             FrameParity++;
         }
 
-        /// <summary>Advance the deterministic simulation by exactly one frame.</summary>
+        /// <summary>The flow that owns the bank-7 phase of the frame. Set by GameFlow; a direct
+        /// Core caller that supplies its own flow must use <see cref="AdvanceFrame"/> so the
+        /// NMI still runs before the flow body.</summary>
+        public GameFlow Flow { get; set; }
+
+        /// <summary>Advance one complete frame in ROM order: NMI ($C0A1), the bank-7 flow phase,
+        /// then the main-loop body. This is the host/replay entry point.</summary>
+        public void AdvanceFrame(in NesButtons pad1, in NesButtons pad2 = default)
+        {
+            BeginNmi();
+            if (Flow != null) Flow.Step(in pad1);
+            StepBody(in pad1, in pad2);
+        }
+
+        /// <summary>Advance the deterministic simulation by exactly one frame. Kept for direct
+        /// Core tests that drive GameFlow themselves; hosts should call <see cref="AdvanceFrame"/>.</summary>
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
+        {
+            BeginNmi();
+            StepBody(in pad1, in pad2);
+        }
+
+        /// <summary>$C0A1 NMI: frame latches, CHR/palette/text uploads, then the main body.</summary>
+        private void BeginNmi()
         {
             _parityStepped = false;
             _oamPublished = false;
@@ -1155,6 +1222,11 @@ namespace Darkwing.Core
                 NmiPaletteUpload();        // $C059: $18-flagged $0300 → $3F00, every frame
                 Text?.FlushNmiWrites();
             }
+            DrainAudioQueue();             // $C0DC/$C0F6: runs on blanked frames too
+        }
+
+        private void StepBody(in NesButtons pad1, in NesButtons pad2)
+        {
             if (ResidentProcess != null)
             {
                 PollInput(in pad1);

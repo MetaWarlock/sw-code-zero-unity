@@ -124,8 +124,7 @@ namespace Darkwing.UnityApp
         // supplies buttons only; it cannot seed RAM or select a flow phase.
         public void AdvanceFrame(in NesButtons pad)
         {
-            if (_flow != null) _flow.Step(in pad);
-            _game.Step(in pad);
+            _game.AdvanceFrame(in pad);
             if (_audioOut != null) _audioOut.PushFrame();
         }
 
