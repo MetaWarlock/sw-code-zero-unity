@@ -3,6 +3,105 @@ using UnityEngine;
 
 public static class PhysCompare
 {
+    public static string PauseActivityContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var data = Darkwing.Core.DataLoader.Load(Read("chr_full"), Read("levelsets"), Read("screens"), Read("levels"), Read("anims"));
+        var game = new Darkwing.Core.DarkwingGame(data) { Bank4 = Read("prg_bank4"), Bank7 = Read("world_bank7") };
+        var expected = new byte[16];
+        for (int index = 0; index < 16; index++)
+        {
+            var slot = game.Objects.Slots[index];
+            slot.Active = (index & 2) == 0;
+            slot.StateLow = new byte[] { 0, 1, 0x83, 0x7F }[index & 3];
+            slot.X = (ushort)(0x120 + index); slot.Y = (ushort)(0x340 + index);
+            slot.Flags = 0xD0; slot.AnimNumber = 1; slot.AnimFrame = 2;
+            expected[index] = (byte)((slot.Active ? 0x80 : 0) | (slot.StateLow & 0x7F));
+        }
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        typeof(Darkwing.Core.DarkwingGame).GetMethod("PauseEnter", binding).Invoke(game, null);
+        if (!game.Paused) throw new System.Exception("Pause did not take ownership");
+        typeof(Darkwing.Core.DarkwingGame).GetMethod("PauseRestore", binding).Invoke(game, null);
+        int failures = 0;
+        for (int index = 0; index < 16; index++)
+        {
+            var slot = game.Objects.Slots[index];
+            byte actual = (byte)((slot.Active ? 0x80 : 0) | (slot.StateLow & 0x7F));
+            if (actual != expected[index]) failures++;
+            if (slot.X != 0x120 + index || slot.Y != 0x340 + index || slot.Flags != 0xD0
+                || slot.AnimNumber != 1 || slot.AnimFrame != 2)
+                throw new System.Exception("Pause restore altered saved actor fields");
+        }
+        return failures == 0 ? "PASS 16/16 pause activity bytes; low-only active states, inactive stale bit7 and saved fields"
+            : $"FAIL {failures}/16 pause activity bytes";
+    }
+
+    public static string HorizontalPushContract()
+    {
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var move = typeof(Darkwing.Core.PlayerCore).GetMethod("MoveHorizontal", binding);
+        var failures = new System.Collections.Generic.List<string>();
+        byte[] bank = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/world_bank7.bytes");
+        int checks = 0;
+        void Check(string name, bool right, ushort otherX, ushort otherY, byte parameter,
+            ushort expectedX, byte state = 1, bool active = true, byte flags = 0x90,
+            bool partner = false, bool earlier = false, bool? probeRight = null)
+        {
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var map = new PushProbeMap();
+            ushort startX = right ? (ushort)0x1C0 : (ushort)0x1E0;
+            var player = new Darkwing.Core.PlayerCore(map) { Objects = objects,
+                X = startX, PrevPlayerX = startX, Y = 0x03A6, ScrollYRow = 3,
+                XFrac = right ? (byte)0xF8 : (byte)8, XVelInt = 1, XVelFrac = 0x80, State = state };
+            var obstacle = objects.Slots[15];
+            obstacle.Active = active; obstacle.Flags = flags; obstacle.Behavior = 0x12;
+            obstacle.BehaviorParam = parameter; obstacle.X = otherX; obstacle.Y = otherY;
+            if (partner)
+            {
+                var pair = objects.Slots[1];
+                pair.Active = true; pair.Flags = 0xD0; pair.Behavior = 1;
+                pair.X = right ? (ushort)0x1C2 : (ushort)0x1DE; pair.Y = 0x03A6;
+            }
+            if (earlier)
+            {
+                var first = objects.Slots[2];
+                first.Active = true; first.Flags = 0x90; first.BehaviorParam = 0x87;
+                first.X = 0x1D1; first.Y = 0x03B0;
+            }
+            move.Invoke(player, new object[] { right });
+            bool expectedRight = probeRight ?? (right ? expectedX >= startX : expectedX > startX);
+            int expectedProbe = expectedX + (expectedRight ? 12 : -12);
+            byte expectedFraction = right ? (byte)0x78 : (byte)0x88;
+            if (player.X != expectedX || player.XFrac != expectedFraction || map.LastX != expectedProbe)
+                failures.Add($"{name}: X{player.X:X4}/{expectedX:X4} frac{player.XFrac:X2}/{expectedFraction:X2} probe{map.LastX:X}/{expectedProbe:X}");
+            checks++;
+        }
+        Check("source12294 right", true, 0x1D0, 0x03B0, 0x87, 0x1C0);
+        Check("left", false, 0x1D0, 0x03B0, 0x87, 0x1E0);
+        Check("unarmed", true, 0x1D0, 0x03B0, 7, 0x1C2);
+        Check("inactive", true, 0x1D0, 0x03B0, 0x87, 0x1C2, active: false);
+        Check("not visible", true, 0x1D0, 0x03B0, 0x87, 0x1C2, flags: 0x10);
+        Check("state0B excluded", true, 0x1D0, 0x03B0, 0x87, 0x1C2, state: 0x0B);
+        Check("dy equal rejects", true, 0x1D0, 0x03C2, 0x87, 0x1C2);
+        Check("dx high rejects", true, 0x2D0, 0x03B0, 0x87, 0x1C2);
+        Check("dx equal zero push", true, 0x1D2, 0x03B0, 0x87, 0x1C2);
+        Check("dx outside rejects", true, 0x1D3, 0x03B0, 0x87, 0x1C2);
+        Check("right cap keeps SBC borrow", true, 0x1C2, 0x03B0, 0x87, 0x1BD, probeRight: false);
+        Check("cap4 left reverse probe", false, 0x1DE, 0x03B0, 0x87, 0x1E2, probeRight: true);
+        Check("F642 pair falls into scan", true, 0x1D0, 0x03B0, 0x87, 0x1C0, partner: true);
+        Check("pair alone is not solid", true, 0x1D0, 0x03B0, 7, 0x1C2, partner: true);
+        Check("first scanned slot wins", true, 0x1C2, 0x03B0, 0x87, 0x1C1, earlier: true);
+        for (byte touchClass = 0; touchClass < 32; touchClass++)
+        {
+            int halfX = bank[0x3C09 + touchClass], halfY = bank[0x3BE9 + touchClass];
+            int overlap = halfX >= 14 && halfY > 10 ? halfX - 14 : 0;
+            int push = overlap > 4 ? 5 : overlap;
+            Check("class" + touchClass, true, 0x1D0, 0x03B0, (byte)(0x80 | touchClass), (ushort)(0x1C2 - push));
+        }
+        return failures.Count == 0 ? $"PASS {checks}/{checks} F200/F254 horizontal push; armed scan, pair fallthrough, right SBC borrow, opposite probe and source tables"
+            : $"FAIL {failures.Count}/{checks}: " + string.Join("; ", failures);
+    }
+
     public static string MissionCardEntryContract()
     {
         byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
@@ -1921,7 +2020,8 @@ public static class PhysCompare
     private sealed class PushProbeMap : Darkwing.Core.ITileMap
     {
         public int Reads;
-        public byte TypeAt(int x, int y) { Reads++; return 0; }
+        public int LastX;
+        public byte TypeAt(int x, int y) { Reads++; LastX = x; return 0; }
     }
 
     private sealed class CrouchDropMap : Darkwing.Core.ITileMap
@@ -2139,7 +2239,7 @@ public static class PhysCompare
 
     public static string Mission1Contracts()
     {
-        return string.Join("\n",new[]{G92Exit(),AirShotContract(),PickupContract(),WeaponSwitchContract(),
+        return string.Join("\n",new[]{G92Exit(),HorizontalPushContract(),PauseActivityContract(),AirShotContract(),PickupContract(),WeaponSwitchContract(),
             CrouchDropContract(),QuackerjackKickContract(),LobAndFlashContract(),BossTailContract(),
             SceneDescriptorContract(),OffscreenAnimationContract(),PlayerPoseContract(),
             ResidentReturnContract(),CompletedMapContract()});

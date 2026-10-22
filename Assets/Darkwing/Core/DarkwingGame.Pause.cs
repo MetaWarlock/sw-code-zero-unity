@@ -95,7 +95,7 @@ namespace Darkwing.Core
             for (int x = 5; x >= 0; x--)                 // $8F10 LDX #$05 … $8F7F DEX / BPL
             {
                 var s = slots[x];
-                _pauseSaved[x] = s.StateLow;             // $8F12 → $0360,X
+                _pauseSaved[x] = (byte)((s.Active ? 0x80 : 0) | (s.StateLow & 0x7F));
                 _pauseSaved[x + 6] = s.Flags;            // $8F18 → $0366,X
                 _pauseSaved[x + 12] = s.AnimNumber;      // $8F1E → $036C,X
                 _pauseSaved[x + 18] = (byte)s.Y;         // $8F24 → $0372,X ($0510 = Y low)
@@ -124,7 +124,7 @@ namespace Darkwing.Core
             for (int k = 0; k < 10; k++)                 // $8F83…$8F93: $04D6…$04DF = slots 6…15
             {
                 var s = slots[6 + k];
-                _pauseSavedTail[k] = s.StateLow;         // → $0384,X
+                _pauseSavedTail[k] = (byte)((s.Active ? 0x80 : 0) | (s.StateLow & 0x7F));
                 s.StateLow = 0;
                 s.Active = false;
             }

@@ -1385,11 +1385,20 @@ namespace Darkwing.Core
         private void MoveHorizontal(bool right)
         {
             IntegrateX(right ? +1 : -1);
-            byte side = ProbeSide(right);
+            bool probeRight = right;
+            if (HorizontalPushPairOrScan(out byte push))
+            {
+                int correction = System.Math.Min(4, (int)push);
+                if (right && push > 4) correction++;
+                X = (ushort)(X + (right ? -correction : correction));
+                if (right && X < PrevPlayerX) probeRight = false;
+                else if (!right && X > PrevPlayerX) probeRight = true;
+            }
+            byte side = ProbeSide(probeRight);
             if (side >= 3)
             {
                 // snap back to tile edge ($ED85/$ED9D)
-                SnapX(right);
+                SnapX(probeRight);
             }
         }
 
@@ -1692,6 +1701,42 @@ namespace Darkwing.Core
         // they are fields, not locals.
         private byte _push00;
         private byte _push01;
+
+        private bool HorizontalPushPairOrScan(out byte push)
+        {
+            push = 0;
+            if (Objects == null) return false;
+            var partner = Objects.Slots[1];
+            if (partner.Active && (Flags & 0x80) != 0 && (partner.Flags & 0x80) != 0 && partner.Behavior != 0)
+            {
+                byte distanceX = PushDx(1);
+                if (distanceX < 0x11)
+                {
+                    byte overlap = (byte)(0x10 - distanceX);
+                    byte distanceY = PushDy(1, out _);
+                    if (distanceY < 0x18 && ((distanceY - 0x18) & 0x80) == 0)
+                    {
+                        push = overlap;
+                        return true;
+                    }
+                }
+            }
+            for (byte index = 2; index < 16; index++)
+            {
+                var slot = Objects.Slots[index];
+                if (!slot.Active || (slot.Flags & 0x80) == 0 || (slot.BehaviorParam & 0x80) == 0 || State == 0x0B)
+                    continue;
+                byte touchClass = (byte)(slot.BehaviorParam & 0x1F);
+                PushDx(index);
+                if (_push01 != 0 || _push00 > EnemyBehaviors.TouchXHalf[touchClass]) continue;
+                byte distanceX = _push00;
+                byte distanceY = PushDy(index, out _);
+                if (distanceY >= EnemyBehaviors.TouchYHalf[touchClass]) continue;
+                push = (byte)(EnemyBehaviors.TouchXHalf[touchClass] - distanceX);
+                return true;
+            }
+            return false;
+        }
 
         /// <summary>$F699: the horizontal gap between the player (slot 0) and slot Y. The
         /// player's $0400 is $D0, so bit4 is always set and the 16-bit branch is the live one;
