@@ -189,10 +189,10 @@ namespace Darkwing.Core
             _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
             WorldPrelude();
             Player.StageSectionToEnd();     // $DE86-$DE91: the inline entry has no frame machine
-            // Same rule as the staged loader's third stage: a $31 <= 6 world gets scroll-only
+            // Same rule as the staged loader's third stage: $31 <= 6 and $08 get scroll-only
             // (its nametable is the $E698 ring's), an intro/title pseudo-scene keeps the
             // whole-window repaint until its own blit is modelled.
-            if (worldId <= 6) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
+            if (worldId <= 6 || worldId == 8) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
             else TileMap.StreamColumns(Player.ScrollX);
             WorldSpawn();
             // $C2F9/$C319 never flag $18 — the PPU only sees a new table through a fade step's
@@ -240,7 +240,7 @@ namespace Darkwing.Core
                 var bg = new byte[16];
                 var sp = new byte[16];
                 t.ReadBgPaletteByIndex(w.BgPalIdx, bg);     // $DDB8 → $C2F9
-                t.ReadSpritePaletteByIndex(w.SpPalIdx, sp); // $DDC2 → $C319
+                t.ReadSpritePaletteByIndex(w.SpPalIdx, sp, _worldId); // $DDC2 → $C319
                 SetPaletteSource(bg, 0);
                 SetPaletteSource(sp, 16);
             }
@@ -415,7 +415,7 @@ namespace Darkwing.Core
             var bg = new byte[16];
             var sp = new byte[16];
             t.ReadBgPalette(sectionId, bg);               // $C2F9 → $0300/$0320
-            t.ReadSpritePalette(sectionId, sp);           // $C319 → $0310/$0330
+            t.ReadSpritePalette(sectionId, sp, _worldId);           // $C319 → $0310/$0330
             SetPaletteSource(bg, 0);
             SetPaletteSource(sp, 16);
             BossBehaviors.DefeatTimer = 0; // $DE62 already cleared the shared $3B
@@ -1811,7 +1811,7 @@ namespace Darkwing.Core
         private void ZoneSpritePalette(byte index)
         {
             var sp = new byte[16];
-            Sections.ReadSpritePaletteByIndex(index, sp);
+            Sections.ReadSpritePaletteByIndex(index, sp, _worldId);
             SetPaletteSource(sp, 16);
         }
 

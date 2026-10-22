@@ -4,6 +4,100 @@ using UnityEngine;
 public static class PhysCompare
 {
     private const string Root = "D:/Art/SW Code Zero Unity";
+
+    public static string SpritePaletteWorldContract()
+    {
+        var bank = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/world_bank7.bytes");
+        var table = new Darkwing.Core.SectionTable(bank);
+        int cases = 0;
+        foreach (byte index in new byte[] { 0, 7, 31 })
+        for (byte world = 0; world < 16; world++)
+        {
+            var actual = new byte[16];
+            var baseline = new byte[16];
+            table.ReadSpritePaletteByIndex(index, baseline);
+            table.ReadSpritePaletteByIndex(index, actual, world);
+            byte expected = world == 8 || world == 9 ? (byte)0x26 : world == 0x0B ? (byte)0x11 : bank[0x4FD];
+            if (actual[0] != expected) throw new System.Exception($"C33C-C35C tail world{world:X2} got{actual[0]:X2}/{expected:X2}");
+            for (int entry = 1; entry < 16; entry++)
+                if (actual[entry] != baseline[entry]) throw new System.Exception("Unrelated palette entry changed");
+            cases++;
+        }
+        return $"PASS {cases} C319/C33C-C35C palette cases: world08/09=26,0B=11,ordinary control and other15 bytes preserved";
+    }
+
+    public static string UniversalBackgroundContract()
+    {
+        var chr = new byte[4096];
+        for (int row = 0; row < 8; row++) chr[16 + row] = 0x80;
+        var data = new Darkwing.Core.GameData(chr, new byte[0], new byte[0],
+            new System.Collections.Generic.List<Darkwing.Core.GameData.LevelDef>(),
+            new System.Collections.Generic.List<Darkwing.Core.GameData.AnimationDef>(),
+            new System.Collections.Generic.List<Darkwing.Core.GameData.FrameDef>());
+        var ppu = new Darkwing.Core.Ppu(data) { Chr0Bank = 0, Chr1Bank = 0, Mask = 0x1E };
+        for (int index = 0; index < 64; index++)
+        {
+            ppu.Oam[index * 4] = 0xF8;
+            ppu.NametableRam[0x3C0 + index] = 0xE4;
+        }
+        ppu.PaletteRam[0] = 0x26;
+        ppu.PaletteRam[4] = ppu.PaletteRam[8] = ppu.PaletteRam[12] = 0x0F;
+        var framebuffer = new byte[256 * 240];
+        ppu.Render(framebuffer);
+        for (int index = 0; index < framebuffer.Length; index++)
+            if (framebuffer[index] != 0x26)
+                throw new System.Exception($"Universal background mismatch x={index % 256} y={index / 256}: {framebuffer[index]:X2}/26");
+        ppu.NametableRam[0] = 1;
+        ppu.NametableRam[0x3C0] = 3;
+        ppu.PaletteRam[13] = 0x30;
+        ppu.Render(framebuffer);
+        if (framebuffer[0] != 0x30 || framebuffer[1] != 0x26)
+            throw new System.Exception("Nonzero palette color or transparent-neighbor control failed");
+        return "PASS all61440 transparent background pixels use3F00 across all4 attribute quadrants; nonzero color retains its subpalette";
+    }
+
+    public static string ClearSceneContract()
+    {
+        byte[] Data(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var data = Darkwing.Core.DataLoader.Load(Data("chr_full"), Data("levelsets"), Data("screens"), Data("levels"), Data("anims"));
+        var decoder = new Darkwing.Core.RoomDecoder(Data("prg_bank0"), Data("prg_bank1"), Data("world_bank7"), Data("levelsets"));
+        var game = new Darkwing.Core.DarkwingGame(data)
+        {
+            Bank5 = Data("prg_bank5"), Bank7 = Data("world_bank7"), Bank2 = Data("prg_bank2"),
+            Bank6 = Data("prg_bank6"), Bank4 = Data("prg_bank4"), ObjectTypeTable = Data("object_types")
+        };
+        byte[] reference = File.ReadAllBytes(Root + "/Temp/stand_m1_orig_shift79/replay1/buffers.bin");
+        if (reference.Length != 24261 * 4384) throw new System.IO.InvalidDataException("Incomplete original capture");
+        int Differences(byte[] nt, int frame)
+        {
+            int count = 0;
+            for (int index = 0; index < 2048; index++)
+                if (nt[index] != reference[(frame - 1) * 4384 + 2048 + index]) count++;
+            return count;
+        }
+        game.TileMap = new Darkwing.Core.LevelTileMap(decoder, game.Ppu, decoder.GetWorld(0));
+        game.WireWorldFeed();
+        game.BeginSceneLoad(decoder, 8);
+        var stage = game.GetType().GetField("_sceneLoadStage", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        int passes = 0;
+        while ((int)stage.GetValue(game) == 0 && passes++ < 100) game.TickSceneLoad();
+        if ((int)stage.GetValue(game) != 3) throw new System.Exception("Staging did not reach loader tail");
+        byte[] staged = (byte[])game.Ppu.NametableRam.Clone();
+        game.TickSceneLoad();
+        for (int index = 0; index < 1024; index++)
+            if (staged[index] != reference[(22580 - 1) * 4384 + 2048 + index])
+                throw new System.Exception($"Clear staging page0 mismatch ${index:X3}");
+        for (int index = 0; index < 2048; index++)
+            if (game.Ppu.NametableRam[index] != staged[index])
+                throw new System.Exception($"Clear loader tail overwrote staged NT ${index:X3}");
+        Directory.CreateDirectory(Root + "/Temp/clear_scene_probe");
+        File.WriteAllBytes(Root + "/Temp/clear_scene_probe/staged.bin", staged);
+        File.WriteAllBytes(Root + "/Temp/clear_scene_probe/tail.bin", game.Ppu.NametableRam);
+        game.TileMap.StreamColumns(game.Player.ScrollX);
+        if (Differences(game.Ppu.NametableRam, 22580) <= Differences(staged, 22580))
+            throw new System.Exception("Injected whole-window repaint was not detected");
+        return $"PASS native world8 loader: page0 all1024 bytes exact versus original f22580, tail preserves staged NT2048, injected whole-window repaint rejected; {passes} batches; no original RAM seeded. Back page residue is not claimed by this isolated fixture.";
+    }
     [System.Serializable] private sealed class CaptureRequest { public string rom_sha256; public string[] argv; }
     [System.Serializable] private sealed class CaseResult
     {

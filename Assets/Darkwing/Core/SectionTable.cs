@@ -57,15 +57,17 @@ namespace Darkwing.Core
 
         /// <summary>$C319: entries 0-7 always come from $C4FD (X-indexed, not Y),
         /// entries 8-15 from $C505 + (v&lt;&lt;3); 16 bytes → $0310 and mirror $0330.</summary>
-        public void ReadSpritePalette(int id, byte[] out16) =>
-            ReadSpritePaletteByIndex(_b[SpPal + id], out16);
+        public void ReadSpritePalette(int id, byte[] out16, byte world = 0) =>
+            ReadSpritePaletteByIndex(_b[SpPal + id], out16, world);
 
         /// <summary>$C319 with the index byte directly ($DF22[world] from $DD57).</summary>
-        public void ReadSpritePaletteByIndex(byte v, byte[] out16)
+        public void ReadSpritePaletteByIndex(byte v, byte[] out16, byte world = 0)
         {
             int second = SpPalShift + ((v << 3) & 0xFF);
             for (int i = 0; i < 8; i++) out16[i] = _b[SpPalFixed + i];
             for (int i = 0; i < 8; i++) out16[8 + i] = _b[second + i];
+            if (world == 8 || world == 9) out16[0] = 0x26;
+            else if (world == 0x0B) out16[0] = 0x11;
         }
 
         /// <summary>$EFC2/$EFCD/$EFD8: the $3D low 7 bits index the $F049 script header —

@@ -55,7 +55,7 @@ namespace Darkwing.Core
                     _game.SyncScenePlayer(); p.XFrac = s0.XFrac;
                     p.HorizontalScroll(_game.TileMap.GridByte, _game.TileMap.FlagByte);
                     p.PrevPlayerX = p.X;
-                    _game.TileMap.StreamColumns(p.ScrollX);
+                    _game.TileMap.SetScroll(p.ScrollX);
                     _game.ResidentWalk();
                     if (p.ScrollX != 0x100) return;
                     SeedClearScore(); _game.Oam.ReservedCursor = 0x98;

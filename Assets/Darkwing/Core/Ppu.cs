@@ -151,7 +151,7 @@ namespace Darkwing.Core
                     int palSlot = (attrByte >> shift) & 3;
                     Decode(tileIdx, BgPatternHigh ? Chr1Bank : Chr0Bank);
                     int ci = _tile[(row & 7) * 8 + (col & 7)];
-                    framebuffer[py * W + px] = PaletteRam[palSlot * 4 + ci];
+                    framebuffer[py * W + px] = PaletteRam[ci == 0 ? 0 : palSlot * 4 + ci];
                 }
             }
             // Sprites (OAM order, later sprites under earlier on overlap: hardware draws
