@@ -666,9 +666,18 @@ def cmd_scene(args):
     core=Path(args.core);raw=(core/"buffers.bin").read_bytes()
     if len(raw)!=n*BUFFER_STRIDE: raise ValueError("Core capture is incomplete")
     import csv
-    with (core/"trace.csv").open(encoding="utf-8-sig",newline="") as trace:
-        rows={int(r["frame"]):r for r in csv.DictReader(line for line in trace if not line.startswith("#"))}
+    trace_lines=(core/"trace.csv").read_text(encoding="utf-8-sig").splitlines()
+    trace_rows=list(csv.DictReader(line for line in trace_lines if not line.startswith("#")))
+    if not trace_rows or any("gameFrame" not in row for row in trace_rows):
+        raise ValueError("Missing Core gameFrame export; recapture the trace")
+    rows={int(row["frame"]):row for row in trace_rows}
+    if len(trace_rows)!=n or set(rows)!=set(range(1,n+1)):
+        raise ValueError("Incomplete/duplicate Core trace polls")
+    final_clocks=[int(line.split("=",1)[1]) for line in trace_lines if line.startswith("# finalGameFrame=")]
+    if len(final_clocks)!=1: raise ValueError("Missing/duplicate Core final gameFrame")
     byframe={int(s["frame"]):s for s in route["states"]}
+    if len(byframe)!=len(route["states"]) or not set(byframe).issubset(rows):
+        raise ValueError("Duplicate/out-of-range scene snapshots")
     if any(f not in byframe for f in spec["captures"]): raise ValueError("Requested scene snapshot missing")
     sys.path.insert(0,str(ROOT/"Tools/DarkwingResearch"))
     from compare_frames import read_png_rgb, MESEN_2C02
@@ -678,7 +687,7 @@ def cmd_scene(args):
     for f,s in byframe.items():
         r=rows[f];k=(f-1)*BUFFER_STRIDE;b=raw[k:k+BUFFER_STRIDE]
         expected={key:int(r[key]) for key in ["x","y","state","world","phaseFrames","scrollX","chr0","chr1","ctrl","mask","completed","maskCompleted"]}
-        expected.update(gameFrame=f-1,phase=r["phase"],scrollY=(b[0xFB]<<8)|b[0xFA],
+        expected.update(gameFrame=int(r["gameFrame"]),phase=r["phase"],scrollY=(b[0xFB]<<8)|b[0xFA],
             scoreUnits=sum((b[0x5C4+i*2]&15)*10**(4-i) for i in range(5)),
             livesLeft=b[0x5E4],livesRight=b[0x5E6],bossDamage=b[0xEE])
         for key,value in expected.items():
@@ -697,8 +706,9 @@ def cmd_scene(args):
             if (w,h)!=(256,240) or rgb!=got: errors.append({"frame":f,"field":"framebuffer RGB"})
             rgb_checked+=1
     final=route.get("final",{})
-    if final.get("gameFrame")!=n: errors.append({"field":"final gameFrame","expected":n,"got":final.get("gameFrame")})
-    print(json.dumps({"editor":route["editor"],"framesConsumed":final.get("gameFrame"),
+    if final.get("frame")!=n: errors.append({"field":"final input frame","expected":n,"got":final.get("frame")})
+    if final.get("gameFrame")!=final_clocks[0]: errors.append({"field":"final gameFrame","expected":final_clocks[0],"got":final.get("gameFrame")})
+    print(json.dumps({"editor":route["editor"],"framesConsumed":final.get("frame"),"gameFramesAdvanced":final.get("gameFrame"),
         "inputSha256":hashlib.sha256(track).hexdigest(),"snapshotsChecked":len(byframe),"RGBchecked":rgb_checked,
         "boundary":"same pre-input poll number; no input offset", "matchedCore":not errors,"errors":errors[:12],
         "final":{k:final.get(k) for k in ["phase","world","x","y","state","completed","maskCompleted","scoreUnits","livesLeft","livesRight"]}},indent=2))

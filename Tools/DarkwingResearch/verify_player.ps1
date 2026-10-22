@@ -136,7 +136,7 @@ public class Win32Cap {
     if ($routeData.editor) { throw 'Replay came from Editor' }
     if ($CompletedMission) {
       $f = $routeData.final
-      if ($f.gameFrame -ne $spec.frames -or $f.phase -ne 'MapCursor' -or $f.completed -ne 1 -or $f.maskCompleted -ne 1) {
+      if ($f.frame -ne $spec.frames -or $f.phase -ne 'MapCursor' -or $f.completed -ne 1 -or $f.maskCompleted -ne 1) {
         throw 'Standalone replay did not complete the first mission and return to map'
       }
       $result.final = $f | Select-Object gameFrame,phase,world,x,y,state,completed,maskCompleted,scoreUnits,livesLeft,livesRight

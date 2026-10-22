@@ -60,7 +60,7 @@ public static class StandRoute
         var flow = new GameFlow(game, decoder);
 
         var sb = new System.Text.StringBuilder();
-        sb.Append("frame,x,y,state,ctrl,mask,pal_sum,phase,phaseFrames,timer,parity,stream,textByte,scrollX,scrollY,cell,next,world,completed,maskCompleted,chr0,chr1,blank,flag18,mapScr,mapCh,worldRun\n");
+        sb.Append("frame,gameFrame,x,y,state,ctrl,mask,pal_sum,phase,phaseFrames,timer,parity,stream,textByte,scrollX,scrollY,cell,next,world,completed,maskCompleted,chr0,chr1,blank,flag18,mapScr,mapCh,worldRun\n");
         using var buffers = new BinaryWriter(File.Create(Path.Combine(outDir,"buffers.bin")));
         var ram = new byte[2048]; // Only explicitly mapped fields below; other RAM is not claimed.
         var shots = new HashSet<int>(cfg.shots ?? new int[0]);
@@ -73,7 +73,7 @@ public static class StandRoute
             // Row and shot describe the console at the START of frame f, which is where the
             // emulator's input poll (and therefore the recorded byte) belongs.
             var p = game.Player;
-            sb.Append($"{f},{p.X},{p.Y},{p.State},{game.Ppu.Ctrl},{game.Ppu.Mask}," +
+            sb.Append($"{f},{game.Frame},{p.X},{p.Y},{p.State},{game.Ppu.Ctrl},{game.Ppu.Mask}," +
                 $"{Sum(game.Ppu.PaletteRam, 32)},{flow.Stage},{flow.PhaseFrames},{p.StateTimer},{game.FrameParity},{flow.World.StreamId},{game.Text.ByteIndex},{p.ScrollX},{p.ScrollY},{p.CellIndex},{p.CellIndexNext},{flow.World.CurrentWorld},{flow.World.CompletedCount},{flow.World.CompletedMask},{game.Ppu.Chr0Bank},{game.Ppu.Chr1Bank},{game.BlankDepth},{game.PaletteUploadFlag},{game.MapScreen},{game.MapChooser},{game.WorldRunning}\n");
             ram[0x50]=p.State;ram[0x51]=p.StateTimer;ram[0x95]=game.FrameParity;
             // $C162 latches $14/$16 at the input poll, so the frame's own poll cannot see its own
@@ -130,7 +130,11 @@ public static class StandRoute
             if (f % 1000 == 0) File.WriteAllText(Path.Combine(outDir,"trace.csv"),sb.ToString());
         }
         }
-        finally { File.WriteAllText(Path.Combine(outDir, "trace.csv"), sb.ToString()); }
+        finally
+        {
+            sb.Append($"# finalGameFrame={game.Frame}\n");
+            File.WriteAllText(Path.Combine(outDir, "trace.csv"), sb.ToString());
+        }
         return $"port frames={frames} track={track.Length} specRanges={spec.inputs?.Length ?? 0} " +
             $"shots={shots.Count} out={outDir}/trace.csv";
     }
