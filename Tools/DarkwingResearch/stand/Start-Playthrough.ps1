@@ -6,3 +6,4 @@ $stand = Join-Path $PSScriptRoot "stand.py"
 $python = (Get-Command python -ErrorAction SilentlyContinue).Source
 if (-not $python) { $python = "py" }
 & $python $stand record @args
+exit $LASTEXITCODE
