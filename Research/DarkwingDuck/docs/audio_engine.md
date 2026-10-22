@@ -128,7 +128,7 @@ Sizes are distances to the next entry (last entry bounded by ~$B429).
 
 | id | trigger | semantics |
 |----|---------|-----------|
-| $21 | bank2 (menus) + A button in m1 | jump/boing: pulse1+pulse2 parallel pitch slide up + noise burst, ~100 frames [V] |
+| $21 | bank2 `$A241` / A on map | mission launch: pulse1+pulse2 parallel pitch slide up + noise burst, ~100 frames [V]. NOT a gameplay jump: bank7 jump `$CBB7` has no sound call; `gold_jump` a@20-22 leaves `$D9=04`, `$D0/$D1=0` |
 | $3F | B button in m1 | punch/whiff: noise hit, ~30 frames [V] |
 | $04 | bank6/7 | climb/grab rattle (noise) [V context] |
 

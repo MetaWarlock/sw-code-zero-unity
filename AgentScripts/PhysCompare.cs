@@ -67,7 +67,8 @@ public static class PhysCompare
         int seedFrame = 0, bool camera = false, bool enemies = false, int world = 0,
         int entryFreeze = 0, bool trace = false, int limit = 0, bool palette = false,
         string goldenDir = null, bool scoreEnemies = false, bool scoreOam = false, bool pause = false,
-        bool residentFade = false, bool mapScreen = false)
+        bool residentFade = false, bool mapScreen = false,
+        System.Action<int, Darkwing.Core.DarkwingGame> frameObserver = null)
     {
         string root = "D:/Art/SW Code Zero Unity";
         string gdir = goldenDir ?? $"gold_{name}";
@@ -344,11 +345,13 @@ public static class PhysCompare
         Darkwing.Core.EnemyBehaviors.RngE6 = ram0[0xE6];
         Darkwing.Core.EnemyBehaviors.RngE7 = ram0[0xE7];
         p.LastVerticalRedraw = ram0[0x29]; p.VerticalRedrawRow = ram0[0x2A]; p.PrevVerticalMode = ram0[0x21];
+        frameObserver?.Invoke(seedFrame, game);
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
         {
             fEnemies = fPal = fOam = true; fieldBadIdx = -1;
             var pad = Darkwing.Core.NesButtons.FromByte(input(f));
             game.Step(pad);
+            frameObserver?.Invoke(f, game);
             byte[] g = new byte[2048];
             System.Array.Copy(ramAll, f * 2048, g, 0, 2048);
             int gx = g[0x4F0] | (g[0x500] << 8);
@@ -658,6 +661,52 @@ public static class PhysCompare
         if (f >= 20 && f <= 22) b |= 0x80;
         return b;
     });
+
+    public static string JumpSoundContract()
+    {
+        string directory = Root + "/Research/DarkwingDuck/reference/gold_jump";
+        byte[] ram = File.ReadAllBytes(directory + "/ram_frames.bin");
+        ValidateCapture(directory, ram, 19);
+        for (int frame = 15; frame <= 28; frame++)
+        {
+            int offset = frame * 2048;
+            if (ram[offset + 0xD9] != 4 || ram[offset + 0xD0] != 0 || ram[offset + 0xD1] != 0)
+                throw new System.Exception("Original jump audio contract changed at " + frame);
+        }
+        if (ram[19 * 2048 + 0x50] != 0 || ram[20 * 2048 + 0x50] != 1)
+            throw new System.Exception("Original control does not contain the expected jump");
+
+        void Verify(bool injectFalseSound)
+        {
+            int soundCount = 0;
+            bool checkedJump = false;
+            string result = Compare("jump", 120, frame =>
+                (byte)((frame >= 10 && frame <= 40 ? 1 : 0) | (frame >= 20 && frame <= 22 ? 0x80 : 0)),
+                frameObserver: (frame, game) => {
+                    if (frame == 0)
+                    {
+                        var enqueue = game.Player.Sfx;
+                        game.Player.Sfx = id => { soundCount++; enqueue?.Invoke(id); };
+                    }
+                    if (frame != 20) return;
+                    if (game.Player.State != ram[20 * 2048 + 0x50])
+                        throw new System.Exception("Native control did not take the original ground jump");
+                    if (injectFalseSound) game.Player.Sfx(0x21);
+                    if (soundCount != 0)
+                        throw new System.IO.InvalidDataException("Ground jump must not enqueue a sound");
+                    checkedJump = true;
+                });
+            if (!checkedJump || !VerdictTail(result).Contains("RESULT: MATCH"))
+                throw new System.Exception("Jump control was incomplete or diverged");
+        }
+
+        Verify(false);
+        bool rejected = false;
+        try { Verify(true); }
+        catch (System.IO.InvalidDataException) { rejected = true; }
+        if (!rejected) throw new System.Exception("Jump sound negative control was accepted");
+        return "PASS original gold_jump f15-28 audio task control; native ground jump silent; injected SFX21 rejected (not waveform equivalence)";
+    }
 
     /// <summary>G58 pause golden: mission 1 resumed from `gold_w00/gameplay.mss` with Start
     /// pressed at f20 and held to f23, so f20…69 are the bank-4 $8F00 phase. `$14` is an

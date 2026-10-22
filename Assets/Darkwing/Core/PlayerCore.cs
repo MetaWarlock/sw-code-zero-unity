@@ -1244,7 +1244,6 @@ namespace Darkwing.Core
             {
                 YVelInt = 4; YVelFrac = 0xE5;
                 State = 1;
-                Sfx?.Invoke(0x21); // jump ($F850 #$21)
                 if (Objects != null)
                 {
                     var sj = Objects.Slots[0];

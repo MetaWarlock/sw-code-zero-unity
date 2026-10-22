@@ -1074,7 +1074,7 @@ namespace Darkwing.Core
         }
 
         /// <summary>Sound triggers mirroring the original's $F84E/$F850 enqueue sites.</summary>
-        public const int SfxJump = 0x21;        public const int SfxLand = 0x10;
+        public const int SfxMapLaunch = 0x21;   public const int SfxLand = 0x10;
         public const int SfxHurt = 0x15;
         public const int SfxSelect = 0x1B;
         public const int SfxPause = 0x1C;
