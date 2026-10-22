@@ -389,6 +389,7 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio
     out = Path(output).resolve() if output else session / "unity"
     out.mkdir(parents=True, exist_ok=True)
     spec = {"frames": min(frames,len(track)) if frames else len(track), "inputs": ranges(track), "captures": list(shots),
+            "captureAtStart": True,
             "output": out.as_posix(),
             "audioState": audio_state,
             "note": "Pad track from " + str(session) + "; " + CONVENTION}
