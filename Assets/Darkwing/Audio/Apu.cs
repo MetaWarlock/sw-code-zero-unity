@@ -38,6 +38,7 @@ namespace Darkwing.Audio
         private struct Noise
         {
             public bool Enabled, Halt, ConstantVolume;
+            public bool ShortMode;
             public int VolumeOrEnvelope, EnvelopeDivider, EnvelopeDecay;
             public bool EnvelopeRestart;
             public int PeriodIndex;
@@ -142,7 +143,10 @@ namespace Darkwing.Audio
                     _noise.ConstantVolume = (value & 0x10) != 0;
                     _noise.VolumeOrEnvelope = value & 0x0F;
                     break;
-                case 0x400E: _noise.PeriodIndex = value & 0x0F; break;
+                case 0x400E:
+                    _noise.PeriodIndex = value & 0x0F;
+                    _noise.ShortMode = (value & 0x80) != 0;
+                    break;
                 case 0x400F:
                     if (_noise.Enabled) _noise.LengthCounter = LengthLoads[value >> 3];
                     _noise.EnvelopeRestart = true;
@@ -172,22 +176,20 @@ namespace Darkwing.Audio
             {
                 TickPulseTimer(ref _p1);
                 TickPulseTimer(ref _p2);
-                if (_tri.Timer > 0) _tri.Timer--;
-                else if (_tri.LinearCounter > 0 && _tri.LengthCounter > 0)
-                {
-                    _tri.Timer = _tri.Period;
-                    _tri.SeqStep = (_tri.SeqStep + 1) & 31;
-                }
             }
-            // Noise timer runs at CPU/4 (approximation of the CPU/2 * period table).
-            if ((_frameStep & 3) == 0)
+            if (_tri.Timer > 0) _tri.Timer--;
+            else
             {
-                if (--_noise.Timer <= 0)
-                {
-                    _noise.Timer = NoisePeriods[_noise.PeriodIndex];
-                    int fb = (_noise.Shift & 1) ^ ((_noise.Shift >> 1) & 1);
-                    _noise.Shift = (ushort)((_noise.Shift >> 1) | (fb << 14));
-                }
+                _tri.Timer = _tri.Period;
+                if (_tri.LinearCounter > 0 && _tri.LengthCounter > 0)
+                    _tri.SeqStep = (_tri.SeqStep + 1) & 31;
+            }
+            if (_noise.Timer > 0) _noise.Timer--;
+            else
+            {
+                _noise.Timer = NoisePeriods[_noise.PeriodIndex] - 1;
+                int feedback = (_noise.Shift ^ (_noise.Shift >> (_noise.ShortMode ? 6 : 1))) & 1;
+                _noise.Shift = (ushort)((_noise.Shift >> 1) | (feedback << 14));
             }
 
             // Frame counter: 4-step sequence at 3729/7457/11186/14915; 5-step .../18641.

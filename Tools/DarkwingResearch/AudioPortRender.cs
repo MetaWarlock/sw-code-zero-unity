@@ -20,6 +20,95 @@ public static class AudioPortRender
     const string Proj = @"D:\Art\SW Code Zero Unity";
     const int Frames = 600;
 
+    public static string SignalContract()
+    {
+        var failures = new System.Collections.Generic.List<string>();
+        int[] periods = { 4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068 };
+        for (int mode = 0; mode < 2; mode++)
+        {
+            for (int index = 0; index < periods.Length; index++)
+            {
+                var apu = new Apu();
+                apu.Write(0x400E, (byte)((mode << 7) | index));
+                ushort expected = 1;
+                for (int cycle = 0; cycle < periods[index] * 100; cycle++)
+                {
+                    if (cycle % periods[index] == 0)
+                    {
+                        int feedback = (expected ^ (expected >> (mode == 0 ? 1 : 6))) & 1;
+                        expected = (ushort)((expected >> 1) | (feedback << 14));
+                    }
+                    apu.StepCpu();
+                    if (ChannelField<ushort>(apu, "_noise", "Shift") != expected)
+                    {
+                        failures.Add($"noise mode={mode} index={index} CPU-cycle={cycle + 1}");
+                        break;
+                    }
+                }
+            }
+        }
+        var triangle = new Apu();
+        triangle.Write(0x4015, 4);
+        triangle.Write(0x4008, 0xFF);
+        triangle.Write(0x400A, 31);
+        triangle.Write(0x400B, 8);
+        for (int cycle = 0; cycle < 1000; cycle++) triangle.StepCpu();
+        if (ChannelField<int>(triangle, "_tri", "SeqStep") != 0)
+            failures.Add("triangle period31 must advance32 sequence steps in1000 CPU cycles");
+        var pulse = new Apu();
+        pulse.Write(0x4015, 1);
+        pulse.Write(0x4000, 0x3F);
+        pulse.Write(0x4002, 31);
+        pulse.Write(0x4003, 8);
+        for (int cycle = 0; cycle < 1000; cycle++) pulse.StepCpu();
+        if (ChannelField<int>(pulse, "_p1", "DutyStep") != 7)
+            failures.Add("pulse CPU/2 control changed");
+        return failures.Count == 0 ? "PASS 34/34 signal-clock contracts: 16 noise periods x2 modes; triangle CPU/1; pulse CPU/2 control"
+            : $"FAIL {failures.Count}/34: " + string.Join("; ", failures);
+    }
+
+    static T ChannelField<T>(Apu apu, string channel, string field)
+    {
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        object state = typeof(Apu).GetField(channel, binding).GetValue(apu);
+        return (T)state.GetType().GetField(field).GetValue(state);
+    }
+
+    public static string ReplayWrites(string csvPath, string framesPath, string outputDirectory)
+    {
+        string[] writes = File.ReadAllLines(csvPath);
+        string[] frames = File.ReadAllLines(framesPath);
+        long endCycle = long.Parse(frames[frames.Length - 1].Split(',')[2]);
+        var apu = new Apu();
+        using var wav = new MemoryStream();
+        WriteWavHeader(wav);
+        int writeIndex = 1;
+        long nextCycle = long.Parse(writes[writeIndex].Split(',')[1]);
+        long accumulator = 0;
+        long samples = 0;
+        for (long cycle = 0; cycle <= endCycle; cycle++)
+        {
+            while (writeIndex < writes.Length && nextCycle <= cycle)
+            {
+                string[] values = writes[writeIndex++].Split(',');
+                apu.Write(Convert.ToInt32(values[3], 16), Convert.ToByte(values[4], 16));
+                nextCycle = writeIndex < writes.Length ? long.Parse(writes[writeIndex].Split(',')[1]) : long.MaxValue;
+            }
+            apu.StepCpu();
+            accumulator += 48000;
+            if (accumulator < Apu.CpuHz) continue;
+            accumulator -= Apu.CpuHz;
+            short sample = (short)Math.Max(-32768, Math.Min(32767, (int)(apu.CurrentOutput() * 32767f)));
+            wav.WriteByte((byte)(sample & 0xFF));
+            wav.WriteByte((byte)((sample >> 8) & 0xFF));
+            samples++;
+        }
+        FinishWav(wav, 48000);
+        Directory.CreateDirectory(outputDirectory);
+        File.WriteAllBytes(Path.Combine(outputDirectory, "source_writes_native_apu.wav"), wav.ToArray());
+        return $"APU-only diagnostic: original register writes, no game/CPU execution; cycles={endCycle + 1} samples={samples} writes={writeIndex - 1}";
+    }
+
     public static string Main() => RenderTo(Path.Combine(Proj, @"Research\DarkwingDuck"));
 
     public static string RenderTo(string outputDirectory)
