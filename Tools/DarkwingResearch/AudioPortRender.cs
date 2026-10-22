@@ -52,17 +52,29 @@ public static class AudioPortRender
         triangle.Write(0x4008, 0xFF);
         triangle.Write(0x400A, 31);
         triangle.Write(0x400B, 8);
-        for (int cycle = 0; cycle < 1000; cycle++) triangle.StepCpu();
-        if (ChannelField<int>(triangle, "_tri", "SeqStep") != 0)
-            failures.Add("triangle period31 must advance32 sequence steps in1000 CPU cycles");
+        for (int cycle = 0; cycle < 1000; cycle++)
+        {
+            triangle.StepCpu();
+            if (ChannelField<int>(triangle, "_tri", "SeqStep") != ((1 + cycle / 32) & 31))
+            {
+                failures.Add($"triangle CPU/1 period31 CPU-cycle={cycle + 1}");
+                break;
+            }
+        }
         var pulse = new Apu();
         pulse.Write(0x4015, 1);
         pulse.Write(0x4000, 0x3F);
         pulse.Write(0x4002, 31);
         pulse.Write(0x4003, 8);
-        for (int cycle = 0; cycle < 1000; cycle++) pulse.StepCpu();
-        if (ChannelField<int>(pulse, "_p1", "DutyStep") != 7)
-            failures.Add("pulse CPU/2 control changed");
+        for (int cycle = 0; cycle < 1000; cycle++)
+        {
+            pulse.StepCpu();
+            if (ChannelField<int>(pulse, "_p1", "DutyStep") != (((cycle / 2 + 1) / 32) & 7))
+            {
+                failures.Add($"pulse CPU/2 period31 CPU-cycle={cycle + 1}");
+                break;
+            }
+        }
         return failures.Count == 0 ? "PASS 34/34 signal-clock contracts: 16 noise periods x2 modes; triangle CPU/1; pulse CPU/2 control"
             : $"FAIL {failures.Count}/34: " + string.Join("; ", failures);
     }
