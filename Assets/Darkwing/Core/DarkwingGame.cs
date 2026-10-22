@@ -160,7 +160,7 @@ namespace Darkwing.Core
             // room at $23; the page is $FD bit0. Writing it into the nametable here is
             // equivalent to the NMI draining the queue before the next frame's capture.
             p.RowService = (row, gridIndex) =>
-                TileMap.PaintRow(row, gridIndex, (p.ScrollX >> 8) & 1);
+                TileMap.PaintRow(row, gridIndex, p.ScrollX >> 8);
         }
 
         private SectionTable _sections;
@@ -221,7 +221,7 @@ namespace Darkwing.Core
             _world = w;
             Objects?.SelectPlacementList(_worldId);         // $DD57 → $8000: LDX $31, re-point $72-$7B
             Objects?.ClearForSectionLoad();                 // $DD57 → $C248 → $C235
-            TileMap = new LevelTileMap(_worldDecoder, Ppu, w);
+            TileMap = new LevelTileMap(_worldDecoder, Ppu, w, TileMap);
             Player.TileMap = TileMap;
             _gridByte = null; _flagByte = null;             // ($32)/($34) now point at this world
             RenderOff();                                    // $DE24 → $C14E: blank while it streams
@@ -933,16 +933,10 @@ namespace Darkwing.Core
         /// <summary>$F7E0 as the panel uses it: <c>LDA #$04 / STA $2F</c> then <c>JMP $DC6E</c>
         /// (the saved <c>LDA $F1 / PHA … PLA / JMP $FF55</c> bank push is a no-op — the panel is
         /// already in the bank $DC6E lives in). The $DC88-$DC8D step is the observable effect: $FA
-        /// becomes the byte $916E-$9179 just computed from $0510, so the camera tracks slot 0's Y.
-        /// $DC6E's two entry gates are NOT re-evaluated here because $E7C6 (the row redraw, GAPS G66)
-        /// and the world grid the gates read are not ported; gold_intro_panels measures both gates
-        /// passing on every settle frame — $2B goes $01→$04 at f1056, $FA runs $00→$A4 monotonically
-        /// and $FB stays $00 while $22=$00/$2E=$01/$2D=$01, so the $DC8F wrap branch is unreachable
-        /// (exit at $A4) and $E7C6 never touches the panel's compared slot fields.</summary>
+        /// becomes the byte $916E-$9179 just computed from $0510, so the camera tracks slot 0's Y.</summary>
         private void IntroVerticalScroll()
         {
-            Player.ScrollMode = 0x04;                              // $F7E3 STA $2F
-            Player.ScrollY = (byte)(Player.ScrollY + Player.ScrollStep);   // $DC88-$DC8D
+            Player.ScrollSceneDown(Player.ScrollStep);
         }
 
         /// <summary>The three stages of <c>$9100</c>: one <c>$F89A</c> at $9155, then the $9162…$9186
@@ -1228,6 +1222,7 @@ namespace Darkwing.Core
             // NMI that is allowed to publish.
             if (_blankDepth == 0)
             {
+                if (Player.YieldOnlyFrame || Player.IntroCardPhase) PublishToOamOnce();
                 NmiChrUpload();            // $C047/$C050, before $C059 palette upload
                 NmiPaletteUpload();        // $C059: $18-flagged $0300 → $3F00, every frame
                 Text?.FlushNmiWrites();
@@ -1936,13 +1931,11 @@ namespace Darkwing.Core
                     _reloadStage = 4;
                     return false;
                 case 4:                                    // $C270 fade-in, $30/$20/$10/$00
-                    // G43: the fade-in's first NMI is the first frame where bank5's $8000
-                    // engine is resident again, and its very first instruction is `INC $95`
-                    // (gold f825: $94→$95). The engine then stays gated off for the rest of
-                    // the fade (f826-f841 frozen at $95), so exactly one tick lands here —
-                    // missing it leaves the port's parity a constant golden-1 and shifts the
-                    // $80EB anim-tick phase, which is what makes f1824 X/frac diverge.
-                    if (_fadeFrame == 0) FrameParity++;
+                    if (_fadeFrame == 0)
+                    {
+                        PublishToOamOnce();
+                        ResidentWalk();
+                    }
                     if (!StepFade()) return false;
                     // $C2BF RTS → $D43A/$D450 JMP $FF06: the frame that leaves the fade is
                     // spent inside the scheduler, so it serves no service at all

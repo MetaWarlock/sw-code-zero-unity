@@ -38,11 +38,16 @@ namespace Darkwing.Core
         private readonly byte[] _bandPalettes = new byte[4];
         public byte CameraY;
 
-        public LevelTileMap(RoomDecoder decoder, Ppu ppu, RoomDecoder.World world)
+        public LevelTileMap(RoomDecoder decoder, Ppu ppu, RoomDecoder.World world, LevelTileMap previous = null)
         {
             _decoder = decoder;
             _ppu = ppu;
             _world = world;
+            if (previous != null)
+            {
+                System.Array.Copy(previous._bandTable, _bandTable, _bandTable.Length);
+                System.Array.Copy(previous._bandPalettes, _bandPalettes, _bandPalettes.Length);
+            }
             _roomTiles = new byte[world.RowWidth][];
             _roomTypes = new byte[world.RowWidth][];
             _roomAttrs = new byte[world.RowWidth][];
@@ -200,7 +205,7 @@ namespace Darkwing.Core
             if ((uint)ntRow >= 30u) return;                   // $E7C6 wraps at 30; status rows stay untouched
             if ((uint)gridIndex >= (uint)_world.Grid.Length) return;
             byte roomId = _world.Grid[gridIndex];
-            if (roomId == 0) return;                          // $EB27 → $7FC0, $EA36 early RTS
+            if (roomId == 0) { PaintRowEdge(ntRow, gridIndex, page); return; } // $EB27 → $7FC0, $EA36 early RTS
             int cell = gridIndex % _world.RowWidth;
             int sourceRow = gridIndex / _world.RowWidth;
             if (!TryGetRoom(cell * 32, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs))
@@ -222,6 +227,34 @@ namespace Darkwing.Core
                 }
                 nt[baseNt + 0x3C0 + attrRow * 8 + attrCol] = (byte)value;
             }
+            RefreshBandTable(ntRow >> 2, 7, tiles, meta, attrs);
+            PaintRowEdge(ntRow, gridIndex, page);
+        }
+
+        private void PaintRowEdge(int ntRow, int gridIndex, int page)
+        {
+            bool right = page != _world.RowWidth - 1;
+            int neighbor = (gridIndex + (right ? 1 : -1)) & 0xFF;
+            if (GridByte(neighbor) == 0)
+            {
+                if (page == 0 || !right) return;
+                right = false;
+                neighbor = (gridIndex - 1) & 0xFF;
+                if (GridByte(neighbor) == 0) return;
+            }
+            int cell = neighbor % _world.RowWidth;
+            int sourceRow = neighbor / _world.RowWidth;
+            if (!TryGetRoom(cell * 32, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs)) return;
+            int attributeColumn = right ? 0 : 7;
+            RefreshBandTable(ntRow >> 2, attributeColumn, tiles, meta, attrs);
+            int baseNt = ((page & 1) ^ 1) * 0x400;
+            int destinationColumn = right ? 0 : 30;
+            int sourceColumn = right ? 0 : 2;
+            int blockRow = (ntRow & 3) * 4;
+            _ppu.NametableRam[baseNt + ntRow * 32 + destinationColumn] = _bandTable[blockRow + sourceColumn];
+            _ppu.NametableRam[baseNt + ntRow * 32 + destinationColumn + 1] = _bandTable[blockRow + sourceColumn + 1];
+            _ppu.NametableRam[baseNt + 0x3C0 + (ntRow >> 2) * 8 + attributeColumn] =
+                (byte)(_bandPalettes[0] | (_bandPalettes[1] << 2) | (_bandPalettes[2] << 4) | (_bandPalettes[3] << 6));
         }
 
         /// <summary>$EA36/$EA5F: the macro at chunk slot 8·bandRow + attrCol of the room the

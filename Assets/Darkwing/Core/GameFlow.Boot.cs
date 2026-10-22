@@ -2,6 +2,15 @@ namespace Darkwing.Core
 {
     public sealed partial class GameFlow
     {
+        private byte _attractLow, _attractHigh;
+
+        private void ExitResidentIntro()
+        {
+            _game.PlaySound(0xF0);
+            _game.BeginResidentFade(false);
+            _introStage = 13;
+        }
+
         private byte ResidentPad(NesButtons pad)
         {
             byte held = pad.ToByte();
@@ -97,6 +106,7 @@ namespace Darkwing.Core
                     SetPhase(Phase.Title); _game.ResidentProcess = StepResidentTitle;
                     return;
                 case 20:
+                    _game.ClearObjectRamAndScroll();
                     _game.BeginResidentFade(false); _introStage = 21; return;
                 case 21:
                     if (_game.TickResidentFade()) _introStage = 22;
@@ -107,10 +117,88 @@ namespace Darkwing.Core
                     _game.BeginSceneLoad(_decoder, World.CurrentWorld); _introStage = 24; return;
                 case 24:
                     if (!_game.TickSceneLoad()) return;
-                    _game.IntroPanel9100Seed(); _introStage = 25; return;
+                    if (World.CurrentWorld == 0x0C)
+                    {
+                        _game.BeginIntroPanel9000Settle(); _introStage = 26;
+                    }
+                    else if (World.CurrentWorld == 0x0A)
+                    {
+                        _game.IntroEntryA000(); _game.SyncScenePlayer();
+                        _game.Player.PrevPlayerX = _game.Player.X;
+                        _introStage = 29;
+                    }
+                    else { _game.IntroPanel9100Seed(); _introStage = 25; }
+                    return;
                 case 25:
                     if (_game.IntroPanel9100Step(pressed)) return;
-                    _game.PlaySound(0xF0); _game.BeginResidentFade(false); _introStage = 13;
+                    if (pressed != 0) { ExitResidentIntro(); return; }
+                    World.CurrentWorld = 0x0C; _introStage = 20;
+                    return;
+                case 26:
+                    if (pressed != 0) { ExitResidentIntro(); return; }
+                    if (!_game.StepIntroPanel9000Settle()) return;
+                    _introDelay = 10; _introStage = 27;
+                    return;
+                case 27:
+                    if (--_introDelay > 0) return;
+                    _game.IntroPanel9000Seed(); _introStage = 28;
+                    return;
+                case 28:
+                    if (_game.IntroPanel9000Step(pressed)) return;
+                    if (pressed != 0) { ExitResidentIntro(); return; }
+                    World.CurrentWorld = 0x0A; _introStage = 20;
+                    return;
+                case 29:
+                    if ((pressed & 0x10) != 0) { ExitResidentIntro(); return; }
+                    _game.StepIntroEntryFlight();
+                    if (_game.Player.ScrollX != 0x100) return;
+                    _game.BeginResidentFade(false); _introStage = 30;
+                    return;
+                case 30:
+                    if (_game.TickResidentFade()) _introStage = 31;
+                    return;
+                case 31:
+                    _game.RenderOff(); _game.FillVramPages(0x20, 0, 0);
+                    _game.ClearObjectRamAndScroll(); _game.Oam.HideShadow(); _introStage = 32;
+                    return;
+                case 32:
+                    _game.LoadIntroAttractTitle(); _game.ResidentWalk();
+                    _attractLow = _attractHigh = 0; _introStage = 33;
+                    return;
+                case 33:
+                    _game.ResidentWalk();
+                    if ((s.StateLow & 15) == 0)
+                    {
+                        if (_game.Player.StateTimer != 0) _game.Player.StateTimer--;
+                        else
+                        {
+                            EnemyBehaviors.IntegrateXNeg(s);
+                            if ((s.X & 0xFF) < 0x28)
+                            {
+                                _game.RevealIntroAttractBackground(); s.StateLow++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        s.AnimFrame = s.AnimTimer = 0;
+                        _game.Objects.Slots[1].Flags = 0x80;
+                        EnemyBehaviors.IntegrateXPos(_game.Objects.Slots[1]);
+                        if (_attractHigh == 6 && _attractLow == 0xA0)
+                        {
+                            _game.BeginResidentFade(false); _introStage = 34; return;
+                        }
+                        _attractLow++;
+                        if (_attractLow == 0xFF) _attractHigh++;
+                    }
+                    _game.SyncScenePlayer();
+                    if ((pressed & 0x10) != 0) ExitResidentIntro();
+                    return;
+                case 34:
+                    if (!_game.TickResidentFade()) return;
+                    _game.BeginPowerOn(); SetPhase(Phase.Reset);
+                    _resetStage = 0; _resetWait = 4;
+                    _game.ResidentProcess = StepReset;
                     return;
             }
         }

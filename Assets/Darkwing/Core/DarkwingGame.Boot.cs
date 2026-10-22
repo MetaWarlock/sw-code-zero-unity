@@ -91,6 +91,7 @@ namespace Darkwing.Core
 
         public void ResetMemoryAndVideo()
         {
+            TileMap = null;
             // $FE26-$FE3F clear RAM; $FE69/$FE72/$FE7B hide OAM and fill both NTs.
             for (int i = 0; i < Objects.Slots.Length; i++)
             {
@@ -158,6 +159,64 @@ namespace Darkwing.Core
             EnemyBehaviors.ApplyGravity(s, Player.GravityFrac);
             SyncScenePlayer();
             ResidentWalk();
+        }
+
+        public void BeginIntroPanel9000Settle()
+        {
+            Objects.Slots[0].YVelInt = 2;
+            Objects.Slots[0].YVelFrac = 0;
+        }
+
+        public bool StepIntroPanel9000Settle()
+        {
+            var reference = Objects.Slots[0];
+            EnemyBehaviors.IntegrateYRideSlot(reference);
+            int distance = (reference.Y & 0xFF) - Player.ScrollY;
+            if (distance < 0) distance -= 0x10;
+            Player.ScrollSceneDown((byte)distance);
+            return Player.ScrollYRow == 1 && Player.ScrollY == 0;
+        }
+
+        public void StepIntroEntryFlight()
+        {
+            EnemyBehaviors.IntegrateXNeg(Objects.Slots[0]);
+            SyncScenePlayer();
+            Player.HorizontalScroll(TileMap.GridByte, TileMap.FlagByte);
+            if ((Player.ScrollX >> 8) == 1 && (Player.ScrollX & 0xFF) < 0x91)
+                EnemyBehaviors.IntegrateXPos(Objects.Slots[1]);
+            ResidentWalk();
+            TileMap.CameraY = Player.ScrollY;
+            TileMap.SetScroll(Player.ScrollX);
+        }
+
+        public void LoadIntroAttractTitle()
+        {
+            RunBank2Task(1);
+            for (int index = 0; index < 16; index++)
+            {
+                _paletteSrc[index] = _palMirror[index] = 0x0F;
+                _paletteSrc[16 + index] = _palMirror[16 + index] = Bank2[0xD77 + index];
+            }
+            SetChrAndUpload(0x9F, 0x99, 0x99);
+            var logo = Objects.Slots[0];
+            EnemyBehaviors.SetAnim(logo, 0xAC);
+            logo.Active = true; logo.StateLow = 0x80;
+            logo.X = 0xC8; logo.Y = 0x9B;
+            logo.XVelInt = 1; logo.XVelFrac = 0xB3;
+            TitleSlot(1, 0xBC, 0, 0xDC);
+            Objects.Slots[1].Flags = 0xA4;
+            Objects.Slots[1].XVelInt = 1; Objects.Slots[1].XVelFrac = 0;
+            Player.StateTimer = 0xB4;
+            RenderOn();
+            SyncScenePlayer();
+        }
+
+        public void RevealIntroAttractBackground()
+        {
+            var palette = new byte[16];
+            Sections.ReadBgPaletteByIndex(0x0D, palette);
+            SetPaletteSource(palette, 0);
+            SetPaletteUploadFlag(0xFF);
         }
         public void BeginSceneLoad(RoomDecoder decoder, byte worldId)
         {

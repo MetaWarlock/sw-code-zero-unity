@@ -653,7 +653,7 @@ namespace Darkwing.Core
         }
 
         /// <summary>$8634 arrow/bomb split: spawn 2 behavior-7 clouds (dirs from $869C).</summary>
-        internal static void SpawnSplitClouds(EnemyDispatcher ctx, ObjectSystem.Slot s, byte[] dirTable)
+        internal static void SpawnSplitClouds(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
             int n = 1;
             while (n >= 0)
@@ -666,8 +666,8 @@ namespace Darkwing.Core
                 t.YVelFrac = 0x2E; t.XVelFrac = 0x2E;
                 t.YVelInt = 3; t.XVelInt = 3;
                 t.Behavior = 0x07;
-                SpawnInit(ctx, y, 0x2E);
-                t.Direction = dirTable[n];
+                SpawnInit(ctx, y, (byte)(0x1A - n));
+                t.Direction = (byte)(((s.Direction & 2) != 0 ? 6 : 5) + n * 4);
                 n--;
             }
         }
@@ -903,16 +903,14 @@ namespace Darkwing.Core
             {
                 int free = 0;
                 for (int i = 4; i >= 2; i--) if (!ctx.Objects.Slots[i].Active) free++;
-                if (free == 2)
-                {
-                    ctx.Player.DrainActiveMeter(0xFE);
-                    ctx.Player.AddSavedMeter(0xFE);
-                    s.StateLow = 1;
-                }
+                if (free != 2) return;
+                ctx.Player.DrainActiveMeter(0xFE);
+                ctx.Player.AddSavedMeter(0xFE);
+                s.StateLow++;
             }
             if (s.AnimFrame == 4 && s.AnimTimer == 2)
             {
-                SpawnSplitClouds(ctx, s, new byte[] { 0x01, 0x02 }); // $869C table (dirs 6/A vs 5/9 by dir bit1)
+                SpawnSplitClouds(ctx, s); // $869C table (dirs 6/A vs 5/9 by dir bit1)
                 KillSlot(s);
             }
         }
@@ -922,17 +920,24 @@ namespace Darkwing.Core
         {
             switch (s.Direction)
             {
-                case 0x09: IntegrateXPos(s); WalkFaceR(s); MoveYFall(ctx, s); break;   // + F55E
-                case 0x05: IntegrateXPos(s); WalkFaceR(s); MoveYRise(ctx, s); break;   // + F539
-                case 0x0A: IntegrateXNeg(s); WalkFaceL(s); MoveYFall(ctx, s); break;
-                default:   IntegrateXNeg(s); WalkFaceL(s); MoveYFall(ctx, s); break;   // $860E falls through
+                case 0x09: IntegrateXPos(s); WalkFaceR(s); IntegrateYWrappedSubtract(s); break;   // + F55E
+                case 0x05: IntegrateXPos(s); WalkFaceR(s); IntegrateYRideSlot(s); break;   // + F539
+                case 0x0A: IntegrateXNeg(s); WalkFaceL(s); IntegrateYWrappedSubtract(s); break;
+                default:   IntegrateXNeg(s); WalkFaceL(s); IntegrateYRideSlot(s); break;   // $860E falls through
             }
         }
 
         internal static void WalkFaceR(ObjectSystem.Slot s) => s.Flags |= 0x40;
         internal static void WalkFaceL(ObjectSystem.Slot s) => s.Flags = (byte)(s.Flags & ~0x40);
-        private static void MoveYFall(EnemyDispatcher ctx, ObjectSystem.Slot s) { IntegrateYAdd(s); ApplyGravity(s, ctx.Player.GravityFrac); }
-        private static void MoveYRise(EnemyDispatcher ctx, ObjectSystem.Slot s) { IntegrateYAdd(s); ApplyGravity(s, ctx.Player.GravityFrac); }
+        private static void IntegrateYWrappedSubtract(ObjectSystem.Slot s)
+        {
+            int fraction = s.YFrac - s.YVelFrac;
+            s.YFrac = (byte)fraction;
+            int low = (s.Y & 0xFF) - (byte)s.YVelInt - (fraction < 0 ? 1 : 0);
+            int page = s.Y >> 8;
+            if (low < 0) { low -= 0x10; page--; }
+            s.Y = (ushort)((page << 8) | (low & 0xFF));
+        }
 
         // ==================================================================
         // Death / debris / pickups

@@ -65,6 +65,7 @@ public static class StandRoute
         var ram = new byte[2048]; // Only explicitly mapped fields below; other RAM is not claimed.
         var shots = new HashSet<int>(cfg.shots ?? new int[0]);
         var audioState = cfg.audioState ? new AudioStateSnapshot(game) : null;
+        var bandTableField = typeof(LevelTileMap).GetField("_bandTable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         try
         {
         for (int f = 1; f <= frames; f++)
@@ -90,6 +91,8 @@ public static class StandRoute
             ram[0xE4]=EnemyBehaviors.RngE4;ram[0xE5]=EnemyBehaviors.RngE5;
             ram[0xE6]=EnemyBehaviors.RngE6;ram[0xE7]=EnemyBehaviors.RngE7;
             ram[0x25]=p.StageCursor;ram[0x22]=p.CellIndex;ram[0x23]=p.CellIndexNext;
+            if (game.TileMap != null)
+                Array.Copy((byte[])bandTableField.GetValue(game.TileMap), 0, ram, 0x140, 16);
             // The port never maintains the band driver's bookkeeping, so these mirror 0 while
             // ORIG holds $1F=1 and $28=$FC every ordinary frame. None is in a compared group.
             ram[0x1F]=p.ColsToStream;ram[0x28]=p.LastRedrawScroll;ram[0x20]=p.PrevScrollMode;

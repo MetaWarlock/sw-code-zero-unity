@@ -599,6 +599,13 @@ namespace Darkwing.Core
         /// ($2F&amp;2) plus one more when the $25 bit7 flips.</summary>
         private static readonly byte[] CellStepOnFlip = { 0x02, 0x01, 0xFE, 0xFF };
 
+        public void ScrollSceneDown(byte distance)
+        {
+            ScrollStep = distance;
+            ScrollMode = 4;
+            VerticalScrollDown();
+        }
+
         /// <summary>
         /// $E63A-$E698: the column-stream driver, JSR'd by the horizontal scroll service
         /// ($DC14/$DC67) every frame the camera moves. It converts this frame's X delta
@@ -945,11 +952,14 @@ namespace Darkwing.Core
             {
                 if (s0 == null) return;
                 _cardPhase = true;                          // $9605 owns the process from here
+                if (Oam != null) Oam.MissionCardHold = true;
                 if (s0.AnimNumber != 0x2B)                  // $9600/$9602 first visit
                 {
                     SetAnimPlayer(0x2B);
                     return;
                 }
+                if (s0.AnimFrame == 0x0F && Oam != null && PrgBank2 != null)
+                    Oam.BlitMissionCard(PrgBank2, WorldId);
                 if (s0.AnimFrame == 0x11 ||
                     (s0.AnimFrame == 0x0F && s0.AnimTimer == 0x04))
                 {

@@ -3,6 +3,175 @@ using UnityEngine;
 
 public static class PhysCompare
 {
+    public static string ReloadWalkContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var data = Darkwing.Core.DataLoader.Load(Read("chr_full"), Read("levelsets"), Read("screens"), Read("levels"), Read("anims"));
+        var game = new Darkwing.Core.DarkwingGame(data) { Bank5 = Read("prg_bank5") };
+        game.Player.X = 44; game.Player.Y = 6; game.Player.Flags = 0xD0;
+        var player = game.Objects.Slots[0];
+        player.Active = true; player.StateLow = 0x80; player.Flags = 0xD0; player.X = 44; player.Y = 6;
+        player.AnimNumber = 0x2C; player.AnimFrame = 0; player.AnimTimer = 0;
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        void Set(string name, object value) => typeof(Darkwing.Core.DarkwingGame).GetField(name, binding).SetValue(game, value);
+        Set("_reloadStage", 4); Set("_fadeFrame", (byte)0); Set("_fadeLevel", (byte)0x40); Set("_fadeDelta", (byte)0xF0);
+        var advance = typeof(Darkwing.Core.DarkwingGame).GetMethod("AdvanceReloadStage", binding);
+        byte rng = Darkwing.Core.EnemyBehaviors.RngE4;
+        advance.Invoke(game, null);
+        if (game.FrameParity != 1 || player.AnimTimer != 1)
+            return $"FAIL first death-reload walk parity{game.FrameParity} animTimer{player.AnimTimer}; source f11666 expects1/1";
+        advance.Invoke(game, null);
+        if (game.FrameParity != 1 || player.AnimTimer != 1 || game.Player.X != 44 || game.Player.Y != 6 || Darkwing.Core.EnemyBehaviors.RngE4 != rng)
+            throw new System.Exception("Fade hold advanced world physics/RNG or another walk");
+        return "PASS first death-reload fade performs one OAM walk; following hold preserves animation, physics and RNG";
+    }
+
+    public static string RowEdgeContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var decoder = new Darkwing.Core.RoomDecoder(Read("prg_bank0"), Read("prg_bank1"), Read("world_bank7"), Read("levelsets"));
+        var world = decoder.GetWorld(0);
+        int cases = 0;
+        foreach (int grid in new[] { world.StartCell - 1, (int)world.StartCell, world.StartCell + 1 })
+        foreach (int page in new[] { 0, 1, world.RowWidth - 1 })
+        for (int row = 0; row < 30; row++)
+        {
+            bool right = page != world.RowWidth - 1;
+            int neighbor = grid + (right ? 1 : -1);
+            if (world.Grid[neighbor] == 0 && page != 0 && right) { right = false; neighbor = grid - 1; }
+            var expected = new byte[1024];
+            bool exists = world.Grid[neighbor] != 0;
+            if (exists) decoder.Decode(world, world.Grid[neighbor], new byte[64], expected, new byte[256]);
+            var ppu = new Darkwing.Core.Ppu(null);
+            for (int index = 0; index < ppu.NametableRam.Length; index++) ppu.NametableRam[index] = 0xA5;
+            var map = new Darkwing.Core.LevelTileMap(decoder, ppu, world);
+            map.PaintRow(row, grid, page);
+            int opposite = ((page & 1) ^ 1) * 1024;
+            for (int column = 0; column < 32; column++)
+            {
+                bool edge = exists && (right ? column < 2 : column >= 30);
+                byte tile = edge ? expected[row * 32 + column] : (byte)0xA5;
+                if (ppu.NametableRam[opposite + row * 32 + column] != tile)
+                    throw new System.Exception($"E954 edge grid{grid:X2} page{page} row{row} col{column}");
+            }
+            cases++;
+        }
+        return $"PASS {cases}/{cases} E954 neighbor-edge rows; first/interior/last page and missing-neighbor controls";
+    }
+
+    public static string WorldBandCarryContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var decoder = new Darkwing.Core.RoomDecoder(Read("prg_bank0"), Read("prg_bank1"), Read("world_bank7"), Read("levelsets"));
+        var world = decoder.GetWorld(0);
+        var ppu = new Darkwing.Core.Ppu(null);
+        var previous = new Darkwing.Core.LevelTileMap(decoder, ppu, world);
+        previous.StreamBand(0, world.StartCell);
+        var field = typeof(Darkwing.Core.LevelTileMap).GetField("_bandTable", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        var expected = (byte[])((byte[])field.GetValue(previous)).Clone();
+        int empty = System.Array.FindIndex(world.Grid, value => value == 0);
+        var carried = new Darkwing.Core.LevelTileMap(decoder, ppu, world, previous);
+        carried.StreamBand(0, empty);
+        var freshPpu = new Darkwing.Core.Ppu(null);
+        new Darkwing.Core.LevelTileMap(decoder, freshPpu, world).StreamBand(0, empty);
+        int negativeDifferences = 0;
+        for (int row = 0; row < 4; row++)
+        for (int column = 0; column < 2; column++)
+        {
+            int target = row * 32 + column;
+            if (ppu.NametableRam[target] != expected[row * 4 + column])
+                throw new System.Exception("World load erased EA36 retained macro");
+            if (freshPpu.NametableRam[target] != ppu.NametableRam[target]) negativeDifferences++;
+        }
+        if (negativeDifferences == 0) throw new System.Exception("Carry fixture cannot reject a fresh zero cache");
+        return "PASS world-to-world EA36 cache carry; zero-cache negative control rejected";
+    }
+
+    public static string YieldOamPublishContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var data = Darkwing.Core.DataLoader.Load(Read("chr_full"), Read("levelsets"), Read("screens"), Read("levels"), Read("anims"));
+        var game = new Darkwing.Core.DarkwingGame(data);
+        byte[] bank2 = Read("prg_bank2");
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        typeof(Darkwing.Core.PlayerCore).GetField("_cardWait", binding).SetValue(game.Player, (byte)2);
+        var nmi = typeof(Darkwing.Core.DarkwingGame).GetMethod("BeginNmi", binding);
+        var shadowField = typeof(Darkwing.Core.OamDispatcher).GetField("_shadow", binding);
+        game.Oam.BlitMissionCard(bank2, 0);
+        byte[] expected = (byte[])((byte[])shadowField.GetValue(game.Oam)).Clone();
+        nmi.Invoke(game, null);
+        bool published = System.Linq.Enumerable.SequenceEqual(expected, game.Ppu.Oam);
+        byte[] previousDma = (byte[])game.Ppu.Oam.Clone();
+        game.RenderOff();
+        game.Oam.BlitMissionCard(bank2, 1);
+        nmi.Invoke(game, null);
+        bool held = System.Linq.Enumerable.SequenceEqual(previousDma, game.Ppu.Oam);
+        return published && held ? "PASS yield NMI publishes pending OAM; render-off control preserves previous DMA"
+            : $"FAIL yield OAM published={published} renderOffPreserved={held}";
+    }
+
+    public static string RowBandCacheContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var decoder = new Darkwing.Core.RoomDecoder(Read("prg_bank0"), Read("prg_bank1"), Read("world_bank7"), Read("levelsets"));
+        var world = decoder.GetWorld(0);
+        int valid = world.StartCell;
+        int empty = System.Array.FindIndex(world.Grid, value => value == 0);
+        var tiles = new byte[1024];
+        decoder.Decode(world, world.Grid[valid], new byte[64], tiles, new byte[256]);
+        int failures = 0;
+        for (int row = 0; row < 30; row++)
+        {
+            var ppu = new Darkwing.Core.Ppu(null);
+            var map = new Darkwing.Core.LevelTileMap(decoder, ppu, world);
+            map.StreamBand(7, valid);
+            map.PaintRow(row, valid, world.RowWidth - 1);
+            map.StreamBand(0, empty);
+            for (int blockRow = 0; blockRow < 4; blockRow++)
+                for (int column = 0; column < 2; column++)
+                    if (ppu.NametableRam[blockRow * 32 + column] != tiles[((row >> 2) * 4 + blockRow) * 32 + 28 + column])
+                        failures++;
+        }
+        return failures == 0 ? "PASS 30/30 row-to-empty-band cache cases; E870-E8E6 leaves macro column7 in $0140"
+            : $"FAIL row-to-empty-band cache: {failures} tile mismatches";
+    }
+
+    public static string SplitWeaponContract()
+    {
+        var failures = new System.Collections.Generic.List<string>();
+        int checks = 0;
+        foreach (byte direction in new byte[] { 1, 2 })
+        {
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(new PushProbeMap()) { Objects = objects };
+            var dispatcher = new Darkwing.Core.EnemyDispatcher(new byte[16384], objects, player);
+            var parent = objects.Slots[2];
+            parent.Active = true; parent.StateLow = 0x81; parent.Flags = 0xD0;
+            parent.AnimNumber = 0x14; parent.AnimFrame = 4; parent.AnimTimer = 2;
+            parent.Behavior = 4; parent.Direction = direction; parent.X = 300; parent.Y = 0x0310;
+            Darkwing.Core.EnemyBehaviors.Dispatch(2, parent, 4, dispatcher);
+            void Check(bool value, string label) { checks++; if (!value) failures.Add($"dir{direction} {label}"); }
+            Check(!parent.Active, "parent retires");
+            for (int slot = 3; slot <= 4; slot++)
+            {
+                var child = objects.Slots[slot];
+                int childIndex = slot - 3;
+                byte expectedDirection = (byte)((direction == 1 ? 5 : 6) + childIndex * 4);
+                Check(child.Active && child.StateLow == 0x80 && child.Behavior == 7, "child state");
+                Check(child.AnimNumber == (slot == 3 ? 0x1A : 0x19), "869C-86A1 direction/animation tables");
+                Check(child.Direction == expectedDirection, "diagonal direction");
+                Check(child.XVelFrac == 0x2E && child.XVelInt == 3 && child.YVelFrac == 0x2E && child.YVelInt == 3, "3.2E constant velocity");
+                Darkwing.Core.EnemyBehaviors.Dispatch(slot, child, 7, dispatcher);
+                Check(child.X == (direction == 1 ? 303 : 296), "horizontal travel");
+                Check(child.Y == (slot == 3 ? 0x0313 : 0x030C), "vertical travel");
+                Check((child.Flags & 0x40) == (direction == 1 ? 0x40 : 0), "facing");
+                Check(child.YVelFrac == 0x2E && child.YVelInt == 3, "no gravity");
+            }
+        }
+        return failures.Count == 0 ? $"PASS {checks}/{checks} split-weapon checks; both directions, two children and constant diagonals"
+            : $"FAIL {failures.Count}/{checks}: " + string.Join("; ", failures);
+    }
+
     private const string Root = "D:/Art/SW Code Zero Unity";
 
     public static string SpritePaletteWorldContract()
