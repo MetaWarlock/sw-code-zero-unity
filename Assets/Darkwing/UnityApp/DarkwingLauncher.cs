@@ -32,6 +32,7 @@ namespace Darkwing.UnityApp
         private Texture2D _screen;
         private double _accumulator;
         private System.DateTime _last;
+        private bool _clockStarted;
         private Color32[] _pixels = new Color32[DarkwingGame.ScreenWidth * DarkwingGame.ScreenHeight];
 
         // 2C02 palette entry lookup is Presentation's job later; the Core
@@ -103,6 +104,7 @@ namespace Darkwing.UnityApp
             if (_replay != null) { for (int i = 0; i < 8; i++) ReplayFrame(); return; }
 #endif
             var now = System.DateTime.UtcNow;
+            if (!_clockStarted) { _last = now; _clockStarted = true; return; }
             _accumulator += (now - _last).TotalSeconds;
             _last = now;
             if (_accumulator > 0.25) _accumulator = 0.25; // clamp after stalls

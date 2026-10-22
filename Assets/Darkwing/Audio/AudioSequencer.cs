@@ -514,37 +514,32 @@ namespace Darkwing.Audio
                 if ((flags & 0x01) != 0)                       // $8273-$8275: bit0 = loop point
                 {                                              // (after the ASL bit7 chain check,
                                                                //  the LSR chain tests bits 0,1,2)
-                    byte b1 = SfxReadByte();                   // $8277
-                    bool pushed = false;
-                    byte savedBit7 = 0;
+                    byte b1 = (byte)(SfxReadByte() << 1);       // $8277-$827A
+                    bool finished = false;
                     if (b1 != 0)                               // $827A-$827B: ASL A; BEQ $8289
                     {
-                        savedBit7 = (byte)(_d6 & 0x80);        // $827D: ASL $D6 (old bit7 → carry)
+                        byte savedBit7 = (byte)(_d6 & 0x80);   // $827D: ASL $D6 (old bit7 → carry)
                         _d6 = (byte)(_d6 << 1);
-                        pushed = true;                         // $827F: PHP
                         if (b1 == _d6)                         // $8280-$8282: CMP $D6 (b1*2 vs D6*2)
                         {
                             // $8296-$8299: TYA; PLP; ROR A; STA $D6 — D6 collapses to its
                             // old bit7 (low bits lost — verbatim).
                             _d6 = savedBit7;
-                            pushed = false;
+                            finished = true;
                         }
                         else
                         {
                             _d6 = (byte)((_d6 >> 1) | savedBit7);  // $8284-$8285: PLP; ROR $D6
                             _d6 = (byte)(_d6 + 1);                 // $8287: INC $D6
-                            pushed = false;
                         }
                     }
-                    byte b2 = SfxReadByte();                   // $8289-$828C
-                    byte b3 = SfxReadByte();                   // $828D
-                    _d0 = b3; _d1 = b2;                        // $8290-$8292: big-endian new ptr
-                    if (b2 != 0) continue;                     // $8294: BNE $825B (next block)
-                    // $8296 fall-through (b2 == 0): restore D6 if the PHP is still pending,
-                    // then skip the 2 pointer bytes. (With valid ROM data b2 is a bank-3
-                    // pointer hi byte, $80-$BF, so the b2==0 route only occurs via the
-                    // D6-equal path above where no pointer was consumed.)
-                    if (pushed) _d6 = savedBit7;
+                    if (!finished)
+                    {
+                        byte b2 = SfxReadByte();               // $8289-$828C
+                        byte b3 = SfxReadByte();               // $828D
+                        _d0 = b3; _d1 = b2;                    // $8290-$8292: big-endian new ptr
+                        if (b2 != 0) continue;                 // $8294: BNE $825B (next block)
+                    }
                     int d0 = _d0 + 2;                          // $829B-$82A5: D0 += 2
                     _d0 = (byte)d0;
                     if (d0 > 0xFF) _d1++;
@@ -734,7 +729,7 @@ namespace Darkwing.Audio
             else
             {
                 mult = _rom3[0x091C + idx];                    // $83F1: LDA $891C,Y (3·2^n table)
-                if ((nf & 0x08) != 0)                          // $83F4: BCC not taken (bit3 = dotted)
+                if ((nf & 0x10) != 0)                          // $83F4: BCC not taken (bit4 = dotted)
                 {
                     _c3 = (byte)mult;                          // $83F6
                     nf &= 0xEF;                                // $83F8-$83FD: clear bit4
@@ -1130,7 +1125,7 @@ namespace Darkwing.Audio
             _c4 = R(m, F_EnvTimer);                            // $86BA-$86BD
             int phase = R(m, F_Flags) & 0x07;                  // $86BF-$86C2 (table $86C6)
 
-            switch (phase)                                     // 0→$86D1, 1→$86E6, 2/3→$8702, ≥4→$8914
+            switch (phase)                                     // 0→$86D1, 1→$86E6, 2→$8720, 3→$8702, ≥4→$8914
             {
                 case 0:                                        // $86D1-$86E4: attack
                 {
@@ -1164,7 +1159,8 @@ namespace Darkwing.Audio
                     break;
                 }
                 case 2:
-                case 3:                                        // $8702-$871D: sustain/release
+                    break;
+                case 3:                                        // $8702-$871D: release
                 {
                     if ((m & 3) == 1)                          // $8702-$8707: triangle → 0
                     {

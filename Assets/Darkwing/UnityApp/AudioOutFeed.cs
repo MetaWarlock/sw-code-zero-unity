@@ -14,29 +14,33 @@ namespace Darkwing.UnityApp
     {
         public Darkwing.Audio.AudioSequencer Source;
 
-        private readonly float[] _ring = new float[48000 * 2]; // ~2 s at 48 kHz mono
-        private int _write, _read;
+        private readonly Darkwing.Audio.AudioSampleBuffer _samples = new Darkwing.Audio.AudioSampleBuffer(48000 * 2);
         private readonly float[] _scratch = new float[800];    // RenderFrame: ~798.68 samples/frame
 
+        public int BufferedSamples => _samples.BufferedSamples;
+        public long LateSamples => _samples.LateSamples;
+        public long UnderrunSamples => _samples.UnderrunSamples;
+        public long OverflowSamples => _samples.OverflowSamples;
+
         /// <summary>Render one 60 Hz frame of APU samples into the ring. The sequencer tick is
-        /// driven by the Core NMI, so this is samples-only. If the consumer has not freed a
-        /// full frame the samples are advanced and dropped, keeping APU time aligned with the
-        /// simulation instead of letting musical time run ahead of what was output.</summary>
+        /// driven by the Core NMI, so this is samples-only. The output sample timeline rejects
+        /// samples whose device deadline was already replaced by underrun silence, rather than
+        /// replaying them later and accumulating permanent audiovisual latency.</summary>
         public void PushFrame()
         {
             if (Source == null) return;
             int n = Source.RenderSamples(_scratch, 0);
-            int free = (_read - _write - 1 + _ring.Length) % _ring.Length;
-            if (free < n) return;
-            for (int i = 0; i < n; i++)
-            {
-                _ring[_write] = _scratch[i];
-                _write = (_write + 1) % _ring.Length;
-            }
+            _samples.Push(_scratch, n);
         }
 
         private void Start()
         {
+            var configuration = AudioSettings.GetConfiguration();
+            if (configuration.dspBufferSize > 256)
+            {
+                configuration.dspBufferSize = 256;
+                if (!AudioSettings.Reset(configuration)) Debug.LogWarning("Darkwing audio: low-latency DSP configuration was rejected.");
+            }
             var src = GetComponent<AudioSource>();
             src.clip = AudioClip.Create("dw", 48000 * 4, 1, 48000, false);
             src.loop = true;
@@ -45,17 +49,7 @@ namespace Darkwing.UnityApp
 
         private void OnAudioFilterRead(float[] data, int channels)
         {
-            if (Source == null) return;
-            for (int i = 0; i < data.Length; i += channels)
-            {
-                float v = 0f;
-                if (_read != _write)
-                {
-                    v = _ring[_read];
-                    _read = (_read + 1) % _ring.Length;
-                }
-                for (int c = 0; c < channels; c++) data[i + c] = v;
-            }
+            _samples.CopyTo(data, channels);
         }
     }
 }

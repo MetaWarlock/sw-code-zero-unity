@@ -20,6 +20,154 @@ public static class AudioPortRender
     const string Proj = @"D:\Art\SW Code Zero Unity";
     const int Frames = 600;
 
+    public static string SfxLoopContract()
+    {
+        byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
+        byte[] stream = { 0, 3, 0, 1, 2, 0x9E, 0, 7, 0 };
+        Array.Copy(stream, 0, bank, 0x1E00, stream.Length);
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var parser = typeof(AudioSequencer).GetMethod("SfxParseTick", binding);
+        var failures = new System.Collections.Generic.List<string>();
+        int cases = 0;
+        foreach (byte count in new byte[] { 0, 1, 2, 0x80, 0x81, 0x82 })
+        {
+            var sequencer = new AudioSequencer(bank);
+            void Set(string name, byte value) => typeof(AudioSequencer).GetField(name, binding).SetValue(sequencer, value);
+            byte Get(string name) => (byte)typeof(AudioSequencer).GetField(name, binding).GetValue(sequencer);
+            Set("_d0", 3); Set("_d1", 0x9E); Set("_d6", count);
+            parser.Invoke(sequencer, null);
+            bool finished = (count & 0x7F) == 2;
+            byte expected = finished ? (byte)(count & 0x80) : (byte)(count + 1);
+            if (Get("_d6") != expected || Get("_d0") != (finished ? 9 : 3) || Get("_d3") != (finished ? 7 : 3))
+                failures.Add($"count{count:X2}: counter{Get("_d6"):X2} pointer{Get("_d0"):X2} length{Get("_d3")}");
+            cases++;
+        }
+        bank[0x1E04] = 0x80;
+        var infinite = new AudioSequencer(bank);
+        typeof(AudioSequencer).GetField("_d0", binding).SetValue(infinite, (byte)3);
+        typeof(AudioSequencer).GetField("_d1", binding).SetValue(infinite, (byte)0x9E);
+        typeof(AudioSequencer).GetField("_d6", binding).SetValue(infinite, (byte)0x81);
+        parser.Invoke(infinite, null);
+        if ((byte)typeof(AudioSequencer).GetField("_d6", binding).GetValue(infinite) != 0x81)
+            failures.Add("ASL parameter80 becomes zero and must preserve counter");
+        cases++;
+        return failures.Count == 0 ? $"PASS {cases}/{cases} SFX loop cases; doubled count, completed-loop pointer skip, high-bit and infinite controls"
+            : $"FAIL {failures.Count}/{cases}: " + string.Join("; ", failures);
+    }
+
+    public static string OutputUnderrunContract()
+    {
+        byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var feedType = typeof(Darkwing.UnityApp.AudioOutFeed);
+        var callback = feedType.GetMethod("OnAudioFilterRead", binding);
+        var gameObject = new UnityEngine.GameObject("AudioUnderrunContract");
+        try
+        {
+            var feed = gameObject.AddComponent<Darkwing.UnityApp.AudioOutFeed>();
+            feed.Source = new AudioSequencer(bank);
+            void Push(float[] samples)
+            {
+                var queueField = feedType.GetField("_samples", binding);
+                if (queueField != null)
+                {
+                    object queue = queueField.GetValue(feed);
+                    queue.GetType().GetMethod("Push").Invoke(queue, new object[] { samples, samples.Length });
+                    return;
+                }
+                var ring = (float[])feedType.GetField("_ring", binding).GetValue(feed);
+                var writeField = feedType.GetField("_write", binding);
+                int write = (int)writeField.GetValue(feed);
+                foreach (float sample in samples) { ring[write] = sample; write = (write + 1) % ring.Length; }
+                writeField.SetValue(feed, write);
+            }
+            float[] Read(int frames, int channels)
+            {
+                var output = new float[frames * channels];
+                callback.Invoke(feed, new object[] { output, channels });
+                return output;
+            }
+            Read(4, 2);
+            Push(new float[] { 1, 2, 3, 4 });
+            float[] first = Read(8, 2);
+            for (int index = 0; index < 16; index++)
+                if (first[index] != (index < 8 ? index / 2 + 1 : 0))
+                    throw new InvalidOperationException("Initial silence or stereo-copy control failed");
+            Push(new float[] { 5, 6, 7, 8, 9, 10, 11, 12 });
+            float[] recovered = Read(4, 1);
+            for (int index = 0; index < 4; index++)
+                if (recovered[index] != 9 + index)
+                    return $"FAIL late PCM replayed: expected9..12 after four missed samples; got {string.Join(",", recovered)}";
+            return "PASS output timeline after underrun; initial silence and stereo controls; late PCM is not replayed";
+        }
+        finally { UnityEngine.Object.DestroyImmediate(gameObject); }
+    }
+
+    public static string NoteDurationContract()
+    {
+        byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var note = typeof(AudioSequencer).GetMethod("NoteEvent", binding);
+        var pageField = typeof(AudioSequencer).GetField("_p7", binding);
+        int cases = 0;
+        var failures = new System.Collections.Generic.List<string>();
+        foreach (byte flags in new byte[] { 0, 8, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38 })
+        foreach (byte previousHold in new byte[] { 0, 0xFF })
+        {
+            const int channel = 0x2A;
+            var sequencer = new AudioSequencer(bank);
+            var page = (byte[])pageField.GetValue(sequencer);
+            page[0x30 + channel] = flags;
+            page[0x38 + channel] = previousHold;
+            int multiplier = bank[((flags & 0x20) != 0 ? 0x915 : 0x91C) + 3];
+            bool dotted = (flags & 0x30) == 0x10;
+            if (dotted) multiplier += multiplier >> 1;
+            byte expectedFlags = dotted ? (byte)(flags & 0xEF) : flags;
+            note.Invoke(sequencer, new object[] { channel, (byte)0x80 });
+            if (page[0x38 + channel] != (byte)(previousHold + multiplier) || page[0x30 + channel] != expectedFlags)
+                failures.Add($"flags{flags:X2} hold{previousHold:X2}: duration{page[0x38 + channel]} flags{page[0x30 + channel]:X2}");
+            cases++;
+        }
+        return failures.Count == 0 ? $"PASS {cases}/{cases} note-duration cases; bank3 $83EF-$83F4 carry is original flags bit4"
+            : $"FAIL {failures.Count}/{cases}: " + string.Join("; ", failures);
+    }
+
+    public static string EnvelopeHoldContract()
+    {
+        byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
+        if (bank[0x6CB] != 0x20 || bank[0x6CC] != 0x87 || bank[0x6CD] != 2 || bank[0x6CE] != 0x87)
+            throw new InvalidOperationException("Unexpected bank3 $86C7 envelope dispatch table");
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var envelope = typeof(AudioSequencer).GetMethod("Envelope", binding);
+        var instrument = typeof(AudioSequencer).GetMethod("SetInstrumentPtr", binding);
+        var pageField = typeof(AudioSequencer).GetField("_p7", binding);
+        int cases = 0;
+        var failures = new System.Collections.Generic.List<string>();
+        foreach (int channel in new[] { 0, 1, 2, 3, 0x28, 0x29, 0x2A, 0x2B })
+        {
+            var sequencer = new AudioSequencer(bank);
+            var page = (byte[])pageField.GetValue(sequencer);
+            page[channel] = 1;
+            page[4 + channel] = 2;
+            page[0x10 + channel] = 0x90;
+            instrument.Invoke(sequencer, new object[] { channel });
+            for (int tick = 0; tick < 8; tick++)
+                envelope.Invoke(sequencer, new object[] { channel });
+            if ((page[4 + channel] & 7) != 2 || page[0x10 + channel] != 0x90)
+                failures.Add($"hold channel{channel:X2}: phase{page[4 + channel] & 7} timer{page[0x10 + channel]:X2}");
+            cases++;
+            if ((channel & 3) != 1) continue;
+            page[4 + channel] = 3;
+            page[0x10 + channel] = 1;
+            envelope.Invoke(sequencer, new object[] { channel });
+            if ((page[4 + channel] & 7) != 4 || page[0x10 + channel] != 0)
+                failures.Add($"release control channel{channel:X2}");
+            cases++;
+        }
+        return failures.Count == 0 ? $"PASS {cases}/{cases} envelope contracts; bank3 $86CB hold->$8720, $86CD release->$8702"
+            : $"FAIL {failures.Count}/{cases}: " + string.Join("; ", failures);
+    }
+
     public static string SignalContract()
     {
         var failures = new System.Collections.Generic.List<string>();
