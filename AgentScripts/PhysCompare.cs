@@ -753,6 +753,37 @@ public static class PhysCompare
         return "PASS DF04/DF13 distinction; incoming D9 guard; world tasks4/5 and zero; F84E/F850 distinction; enemy queue; full-ring D9 (diagnostic fixture)";
     }
 
+    public static string AudioPeriodTailContract()
+    {
+        byte[] bank = File.ReadAllBytes(Root + "/Assets/Darkwing/Data/audio_bank3.bytes");
+        var audio = new Darkwing.Audio.AudioSequencer(bank);
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var type = audio.GetType();
+        var channel = (byte[])type.GetField("_p7", binding).GetValue(audio);
+        foreach (bool tablePath in new[] { false, true })
+        {
+            foreach (var sample in new[] {
+                (instrument: (byte)41, flags: (byte)0x28, reset: true),
+                (instrument: (byte)1, flags: (byte)0x20, reset: true),
+                (instrument: (byte)41, flags: (byte)0x20, reset: false) })
+            {
+                channel[0] = sample.instrument; channel[4] = sample.flags; channel[8] = 0x7F;
+                type.GetMethod("SetInstrumentPtr", binding).Invoke(audio, new object[] { 0 });
+                if (tablePath)
+                {
+                    type.GetField("_c3", binding).SetValue(audio, (byte)0);
+                    type.GetMethod("StorePeriod", binding).Invoke(audio, new object[] { 0 });
+                }
+                else type.GetMethod("SetPeriodHiLo", binding).Invoke(audio, new object[] { 0, (byte)4, (byte)0 });
+                byte expectedFlags = sample.reset ? (byte)(sample.flags & 0x37) : sample.flags;
+                byte expectedDecay = sample.reset ? (byte)0 : (byte)0x7F;
+                if (channel[4] != expectedFlags || channel[8] != expectedDecay)
+                    throw new System.Exception($"Missing 863E-8659 tail: table={tablePath} instrument={sample.instrument} flags={channel[4]:X2}/{expectedFlags:X2} decay={channel[8]:X2}/{expectedDecay:X2}");
+            }
+        }
+        return "PASS six bank3 863E-8659 period-tail contracts: direct/table, reload bit, negative instrument byte4 and no-reset control (not waveform equivalence)";
+    }
+
     /// <summary>G58 pause golden: mission 1 resumed from `gold_w00/gameplay.mss` with Start
     /// pressed at f20 and held to f23, so f20…69 are the bank-4 $8F00 phase. `$14` is an
     /// edge byte, so the held press cannot resume — the resume needs the second capture.</summary>

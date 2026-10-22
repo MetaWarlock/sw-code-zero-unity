@@ -1016,6 +1016,7 @@ namespace Darkwing.Audio
             byte hi = _rom3[0x095A + y];                       // $8633
             W(m, F_PeriodHi, hi);                              // $8636
             W(m, F_PeriodLo, lo);                              // $863B
+            GateCheck(m, (Instr(4) & 0x80) != 0);
         }
 
         /// <summary>$8636-$863D: $0724,X = hi; $0720,X = $C3 (used by the noise paths).</summary>
@@ -1023,13 +1024,14 @@ namespace Darkwing.Audio
         {
             W(m, F_PeriodHi, hi);
             W(m, F_PeriodLo, lo);
+            GateCheck(m, (Instr(4) & 0x80) != 0);
         }
 
         /// <summary>$8644-$8659: if the instrument-reloaded flag (bit3) is set, reset the
         /// decay accumulator and clear flags bits 3, 4 and 6.</summary>
-        private void GateCheck(int m)
+        private void GateCheck(int m, bool force = false)
         {
-            if ((R(m, F_Flags) & 0x08) == 0) return;           // $8644-$864B
+            if (!force && (R(m, F_Flags) & 0x08) == 0) return; // $8644-$864B
             W(m, F_DecayAcc, 0);                               // $864C-$864E
             W(m, F_Flags, (byte)(R(m, F_Flags) & 0x37));       // $8651-$8656
         }
