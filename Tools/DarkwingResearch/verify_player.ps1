@@ -98,6 +98,12 @@ public class Win32Cap {
   if ($Replay) {
     $Replay = [IO.Path]::GetFullPath($Replay)
     if (-not (Test-Path -LiteralPath $Replay -PathType Leaf)) { throw "Replay missing: $Replay" }
+    $assembly = Join-Path (Split-Path ([IO.Path]::GetFullPath($Exe))) (([IO.Path]::GetFileNameWithoutExtension($Exe)) + '_Data/Managed/Darkwing.UnityApp.dll')
+    if (-not (Test-Path -LiteralPath $assembly -PathType Leaf)) { throw "Cannot verify this project's Mono replay assembly: $assembly" }
+    $metadata = [Text.Encoding]::ASCII.GetString([IO.File]::ReadAllBytes($assembly))
+    $supported = $metadata.Contains('BeginReplay') -and $metadata.Contains('ReplayFrame') -and $metadata.Contains('ReplaySpec')
+    $result.replayCapability = [ordered]@{ assembly=$assembly; sha256=(Get-FileHash -LiteralPath $assembly -Algorithm SHA256).Hash; supported=$supported }
+    if (-not $supported) { throw 'Player has no compiled replay support; build_player.py requires --development for -darkwing-replay' }
     $playerArgs += ' -darkwing-replay "' + $Replay + '"'
     $result.scope = 'Standalone buttons-only route from Awake; compare route state separately against original'
   }
