@@ -16,6 +16,44 @@ public static class StandRoute
     const string Root = "D:/Art/SW Code Zero Unity";
     static byte[] Data(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
 
+    private static void WriteActorHeader(DarkwingGame game, byte[] ram, int index)
+    {
+        var slot = game.Objects.Slots[index];
+        bool player = index == 0 && !game.Paused;
+        ushort x = player ? game.Player.X : slot.X;
+        ushort y = player ? game.Player.Y : slot.Y;
+        ram[0x400 + index] = player ? game.Player.Flags : slot.Flags;
+        ram[0x4F0 + index] = (byte)x; ram[0x500 + index] = (byte)(x >> 8);
+        ram[0x510 + index] = (byte)y; ram[0x520 + index] = (byte)(y >> 8);
+    }
+
+    public static string SlotHeaderContract()
+    {
+        var data = DataLoader.Load(Data("chr_full"), Data("levelsets"), Data("screens"), Data("levels"), Data("anims"));
+        var game = new DarkwingGame(data);
+        game.Player.X = 0x126; game.Player.Y = 0x354; game.Player.Flags = 0xD0;
+        var slot = game.Objects.Slots[0];
+        slot.X = 0x15C; slot.Y = 0x3A0; slot.Flags = 0x80;
+        var ram = new byte[2048];
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var pause = typeof(DarkwingGame).GetField("_pauseActive", binding);
+        int failures = 0, checks = 0;
+        foreach (bool paused in new[] { false, true, false })
+        {
+            pause.SetValue(game, paused);
+            WriteActorHeader(game, ram, 0);
+            byte[] expected = paused ? new byte[] { 0x80, 0x5C, 1, 0xA0, 3 } : new byte[] { 0xD0, 0x26, 1, 0x54, 3 };
+            int[] addresses = { 0x400, 0x4F0, 0x500, 0x510, 0x520 };
+            for (int index = 0; index < addresses.Length; index++)
+            {
+                if (ram[addresses[index]] != expected[index]) failures++;
+                checks++;
+            }
+        }
+        return failures == 0 ? $"PASS {checks}/{checks} slot0 RAM owner; pause plates versus retained player, normal and restore controls"
+            : $"FAIL {failures}/{checks} slot0 RAM owner";
+    }
+
     [Serializable]
     sealed class Config
     {
@@ -103,15 +141,14 @@ public static class StandRoute
             ram[0x6D]=p.CheckpointId;ram[0x5B]=p.PendingEvent;
             for(int i=0;i<16;i++)
             {
-                var s=game.Objects.Slots[i]; ushort x=i==0?p.X:s.X,y=i==0?p.Y:s.Y;
-                ram[0x400+i]=i==0?p.Flags:s.Flags;
+                var s=game.Objects.Slots[i];
+                WriteActorHeader(game,ram,i);
                 ram[0x410+i]=s.AnimFrame;ram[0x420+i]=s.AnimNumber;ram[0x430+i]=s.AnimTimer;
                 ram[0x440+i]=s.ScreenY;ram[0x450+i]=s.ScreenX;
                 ram[0x460+i]=i==0?p.YFrac:s.YFrac;ram[0x470+i]=i==0?p.XFrac:s.XFrac;
                 ram[0x480+i]=s.T480;ram[0x490+i]=s.T490;ram[0x4A0+i]=s.T4A0;
                 ram[0x4B0+i]=s.T4B0;ram[0x4C0+i]=s.HitFlash;
                 ram[0x4D0+i]=(byte)((s.Active?0x80:0)|(s.StateLow&0x7F));ram[0x4E0+i]=s.Behavior;
-                ram[0x4F0+i]=(byte)x;ram[0x500+i]=(byte)(x>>8);ram[0x510+i]=(byte)y;ram[0x520+i]=(byte)(y>>8);
                 ram[0x530+i]=i==0?p.XVelFrac:s.XVelFrac;ram[0x540+i]=i==0?p.XVelInt:s.XVelInt;
                 ram[0x550+i]=i==0?p.YVelFrac:s.YVelFrac;ram[0x560+i]=unchecked((byte)(i==0?p.YVelInt:s.YVelInt));
                 ram[0x570+i]=s.BehaviorParam;ram[0x580+i]=s.Direction;ram[0x590+i]=s.PlacementIndex;ram[0x5A0+i]=s.Health;
