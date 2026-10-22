@@ -182,7 +182,6 @@ namespace Darkwing.Core
                     _game.WorldRunning = true; _game.MapScreen = _game.MapChooser = false;
                     _game.Oam.HudActive = true;
                     SetPhase(Phase.Mission); _game.ResidentProcess = null;
-                    _game.PlayMusic(World.MusicId(World.CurrentWorld));
                     return;
             }
         }

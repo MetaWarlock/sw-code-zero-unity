@@ -60,7 +60,7 @@ namespace Darkwing.Core
         public int GridPointer(byte world) => Bank7[0xDF50 - 0xC000 + world] | (Bank7[0xDF60 - 0xC000 + world] << 8);
         public byte StartCell(byte world) => Bank7[0xDEB9 - 0xC000 + world];
         public byte ScrollYInit(byte world) => Bank7[0xDEC8 - 0xC000 + world];
-        public byte MusicId(byte world) => Bank7[0xDF04 - 0xC000 + world];
+        public byte BgPaletteIndex(byte world) => Bank7[0xDF04 - 0xC000 + world];
         public byte SpritePaletteSet(byte world) => Bank7[0xDF22 - 0xC000 + world];
         public byte ChrRequest0(byte world) => Bank7[0xDEE6 - 0xC000 + world];
         public byte ChrRequest1(byte world) => Bank7[0xDEF5 - 0xC000 + world];

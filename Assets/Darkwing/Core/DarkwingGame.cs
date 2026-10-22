@@ -72,6 +72,7 @@ namespace Darkwing.Core
                 if (Enemies != null)
                 {
                     Enemies.Tiles = TileMap;   // $EB52 probe backend
+                    Enemies.Sfx = PlaySfx;
                 }
             }
         }
@@ -247,7 +248,7 @@ namespace Darkwing.Core
             Ppu.Chr1Bank = (byte)(w.ChrReq1 & 0x7F);        // $FF3B applies the $1B request
             Player.ChrLatch0 = 0; Player.ChrLatch1 = 0;
             // $DDA0-$DDAA: the ring event is only re-queued when $D9 was still non-zero.
-            if (Player.SectionRingEvent != 0) PlaySound(Player.SectionRingEvent); // $DDAA calls generic $F84E
+            if (_audioLastId != 0) PlaySound(w.RingEvent);
         }
 
         /// <summary>$DE93-$DEA1 tail plus $DDCE-$DDFE + $DE00: the placement anchor, the CHR
@@ -1097,7 +1098,6 @@ namespace Darkwing.Core
 
         private void EnqueueAudio(byte id)
         {
-            _audioLastId = id;
             if (_audioQueue[_audioWrite] != AudioQueueEmpty) return;
             _audioQueue[_audioWrite] = id;
             _audioWrite = (_audioWrite + 1) & 7;
@@ -1125,13 +1125,17 @@ namespace Darkwing.Core
         public void PlayMusic(int id)
         {
             if (id < 0 || id > 15) throw new System.ArgumentOutOfRangeException(nameof(id), "music ids are 0-15");
-            EnqueueAudio((byte)id);
+            PlaySound(id);
         }
 
         /// <summary>The generic $F84E enqueue: the ROM passes the raw id through, so it covers
         /// sound-table entries ($10-$3F), music-table ids ($00-$0F) and the special engine
         /// tasks ($F0-$F7) — e.g. $D4BE's #$F0 stop and $D4A7's #$0C.</summary>
-        public void PlaySound(int id) => EnqueueAudio((byte)id);
+        public void PlaySound(int id)
+        {
+            _audioLastId = (byte)id;
+            EnqueueAudio((byte)id);
+        }
 
         /// <summary>Load a room's nametable directly (test fixture path; the level
         /// loader normally streams it via the VRAM queue).</summary>

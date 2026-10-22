@@ -708,6 +708,51 @@ public static class PhysCompare
         return "PASS original gold_jump f15-28 audio task control; native ground jump silent; injected SFX21 rejected (not waveform equivalence)";
     }
 
+    public static string WorldAudioContract()
+    {
+        byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
+        var bank7 = Read("world_bank7");
+        var world = new Darkwing.Core.WorldState(bank7);
+        var decoder = new Darkwing.Core.RoomDecoder(Read("prg_bank0"), Read("prg_bank1"), bank7, Read("levelsets"));
+        var game = new Darkwing.Core.DarkwingGame(Darkwing.Core.DataLoader.Load(
+            Read("chr_full"), Read("levelsets"), Read("screens"), Read("levels"), Read("anims"))) {
+            Bank7 = bank7, Bank5 = Read("prg_bank5")
+        };
+        const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var queue = (byte[])typeof(Darkwing.Core.DarkwingGame).GetField("_audioQueue", flags).GetValue(game);
+        byte LastId() => (byte)typeof(Darkwing.Core.DarkwingGame).GetField("_audioLastId", flags).GetValue(game);
+        int Cursor() => (int)typeof(Darkwing.Core.DarkwingGame).GetField("_audioWrite", flags).GetValue(game);
+        if (world.BgPaletteIndex(1) != 1 || decoder.GetWorld(1).RingEvent != 5)
+            throw new System.Exception("Original DF04 palette and DF13 audio descriptors must be distinct");
+        game.BeginSceneLoad(decoder, 0);
+        if (LastId() != 0 || Cursor() != 0)
+            throw new System.Exception("DDA0 must preserve a zero incoming D9");
+        game.PlaySound(0xF0);
+        game.BeginSceneLoad(decoder, 0);
+        game.BeginSceneLoad(decoder, 1);
+        if (LastId() != 5 || Cursor() != 3 || queue[0] != 0xF0 || queue[1] != 4 || queue[2] != 5)
+            throw new System.Exception("DDA6 must enqueue each world's DF13 task, not the palette index");
+        game.BeginSceneLoad(decoder, 9);
+        if (LastId() != 0 || Cursor() != 4 || queue[3] != 0)
+            throw new System.Exception("Nonzero incoming D9 must also enqueue a zero DF13 task");
+        game.BeginSceneLoad(decoder, 1);
+        if (LastId() != 0 || Cursor() != 4)
+            throw new System.Exception("Zero D9 must suppress the next world task");
+        game.PlaySfx(0x3F);
+        if (LastId() != 0 || Cursor() != 5 || queue[4] != 0x3F)
+            throw new System.Exception("F850 must enqueue SFX without changing D9");
+        game.PlaySound(0xF0);
+        game.Bank6 = Read("prg_bank6");
+        game.Enemies.Sfx(0x12);
+        if (LastId() != 0xF0 || Cursor() != 7 || queue[6] != 0x12)
+            throw new System.Exception("Enemy SFX must use the same NMI queue and preserve D9");
+        game.PlaySfx(0x11);
+        game.PlaySound(9);
+        if (LastId() != 9 || Cursor() != 0 || queue[0] != 0xF0)
+            throw new System.Exception("A full ring must drop F84E data but retain the new D9");
+        return "PASS DF04/DF13 distinction; incoming D9 guard; world tasks4/5 and zero; F84E/F850 distinction; enemy queue; full-ring D9 (diagnostic fixture)";
+    }
+
     /// <summary>G58 pause golden: mission 1 resumed from `gold_w00/gameplay.mss` with Start
     /// pressed at f20 and held to f23, so f20…69 are the bank-4 $8F00 phase. `$14` is an
     /// edge byte, so the held press cannot resume — the resume needs the second capture.</summary>

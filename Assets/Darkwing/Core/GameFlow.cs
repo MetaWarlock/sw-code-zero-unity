@@ -162,7 +162,6 @@ namespace Darkwing.Core
                         World.LastOutcome = 0x00;
                         SetPhase(Phase.Mission);
                         _game.LoadWorld(_decoder, World.CurrentWorld);
-                        _game.PlayMusic(World.MusicId(World.CurrentWorld));
                     }
                     else if ((pressed & 0x40) != 0)   // $998C: B → $F8=$FF, back to the map
                     {
@@ -199,7 +198,6 @@ namespace Darkwing.Core
                         _game.Player.CheckpointId = 0;            // $D4EC/$D4F4 STA $6D (and $C8C2 again)
                         SetPhase(Phase.Mission);
                         _game.LoadWorld(_decoder, World.CurrentWorld);   // $D4FD JSR $C8B5
-                        _game.PlayMusic(World.MusicId(World.CurrentWorld));
                     }
                     else if ((pressed & 0x40) != 0)            // $D4B3
                     {
