@@ -100,6 +100,9 @@ namespace Darkwing.UnityApp
         private void Update()
         {
             if (_audioOut != null && _game.Audio != null) _audioOut.Source = _game.Audio;
+            var keyboard = UnityEngine.InputSystem.Keyboard.current;
+            if (Application.isFocused && keyboard != null && keyboard.f5Key.wasPressedThisFrame && _audioOut != null)
+                _audioOut.ToggleMute();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (_replay != null) { for (int i = 0; i < 8; i++) ReplayFrame(); return; }
 #endif

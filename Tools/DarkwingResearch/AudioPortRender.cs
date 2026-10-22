@@ -17,6 +17,75 @@ using Darkwing.Audio;
 
 public static class AudioPortRender
 {
+    public static string OutputMuteContract()
+    {
+        byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));
+        const System.Reflection.BindingFlags binding = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        var feedType = typeof(Darkwing.UnityApp.AudioOutFeed);
+        var toggle = feedType.GetMethod("ToggleMute");
+        var muted = feedType.GetProperty("Muted");
+        if (toggle == null || muted == null) return "FAIL output mute control is missing";
+        var callback = feedType.GetMethod("OnAudioFilterRead", binding);
+        var audibleObject = new UnityEngine.GameObject("AudioMuteAudibleControl");
+        var mutedObject = new UnityEngine.GameObject("AudioMuteContract");
+        try
+        {
+            var audibleFeed = audibleObject.AddComponent<Darkwing.UnityApp.AudioOutFeed>();
+            var mutedFeed = mutedObject.AddComponent<Darkwing.UnityApp.AudioOutFeed>();
+            audibleFeed.Source = new AudioSequencer(bank);
+            mutedFeed.Source = new AudioSequencer(bank);
+            audibleFeed.Source.PlayMusic(1); mutedFeed.Source.PlayMusic(1);
+            if ((bool)muted.GetValue(mutedFeed)) throw new Exception("New feed must start audible");
+            bool expectedMuted = false;
+            int checks = 0;
+            for (int frame = 0; frame < 120; frame++)
+            {
+                if (frame == 0 || frame == 40 || frame == 70 || frame == 100)
+                {
+                    toggle.Invoke(mutedFeed, null);
+                    expectedMuted = !expectedMuted;
+                }
+                if ((bool)muted.GetValue(mutedFeed) != expectedMuted) throw new Exception("Mute toggle state differs");
+                if (frame == 10 || frame == 75)
+                {
+                    audibleFeed.Source.PlaySfx(0x10); mutedFeed.Source.PlaySfx(0x10);
+                }
+                audibleFeed.Source.Tick(); mutedFeed.Source.Tick();
+                audibleFeed.PushFrame(); mutedFeed.PushFrame();
+                int count = audibleFeed.BufferedSamples;
+                if (count != mutedFeed.BufferedSamples || count < 1) throw new Exception("Mute changed PCM production");
+                int channels = frame % 2 + 1;
+                var audible = new float[count * channels];
+                var actual = new float[audible.Length];
+                callback.Invoke(audibleFeed, new object[] { audible, channels });
+                callback.Invoke(mutedFeed, new object[] { actual, channels });
+                bool hasSignal = false;
+                for (int index = 0; index < actual.Length; index++)
+                {
+                    hasSignal |= audible[index] != 0;
+                    if (actual[index] != (expectedMuted ? 0 : audible[index]))
+                        throw new Exception("Mute leaked PCM or resumed stale audio at frame " + frame);
+                }
+                if (frame == 40 && !hasSignal) throw new Exception("Unmute control must contain audible music");
+                if (mutedFeed.BufferedSamples != 0) throw new Exception("Muted callback did not consume PCM");
+                byte[] expectedState = audibleFeed.Source.SaveState();
+                byte[] actualState = mutedFeed.Source.SaveState();
+                for (int index = 0; index < expectedState.Length; index++)
+                    if (actualState[index] != expectedState[index]) throw new Exception("Mute changed sequencer state");
+                foreach (var field in typeof(Apu).GetFields(binding))
+                    if (!field.GetValue(audibleFeed.Source.Apu).Equals(field.GetValue(mutedFeed.Source.Apu)))
+                        throw new Exception("Mute changed APU field " + field.Name);
+                checks++;
+            }
+            return $"PASS {checks}/{checks} output mute; music/SFX and APU advance unchanged, mono/stereo silence, current PCM on unmute";
+        }
+        finally
+        {
+            UnityEngine.Object.DestroyImmediate(audibleObject);
+            UnityEngine.Object.DestroyImmediate(mutedObject);
+        }
+    }
+
     public static string StopSilenceContract()
     {
         byte[] bank = File.ReadAllBytes(Path.Combine(Proj, @"Assets\Darkwing\Data\audio_bank3.bytes"));

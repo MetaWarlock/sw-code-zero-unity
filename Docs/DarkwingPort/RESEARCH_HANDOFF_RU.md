@@ -42,6 +42,8 @@ python Tools\DarkwingResearch\compare_audio_port.py --port-state Temp\next_audio
 
 Editor этого проекта должен быть ready. Все CLI-команды явно адресуют проект, runtime Pipeline включать не нужно. Кнопочный replay существует только для Editor/Development, запускается до первого игрового кадра и не допускает seed RAM/phase. В обычном запуске Enter=Start, X=B, Z=A, стрелки=движение; карту/страницы подтверждают B/A по подсказкам.
 
+F5 в активном окне порта переключает весь звук (музыку и эффекты) для последовательного A/B с Mesen. Повторное нажатие возвращает текущий звук без перезапуска музыки; игровая логика, секвенсор/APU и потребление PCM продолжаются в тишине. При новом запуске звук включён; Mesen этот хоткей порта не меняет.
+
 ```powershell
 unity command editor_stop --project-path 'D:\Art\SW Code Zero Unity' --caller plugin --skill unity-cli --format json
 python Tools\DarkwingResearch\run_check.py --file AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.EditorRoute --out Temp\editor_route_command

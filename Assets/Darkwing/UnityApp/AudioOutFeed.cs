@@ -16,11 +16,19 @@ namespace Darkwing.UnityApp
 
         private readonly Darkwing.Audio.AudioSampleBuffer _samples = new Darkwing.Audio.AudioSampleBuffer(48000 * 2);
         private readonly float[] _scratch = new float[800];    // RenderFrame: ~798.68 samples/frame
+        private volatile bool _muted;
 
+        public bool Muted => _muted;
         public int BufferedSamples => _samples.BufferedSamples;
         public long LateSamples => _samples.LateSamples;
         public long UnderrunSamples => _samples.UnderrunSamples;
         public long OverflowSamples => _samples.OverflowSamples;
+
+        public void ToggleMute()
+        {
+            _muted = !_muted;
+            Debug.Log(_muted ? "Darkwing audio: muted (F5)" : "Darkwing audio: enabled (F5)");
+        }
 
         /// <summary>Render one 60 Hz frame of APU samples into the ring. The sequencer tick is
         /// driven by the Core NMI, so this is samples-only. The output sample timeline rejects
@@ -50,6 +58,7 @@ namespace Darkwing.UnityApp
         private void OnAudioFilterRead(float[] data, int channels)
         {
             _samples.CopyTo(data, channels);
+            if (_muted) System.Array.Clear(data, 0, data.Length);
         }
     }
 }
