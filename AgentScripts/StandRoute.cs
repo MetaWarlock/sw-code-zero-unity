@@ -23,6 +23,7 @@ public static class StandRoute
         public string session;   // playthrough session holding input.bin
         public int fullEvery;    // emit nt/oam checksum lines every N frames (Lua side: same)
         public int[] shots;      // frames whose framebuffer is dumped as PNG
+        public bool audioState;
     }
 
     public static string Run()
@@ -63,6 +64,7 @@ public static class StandRoute
         using var buffers = new BinaryWriter(File.Create(Path.Combine(outDir,"buffers.bin")));
         var ram = new byte[2048]; // Only explicitly mapped fields below; other RAM is not claimed.
         var shots = new HashSet<int>(cfg.shots ?? new int[0]);
+        var audioState = cfg.audioState ? new AudioStateSnapshot(game) : null;
         try
         {
         for (int f = 1; f <= frames; f++)
@@ -114,6 +116,7 @@ public static class StandRoute
             Array.Copy(game.Hud.Param,0,ram,0x5B0,game.Hud.Param.Length);
             for(int i=0;i<5;i++)ram[0x5C4+i*2]=p.ScoreDigits[i];
             ram[0x5E4]=p.EnergyColLeft;ram[0x5E6]=p.EnergyColRight;
+            audioState?.Write(ram);
             buffers.Write(ram);buffers.Write(game.Ppu.NametableRam,0,2048);
             buffers.Write(game.Ppu.Oam);buffers.Write(game.Ppu.PaletteRam);
             if (f % Math.Max(1, cfg.fullEvery) == 0)
@@ -134,6 +137,49 @@ public static class StandRoute
         int s = 0;
         for (int i = 0; i < count; i++) s += bytes[i];
         return s;
+    }
+
+    private sealed class AudioStateSnapshot
+    {
+        private static readonly int[] Addresses = {
+            0xC0,0xC7,0xC8,0xC9,0xCA,0xCB,0xCC,0xCD,0xCE,0xCF,
+            0xD0,0xD1,0xD2,0xD3,0xD4,0xD5,0xD6,0xD7,0xD8 };
+        private const System.Reflection.BindingFlags Fields =
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+        private readonly object _audio;
+        private readonly DarkwingGame _game;
+        private readonly System.Reflection.FieldInfo[] _fields;
+        private readonly byte[] _page7, _queue;
+        private readonly System.Reflection.FieldInfo _lastId, _read, _write;
+
+        public AudioStateSnapshot(DarkwingGame game)
+        {
+            _game = game;
+            _audio = game.Audio ?? throw new InvalidOperationException("Audio snapshot requires a live sequencer");
+            var type = _audio.GetType();
+            _fields = new System.Reflection.FieldInfo[Addresses.Length];
+            for (int index = 0; index < Addresses.Length; index++)
+                _fields[index] = RequireField(type, "_" + Addresses[index].ToString("x2"));
+            _page7 = (byte[])RequireField(type, "_p7").GetValue(_audio);
+            _queue = (byte[])RequireField(game.GetType(), "_audioQueue").GetValue(game);
+            _lastId = RequireField(game.GetType(), "_audioLastId");
+            _read = RequireField(game.GetType(), "_audioRead");
+            _write = RequireField(game.GetType(), "_audioWrite");
+        }
+
+        private static System.Reflection.FieldInfo RequireField(Type type, string name) =>
+            type.GetField(name, Fields) ?? throw new MissingFieldException(type.FullName, name);
+
+        public void Write(byte[] ram)
+        {
+            for (int index = 0; index < Addresses.Length; index++)
+                ram[Addresses[index]] = (byte)_fields[index].GetValue(_audio);
+            ram[0xD9] = (byte)_lastId.GetValue(_game);
+            ram[0xDA] = Convert.ToByte(_write.GetValue(_game));
+            ram[0xDB] = Convert.ToByte(_read.GetValue(_game));
+            Array.Copy(_queue, 0, ram, 0xDC, 8);
+            Array.Copy(_page7, 0, ram, 0x700, 128);
+        }
     }
 
     /// <summary>Exact 256x240 Core framebuffer, NES palette, no scaling or HUD.</summary>

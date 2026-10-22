@@ -383,19 +383,20 @@ def cmd_replay(args):
         raise SystemExit("Replays diverged in the original - the stand is not deterministic")
 
 
-def run_port(session: Path, shots, full_every: int, output=None, frames=0) -> dict:
+def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio_state=False) -> dict:
     """Feed the recorded track to the port: same bytes, same frame numbers, cold boot at frame 1."""
     track = track_bytes(session)
     out = Path(output).resolve() if output else session / "unity"
     out.mkdir(parents=True, exist_ok=True)
     spec = {"frames": min(frames,len(track)) if frames else len(track), "inputs": ranges(track), "captures": list(shots),
             "output": out.as_posix(),
+            "audioState": audio_state,
             "note": "Pad track from " + str(session) + "; " + CONVENTION}
     (out / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
     (ROOT / "Temp").mkdir(exist_ok=True)
     (ROOT / "Temp/stand_spec.json").write_text(json.dumps({
         "spec": str(out / "spec.json"), "session": str(session), "fullEvery": full_every,
-        "shots": list(shots)}), encoding="utf-8")
+        "shots": list(shots), "audioState": audio_state}), encoding="utf-8")
     unity = shutil.which("unity") or str(Path.home() / "AppData/Local/Unity/bin/unity.exe")
     cmd = [unity, "command", "run_script", "--file", "AgentScripts/StandRoute.cs",
            "--entry", "StandRoute.Run", "--project-path", str(ROOT), "--caller", "plugin",
@@ -417,7 +418,7 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0) -> di
 
 def cmd_unity(args):
     shots = [int(s) for s in (args.png.split(",") if args.png else [])]
-    print(json.dumps(run_port(Path(args.session).resolve(), shots, args.full_every, args.output, args.frames), indent=2))
+    print(json.dumps(run_port(Path(args.session).resolve(), shots, args.full_every, args.output, args.frames, args.audio_state), indent=2))
 
 
 SHARED = ("x", "y", "state", "ctrl", "mask", "pal_sum")
@@ -584,10 +585,12 @@ def cmd_buffers(args):
     print(json.dumps(report, indent=2))
 
 
-def compare_route_states(a, b, start, end):
+def compare_route_states(a, b, start, end, include_audio=False):
     """Only explicitly mapped RAM fields; inactive object leftovers are outside this check."""
     if len(a) % BUFFER_STRIDE or len(b) % BUFFER_STRIDE:
         raise ValueError("Truncated buffer record")
+    if include_audio and len(a) != len(b):
+        raise ValueError("Audio state comparison requires equal complete capture lengths")
     counts = [len(x) // BUFFER_STRIDE for x in (a, b)]
     if not 1 <= start <= end <= min(counts):
         raise ValueError("Requested state window is absent")
@@ -601,8 +604,12 @@ def compare_route_states(a, b, start, end):
         "progress": [0x31,0x38,0x69],
         "active_objects": None,
     }
+    if include_audio:
+        groups["audio_persistent"] = [0xC0, *range(0xC7, 0xE4), *range(0x700, 0x780)]
     report = {"framesOriginal":counts[0],"framesPort":counts[1],"range":[start,end],
               "scope":"Mapped fields only; object slots 1..15, all 27 fields $0400..$05A0 when active. No full-RAM or image identity claim.","groups":{}}
+    if include_audio:
+        report["scope"] += " Audio: $C0/$C7-$E3/$0700-$077F, not scratch $C1-$C6, APU or PCM. Port requires --audio-state capture."
     for name, fields in groups.items():
         ah,bh=hashlib.sha256(),hashlib.sha256(); matched=0; first=None
         for frame in range(start,end+1):
@@ -633,9 +640,13 @@ def compare_route_states(a, b, start, end):
 
 def cmd_states(args):
     a,b=Path(args.original).read_bytes(),Path(args.port).read_bytes()
+    if args.audio:
+        spec = json.loads((Path(args.port).parent / "spec.json").read_text(encoding="utf-8-sig"))
+        if spec.get("audioState") is not True:
+            raise ValueError("Port capture does not declare --audio-state diagnostic fields")
     if args.end is None and len(a)!=len(b):
         raise ValueError("Different capture lengths; use an explicit diagnostic window")
-    report=compare_route_states(a,b,args.start,args.end or len(a)//BUFFER_STRIDE)
+    report=compare_route_states(a,b,args.start,args.end or len(a)//BUFFER_STRIDE,args.audio)
     print(json.dumps(report,indent=2))
     if not report["matched"]: raise SystemExit(1)
 
@@ -707,6 +718,7 @@ def main():
     s.add_argument("--port", required=True)
     s.add_argument("--start", type=int, default=1)
     s.add_argument("--end", type=int)
+    s.add_argument("--audio", action="store_true", help="also compare persistent audio fields; requires --audio-state port capture and equal lengths")
     s.set_defaults(func=cmd_states)
     s = sub.add_parser("scene", help="verify full scene/standalone replay input and snapshots against Core")
     s.add_argument("--session", required=True)
@@ -742,6 +754,7 @@ def main():
     u.add_argument("--frames", type=int, default=0, help="diagnostic prefix length; input is unchanged")
     u.add_argument("--png", help="comma list of frames to dump as PNG in the port")
     u.add_argument("--full-every", type=int, default=60)
+    u.add_argument("--audio-state", action="store_true", help="diagnostic export of persistent audio ZP and $0700-$077F; no RAM seed")
     u.set_defaults(func=cmd_unity)
     d = sub.add_parser("diff")
     d.add_argument("session")
