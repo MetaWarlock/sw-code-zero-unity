@@ -492,7 +492,7 @@ namespace Darkwing.Core
             TitleScreen = EndingScreen = false;
             Ppu.Chr0Bank = MapChrBank0;
             Ppu.Chr1Bank = MapChrBank1;
-            Ppu.ScrollX = 0; Ppu.ScrollY = 0;
+            Ppu.SetScroll(0, 0);
             // $FA-$FD are $00 on every captured map frame. The walk culls against these RAM
             // mirrors, not the PPU latches, so leaving the last world's values here sends the
             // plate through the $8062 offscreen branch (bit 7 cleared) and every bubble
@@ -689,7 +689,7 @@ namespace Darkwing.Core
                 p += 3 + len;
             }
             for (int i = 0; i < 256; i += 4) Ppu.Oam[i] = 0xFF;   // the card has no sprites
-            Ppu.ScrollX = 0; Ppu.ScrollY = 0;
+            Ppu.SetScroll(0, 0);
             Ppu.WriteRegister(0x2001, 0x1E);   // ppu_writes.csv f300: $2001=30 every frame
             Objects?.ClearForSectionLoad();    // $D47C JSR $C838
             MissionCleared = false;
@@ -748,7 +748,7 @@ namespace Darkwing.Core
             }
             Player.ScrollX = 0; Player.ScrollY = 0;                   // $FC/$FA
             Player.ScrollYRow = 0;                                     // $FB
-            Ppu.ScrollX = 0; Ppu.ScrollY = 0;
+            Ppu.SetScroll(0, 0);
         }
 
         /// <summary>Bank 2's task entry $8000 with X = the task index. The pointer pair sits in

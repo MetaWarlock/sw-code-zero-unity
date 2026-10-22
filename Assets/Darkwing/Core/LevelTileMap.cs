@@ -122,8 +122,7 @@ namespace Darkwing.Core
         public void StreamColumns(ushort scrollX)
         {
             int firstCell = scrollX >> 8;
-            _ppu.ScrollX = (byte)scrollX;
-            _ppu.ScrollY = CameraY;
+            _ppu.SetScroll(scrollX, CameraY);
             for (int page = 0; page < 2; page++)
             for (int col = 0; col < 32; col++)
             {
@@ -142,8 +141,7 @@ namespace Darkwing.Core
         /// <see cref="ReloadRow"/>.</summary>
         public void SetScroll(ushort scrollX)
         {
-            _ppu.ScrollX = (byte)scrollX;
-            _ppu.ScrollY = CameraY;
+            _ppu.SetScroll(scrollX, CameraY);
         }
 
         /// <summary>

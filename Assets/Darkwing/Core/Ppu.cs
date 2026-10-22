@@ -18,6 +18,7 @@ namespace Darkwing.Core
         public byte Ctrl;        // $2000
         public byte Mask;        // $2001
         public byte ScrollX, ScrollY; // latched at $2005 pairs
+        public int NametableX;   // $2000 bit0 / $FD bit0: horizontal nametable page
         public ushort VramAddr;  // $2006 latch
         private byte _addrHi;
         private bool _addrSecond;
@@ -34,6 +35,15 @@ namespace Darkwing.Core
 
         public Ppu(GameData data) { _data = data; }
 
+        /// <summary>$C086-$C09E: $2005 gets $FC/$FA, and $2000 gets $FF | ($FD &amp; 1).
+        /// The 9th scroll bit lives in PPUCTRL bit0, not in the $2005 byte.</summary>
+        public void SetScroll(int x, int y)
+        {
+            NametableX = (x >> 8) & 1;
+            ScrollX = (byte)x;
+            ScrollY = (byte)y;
+        }
+
         // ---- CPU port writes ----
         public void WriteRegister(int reg, byte value)
         {
@@ -41,6 +51,7 @@ namespace Darkwing.Core
             {
                 case 0x2000:
                     Ctrl = value;
+                    NametableX = value & 1;
                     BgPatternHigh = (value & 0x10) != 0;
                     SpritePatternHigh = (value & 0x08) != 0;
                     break;
@@ -125,13 +136,13 @@ namespace Darkwing.Core
                 int wy = py + scrollY;
                 bool ntB = wy >= 240;                    // second nametable vertically
                 int row = ntB ? wy - 240 : wy;
-                int baseNt = ntB ? 0x0400 : 0x0000;
+                int baseNt = (ntB ? 0x0400 : 0x0000) ^ (NametableX != 0 ? 0x0400 : 0);
                 for (int px = 0; px < W; px++)
                 {
                     int wx = px + scrollX;
                     bool ntRight = wx >= 256;
                     int col = ntRight ? wx - 256 : wx;
-                    int ntBase = baseNt | (ntRight ? 0x0400 : 0);
+                    int ntBase = baseNt ^ (ntRight ? 0x0400 : 0);
                     int tileIdx = NametableRam[ntBase + (row >> 3) * 32 + (col >> 3)];
                     int attrByte = NametableRam[ntBase + 0x3C0 + ((row >> 5) * 8) + (col >> 5)];
                     // NES attribute byte: bits 0-1 TL, 2-3 TR, 4-5 BL, 6-7 BR (16px cells in a 32px block)

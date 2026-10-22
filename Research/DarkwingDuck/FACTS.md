@@ -2039,3 +2039,12 @@ intro_segments.py` и `Tools/DarkwingResearch/panel_window.py`.
 Команды декомпозиции: `python Tools/DarkwingResearch/analyze_frame_timing.py Temp/city_phases.csv --oam Temp/oam_tail.csv --dependencies --focus 6383 6387` и `python Tools/DarkwingResearch/analyze_frame_timing.py Temp/m1_frame_timing.csv --dependencies --focus 7152 7154`. Выводы `Temp/city_dependencies.txt`, `m1_dependencies.txt`; пооперационные записи — прежний `Temp/city_timing.csv`. Оставшаяся реализация и последовательная приёмка — `Docs/DarkwingPort/RESEARCH_HANDOFF_RU.md §8`, D0–D5. Город по-прежнему открыт с f6388; весь replay/бой/карта/Editor/Player после интеграции ещё предстоят.
 
 Воспроизведение cost-контрактов через действующий Editor: `python Tools/DarkwingResearch/run_check.py --file AgentScripts/OamTimingVerify.cs --entry OamTimingVerify.Run --args '["Temp/oam_city"]' --out Temp/oam_city_check` (аналогично `oam_m1` и `oam_tail`). Lua-инструменты `frame_timing.lua` и `oam_timing.lua` запускаются существующим mesen-agent с неизменённым ROM, `--lua-allow-io` и отдельным исследовательским home; их defaults — полный городской input, конфигурация globals видна в `Temp/oam_city.lua`, `oam_m1.lua`, `oam_tail.lua`. Чистые run summaries: `Temp/city_phases_run.txt`, `oam_city_run.txt`, `oam_m1_run.txt`, `oam_tail_run.txt`. Узкая инструкция-трасса `Temp/city_timing.csv` пригодна до terminal poll6403; первоначальная ошибка закрытого файла возникла только после этой границы, не используется как успешный полный replay.
+
+Дополнение — page bit (2026-10-22):
+
+| Факт | Измерение / ограничение |
+| --- | --- |
+| 9-й бит скролла | NMI $C086–$C09E: `$2005 ← $FC`, `$2005 ← $FA`, `$2001 ← $FE`, `$2000 ← $FF | ($FD & 1)`; `$FF` — RAM-байт (0x90), поэтому PPUCTRL page bit = `$FD & 1`. Порт хранил только `byte ScrollX` и терял high bit. |
+| City repro | f2700: screenshot 1 = порт, 100% с оригиналом; f2790 (scroll 263, `$FC=7/$FD=1`): NT/PAL/CHR 3/17 совпадают, OAM отличается фазой, но фургон — фон page 1, не OAM. До фикса f2790 44.15%; после — 78.70% (best dx=-1, residual 179 sampled), f2800 100%. |
+| m1 page crossing | f4714 48.37→85.66% (best dx=-2, residual 175), f4720 49.61→100%, f5000 55.95→100%; f4713 87.15% (dx=-1, residual 120). Полный m1 `states --start 2033` 22229/22229 в пяти группах. f3886 81.94% без изменений. |
+| Ending caveat | f23000: оригинал `$FF=90/$FD=1`, page 1; порт после фикса тоже page 1, но NT-текст расходится (6841, 88.87%). До фикса 3072 — случайный page 0; это не доказательство page-регрессии. Остаток — отдельный ending NT gap. |
