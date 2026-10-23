@@ -25,7 +25,7 @@ namespace Darkwing.Core
     /// guarded by the HP $80 bit (gas-immune) — bosses take damage through
     /// BossBehaviors.TakeProjectileHit ($B39E, global $EE accumulator).
     /// </summary>
-    public sealed class EnemyDispatcher
+    public sealed partial class EnemyDispatcher
     {
         private readonly byte[] _bank6;
         public readonly ObjectSystem Objects;
@@ -92,7 +92,8 @@ namespace Darkwing.Core
         /// <summary>Per-frame pass (the master loop's bank-6 task; bank 7 $F8A7).</summary>
         public void RunFrame()
         {
-            Player.GravityFrac = 0x40; // $99 = $40 set by the bank6/bank1 dispatchers
+            BeginNativeActorTiming();
+            Player.GravityFrac = 0x40;
             ProjSlot = -1;
             HurtSlot = -1;
             // $8000 loop: slot 1's behavior runs first, then for slots 2..15 the
@@ -101,19 +102,32 @@ namespace Darkwing.Core
             DispatchSlot(1, postProcess: false);
             for (int slot = 2; slot < ObjectSystem.SlotCount; slot++)
                 DispatchSlot(slot, postProcess: true);
+            Player.GravityFrac = 0x40;
+            BeginNativeBank1Timing();
+            for (int slot = 1; slot < ObjectSystem.SlotCount; slot++)
+            {
+                var state = Objects.Slots[slot];
+                if (state.Active && state.Behavior >= 0x47)
+                    BossBehaviors.Dispatch(slot, state, state.Behavior, this);
+            }
         }
 
         private void DispatchSlot(int slot, bool postProcess)
         {
             var s = Objects.Slots[slot];
-            if (postProcess) PostProcess(slot, s);
+            if (postProcess)
+            {
+                MeasureNativePostProcess(s);
+                PostProcess(slot, s);
+            }
+            MeasureNativeDispatch(s, slot);
             if (!s.Active) return;                      // $04D0 bit7
             byte behavior = s.Behavior;
             if (behavior >= 0x47)
             {
-                BossBehaviors.Dispatch(slot, s, behavior, this); // bank 1 $8802
                 return;
             }
+            MeasureNativeBehavior(s, slot);
             EnemyBehaviors.Dispatch(slot, s, behavior, this);
         }
 

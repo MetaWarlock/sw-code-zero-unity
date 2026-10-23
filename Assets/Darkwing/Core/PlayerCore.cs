@@ -11,6 +11,7 @@ namespace Darkwing.Core
     /// </summary>
     public sealed partial class PlayerCore
     {
+        public System.Action<PlayerCore, byte> NativePaletteScratchAssigned;
         // --- RAM-equivalent state (original addresses in comments) ---
         public byte State = 0;          // $50
         public byte StateTimer;         // $51
@@ -588,12 +589,11 @@ namespace Darkwing.Core
                 if (row >= 30) { row = (byte)(row + (down ? 2 : -2)) & 31; NextRoom(); }
                 VerticalRedrawRow = (byte)row;
                 NextRoom();                                     // $E7FC, after the $E7F6 wrap step
-                RowService?.Invoke(VerticalRedrawRow, CellIndexNext); // $E801 row at the adjusted cursor
             }
-            PrevVerticalMode = ScrollMode;
             while (passes-- > 0)
             {
-                RowService?.Invoke(VerticalRedrawRow, CellIndexNext); // $E801 draws the current row, then advances
+                RowService?.Invoke(VerticalRedrawRow, CellIndexNext);
+                PrevVerticalMode = ScrollMode;
                 int row = (byte)(VerticalRedrawRow + step);
                 if (row >= 30) { NextRoom(); row = down ? 0 : 29; }
                 VerticalRedrawRow = (byte)row;
@@ -610,6 +610,7 @@ namespace Darkwing.Core
         public void ScrollSceneDown(byte distance)
         {
             ScrollStep = distance;
+            NativePaletteScratchAssigned?.Invoke(this, ScrollStep);
             ScrollMode = 4;
             VerticalScrollDown();
         }
@@ -720,7 +721,8 @@ namespace Darkwing.Core
             if (moved > 0)
             {
                 if (ahead < 0x89) return;                           // $DAD1-$DAD3
-                byte step = (byte)moved;                            // $DAD5-$DAD7
+                byte step = (byte)moved;
+                NativePaletteScratchAssigned?.Invoke(this, step);                            // $DAD5-$DAD7
                 byte saved = ScrollMode;
                 ScrollMode = 1;                                     // $DADC-$DADE
                 if (!ScrollRight(step, gridByte, flagByte))
@@ -731,8 +733,9 @@ namespace Darkwing.Core
             }                                                       // skips the clamp entirely
             else
             {
-                if (ahead >= 0x88) return;                          // $DAA2-$DAA6
-                byte step = (byte)(-(moved & 0xFF));                // $DA9A-$DAA0 two's complement
+                byte step = (byte)(-(moved & 0xFF));
+                NativePaletteScratchAssigned?.Invoke(this, step);                // $DA9A-$DAA0 two's complement
+                if (ahead >= 0x88) return;
                 byte saved = ScrollMode;
                 ScrollMode = 2;                                     // $DAAB-$DAAD
                 if (!ScrollLeft(step, gridByte, flagByte))
@@ -762,7 +765,7 @@ namespace Darkwing.Core
                 if ((byte)(ScrollX >> 8) == 0) return false;
             }
             if (!ArmHorizontal()) return false;                           // $DC2E-$DC31
-            if (step > 6) step = 6;                                       // $DC33-$DC39
+            if (step > 6) { step = 6; NativePaletteScratchAssigned?.Invoke(this, step); }                                       // $DC33-$DC39
             int lo = (byte)ScrollX - step;                                // $DC3B-$DC40
             bool borrow = lo < 0;
             byte newHi = (byte)((byte)(ScrollX >> 8) - (borrow ? 1 : 0));  // $0E ($DC43-$DC47)
@@ -785,7 +788,7 @@ namespace Darkwing.Core
         {
             if ((flagByte(CellIndex + 1) & 0x40) == 0) return false;       // $DBCE-$DBD5
             if ((byte)ScrollX == 0 && gridByte(CellIndex + 1) == 0) return false;   // $DBD7-$DBDD
-            if (step > 6) step = 1;                                         // $DBDF-$DBE7
+            if (step > 6) { step = 1; NativePaletteScratchAssigned?.Invoke(this, step); }                                         // $DBDF-$DBE7
             if (!ArmHorizontal()) return false;                             // $DBE9-$DBEC
             bool carry = (byte)ScrollX + step > 0xFF;                       // $DBEE-$DBF3
             ScrollX = (ushort)(ScrollX + step);
@@ -2285,16 +2288,20 @@ namespace Darkwing.Core
                 CheckpointId = script;                                    // $DB27 STA $6D
             if ((byte)(ScrollX & 0xFF) != 0) return;          // $DB29/$DB2B
             ScrollStep = 1;                                   // $DB2D/$DB2F
+            NativePaletteScratchAssigned?.Invoke(this, ScrollStep);
             switch (script & 0x0F)                            // $DB31-$DB3D
             {
                 case 1: HookGrab(); break;                    // $DB39 → $DB6D
                 case 2:                                        // $DB3F → $DB40
                     ScrollStep = 0;
+                    NativePaletteScratchAssigned?.Invoke(this, ScrollStep);
                     int d = RowOffsetBelowScroll();           // $DB43-$DB4E
                     ScrollStep = (byte)d;
+                    NativePaletteScratchAssigned?.Invoke(this, ScrollStep);
                     if (d >= 0x48) return;                    // $DB50-$DB56
                     int window = 0x48 - d;                    // $DB57-$DB5A
                     ScrollStep = (byte)(window < 9 ? window : 4); // $DB5E-$DB64
+                    NativePaletteScratchAssigned?.Invoke(this, ScrollStep);
                     ScrollMode = 8;                           // $DB66/$DB68
                     VerticalScrollUp();                       // $DB6A JMP $DCC4
                     break;
@@ -2335,6 +2342,7 @@ namespace Darkwing.Core
         {
             if (CellGridByte == 0x90) Flags |= 0x20;          // $DBB5-$DBC0
             ScrollStep = 3;                                   // $DBC3 → $10
+            NativePaletteScratchAssigned?.Invoke(this, ScrollStep);
             ScrollMode = 4;                                   // $DBC9 → $2F
             VerticalScrollDown();                             // $DBCB JMP $DC6E
         }

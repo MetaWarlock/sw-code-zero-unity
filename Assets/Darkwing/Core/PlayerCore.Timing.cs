@@ -44,7 +44,7 @@ namespace Darkwing.Core
             if (right)
             {
                 _scrollServiceCycles += 3 + 2 + ScrollBranch(0xDAD3, 0xDAFD, ahead < 0x89);
-                if (ahead >= 0x89) RejectScrollTiming("DBCE horizontal camera movement");
+                if (ahead >= 0x89) AddRightScrollTiming(ahead);
             }
             else
             {
@@ -125,7 +125,24 @@ namespace Darkwing.Core
             int next = ScrollY - ScrollStep;
             _scrollServiceCycles += ScrollBranch(0xDCE4, 0xDD14, next >= 0);
             if (next >= 0) { _scrollServiceCycles += 3; return; }
-            RejectScrollTiming("DCE6 upward camera row wrap");
+            _scrollServiceCycles += 2 + 3 + 3 + ScrollIndirectCycles(map.World.FlagsAddress, CellIndex);
+            bool blocked = (CellScriptByte & 0x80) != 0;
+            _scrollServiceCycles += ScrollBranch(0xDCEE, 0xDD06, blocked);
+            bool install = false;
+            if (!blocked)
+            {
+                int above = (byte)(CellIndex - RowStride);
+                bool empty = GridAt(above) == 0;
+                _scrollServiceCycles += 3 + 2 + 3 + 3 + 2 + 3 + 3 + 2 + ScrollIndirectCycles(map.World.GridAddress, above);
+                _scrollServiceCycles += ScrollBranch(0xDD00, 0xDD06, empty);
+                if (!empty)
+                {
+                    install = ((byte)(ScrollYRow - 1) & 0x80) == 0;
+                    _scrollServiceCycles += 3 + ScrollBranch(0xDD04, 0xDD0C, install);
+                }
+            }
+            _scrollServiceCycles += install ? 12 : 5 + ScrollBranch(0xDD0A, 0xDD14, true);
+            _scrollServiceCycles += 3;
         }
 
         private void AddVerticalStreamTiming(LevelTileMap map)

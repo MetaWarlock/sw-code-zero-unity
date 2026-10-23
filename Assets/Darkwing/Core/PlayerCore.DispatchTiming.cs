@@ -6,12 +6,32 @@ namespace Darkwing.Core
     {
         public int LastPlayerDispatchCycles { get; private set; } = -1;
         public string PlayerDispatchTimingUnsupported { get; private set; }
+        public Func<bool> TimingAudioQueueAccepts;
+        public Func<bool> TimingRenderingBlanked;
+        internal byte HookLatchForTiming => _hookLatch;
 
         private void BeginPlayerDispatchTiming(byte held, byte pressed)
         {
-            if (TryMeasureRisingAirborneCycles(held, pressed, out PlayerDispatchCost cost, out string reason))
+            int cycles;
+            string reason;
+            bool supported;
+            if (State == 0)
+                supported = TryMeasureGround00IncludingJumpCycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else if (State == 1)
+                supported = TryMeasureAir01Cycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else if (State == 4)
+                supported = TryMeasureState04Cycles(held, pressed, out cycles, out reason);
+            else if (State == 0x0B)
+                supported = TryMeasureAirborne0BCycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else
             {
-                LastPlayerDispatchCycles = cost.Total;
+                supported = false;
+                cycles = -1;
+                reason = "CB41 state outside reached dispatch timing";
+            }
+            if (supported)
+            {
+                LastPlayerDispatchCycles = cycles;
                 PlayerDispatchTimingUnsupported = null;
             }
             else

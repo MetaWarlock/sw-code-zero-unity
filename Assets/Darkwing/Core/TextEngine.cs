@@ -27,6 +27,7 @@ namespace Darkwing.Core
     /// </summary>
     public sealed class TextEngine
     {
+        public System.Action<int, byte, bool> NativeQueueWrite;
         // Bank-2 addresses. Every exported bank asset is exactly one 16 KB PRG bank mapped at
         // $8000-$BFFF, so the array index of an address is `addr - $8000` (no bank number).
         private const int PtrLoTable = 0xABAA - 0x8000;   // $ABAA stream pointer, low bytes
@@ -214,6 +215,7 @@ namespace Darkwing.Core
         /// <summary>One ROM queue entry: [hi][lo][count-1][tile][$FF terminator].</summary>
         private void WriteTile(int addr, byte tile)
         {
+            NativeQueueWrite?.Invoke(addr, tile, DeferWrites);
             if (DeferWrites) { _pendingWrites.Add((addr, tile)); return; }
             _queue[0] = (byte)(addr >> 8);
             _queue[1] = (byte)addr;

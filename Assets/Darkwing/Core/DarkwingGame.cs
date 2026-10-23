@@ -41,6 +41,8 @@ namespace Darkwing.Core
             Objects = new ObjectSystem(data);
             Player.Objects = Objects;
             Player.Sfx = id => PlaySfx(id);
+            Player.TimingAudioQueueAccepts = () => AudioQueueCanEnqueue;
+            Player.TimingRenderingBlanked = () => _blankDepth != 0;
             Hud = new HudComposer();
             Oam = data != null
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
@@ -73,6 +75,11 @@ namespace Darkwing.Core
                 {
                     Enemies.Tiles = TileMap;   // $EB52 probe backend
                     Enemies.Sfx = PlaySfx;
+                    Enemies.ActorTimingEvents = new ActorEventTiming
+                    {
+                        PeekSfxEnqueueCycles = id => AudioQueueCanEnqueue ? 42 : 27,
+                        ReadHookLatch = () => Player.HookLatchForTiming
+                    };
                 }
             }
         }
@@ -102,7 +109,7 @@ namespace Darkwing.Core
 
         /// <summary>Late-bound bank 7 (world/music data) for the sequencer. Setting it also runs
         /// the boot-time $C92A copy, because the ROM seeds $05C2 long before any mission.</summary>
-        public byte[] Bank7 { get => _bank7; set { _bank7 = value; EnsurePauseBlock(); } }
+        public byte[] Bank7 { get => _bank7; set { _bank7 = value; EnsurePauseBlock(); BindNativeVramProducers(); } }
 
         /// <summary>
         /// Raw PRG bank 4 (ROM $8000–$BFFF window while gameplay is paused): the
@@ -117,7 +124,7 @@ namespace Darkwing.Core
         public LevelTileMap TileMap
         {
             get => _tileMap;
-            set { _tileMap = value; if (Enemies != null) Enemies.Tiles = value; }
+            set { _tileMap = value; if (Enemies != null) Enemies.Tiles = value; BindNativeVramProducers(); }
         }
         private LevelTileMap _tileMap;
 
@@ -444,7 +451,7 @@ namespace Darkwing.Core
         /// host wires <see cref="Bank2"/> after construction; null while bank 2 is missing.</summary>
         public TextEngine Text
         {
-            get { if (Bank2 != null && _text == null) _text = new TextEngine(Ppu, Bank2); return _text; }
+            get { if (Bank2 != null && _text == null) { _text = new TextEngine(Ppu, Bank2); BindNativeVramProducers(); } return _text; }
         }
         private TextEngine _text;
 
@@ -1078,6 +1085,7 @@ namespace Darkwing.Core
         // writer only advances when the slot is empty, so an enqueue during a full
         // ring is dropped exactly like $F84E. $D9 keeps the last id even when dropped.
         private readonly byte[] _audioQueue = new byte[8];
+        public bool AudioQueueCanEnqueue => _audioQueue[_audioWrite] == AudioQueueEmpty;
         private int _audioWrite, _audioRead;
         private byte _audioLastId;
         private const byte AudioQueueEmpty = 0x88;
@@ -1216,6 +1224,7 @@ namespace Darkwing.Core
         public void AdvanceFrame(in NesButtons pad1, in NesButtons pad2 = default)
         {
             BeginNmi();
+            BeginNativeVramBody();
             if (Flow != null) Flow.Step(in pad1);
             StepBody(in pad1, in pad2);
         }
@@ -1225,6 +1234,7 @@ namespace Darkwing.Core
         public void Step(in NesButtons pad1, in NesButtons pad2 = default)
         {
             BeginNmi();
+            BeginNativeVramBody();
             StepBody(in pad1, in pad2);
         }
 
@@ -1233,6 +1243,7 @@ namespace Darkwing.Core
         {
             _parityStepped = false;
             _oamPublished = false;
+            PublishNativeVram(0, false);
             if ((Ppu.Ctrl & 0x80) != 0) NmiCounter++;
             // $C006: LDA $F0 / ORA $9A / BEQ $C00F / JMP $C0A1 — a blanked frame keeps the last
             // latched picture, and the $18/$19/$1A/$1B/$1C/$1D latches stay armed for the next
@@ -1394,6 +1405,7 @@ namespace Darkwing.Core
             // spawner, door check and animation engine are all skipped for that frame.
             if ((Objects.Slots[0].StateLow & 0x80) != 0)
             {
+                BeginMissionHeadTiming();
                 Player.Step(HeldP1, pressed);
                 // $CE39 is called from inside the player's state machine and writes the
                 // projectile slot there, so the bank-6 dispatch finds it live in the SAME

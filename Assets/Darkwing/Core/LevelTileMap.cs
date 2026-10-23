@@ -11,6 +11,8 @@ namespace Darkwing.Core
     /// </summary>
     public sealed partial class LevelTileMap : ITileMap
     {
+        public System.Action<LevelTileMap, byte, int> NativeBandQueued;
+        public System.Action<LevelTileMap, int, int, int> NativeRowQueued;
         private readonly RoomDecoder _decoder;
         private readonly Ppu _ppu;
         private readonly RoomDecoder.World _world;
@@ -192,6 +194,7 @@ namespace Darkwing.Core
             int value = halfCol == 0 ? _bandPalettes[0] | (_bandPalettes[2] << 4)
                                      : (_bandPalettes[1] << 2) | (_bandPalettes[3] << 6);
             nt[attrIndex] = (byte)((nt[attrIndex] & ~mask) | value);
+            NativeBandQueued?.Invoke(this, cursor, gridIndex);
         }
 
         /// <summary>$E7C6 row service: paint the 32-tile row <paramref name="ntRow"/> from
@@ -205,7 +208,7 @@ namespace Darkwing.Core
             if ((uint)ntRow >= 30u) return;                   // $E7C6 wraps at 30; status rows stay untouched
             if ((uint)gridIndex >= (uint)_world.Grid.Length) return;
             byte roomId = _world.Grid[gridIndex];
-            if (roomId == 0) { PaintRowEdge(ntRow, gridIndex, page); return; } // $EB27 → $7FC0, $EA36 early RTS
+            if (roomId == 0) { PaintRowEdge(ntRow, gridIndex, page); NativeRowQueued?.Invoke(this, ntRow, gridIndex, page); return; } // $EB27 → $7FC0, $EA36 early RTS
             int cell = gridIndex % _world.RowWidth;
             int sourceRow = gridIndex / _world.RowWidth;
             if (!TryGetRoom(cell * 32, sourceRow, out byte[] tiles, out byte[] meta, out byte[] attrs))
@@ -229,6 +232,7 @@ namespace Darkwing.Core
             }
             RefreshBandTable(ntRow >> 2, 7, tiles, meta, attrs);
             PaintRowEdge(ntRow, gridIndex, page);
+            NativeRowQueued?.Invoke(this, ntRow, gridIndex, page);
         }
 
         private void PaintRowEdge(int ntRow, int gridIndex, int page)
@@ -270,9 +274,8 @@ namespace Darkwing.Core
             {
                 int mrow = bandRow * 2 + (q >> 1);
                 int mcol = attrCol * 2 + (q & 1);
-                _bandPalettes[q] = mrow >= 15 ? (byte)0 : attrs[meta[mrow * 16 + mcol]];
+                _bandPalettes[q] = attrs[meta[mrow * 16 + mcol]];
             }
-            if (bandRow == 7) { _bandPalettes[2] = 0; _bandPalettes[3] = 0; }
         }
 
         private void StreamColumn(int worldTileCol, int sourceRow, int page)
