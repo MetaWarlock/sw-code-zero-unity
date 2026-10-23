@@ -1584,6 +1584,7 @@ namespace Darkwing.Core
         /// a zone jump re-enters the placement list mid-level.</summary>
         private void RunZoneService()
         {
+            BeginZoneServiceTiming();
             if (Sections == null || TileMap == null || Objects == null) return;
             byte cell = Player.CellGridByte;          // ($32),$22
             byte yLo = (byte)(Player.ScrollY & 0xFF);  // $FA
@@ -1610,6 +1611,7 @@ namespace Darkwing.Core
         /// <code>$3F == steps</code>.</summary>
         private void RunPaletteScript()
         {
+            BeginPaletteScriptTiming();
             byte s = Player.SectionFlag3D;                    // $EFBE LDA $3D
             if ((sbyte)s >= 0 || Sections == null) return;    // $EFBE BPL $F007
             int baseIdx = s & 0x7F;                           // $EFC2-$EFC6

@@ -10,7 +10,7 @@ namespace Darkwing.Core
     /// Behavior execution is delegated to EnemyBehaviors (bank 6) / BossBehaviors
     /// (bank 1) through EnemyDispatcher.
     /// </summary>
-    public sealed class ObjectSystem
+    public sealed partial class ObjectSystem
     {
         public const int SlotCount = 16;
 
@@ -206,6 +206,8 @@ namespace Darkwing.Core
         /// </summary>
         public void SpawnFromPlacements(ushort scrollX, ushort scrollY, byte scrollState)
         {
+            LastPlacementSpawnCycles = TryMeasurePlacementSpawnCycles(scrollX, scrollY, scrollState, out int cycles, out string reason) ? cycles : -1;
+            PlacementSpawnTimingUnsupportedReason = reason;
             var level = Placements;
             if (level == null) return;
             switch (scrollState & 0x0F)                     // $8090/$8092

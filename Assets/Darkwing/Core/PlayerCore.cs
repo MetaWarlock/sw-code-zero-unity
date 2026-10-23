@@ -813,6 +813,7 @@ namespace Darkwing.Core
         /// <summary>One frame of player logic. padBits: 7=A,6=B,5=Sel,4=Start,3=Up,2=Down,1=Left,0=Right.</summary>
         public void Step(byte held, byte pressed)
         {
+            BeginPlayerDispatchTiming(held, pressed);
             PressedThisFrame = pressed;
             OnHookTileFlag = false;
             PrevState = State;
