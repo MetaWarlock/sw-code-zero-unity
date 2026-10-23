@@ -29,9 +29,13 @@ namespace Darkwing.Core
                 }
                 else
                 {
-                    if (!target.Active || target.Behavior <= 4) throw new NotSupportedException("FAAE target early gate");
                     cycles += 3 + 4 + 2 + 5 + 6;
-                    cycles += ActorTailTiming.ProjectileNoHit(objects, target, out bool projectileHit, out int projectileIndex);
+                    bool projectileHit = false;
+                    int projectileIndex = -1;
+                    if (!target.Active || target.Behavior <= 4)
+                        cycles += ProjectileTargetEarlyNoHit(objects, target);
+                    else
+                        cycles += ActorTailTiming.ProjectileNoHit(objects, target, out projectileHit, out projectileIndex);
                     if (projectileHit)
                     {
                         if (events == null) throw new NotSupportedException("8069 projectile hit context");
@@ -41,6 +45,31 @@ namespace Darkwing.Core
                 }
             }
             return cycles + ActorEventTiming.ContactTail(objects, player, target);
+        }
+
+        public static int ProjectileTargetEarlyNoHit(ObjectSystem objects, ObjectSystem.Slot target)
+        {
+            if (target.Active || (target.StateLow & 127) != 0)
+                throw new NotSupportedException("FAAE nonzero-target early gate");
+            int cycles = 2 + 3;
+            for (int slotIndex = 4; slotIndex >= 2; slotIndex--)
+            {
+                var projectile = objects.Slots[slotIndex];
+                cycles += 3 + 4;
+                if (!projectile.Active) cycles += 3;
+                else
+                {
+                    cycles += 2 + 4;
+                    if ((projectile.Flags & 0x80) == 0) cycles += 3;
+                    else
+                    {
+                        cycles += 2 + 4 + 2;
+                        cycles += projectile.Behavior == 0x1F ? 3 : 2 + 4 + 3;
+                    }
+                }
+                cycles += 5 + 3 + 2 + (slotIndex == 2 ? 2 : 4);
+            }
+            return cycles + 2 + 6;
         }
 
         public static int Behavior(ObjectSystem.Slot target, int slotIndex, PlayerCore player, ITileMap tiles, ActorEventTiming events = null)

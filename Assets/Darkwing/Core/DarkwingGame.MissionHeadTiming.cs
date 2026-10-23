@@ -7,11 +7,17 @@ namespace Darkwing.Core
         public int LastMissionHeadCycles { get; private set; } = -1;
         public string MissionHeadTimingUnsupported { get; private set; }
         public int LastMissionResumePrefixCycles => LastMissionHeadCycles < 0 ? -1 : 6 + LastInputHookCycles + 18 + LastMissionHeadCycles;
+        public int LastCardResumeCycles => Player.LastCardContinuationCycles < 0 ? -1 : 6 + LastInputHookCycles + 18 + Player.LastCardContinuationCycles;
 
         private void BeginMissionHeadTiming()
         {
             LastMissionHeadCycles = -1;
             MissionHeadTimingUnsupported = null;
+            if (Player.CardWaitRemaining != 0)
+            {
+                MissionHeadTimingUnsupported = "FF02 resident Card continuation does not enter CAE2";
+                return;
+            }
             if (Player.LevelActive < 0)
             {
                 MissionHeadTimingUnsupported = "C9B0 inactive mission head";

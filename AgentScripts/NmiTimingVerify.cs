@@ -5,6 +5,68 @@ using Darkwing.Core;
 
 public static class NmiTimingVerify
 {
+    public static string CardAndEarlyGate()
+    {
+        if (UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorUtility.scriptCompilationFailed)
+            throw new InvalidOperationException("Refuse stale Core");
+        const string root = "D:/Art/SW Code Zero Unity/Temp/actor_early_source/";
+        string[] records = File.ReadAllLines(root + "early.csv");
+        byte[] entries = File.ReadAllBytes(root + "early_entry.bin");
+        byte[] endings = File.ReadAllBytes(root + "early_end.bin");
+        if (records.Length != 701 || entries.Length != 700 * 2048 || endings.Length != entries.Length)
+            throw new InvalidDataException("Incomplete FAAE source fixture");
+        int exact = 0, negatives = 0;
+        for (int index = 1; index < records.Length; index++)
+        {
+            string[] row = records[index].Split(',');
+            int targetIndex = int.Parse(row[1]);
+            int expected = int.Parse(row[3]);
+            int offset = (index - 1) * 2048;
+            var objects = new ObjectSystem(null);
+            for (int slotIndex = 0; slotIndex < 16; slotIndex++)
+            {
+                var state = objects.Slots[slotIndex];
+                state.Active = (entries[offset + 0x4D0 + slotIndex] & 0x80) != 0;
+                state.StateLow = (byte)(entries[offset + 0x4D0 + slotIndex] & 0x7F);
+                state.Flags = entries[offset + 0x400 + slotIndex];
+                state.Behavior = entries[offset + 0x4E0 + slotIndex];
+            }
+            int actual = ActorBank6Timing.ProjectileTargetEarlyNoHit(objects, objects.Slots[targetIndex]);
+            if (actual != expected || actual < 83 || actual > 143)
+                throw new InvalidOperationException("FAAE source cost " + row[0] + " " + actual + "/" + expected);
+            exact++;
+            if (actual != expected + 1) negatives++;
+        }
+        int low = int.MaxValue, high = 0;
+        for (int signature = 0; signature < 64; signature++)
+        {
+            var objects = new ObjectSystem(null);
+            objects.Slots[0].Active = false;
+            objects.Slots[0].StateLow = 0;
+            for (int slotIndex = 2; slotIndex <= 4; slotIndex++)
+            {
+                int kind = (signature >> (2 * (slotIndex - 2))) & 3;
+                objects.Slots[slotIndex].Active = kind != 0;
+                objects.Slots[slotIndex].Flags = kind >= 2 ? (byte)0x80 : (byte)0;
+                objects.Slots[slotIndex].Behavior = kind == 2 ? (byte)0x1F : (byte)1;
+            }
+            int cycles = ActorBank6Timing.ProjectileTargetEarlyNoHit(objects, objects.Slots[0]);
+            low = Math.Min(low, cycles); high = Math.Max(high, cycles);
+        }
+        if (low != 83 || high != 143) throw new InvalidOperationException("FAAE branch bound");
+        var rejectedTarget = new ObjectSystem.Slot { StateLow = 1 };
+        bool refused = false;
+        try { ActorBank6Timing.ProjectileTargetEarlyNoHit(new ObjectSystem(null), rejectedTarget); }
+        catch (NotSupportedException) { refused = true; }
+        if (!refused) throw new InvalidOperationException("Unverified nonzero target priced");
+        int[] hudCycles = { 354, 373, 377, 378 };
+        for (byte weapon = 0; weapon < 4; weapon++)
+            if (PlayerCore.MeasureCardHudSeedCycles(weapon) != hudCycles[weapon])
+                throw new InvalidOperationException("C850 weapon branch cost");
+        return "PASS FAAE source=" + exact + "/700 clock negatives=" + negatives
+            + "; 64 gate combinations bound83..143, nonzero target rejected, C850 four weapon branches";
+    }
+
     public static string Run()
     {
         const string root = "D:/Art/SW Code Zero Unity/";

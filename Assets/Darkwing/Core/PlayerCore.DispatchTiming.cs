@@ -12,6 +12,7 @@ namespace Darkwing.Core
 
         private void BeginPlayerDispatchTiming(byte held, byte pressed)
         {
+            BeginCardContinuationTiming();
             int cycles;
             string reason;
             bool supported;
