@@ -1214,6 +1214,7 @@ namespace Darkwing.Core
                 SectionReloadRequest = (byte)(CheckpointId & 0x1F);   // $D461-$D466
                 return;
             }
+            Oam?.HideShadow();
             Objects?.ClearForSectionLoad();                  // $D42A JSR $C235
             if (Objects != null)
             {

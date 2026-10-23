@@ -32,6 +32,8 @@ namespace Darkwing.Core
 
         private readonly GameData _data;
         private readonly byte[] _tile = new byte[64];
+        private readonly bool[] _backgroundOpaque = new bool[W * H];
+        private readonly bool[] _spriteOpaque = new bool[W * H];
 
         public Ppu(GameData data) { _data = data; }
 
@@ -122,8 +124,9 @@ namespace Darkwing.Core
         /// <summary>Compose the 256x240 frame (background + sprites) into NES indices.</summary>
         public void Render(byte[] framebuffer)
         {
-            bool rendering = (Mask & 0x18) != 0;
-            if (!rendering)
+            bool background = (Mask & 0x08) != 0;
+            bool sprites = (Mask & 0x10) != 0;
+            if (!background && !sprites)
             {
                 byte bg = PaletteRam[0];
                 for (int i = 0; i < W * H; i++) framebuffer[i] = bg;
@@ -140,6 +143,14 @@ namespace Darkwing.Core
                 int baseNt = NametableX != 0 ? 0x0400 : 0;
                 for (int px = 0; px < W; px++)
                 {
+                    int destination = py * W + px;
+                    _spriteOpaque[destination] = false;
+                    if (!background || px < 8 && (Mask & 0x02) == 0)
+                    {
+                        framebuffer[destination] = PaletteRam[0];
+                        _backgroundOpaque[destination] = false;
+                        continue;
+                    }
                     int wx = px + scrollX;
                     bool ntRight = wx >= 256;
                     int col = ntRight ? wx - 256 : wx;
@@ -151,12 +162,12 @@ namespace Darkwing.Core
                     int palSlot = (attrByte >> shift) & 3;
                     Decode(tileIdx, BgPatternHigh ? Chr1Bank : Chr0Bank);
                     int ci = _tile[(row & 7) * 8 + (col & 7)];
-                    framebuffer[py * W + px] = PaletteRam[ci == 0 ? 0 : palSlot * 4 + ci];
+                    _backgroundOpaque[destination] = ci != 0;
+                    framebuffer[destination] = PaletteRam[ci == 0 ? 0 : palSlot * 4 + ci];
                 }
             }
-            // Sprites (OAM order, later sprites under earlier on overlap: hardware draws
-            // first-found opaque pixel per coordinate — copy OAM forward).
-            for (int s = 63; s >= 0; s--) // draw later sprites first so earlier win
+            if (!sprites) return;
+            for (int s = 0; s < 64; s++)
             {
                 int y = Oam[s * 4] + 1;
                 int tile = Oam[s * 4 + 1];
@@ -174,10 +185,13 @@ namespace Darkwing.Core
                     {
                         int sx = x + (flipH ? 7 - tx : tx);
                         if ((uint)sx >= W) continue;
+                        if (sx < 8 && (Mask & 0x04) == 0) continue;
                         byte ci = _tile[ty * 8 + tx];
                         if (ci == 0) continue;
                         int di = sy * W + sx;
-                        if (behind && framebuffer[di] != PaletteRam[0]) continue;
+                        if (_spriteOpaque[di]) continue;
+                        _spriteOpaque[di] = true;
+                        if (behind && _backgroundOpaque[di]) continue;
                         framebuffer[di] = PaletteRam[palSlot * 4 + ci];
                     }
                 }

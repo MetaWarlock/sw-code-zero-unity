@@ -234,15 +234,8 @@ namespace Darkwing.Core
             }
             if (_sceneLoadStage == 3)
             {
-                // $31 <= 6 and the clear scene $08 use the $DD57 streamer's nametable, because
-                // $DE86-$DE91 already ran the $E698 bands through StageBand and the original
-                // leaves the back page at its previous-screen bytes. A whole-window repaint
-                // here pre-paints it with the NEXT cell and desynchronises every later
-                // plateau (measured on the city capture, f2140-2600: 473.3 -> 61.0 mean
-                // name-byte diffs). Other ids 7+ are intro/title pseudo-scenes: the port has no
-                // model of their blit yet, so they keep the repaint (f289-400: 1.0 vs 9.7).
-                if (_worldId <= 6 || _worldId == 8) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
-                else TileMap.StreamColumns(Player.ScrollX);
+                TileMap.CameraY = Player.ScrollY;
+                TileMap.SetScroll(Player.ScrollX);
                 WorldSpawn();
                 Player.EntryFreezeFrames = 0;
                 _sceneLoadStage = 1;

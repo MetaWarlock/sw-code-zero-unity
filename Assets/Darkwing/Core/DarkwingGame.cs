@@ -189,11 +189,8 @@ namespace Darkwing.Core
             _worldDecoder = decoder; _worldId = worldId;    // $D437 re-enters $DD57 with the same $31
             WorldPrelude();
             Player.StageSectionToEnd();     // $DE86-$DE91: the inline entry has no frame machine
-            // Same rule as the staged loader's third stage: $31 <= 6 and $08 get scroll-only
-            // (its nametable is the $E698 ring's), an intro/title pseudo-scene keeps the
-            // whole-window repaint until its own blit is modelled.
-            if (worldId <= 6 || worldId == 8) { TileMap.CameraY = Player.ScrollY; TileMap.SetScroll(Player.ScrollX); }
-            else TileMap.StreamColumns(Player.ScrollX);
+            TileMap.CameraY = Player.ScrollY;
+            TileMap.SetScroll(Player.ScrollX);
             WorldSpawn();
             // $C2F9/$C319 never flag $18 — the PPU only sees a new table through a fade step's
             // $C2A2 STY $18. Inside the staged loader that is the $DE06/$C270 fade-in; this
@@ -346,6 +343,7 @@ namespace Darkwing.Core
         public void RenderOn()
         {
             _blankDepth--;                                      // $C158 DEC $F0
+            _nmiMaskRequest = null;
             Ppu.WriteRegister(0x2001, 0x1E);
         }
 
@@ -1191,7 +1189,7 @@ namespace Darkwing.Core
         /// shadow (gold_pause_resume f45: 79/256 bytes).</summary>
         private void PublishToOamOnce()
         {
-            if (_oamPublished || _blankDepth != 0) return;
+            if (_oamPublished || _blankDepth != 0 || Oam == null) return;
             _oamPublished = true;
             Oam.PublishToOam();
         }
@@ -1241,10 +1239,16 @@ namespace Darkwing.Core
             // NMI that is allowed to publish.
             if (_blankDepth == 0)
             {
-                if (Player.YieldOnlyFrame || Player.IntroCardPhase) PublishToOamOnce();
+                PublishToOamOnce();
                 NmiChrUpload();            // $C047/$C050, before $C059 palette upload
                 NmiPaletteUpload();        // $C059: $18-flagged $0300 → $3F00, every frame
                 Text?.FlushNmiWrites();
+                Ppu.SetScroll(Player.ScrollX, Player.ScrollY);
+                if (_nmiMaskRequest.HasValue)
+                {
+                    Ppu.WriteRegister(0x2001, _nmiMaskRequest.Value);
+                    _nmiMaskRequest = null;
+                }
             }
             DrainAudioQueue();             // $C0DC/$C0F6: runs on blanked frames too
         }

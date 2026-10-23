@@ -18,11 +18,6 @@ namespace Darkwing.Core
     /// why the plates' X/Y high bytes (untouched by the install) do not matter.
     /// Slot 1 carries anim $2E, whose bank-5 frame pointer is the RAM block $05C2 — that is
     /// the panel body itself, and why <see cref="OamDispatcher.MapRamPartBlock"/> exists.
-    ///
-    /// Deliberately not modelled: the <c>$1A=$9F</c> / <c>$1A=$038E|$80</c> CHR-latch writes.
-    /// The NMI's $FF21 only flushes a request while rendering is on, and rendering is off for
-    /// the whole phase ($FE AND #$F7), so the round trip applies nothing new — the port's
-    /// applied CHR banks are already the level's, which is what the panel draws from.
     /// </summary>
     public sealed partial class DarkwingGame
     {
@@ -32,6 +27,8 @@ namespace Darkwing.Core
         private readonly byte[] _pauseSavedTail = new byte[10];  // $0384…$038D ← $04D6…$04DF
         private readonly byte[] _pausePalSaved = new byte[16];   // $038F…$039E ← $0310…$031F
         private byte _pauseSavedInvuln;                          // $8F00 PHA / $9022 PLA of $7C
+        private byte _pauseSavedChr0;
+        private byte? _nmiMaskRequest;
         private bool _pauseBlockInit;
         private bool _pauseActive;
         private bool _pausePlatesArmed;
@@ -135,7 +132,9 @@ namespace Darkwing.Core
                 _palMirror[0x10 + i] = b4[0x103E + i];   // ← $903E
             }
             _palDirty = 0xFF;                            // $8FAB STX $18, X = $FF off the DEX loop
-            Ppu.Mask = (byte)(Ppu.Mask & 0xF7);          // $8FB1…$8FB5: background off
+            _pauseSavedChr0 = (byte)Ppu.Chr0Bank;
+            Player.ChrLatch0 = 0x9F;
+            _nmiMaskRequest = (byte)(Ppu.Mask & 0xF7);
             Oam.HudActive = false;                       // slot 1 now composes the panel block
             _pauseActive = true;
             _pausePlatesArmed = false;
@@ -224,7 +223,8 @@ namespace Darkwing.Core
             }
             for (int i = 0; i < 16; i++) _palMirror[0x10 + i] = _pausePalSaved[i];   // $900A ← $038F
             _palDirty = 0xFF;                                 // $9013 STX $18
-            Ppu.Mask = (byte)(Ppu.Mask | 0x08);               // $901C…$9020: background back on
+            Player.ChrLatch0 = (byte)(_pauseSavedChr0 | 0x80);
+            _nmiMaskRequest = (byte)(Ppu.Mask | 0x08);
             Player.InvulnFrames = _pauseSavedInvuln;          // $9022/$9023: PLA / STA $7C
             Oam.HudActive = true;
             _pauseActive = false;
