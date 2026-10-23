@@ -18,6 +18,7 @@ public static class OamWalkVerify
 
         public Fixture()
         {
+            Player.Objects = Objects;
             Oam = new OamDispatcher(File.ReadAllBytes(Root + "Assets/Darkwing/Data/prg_bank5.bytes"), Objects, Ppu, Player);
             Oam.SetHud(Hud);
             Oam.MapRamPartBlock(0, Ram);
@@ -177,5 +178,112 @@ public static class OamWalkVerify
         if (partial != nmiRecords.Length - 1) throw new InvalidDataException("Missing, duplicated or extra NMI checkpoint");
         if (failures.Length != 0) throw new InvalidOperationException(failures.ToString());
         return "PASS cycles=" + matched + " source-endings=" + finalStates + " NMI-resume=" + partial + " rejected-mismatches=" + rejected + "; split/idempotent/duplicate-start controls";
+    }
+
+    public static string MissionTail()
+    {
+        if (UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorUtility.scriptCompilationFailed)
+            throw new InvalidOperationException("Refuse stale Core");
+        string prefix = Root + "Temp/human_rng17234/walk";
+        var entries = File.ReadAllBytes(prefix + ".bin");
+        var endings = File.ReadAllBytes(prefix + "_end.bin");
+        var records = File.ReadAllLines(prefix + ".csv");
+        var nmiRecords = File.ReadAllLines(prefix + "_nmi.csv");
+        var nmiStates = File.ReadAllBytes(prefix + "_nmi.bin");
+        if (records.Length != 76 || entries.Length != 75 * 2048 || endings.Length != entries.Length
+            || nmiRecords.Length != 2 || nmiStates.Length != 2048)
+            throw new InvalidDataException("Incomplete mission-tail fixtures");
+        int matched = 0, partial = 0, phaseChecks = 0;
+        var fixture = new Fixture();
+        var tail = new MissionPassContinuation(fixture.Oam, fixture.Player);
+        for (int index = 1; index < records.Length; index++)
+        {
+            var row = records[index].Split(',');
+            int offset = (index - 1) * 2048;
+            fixture.Load(entries, offset);
+            if (fixture.Ram[0x97] != 4) throw new NotSupportedException("Not an ordinary CABB tail");
+            byte parity = (byte)(fixture.Ram[0x95] + 1);
+            int rngCycles = 95 + (((fixture.Ram[0xE4] ^ fixture.Ram[0xE5]) & 2) == 0 ? 0 : 1);
+            int engineCycles = int.Parse(row[2]);
+            int expectedCycles = engineCycles + 8 + rngCycles + 55;
+            var expectedRng = new byte[4];
+            fixture.Oam.MissionCardHold = true;
+            fixture.Oam.ReservedCursor = 0x20;
+            SeedRng(fixture.Ram);
+            EnemyBehaviors.AdvanceRng();
+            StoreRng(expectedRng);
+            SeedRng(fixture.Ram);
+            tail.Begin(parity);
+            bool duplicateRejected = false;
+            try { tail.Begin(parity); } catch (InvalidOperationException) { duplicateRejected = true; }
+            if (!duplicateRejected) throw new InvalidOperationException("Duplicate mission tail accepted");
+            for (int deadline = 0; deadline < engineCycles; deadline += 137) tail.AdvanceTo(deadline);
+            tail.AdvanceTo(engineCycles);
+            if (tail.Cycles != engineCycles || tail.InstructionPc != 0xCABE)
+                throw new InvalidOperationException("CABE boundary not reached");
+            Compare(fixture.Read(), endings, offset, "mission source OAM end " + row[0]);
+            tail.Finish();
+            if (tail.Cycles != expectedCycles || tail.Active || tail.Busy || tail.ProcessState != FrameScheduler.Waiting
+                || tail.ProcessTimer != 1 || tail.InstructionPc != 0xFF19 || tail.Stage != MissionPassContinuation.Phase.Committed)
+                throw new InvalidOperationException("Mission tail did not commit " + row[0] + " " + tail.Cycles + "/" + expectedCycles);
+            if (fixture.Oam.OamCursorBytes != 4) throw new InvalidOperationException("CAC0 did not restore cursor");
+            var actualRng = new byte[4]; StoreRng(actualRng);
+            for (int register = 0; register < 4; register++)
+                if (actualRng[register] != expectedRng[register]) throw new InvalidOperationException("Mission tail RNG " + row[0]);
+            tail.Finish();
+            if (tail.Cycles != expectedCycles) throw new InvalidOperationException("Repeated tail advanced time");
+            matched++;
+            fixture.Load(entries, offset); SeedRng(fixture.Ram);
+            tail.Begin(parity);
+            tail.AdvanceTo(expectedCycles - 55 - 3);
+            if (!tail.Busy || tail.ProcessState != FrameScheduler.Running || tail.ProcessTimer != 0 || tail.InstructionPc != 0xCADD)
+                throw new InvalidOperationException("9A cleared before STA " + row[0]);
+            tail.AdvanceTo(expectedCycles - 55 - 2);
+            if (tail.Busy || tail.Cycles != expectedCycles - 55 || tail.ProcessState != FrameScheduler.Running)
+                throw new InvalidOperationException("9A not cleared at STA " + row[0]);
+            tail.AdvanceTo(expectedCycles - 4);
+            if (tail.ProcessTimer != 1 || tail.ProcessState != FrameScheduler.Running || tail.InstructionPc != 0xFF17)
+                throw new InvalidOperationException("Waiting committed before FF17 " + row[0]);
+            tail.AdvanceTo(expectedCycles - 3);
+            if (tail.ProcessState != FrameScheduler.Waiting || tail.Cycles != expectedCycles || tail.Active)
+                throw new InvalidOperationException("FF17 did not commit atomically " + row[0]);
+            phaseChecks += 4;
+            var nmi = nmiRecords[1].Split(',');
+            if (row[1] == nmi[1])
+            {
+                fixture.Load(entries, offset); SeedRng(fixture.Ram);
+                tail.Begin(parity);
+                int deadline = int.Parse(nmi[2]) + 6;
+                tail.AdvanceTo(deadline);
+                if (tail.Cycles != deadline || !tail.Active || !tail.Busy || tail.Stage != MissionPassContinuation.Phase.Oam
+                    || tail.ProcessState != FrameScheduler.Running || tail.ProcessTimer != 0)
+                    throw new InvalidOperationException("Incorrect mission NMI suspension");
+                for (int register = 0; register < 4; register++)
+                    if (ReadRng(register) != fixture.Ram[0xE4 + register]) throw new InvalidOperationException("RNG advanced before OAM NMI");
+                Compare(fixture.Read(), nmiStates, 0, "mission NMI " + nmi[0]);
+                tail.AdvanceTo(engineCycles);
+                Compare(fixture.Read(), endings, offset, "mission resume OAM end " + nmi[0]);
+                tail.Finish();
+                if (tail.Cycles != expectedCycles) throw new InvalidOperationException("NMI changed body cycle count");
+                partial++;
+            }
+        }
+        if (partial != 1) throw new InvalidDataException("Missing mission NMI checkpoint");
+        return "PASS source OAM tails=" + matched + "/75 NMI partial/resume=" + partial + "/1 9A/timer/FF17 checks=" + phaseChecks
+            + "; RNG four-byte algebra, split/duplicate/idempotence; fixture deadlines, not physical-clock integration";
+    }
+
+    private static byte ReadRng(int register) => register == 0 ? EnemyBehaviors.RngE4 : register == 1 ? EnemyBehaviors.RngE5
+        : register == 2 ? EnemyBehaviors.RngE6 : EnemyBehaviors.RngE7;
+
+    private static void StoreRng(byte[] output)
+    {
+        for (int register = 0; register < 4; register++) output[register] = ReadRng(register);
+    }
+
+    private static void SeedRng(byte[] ram)
+    {
+        EnemyBehaviors.RngE4 = ram[0xE4]; EnemyBehaviors.RngE5 = ram[0xE5];
+        EnemyBehaviors.RngE6 = ram[0xE6]; EnemyBehaviors.RngE7 = ram[0xE7];
     }
 }

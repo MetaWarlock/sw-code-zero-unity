@@ -191,15 +191,22 @@ namespace Darkwing.Core
         /// content=f-1 plus HUD placement from RAM[f].$95, and 0 for every other pairing.</summary>
         public void RunFrame(byte parity)
         {
+            BeginFrameWalk(parity);
+            FinishWalk();
+        }
+
+        public void BeginFrameWalk(byte parity, int cursor = -1)
+        {
+            if (WalkActive) throw new System.InvalidOperationException("OAM walk is already running");
+            if (cursor < -1 || cursor > 255) throw new System.ArgumentOutOfRangeException(nameof(cursor));
             _oamCursor = MissionCardHold ? (byte)0xA0 : ReservedCursor != 0 ? ReservedCursor : (byte)4;
             // $C21E, called just before the walk: hides every record from the cursor to the end
             // of the page, so each frame's unused tail is F8 plus last frame's tile/attr/X bytes.
             // During the mission-card phase the front 160 bytes hold the $9636 blit — $C21E's
             // wipe starts at the cursor, so only $02A0..$02FF is reset.
-            int wipeStart = MissionCardHold ? 0xA0 : ReservedCursor;
+            int wipeStart = cursor >= 0 ? (cursor == 4 ? 0 : cursor) : MissionCardHold ? 0xA0 : ReservedCursor;
             for (int i = wipeStart; i < 256; i += 4) _shadow[i] = 0xF8;
-            BeginWalk(parity);
-            FinishWalk();
+            BeginWalk(parity, cursor);
         }
 
         // ---------- $802F-$80C6: relative update + culling ----------

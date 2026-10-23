@@ -27,6 +27,7 @@ namespace Darkwing.Core
         public readonly ObjectSystem Objects;
         public readonly OamDispatcher Oam;
         public readonly HudComposer Hud;
+        public MissionPassContinuation MissionTail { get; private set; }
         private readonly GameData _data;
 
         public DarkwingGame() : this(null) { }
@@ -1575,10 +1576,15 @@ namespace Darkwing.Core
             // whatever cursor position the parity order reaches slot 1 in — no separate writer
             // and no hard-coded entry (GAPS G44.1 closed).
             Hud.Refresh(Player);
-            Oam.RunFrame(FrameParity);
-            Player.Flags = Objects.Slots[0].Flags; // the walk and controller share RAM $0400
+            if (Player.IntroCardPhase) Oam.RunFrame(FrameParity);
+            else
+            {
+                if (MissionTail == null) MissionTail = new MissionPassContinuation(Oam, Player);
+                MissionTail.Begin(FrameParity);
+                MissionTail.Finish();
+            }
+            Player.Flags = Objects.Slots[0].Flags;
             Ppu.Render(Framebuffer);
-            if (!Player.IntroCardPhase) EnemyBehaviors.AdvanceRng(); // $CAD8; resident $9605 bypasses it
         }
 
         // ==================================================================

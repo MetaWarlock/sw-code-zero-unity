@@ -13,6 +13,8 @@ namespace Darkwing.Core
         public int WalkSlotIndex { get; private set; }
         public int WalkPartIndex { get; private set; }
         public byte WalkParity { get; private set; }
+        internal int NextWalkInstructionCycles => _walkNextCycles;
+        internal void RestoreCursor(byte cursor) => _oamCursor = cursor;
 
         public void BeginWalk(byte parity, int cursor = -1, int previousSlot = -1)
         {
@@ -32,10 +34,14 @@ namespace Darkwing.Core
         {
             if (deadline < 0) throw new ArgumentOutOfRangeException(nameof(deadline));
             while (WalkActive && WalkCycles < deadline)
-            {
-                WalkCycles += _walkNextCycles;
-                NextWalkInstruction();
-            }
+                StepWalkInstruction();
+        }
+
+        internal void StepWalkInstruction()
+        {
+            if (!WalkActive) throw new InvalidOperationException("OAM walk is not running");
+            WalkCycles += _walkNextCycles;
+            NextWalkInstruction();
         }
 
         public void FinishWalk() => AdvanceWalkTo(int.MaxValue);
