@@ -2064,7 +2064,7 @@ namespace Darkwing.Core
         {
             if (s.Direction == 0x0A) IntegrateXNeg(s);
             else IntegrateXPos(s);
-            IntegrateYSub(s);
+            IntegrateYRising(s);
         }
 
         /// <summary>$9A03 behavior 20: patroller. Walks, turns at the timer; RNG check
