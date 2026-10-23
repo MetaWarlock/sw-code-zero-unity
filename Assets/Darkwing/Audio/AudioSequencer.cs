@@ -583,9 +583,11 @@ namespace Darkwing.Audio
 
                 if ((flags & 0x01) != 0)                       // $8273-$8275: bit0 = loop point
                 {                                              // (after the ASL bit7 chain check,
-                    TimingSupported = false;
+                    Cost(13);
                                                                //  the LSR chain tests bits 0,1,2)
                     byte b1 = (byte)(SfxReadByte() << 1);       // $8277-$827A
+                    Cost(b1 == 0 ? 5 : 4);
+                    if (b1 == 0) TimingSupported = false;
                     bool finished = false;
                     if (b1 != 0)                               // $827A-$827B: ASL A; BEQ $8289
                     {
@@ -593,6 +595,7 @@ namespace Darkwing.Audio
                         _d6 = (byte)(_d6 << 1);
                         if (b1 == _d6)                         // $8280-$8282: CMP $D6 (b1*2 vs D6*2)
                         {
+                            Cost(25);
                             // $8296-$8299: TYA; PLP; ROR A; STA $D6 — D6 collapses to its
                             // old bit7 (low bits lost — verbatim).
                             _d6 = savedBit7;
@@ -600,23 +603,28 @@ namespace Darkwing.Audio
                         }
                         else
                         {
+                            Cost(27);
                             _d6 = (byte)((_d6 >> 1) | savedBit7);  // $8284-$8285: PLP; ROR $D6
                             _d6 = (byte)(_d6 + 1);                 // $8287: INC $D6
                         }
                     }
                     if (!finished)
                     {
+                        Cost(20);
                         byte b2 = SfxReadByte();               // $8289-$828C
                         byte b3 = SfxReadByte();               // $828D
                         _d0 = b3; _d1 = b2;                    // $8290-$8292: big-endian new ptr
-                        if (b2 != 0) continue;                 // $8294: BNE $825B (next block)
+                        if (b2 != 0) { Cost(3); continue; }
+                        Cost(2);
+                        TimingSupported = false;
                     }
                     int d0 = _d0 + 2;                          // $829B-$82A5: D0 += 2
+                    Cost(d0 > 255 ? 17 : 13);
                     _d0 = (byte)d0;
                     if (d0 > 0xFF) _d1++;
                 }
 
-                Cost((flags & 1) == 0 ? 8 : 7);
+                Cost((flags & 1) == 0 ? 8 : 0);
                 Cost((flags & 2) == 0 ? 8 : 16);
                 if ((flags & 0x02) != 0)                       // $82A6-$82AD: bit1 → $D4
                     _d4 = SfxReadByte();
@@ -637,7 +645,7 @@ namespace Darkwing.Audio
                 if (mask != _cf)                               // $82D1-$82D3
                 {
                     Cost(9);
-                    _cf = mask;                                // $82D5
+                    _cf = (byte)(mask ^ _cf);
                     SilenceComplementAndClear();               // $82D7: JSR $81D4
                 }
                 else Cost(1);
@@ -671,7 +679,7 @@ namespace Darkwing.Audio
             if (_d3 == 0) return;                              // $82EE-$82F0
             if (x == 1)                                        // $82F2-$82F4: triangle timer
             {
-                Cost(13);
+                Cost(12);
                 int t = _p7[x + F_EnvTimer] - 1;               // $82FB: DEC $0710,X
                 _p7[x + F_EnvTimer] = (byte)t;
                 if (t != 0) { Cost(10); return; }                            // $82FE: BNE $82FA
@@ -752,7 +760,7 @@ namespace Darkwing.Audio
             y--;                                               // $8373: DEY (note-1)
             if (x == 0)                                        // $8374-$837C: noise channel
             {
-                Cost(9);
+                Cost(10);
                 _c3 = 0;                                       // $8377: STA $C3 (A = X = 0)
                 SetPeriodHiLo(x, (byte)(y ^ 0x0F), _c3);       // $8379-$837C: JMP $8636
                 return;                                        // (JMP — no return to init flow)
@@ -846,11 +854,11 @@ namespace Darkwing.Audio
             }
             else
             {
-                Cost(13 + (idx < 0 ? 1 : 0));
+                Cost(((nf & 0x10) != 0 ? 11 : 13) + (idx < 0 ? 1 : 0));
                 mult = _rom3[0x091C + idx];                    // $83F1: LDA $891C,Y (3·2^n table)
                 if ((nf & 0x10) != 0)                          // $83F4: BCC not taken (bit4 = dotted)
                 {
-                    Cost(23);
+                    Cost(24);
                     _c3 = (byte)mult;                          // $83F6
                     nf &= 0xEF;                                // $83F8-$83FD: clear bit4
                     W(m, F_NoteFlags, nf);
@@ -975,7 +983,7 @@ namespace Darkwing.Audio
                     Cost(20);
                     W(m, F_NoteFlags, (byte)(R(m, F_NoteFlags) | 0x10)); break;
                 case 0x03:                                     // $84E8: EOR #$08 (toggle)
-                    Cost(19);
+                    Cost(17);
                     W(m, F_NoteFlags, (byte)(R(m, F_NoteFlags) ^ 0x08)); break;
                 case 0x04:                                     // $8575: OR param into $0730
                     Cost(20);
@@ -1051,22 +1059,28 @@ namespace Darkwing.Audio
         /// fire when the counter reaches 1 (the decrement itself is discarded).</summary>
         private void VolumeDecay(int m, int slot, bool second)
         {
-            TimingSupported = false;
+            if (slot != 0) TimingSupported = false;
+            Cost(slot == 0x0C ? 21 : 24);
+            Cost(second ? 1 : 0);
             int addr = 0x44 + m + slot;                        // $8529-$852F: Y = X + slot
             if (!second)                                       // cmds $0E-$11 ($8530-$8545)
             {
                 int v = _p7[addr] - 1;
+                Cost(v < 0 ? 13 : 11);
                 if (v < 0) v = _c3;                            // $853C-$853E: borrow → param
                 _p7[addr] = (byte)v;
+                Cost(v == 0 ? 8 : 10);
                 if (v == 0) { AdvanceStreamPtr(m); return; }   // $8543: BEQ $8566 (skip pair)
             }
             else                                               // cmds $12-$15 ($8547-$8552)
             {
                 int v = _p7[addr] - 1;
+                Cost(v != 0 ? 11 : 41);
                 if (v != 0) { AdvanceStreamPtr(m); return; }   // $854D: BNE $8566 (decrement discarded)
                 _p7[addr] = 0;                                 // $854F
                 W(m, F_NoteFlags, (byte)((R(m, F_NoteFlags) & 0x97) | _c3));  // $8552: JSR $8575
             }
+            Cost(34);
             byte hi = ReadStreamByte(m);                       // $8555-$8558: STA $C3
             _c3 = hi;
             byte lo = ReadStreamByte(m);                       // $855A-$855D
@@ -1078,6 +1092,7 @@ namespace Darkwing.Audio
         private void AdvanceStreamPtr(int m)
         {
             int lo = R(m, F_StreamLo) + 2;
+            Cost(lo > 255 ? 28 : 22);
             W(m, F_StreamLo, (byte)lo);
             if (lo > 0xFF) W(m, F_StreamHi, (byte)(R(m, F_StreamHi) + 1));
         }
@@ -1152,7 +1167,7 @@ namespace Darkwing.Audio
                             GateCheck(m);                      // legato: keep current period
                             return;
                         }
-                        Cost(1);
+                        Cost(2);
                     }
                     else if (R(m, F_SlideAmt) != 0)            // $85FC-$85FF
                     {
@@ -1169,7 +1184,7 @@ namespace Darkwing.Audio
                     }
                     else Cost(8);
                 }
-                else Cost(1);
+                else Cost(2);
                 Cost(19);
                 W(m, F_Flags, (byte)(R(m, F_Flags) & 0xDF));   // $861D-$8622: clear slide-active
                 W(m, F_SlideTarget, (byte)_c3);                // $8625-$8627: target = new index
@@ -1236,7 +1251,7 @@ namespace Darkwing.Audio
             }
             else if (m == 0x01)                                // $85BE-$85C0: SFX triangle
             {
-                Cost(44);
+                Cost(42);
                 _c1 = _d3;                                     // $85C2-$85C4
                 _c4 = R(m, F_Control);
                 Multiply();                                    // $85CB: JSR $8006
@@ -1291,7 +1306,7 @@ namespace Darkwing.Audio
         /// merge into the control byte with halt+constant-volume ($30) set.</summary>
         private void SetVolume(int m)
         {
-            Cost(m == 1 ? (_c3 != 0 ? 20 : 30) : 27);
+            Cost(m == 1 ? (_c3 != 0 ? 21 : 31) : 27);
             if (m == 0x01 && _c3 != 0)                         // $865A-$8660
             {
                 W(m, F_Control, _c3);                          // $866B
@@ -1459,9 +1474,6 @@ namespace Darkwing.Audio
             byte c3 = (byte)(((a >> 4) & 0x0F) ^ 0x0F);        // $8763-$8769: >>4, EOR #$0F
             _c3 = c3;
 
-            // $876B-$8795: instr[6] gate modulation (only increases the reduction).
-            // $878F's CMP #$10/BCS $87A5 is unreachable: the tested value is the high
-            // nibble of the product hi byte (≤ $0F). Transcribed as the BCC path.
             int gate = Instr(6);                               // ($C5),Y = 6
             Cost(24 + InstrumentPageCross(6));
             if (gate >= 0x05)                                  // $876D-$8771
@@ -1475,11 +1487,16 @@ namespace Darkwing.Audio
                     Cost(9);
                     _c1 = (byte)v;
                     Multiply();                                // $8786: acc × gate
-                    Cost(16 + ((_c1 >> 2) >= _c3 ? 3 : 1));
-                    if ((_c1 >> 2) >= 16 || ((_c1 >> 2) >= _c3) != ((_c1 >> 4) >= _c3)) TimingSupported = false;
-                    int hi4 = (_c1 >> 4) & 0x0F;               // $8789-$878D: hi byte >> 4 (0-15)
-                    if (hi4 >= _c3)                            // $8791-$8795: CMP $C3; BCC keeps C3
-                        _c3 = (byte)hi4;
+                    int reduction = _c1 >> 2;
+                    if (reduction >= 16)
+                    {
+                        Cost(26);
+                        WriteReg(m, 0, (byte)(R(m, F_Control) & 0xF0));
+                        return;
+                    }
+                    Cost(16 + (reduction >= _c3 ? 3 : 1));
+                    if (reduction >= _c3)
+                        _c3 = (byte)reduction;
                 }
                 else Cost(1);
             }
@@ -1555,7 +1572,7 @@ namespace Darkwing.Audio
             Cost(8);
             if (rate != 0)
             {
-                Cost((rate & 128) != 0 ? 22 : 21);
+                Cost((rate & 128) != 0 ? 20 : 19);
                 int yCarry = (rate & 0x80) != 0 ? -1 : 0;      // $8877-$8879: BPL skip; DEY
                 int lo2 = (pair & 0xFF) + rate;                // $887A-$887D: CLC; ADC $C2
                 int hi2 = ((pair >> 8) & 0xFF) + yCarry + (lo2 >> 8);  // $887F-$8882
@@ -1588,12 +1605,8 @@ namespace Darkwing.Audio
         private bool VibratoAdjust(int m, out byte outLo, out byte outHi)
         {
             outLo = 0; outHi = 0;
+            if (LastPeriodHi(m) >= 128) return false;
             int depth = Instr(5);                              // $87B8-$87BC: instr[5]
-            if (LastPeriodHi(m) >= 128)
-            {
-                if (depth == 0) return false;
-                TimingSupported = false;
-            }
             if (depth == 0) { Cost(11 + InstrumentPageCross(5)); return false; }                      // $87BC: BEQ $880C
 
             int acc = R(m, F_DecayAcc);                        // $87C0
