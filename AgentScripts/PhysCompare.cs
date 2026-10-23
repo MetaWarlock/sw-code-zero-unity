@@ -3,6 +3,47 @@ using UnityEngine;
 
 public static class PhysCompare
 {
+    public static string DeathSoundContract()
+    {
+        int checks = 0;
+        foreach (byte gate in new byte[] { 0, 0x7F, 0x80, 0xFF })
+            foreach (byte mission in new byte[] { 0, 0x80 })
+            {
+                var player = new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance);
+                int sounds = 0;
+                player.Sfx = id => { if (id != 0x25) throw new System.Exception("Wrong death sound"); sounds++; };
+                player.DeathSoundGate = gate;
+                player.PendingMissionFlag = mission;
+                player.EnergyColLeft = 0x73; player.EnergyColRight = 0x71;
+                player.DeathService();
+                player.DeathService();
+                if (sounds != (gate < 0x80 ? 2 : 0) || player.DeathSoundGate != gate)
+                    throw new System.Exception("CB01 gate/repeated service/mission sign mismatch");
+                checks++;
+            }
+        var actor = new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance);
+        actor.Objects = new Darkwing.Core.ObjectSystem(null);
+        var slot = actor.Objects.Slots[0];
+        slot.Active = true; slot.StateLow = 0x81; slot.T480 = 0x1F;
+        actor.State = 7;
+        int calls = 0;
+        actor.Sfx = id => { if (id != 0x25) throw new System.Exception("Unexpected death event"); calls++; };
+        actor.Step(0, 0);
+        if (slot.T480 != 0x1E || actor.DeathSoundGate != 0xFF || calls != 1)
+            throw new System.Exception("D3B6 did not latch the death sound gate");
+        checks++;
+        actor.DeathService();
+        if (calls != 1) throw new System.Exception("Normal death queued sound twice");
+        checks++;
+        actor.ApplyWorldPrelude(new Darkwing.Core.RoomDecoder.World { RowWidth = 1, Grid = new byte[256], Flags = new byte[256] });
+        if (actor.DeathSoundGate != 0) throw new System.Exception("DE60 did not clear death gate");
+        checks++;
+        if (new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance).DeathSoundGate != 0)
+            throw new System.Exception("Power-on gate is not clear");
+        checks++;
+        return $"PASS {checks}/{checks} CB01 death SFX gate, repeated service, mission signs, D3B6 latch and DE60 reset";
+    }
+
     public static string PauseActivityContract()
     {
         byte[] Read(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
@@ -597,6 +638,7 @@ public static class PhysCompare
             p.StateTimer = ram0[0x51];
             p.SavedState = ram0[0x58];
             p.InvulnFrames = ram0[0x7C];
+            p.DeathSoundGate = ram0[0x9B];
             // Mid-mission route seeds (gold_m*_route) start with up to 3 hearts already spent,
             // and the ROM keeps that count in the player's RAM metasprite tile bytes, not a counter:
             // $F9C2 marks $05B4 ($80→$82), $05B8/$05B6 ($81→$83), then $05B2 plus the death write.
@@ -2239,7 +2281,7 @@ public static class PhysCompare
 
     public static string Mission1Contracts()
     {
-        return string.Join("\n",new[]{G92Exit(),HorizontalPushContract(),PauseActivityContract(),AirShotContract(),PickupContract(),WeaponSwitchContract(),
+        return string.Join("\n",new[]{G92Exit(),HorizontalPushContract(),PauseActivityContract(),DeathSoundContract(),AirShotContract(),PickupContract(),WeaponSwitchContract(),
             CrouchDropContract(),QuackerjackKickContract(),LobAndFlashContract(),BossTailContract(),
             SceneDescriptorContract(),OffscreenAnimationContract(),PlayerPoseContract(),
             ResidentReturnContract(),CompletedMapContract()});
@@ -2468,6 +2510,7 @@ public static class PhysCompare
         p.StateTimer = ram0[0x51];
         p.SavedState = ram0[0x58];
         p.InvulnFrames = ram0[0x7C];
+        p.DeathSoundGate = ram0[0x9B];
         // $F9C2's heart ladder is not a counter but the player's own RAM metasprite tile bytes:
         // the $C8CF template leaves $05B2=$80, $05B4=$80, $05B6=$81, $05B8=$81, and each survived
         // hit marks the next one ($05B4→$82, $05B8→$83, $05B6→$83); the 4th marks $05B2→$82 and

@@ -32,6 +32,7 @@ namespace Darkwing.Core
         public byte InvulnFrames;       // $7C
         public byte GasToggle;          // $98
         public byte GravityFrac = 0x40; // $99
+        public byte DeathSoundGate;
         public byte WallBlocked;        // $9E
         public bool OnHookTileFlag;     // $0400 bit5
 
@@ -363,6 +364,7 @@ namespace Darkwing.Core
             GasActive = 0;                                  // $5F
             DeathFlag = 0;                                  // $64
             LevelActive = 0;                                // $65 ($DE5E, A=$00 — never negative after a load)
+            DeathSoundGate = 0;
             IntroHoldFlag = 0;                              // $3B ($DE62; $E476 may re-set it)
             GasToggle = 0;                                  // $98
             WallBlocked = 0;                                // $9E
@@ -1082,7 +1084,11 @@ namespace Darkwing.Core
                 YVelFrac = 0x8E; YVelInt = 1;                 // $D391-$D398
                 XVelFrac = 0x10; XVelInt = 0;                 // $D39B-$D3A2
                 s.T480--;                                     // $D3A5
-                if (s.T480 == 0x1E) Sfx?.Invoke(0x25);         // $D3AB-$D3B1
+                if (s.T480 == 0x1E)
+                {
+                    Sfx?.Invoke(0x25);
+                    DeathSoundGate = 0xFF;
+                }
                 return;                                       // $D3B8: the float moves nothing
             }
             if (Flags == 0x50 || Flags == 0x10)               // $D3BC-$D3C2
@@ -1155,10 +1161,10 @@ namespace Darkwing.Core
         /// rest of the world frame ($DA70 scroll, $8090 spawner, $E388 door, $8000 anim) is
         /// skipped — that, not any special meaning of state $07, is what freezes gold_w05
         /// f656-$04D0=00 → f674 while $50 stays $07 and only $05E6 counts down.
-        /// ($CB03's $9B gate selects the SFX $25 variant; $9B is not modelled yet.)
         /// </summary>
         public void DeathService()
         {
+            if ((sbyte)DeathSoundGate >= 0) Sfx?.Invoke(0x25);
             if ((sbyte)PendingMissionFlag >= 0)            // $CB0A: negative $66 skips the drain
             {
                 if (EnergyColRight == 0x70)                 // $CB11

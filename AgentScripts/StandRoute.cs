@@ -121,6 +121,7 @@ public static class StandRoute
             ram[0x52]=p.DirBits;ram[0x56]=p.AirSubState;ram[0x7C]=p.InvulnFrames;
             ram[0x53]=p.WeaponActive;ram[0x54]=p.WeaponSelected;ram[0x5F]=p.GasActive;
             ram[0x60]=p.GasEnergyHi;ram[0x61]=p.GasEnergyLo;ram[0x98]=p.GasToggle;
+            ram[0x9B]=p.DeathSoundGate;
             ram[0x3B]=p.IntroHoldFlag;ram[0xED]=BossBehaviors.InvulnTimer;ram[0xEE]=BossBehaviors.DamageAccum;
             ram[0xEF]=(byte)BossBehaviors.ProjectileSlot;
             ram[0x31]=flow.World.CurrentWorld;ram[0x38]=flow.World.CompletedCount;ram[0x69]=flow.World.CompletedMask;
