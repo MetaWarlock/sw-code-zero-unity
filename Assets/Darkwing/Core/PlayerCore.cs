@@ -9,7 +9,7 @@ namespace Darkwing.Core
     /// 6502-style signed compares and wraps. Vertical velocity is up-positive
     /// (integration subtracts it from Y, mirroring $F5A4/$F5DA).
     /// </summary>
-    public sealed class PlayerCore
+    public sealed partial class PlayerCore
     {
         // --- RAM-equivalent state (original addresses in comments) ---
         public byte State = 0;          // $50
@@ -558,11 +558,17 @@ namespace Darkwing.Core
         public byte LastVerticalRedraw;  // $29
         public byte VerticalRedrawRow;   // $2A (tile row cursor, 0..29)
         public byte PrevVerticalMode = 4;// $21
+        public bool TimingDeferredBankAudio;
 
         /// <summary>$E7C6/$E936: vertical stream cursors, including incoming-room changes.
         /// $E936 can run twice on a direction change at row 0, before any row is drawn.</summary>
         public void VerticalStreamPass()
         {
+            if (_tiles is LevelTileMap levelMap)
+            {
+                levelMap.MeasureVerticalStreamCycles(this, TimingDeferredBankAudio);
+                AddVerticalStreamTiming(levelMap);
+            }
             int d = (sbyte)(byte)(ScrollY - LastVerticalRedraw);
             int passes = (Math.Abs(d) & 15) >> 3;
             if (passes == 0) return;
@@ -700,6 +706,7 @@ namespace Darkwing.Core
         /// </summary>
         public void HorizontalScroll(System.Func<int, byte> gridByte, System.Func<int, byte> flagByte)
         {
+            BeginScrollServiceTiming();
             if (State == 0x07 || State == 0x08 || State == 0x12)   // $DA70-$DA7D camera lock
             {
                 PrevPlayerX = X;
@@ -2267,6 +2274,9 @@ namespace Darkwing.Core
         /// </summary>
         public void HookGrabCheck()
         {
+            BeginHookTiming();
+            try
+            {
             byte script = CellScriptByte;                                 // $DB01 ($34),$22
             if ((byte)(script & 0xCF) >= 0xC1                             // $DB03-$DB07
                 && !(script >= 0xC2 && script <= 0xCE && (script & 1) == 0)) // $DB09-$DB25
@@ -2287,6 +2297,8 @@ namespace Darkwing.Core
                     VerticalScrollUp();                       // $DB6A JMP $DCC4
                     break;
             }
+            }
+            finally { FinishScrollServiceTiming(); }
         }
 
         /// <summary>$DB43/$DB47/$DB4B: ($0510 - $FA), biased by -$10 when it borrows.</summary>
@@ -2373,6 +2385,7 @@ namespace Darkwing.Core
         /// <summary>$DCC4: ride the camera up $10 px/frame; on the 240 px wrap step $FB/$22 back.</summary>
         private void VerticalScrollUp()
         {
+            AddVerticalUpTiming();
             if (ScrollY == 0)                                 // $DCC4/$DCC6
             {
                 if (GridAt(CellIndex - RowStride) == 0) return; // $DCC8-$DCD1

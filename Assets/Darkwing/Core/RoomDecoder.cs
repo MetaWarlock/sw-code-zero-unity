@@ -36,6 +36,8 @@ namespace Darkwing.Core
             public byte TopRow;       // $DF41 -> $2D
             public byte[] Grid;       // room id per cell
             public byte[] Flags;      // script byte per cell
+            public ushort GridAddress;
+            public ushort FlagsAddress;
 
             public byte CellAt(int row, int col) => Grid[row * RowWidth + col];
             public byte FlagAt(int row, int col) => Flags[row * RowWidth + col];
@@ -66,6 +68,8 @@ namespace Darkwing.Core
             w.RoomBank = w.SetBank >= 6 ? (byte)1 : (byte)0;
             int gridPtr = t(0xDF50) | (t(0xDF60) << 8);
             int flagPtr = t(0xDF70) | (t(0xDF80) << 8);
+            w.GridAddress = (ushort)gridPtr;
+            w.FlagsAddress = (ushort)flagPtr;
             // $DD57 gives only the row WIDTH ($2E); the arrays have no length field, so each
             // world's grid/flag tables run up to the next descriptor's table (id 7 = $E17F,
             // the first dialog scene). Verified gaps: 0x44 (17x4), 0x78 (10x12), 0x39 (19x3).

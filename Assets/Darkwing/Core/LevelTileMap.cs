@@ -9,7 +9,7 @@ namespace Darkwing.Core
     /// is the same sliding window). Collision types cover the whole row
     /// (the original's $0600 window is a cache of the same data).
     /// </summary>
-    public sealed class LevelTileMap : ITileMap
+    public sealed partial class LevelTileMap : ITileMap
     {
         private readonly RoomDecoder _decoder;
         private readonly Ppu _ppu;
