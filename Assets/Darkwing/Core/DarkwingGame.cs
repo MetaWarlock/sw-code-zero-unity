@@ -1098,16 +1098,33 @@ namespace Darkwing.Core
         }
 
         /// <summary>$C0DC/$FF8C: drain every queued task, then run the $8000 NMI tick.</summary>
+        public int LastNmiAudioServiceCycles { get; private set; }
+        public bool NmiAudioTimingSupported { get; private set; }
+
         private void DrainAudioQueue()
         {
+            LastNmiAudioServiceCycles = 0;
+            NmiAudioTimingSupported = Audio != null;
             while (_audioQueue[_audioRead] != AudioQueueEmpty)
             {
                 byte id = _audioQueue[_audioRead];
                 _audioQueue[_audioRead] = AudioQueueEmpty;
                 _audioRead = (_audioRead + 1) & 7;
                 Audio?.Task(id);            // $8003 Audio_Task_Queued
+                if (Audio != null)
+                {
+                    LastNmiAudioServiceCycles += NmiTiming.QueuedTaskOverheadCycles + Audio.LastTaskCycles;
+                    NmiAudioTimingSupported &= Audio.TimingSupported;
+                }
             }
             Audio?.Tick();                  // $8000 Audio_Tick, once per NMI
+            if (Audio != null)
+            {
+                LastNmiAudioServiceCycles += NmiTiming.EmptyAudioQueueCycles + NmiTiming.TickCallCycles
+                    + Audio.LastTickCycles + NmiTiming.RestoreBankAndReturnCycles;
+                NmiAudioTimingSupported &= Audio.TimingSupported;
+            }
+            if (!NmiAudioTimingSupported) LastNmiAudioServiceCycles = -1;
         }
 
         public void PlaySfx(int id)
@@ -1151,15 +1168,17 @@ namespace Darkwing.Core
         /// <summary>$16 as seen by the next poll: P1 held byte from that same poll. Frames that
         /// return before reaching a poll (loader, reload, entry freeze) leave both latched.</summary>
         public byte HeldP1 => _prevHeld;
+        public int LastInputHookCycles { get; private set; }
 
         /// <summary>$C162–$C1B9: strobe the pads, latch held into $16 and its edge into $14.
         /// Bank 7's resident loop ($C9AC/$C792) polls at the head of its own iteration, so the
         /// title/dialog/map/mission-load frames poll too, not only the world dispatcher.</summary>
         private void PollInput(in NesButtons pad1)
         {
-            byte held = pad1.ToByte();
-            PressedP1 = (byte)(held & ~_prevHeld); // edge = held & ~previous (original $C193 semantics)
-            _prevHeld = held;
+            InputTiming.PollResult input = InputTiming.Poll(pad1.ToByte(), 0, _prevHeld, 0);
+            PressedP1 = input.PressedP1;
+            _prevHeld = input.HeldP1;
+            LastInputHookCycles = input.HookCycles;
         }
         private System.Func<int, byte> _gridByte, _flagByte;   // cached ($32)/($34) lookups for $DA70
         // The pause phase lives in DarkwingGame.Pause.cs (bank 4 $8F00…$9025).
