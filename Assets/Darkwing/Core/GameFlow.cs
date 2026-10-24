@@ -295,7 +295,8 @@ namespace Darkwing.Core
                     _resetStage = 9; // $DD5A JSR $FF06 is a separate yield, then $DD5D
                     return;
                 case 9:
-                    _game.BeginSceneLoad(_decoder, World.CurrentWorld);   // $DD5D-$DE24 staging
+                    MeasureResetStaging();                        // $DD5D-$DE86 at the resumed state
+                    _game.BeginSceneLoad(_decoder, World.CurrentWorld);   // $DD5D-$DE86 staging
                     _resetStage = 8;
                     return;
                 case 8:

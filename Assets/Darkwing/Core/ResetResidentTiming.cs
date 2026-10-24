@@ -8,12 +8,13 @@ namespace Darkwing.Core
         {
             public readonly int Cycles, CopyrightSetupCycles, BodyPcOffset;
             public readonly bool Commits;
-            public readonly ushort BodyPc, YieldStackPointer;
+            public readonly ushort BodyPc, YieldStackPointer, StopPc;
 
-            public BodyWork(int cycles, bool commits, int copyrightSetupCycles, ushort bodyPc, int bodyPcOffset, ushort yieldStackPointer)
+            public BodyWork(int cycles, bool commits, int copyrightSetupCycles, ushort bodyPc, int bodyPcOffset, ushort yieldStackPointer, ushort stopPc = 0xC5F7)
             {
                 Cycles = cycles; Commits = commits; CopyrightSetupCycles = copyrightSetupCycles;
                 BodyPc = bodyPc; BodyPcOffset = bodyPcOffset; YieldStackPointer = yieldStackPointer;
+                StopPc = stopPc;
             }
         }
 
@@ -66,7 +67,58 @@ namespace Darkwing.Core
             }
             if (stage == 7)
                 return new BodyWork(6 + 49, true, -1, 0xDD5A, 0, fadeYieldStack);
-            throw new NotSupportedException("Reset resident reached the unpriced $DD5D continuation");
+            throw new NotSupportedException("Reset resident has no priced body for stage " + stage);
+        }
+
+        /// <summary>$DD5D-$DE86: descriptors, palettes, CHR, render-off and the $C235 clear up to
+        /// the $E698 stream loop head. The loop is inline in $DE24 and has no $FF06 of its own, so
+        /// the honest endpoint is a stop at $DE86 rather than a fabricated Waiting.</summary>
+        public static BodyWork MeasureStaging(RoomDecoder.World world, bool audioRingNonZero, bool audioSlotFree)
+        {
+            if (world == null) throw new ArgumentNullException(nameof(world));
+            int cycles = 94;                                                   // $DD5D-$DDA4
+            cycles += audioRingNonZero ? 20 + SoundEnqueue(audioSlotFree) : 8; // $DDA6-$DDAB/$F84E
+            cycles += 27;                                                      // $DDAE-$DDBD
+            cycles += BackgroundPalette(world.BgPalIdx);                       // $C2F9
+            cycles += 13;                                                      // $DDC0-$DDC5
+            cycles += SpritePalette(world.SpPalIdx, world.Id);                 // $C319
+            cycles += 6 + 6 + 20 + 6 + ClearSlots();                           // $DDC8/$DE24/$C14E/$DE27/$C235
+            cycles += 121;                                                     // $DE2A-$DE84 with $23 == 0
+            if (world.StartCell != 0) cycles += 12;                            // $DE7C falls into $DE7E-$DE84
+            return new BodyWork(cycles, false, -1, 0xDD5D, 0, 0xBB, 0xDE86);
+        }
+
+        /// <summary>$F84E at a ring slot: 45 cycles when the slot is empty, 30 when the
+        /// enqueue is dropped. $D9 is still overwritten on both paths.</summary>
+        private static int SoundEnqueue(bool accepted)
+        {
+            int cycles = 3 + 3 + 3 + 3 + 4 + 2;          // STA $D9 .. CMP #$88
+            if (!accepted) return cycles + 3 + 3 + 6;    // BNE $F866/LDX $00/RTS
+            cycles += 2;                                 // BNE not taken
+            cycles += 3 + 4 + 2 + 2 + 2 + 3;             // LDA $01 .. STA $DA
+            return cycles + 3 + 6;                       // LDX $00/RTS
+        }
+
+        /// <summary>$C2F9: $C35D + (index&lt;&lt;4) copied to both $0300 planes.</summary>
+        private static int BackgroundPalette(byte index)
+        {
+            int y = (index << 4) & 0xFF, cycles = 24;
+            for (int offset = 0; offset < 16; offset++)
+                if ((0x5D + ((y + offset) & 0xFF)) > 0xFF) cycles++;
+            return cycles + 21 * 16 + 47 + 6;
+        }
+
+        /// <summary>$C319: the fixed $C4FD bytes plus eight bytes at $C505 + (index&lt;&lt;3),
+        /// then the $C33C world override.</summary>
+        private static int SpritePalette(byte index, byte world)
+        {
+            int y = (index << 3) & 0xFF, cycles = 10 + 167 + 5 + 183;
+            for (int offset = 0; offset < 8; offset++)
+                if ((0x05 + ((y + offset) & 0xFF)) > 0xFF) cycles++;
+            if (world == 0x08) return cycles + 24;
+            if (world == 0x09) return cycles + 28;
+            if (world == 0x0B) return cycles + 32;
+            return cycles + 21;
         }
 
         /// <summary>$C5F7 JSR $C95C, LDA #7/STA $31, JSR $DD57 -> $C248 -> $C276 and the

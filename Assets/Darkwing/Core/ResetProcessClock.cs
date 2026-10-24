@@ -107,7 +107,7 @@ namespace Darkwing.Core
             if (!work.Commits)
             {
                 _scheduler.ElapseInterrupt(checked((int)(finish - _scheduler.ExecutionCycle)));
-                StopPc = 0xC5F7;
+                StopPc = work.StopPc;
                 StopCycle = finish;
                 CommitCycle = -1;
                 Stage = Phase.Stopped;

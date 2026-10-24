@@ -1155,6 +1155,9 @@ namespace Darkwing.Core
             EnqueueAudio((byte)id);
         }
 
+        /// <summary>$D9 as the next $F84E call sees it.</summary>
+        public byte AudioLastId => _audioLastId;
+
         /// <summary>Load a room's nametable directly (test fixture path; the level
         /// loader normally streams it via the VRAM queue).</summary>
         public void LoadNametableRoom(byte[] nametableTilesAndAttrs)

@@ -10,16 +10,17 @@ public static class ResetClockVerify
     private const string Root = "D:/Art/SW Code Zero Unity/";
     private const int FirstPoll = 6;
     private const int LastCommittedPoll = 280;
-    private const int RefusalPoll = 281;
-    private const int ExpectedRows = LastCommittedPoll - FirstPoll + 1;
+    private const int StopPoll = 281;
+    private const int ExpectedRows = StopPoll - FirstPoll + 1;
 
     private sealed class Snapshot
     {
         public int Poll;
         public long Handler, Resume, Body, Finish;
-        public ushort Interrupted;
+        public ushort Interrupted, StopPc;
         public byte State, Timer;
         public bool Commits;
+        public ResetProcessClock.Phase Stage;
         public Snapshot Copy() => (Snapshot)MemberwiseClone();
     }
 
@@ -59,7 +60,7 @@ public static class ResetClockVerify
     private static byte[] Data(string name) => File.ReadAllBytes(Root + "Assets/Darkwing/Data/" + name + ".bytes");
 
     private static List<Snapshot> RunNative(byte[] input, bool dropCopyrightRequest, out int dropped,
-        out ResetProcessClock refusal)
+        out ResetProcessClock stopClock)
     {
         var data = DataLoader.Load(Data("chr_full"), Data("levelsets"), Data("screens"), Data("levels"), Data("anims"));
         var decoder = new RoomDecoder(Data("prg_bank0"), Data("prg_bank1"), Data("world_bank7"), Data("levelsets"));
@@ -73,8 +74,8 @@ public static class ResetClockVerify
         var flow = new GameFlow(game, decoder);
         var rows = new List<Snapshot>();
         dropped = 0;
-        refusal = null;
-        for (int poll = 1; poll <= RefusalPoll; poll++)
+        stopClock = null;
+        for (int poll = 1; poll <= StopPoll; poll++)
         {
             if (dropCopyrightRequest && game.Player.ChrLatch1 == 0x99)
             {
@@ -83,21 +84,29 @@ public static class ResetClockVerify
             }
             game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
             var clock = flow.ResetClock;
-            if (poll == RefusalPoll)
-            {
-                refusal = clock;
-                continue;
-            }
             if (clock == null || clock.LastNmiOrdinal == 0) continue;
-            Require(clock.Supported, "Actual reset clock unsupported at poll " + poll + ": " + clock.Unsupported);
-            bool committed = clock.Stage == ResetProcessClock.Phase.Waiting;
-            Require(committed, "Reset resident did not commit at poll " + poll + ": " + clock.Stage + " " + clock.Unsupported);
-            rows.Add(new Snapshot
+            if (poll <= LastCommittedPoll)
             {
-                Poll = poll, Handler = clock.HandlerCycle, Resume = clock.ResumeCycle, Body = clock.BodyStartCycle,
-                Finish = clock.CommitCycle, Interrupted = clock.InterruptedPc,
-                State = clock.ProcessState, Timer = clock.ProcessTimer, Commits = committed
-            });
+                Require(clock.Supported, "Actual reset clock unsupported at poll " + poll + ": " + clock.Unsupported);
+                Require(clock.Stage == ResetProcessClock.Phase.Waiting,
+                    "Reset resident did not commit at poll " + poll + ": " + clock.Stage + " " + clock.Unsupported);
+                rows.Add(new Snapshot
+                {
+                    Poll = poll, Handler = clock.HandlerCycle, Resume = clock.ResumeCycle, Body = clock.BodyStartCycle,
+                    Finish = clock.CommitCycle, Interrupted = clock.InterruptedPc,
+                    State = clock.ProcessState, Timer = clock.ProcessTimer, Commits = true, Stage = clock.Stage
+                });
+            }
+            else
+            {
+                stopClock = clock;
+                rows.Add(new Snapshot
+                {
+                    Poll = poll, Handler = clock.HandlerCycle, Resume = clock.ResumeCycle, Body = clock.BodyStartCycle,
+                    Finish = clock.StopCycle, Interrupted = clock.InterruptedPc, StopPc = clock.StopPc,
+                    State = clock.ProcessState, Timer = clock.ProcessTimer, Commits = false, Stage = clock.Stage
+                });
+            }
         }
         Require(flow.ResetClock != null && flow.ResetClock.MinimumCommitSlackCycles > 0, "Missing actual reset commit bound");
         return rows;
@@ -125,7 +134,7 @@ public static class ResetClockVerify
             string[] cells = lines[index].Split(',');
             Require(cells.Length == 18, "Loader body source field count");
             int poll = int.Parse(cells[0], CultureInfo.InvariantCulture);
-            Require(poll >= 263 && poll <= RefusalPoll, "Loader body source poll outside scope");
+            Require(poll >= 263 && poll <= StopPoll, "Loader body source poll outside scope");
             ushort pc = Convert.ToUInt16(cells[2], 16);
             Dictionary<ushort, long> entries;
             if (!loader.Cycles.TryGetValue(poll, out entries))
@@ -199,12 +208,12 @@ public static class ResetClockVerify
 
     private static void ValidateLoader(LoaderSource loader)
     {
-        Require(loader.Cycles.Count == RefusalPoll - 263 + 1, "Loader body source poll coverage");
-        Require(loader.Interrupted.Count == RefusalPoll - 264 + 1, "Loader interrupted PC coverage");
+        Require(loader.Cycles.Count == StopPoll - 263 + 1, "Loader body source poll coverage");
+        Require(loader.Interrupted.Count == StopPoll - 264 + 1, "Loader interrupted PC coverage");
         Dictionary<ushort, long> first;
         Require(loader.Cycles.TryGetValue(263, out first) && !first.ContainsKey(0xC000),
             "Poll 263 NMI belongs to the reset boundary source");
-        for (int poll = 264; poll <= RefusalPoll; poll++)
+        for (int poll = 264; poll <= StopPoll; poll++)
         {
             loader.At(poll, 0xC000);
             Require(loader.Interrupted.ContainsKey(poll), "Loader interrupted PC missing " + poll);
@@ -246,7 +255,24 @@ public static class ResetClockVerify
     {
         ValidateLoader(loader);
         Require(actual.Count == ExpectedRows, "Missing or extra actual reset calls: " + actual.Count);
-        for (int index = 0; index < actual.Count; index++)
+        var stop = actual[actual.Count - 1];
+        Require(stop.Poll == StopPoll, "Last reset call is not the $DD5D staging pass");
+        Require(!stop.Commits && stop.Stage == ResetProcessClock.Phase.Stopped,
+            "Reset clock did not stop at the unpriced $DE86 streamer: " + stop.Stage);
+        Require(stop.StopPc == 0xDE86, "Reset clock stopped at $" + stop.StopPc.ToString("X4"));
+        Require(stop.State == FrameScheduler.Running && stop.Timer == 0,
+            "Reset staging stop re-selected a scheduler phase: " + stop.State + "/" + stop.Timer);
+        Require(stop.Body - stop.Resume == InputTiming.ResumeCallCycles + 525 + InputTiming.ResumeEpilogueCycles,
+            "Reset staging resume/body hook scope changed");
+        Require(stop.Handler - 2 == loader.At(StopPoll, 0xC000), "Loader staging handler mismatch");
+        Require(stop.Interrupted == loader.Interrupted[StopPoll], "Loader staging interrupted PC mismatch");
+        Require(stop.Resume - 2 == loader.At(StopPoll, 0xFECF), "Loader staging resume mismatch");
+        Require(stop.Body - 2 == loader.At(StopPoll, 0xDD5D), "Loader staging anchor mismatch");
+        Require(stop.Finish - 2 == loader.At(StopPoll, 0xDE86), "Loader staging endpoint mismatch");
+        Require(stop.Finish - stop.Body == 1540, "Loader staging work length mismatch: " + (stop.Finish - stop.Body));
+        Require(stop.Finish - stop.Body == loader.At(StopPoll, 0xDE86) - loader.At(StopPoll, 0xDD5D),
+            "Loader staging work length mismatch");
+        for (int index = 0; index < actual.Count - 1; index++)
         {
             var row = actual[index];
             Require(row.Poll == index + FirstPoll, "Missing, duplicate or reordered reset input boundary");
@@ -310,13 +336,12 @@ public static class ResetClockVerify
                 == "137190299728c9ea6285ebf057fa25b1efaf916b9aeb2ad6d21fa46efb7f6275", "Unchanged human input identity");
         var boundaries = LoadBoundarySource();
         var loader = LoadLoaderSource();
-        var actual = RunNative(input, false, out int untouched, out ResetProcessClock refusal);
+        var actual = RunNative(input, false, out int untouched, out ResetProcessClock stopClock);
         Require(untouched == 0, "Unexpected native request mutation");
-        Require(refusal != null && !refusal.Supported && !refusal.Active
-            && refusal.Stage == ResetProcessClock.Phase.Unsupported
-            && refusal.Unsupported.Contains("DD5D") && refusal.Unsupported.Contains("DE86"),
-            "Unpriced $DD5D continuation was not refused: "
-                + (refusal == null ? "missing clock" : refusal.Stage + " " + refusal.Unsupported));
+        Require(stopClock != null && stopClock.Stage == ResetProcessClock.Phase.Stopped
+            && stopClock.StopPc == 0xDE86 && stopClock.StopCycle > 0 && stopClock.CommitCycle == -1,
+            "Unpriced $DE86 streamer did not stop the clock: "
+                + (stopClock == null ? "missing clock" : stopClock.Stage + " $" + stopClock.StopPc.ToString("X4")));
         Compare(actual, boundaries, loader);
 
         int negatives = 0;
@@ -341,6 +366,31 @@ public static class ResetClockVerify
         Reject(() => Compare(extra, boundaries, loader)); negatives++;
         var duplicate = new List<Snapshot>(actual); duplicate[1] = actual[0];
         Reject(() => Compare(duplicate, boundaries, loader)); negatives++;
+
+        int stopIndex = actual.Count - 1;
+        foreach (string field in new[] { "Handler", "Resume", "Body", "Finish", "Interrupted", "StopPc", "Stage", "Commits", "State", "Timer" })
+        {
+            var changed = new List<Snapshot>(actual);
+            changed[stopIndex] = actual[stopIndex].Copy();
+            var row = changed[stopIndex];
+            if (field == "Handler") row.Handler++;
+            else if (field == "Resume") row.Resume++;
+            else if (field == "Body") row.Body++;
+            else if (field == "Finish") row.Finish++;
+            else if (field == "Interrupted") row.Interrupted ^= (ushort)1;
+            else if (field == "StopPc") row.StopPc ^= (ushort)0x100;
+            else if (field == "Stage") row.Stage = ResetProcessClock.Phase.Waiting;
+            else if (field == "Commits") row.Commits = true;
+            else if (field == "State") row.State = FrameScheduler.Waiting;
+            else row.Timer = 1;
+            Reject(() => Compare(changed, boundaries, loader));
+            negatives++;
+        }
+        var noStop = new List<Snapshot>(actual); noStop.RemoveAt(noStop.Count - 1);
+        Reject(() => Compare(noStop, boundaries, loader)); negatives++;
+        var repeatedStop = new List<Snapshot>(actual); repeatedStop.Add(actual[stopIndex]);
+        Reject(() => Compare(repeatedStop, boundaries, loader)); negatives++;
+
         foreach (var target in new[] { new[] { 263, 0xC95F }, new[] { 267, 0xC2AA },
             new[] { 279, 0xC24E }, new[] { 280, 0xFF19 }, new[] { 281, 0xDE86 } })
         {
@@ -352,16 +402,18 @@ public static class ResetClockVerify
         interrupted.Interrupted[266] ^= (ushort)1;
         Reject(() => Compare(actual, boundaries, interrupted)); negatives++;
 
-        var dropped = RunNative(input, true, out int droppedCount, out ResetProcessClock droppedRefusal);
+        var dropped = RunNative(input, true, out int droppedCount, out ResetProcessClock droppedStop);
         Require(droppedCount == 1, "Missing native CHR-request negative");
-        Require(droppedRefusal != null && droppedRefusal.Stage == ResetProcessClock.Phase.Unsupported,
-            "Missing CHR request changed the loader refusal");
+        Require(droppedStop != null && (droppedStop.Stage == ResetProcessClock.Phase.Stopped
+                || droppedStop.Stage == ResetProcessClock.Phase.Unsupported),
+            "Missing CHR request did not change the clock outcome");
         Reject(() => Compare(dropped, boundaries, loader)); negatives++;
         Require(actual[18].Handler == dropped[18].Handler && actual[18].Resume - dropped[18].Resume == 49,
             "Missing CHR request did not expose the expected service-path difference");
-        return "PASS actual Game.Flow.ResetClock: loader calls275 (polls6-280), handler/interrupted/resume/body/finish each275, commits275, DD5Drefusal1; "
+        return "PASS actual Game.Flow.ResetClock: loader calls276 (polls6-281), handler/interrupted/resume/body/finish each276, commits275, "
+            + "honest stop1 at $DE86 (staging1540, SP=BB, no new Waiting); "
             + "source spans C235=367 C95C=401 C5F7->FF19=1696 ordinary69 ramp1281(267,271,275) exit1491 DD5A=55; "
             + "loader buffer identity393 records from f8; strict negativeControls=" + negatives
-            + ". No external clock instantiation or source-state seed. The first unpriced continuation $DD5D-$DE86 (source span1540) remains refused and outside native scope.";
+            + ". No external clock instantiation or source-state seed. The $DE86/$E698 stream loop remains outside native scope.";
     }
 }
