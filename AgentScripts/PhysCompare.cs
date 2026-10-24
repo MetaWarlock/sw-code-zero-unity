@@ -556,6 +556,7 @@ public static class PhysCompare
         // Seed from the golden frame `seedFrame`.
         byte[] ram0 = new byte[2048];
         System.Array.Copy(ramAll, seedFrame * 2048, ram0, 0, 2048);
+        game.Ppu.WriteRegister(0x2000, ram0[0xFF]);
         var p = game.Player;
         p.X = (ushort)(ram0[0x4F0] | (ram0[0x500] << 8));
         p.Y = (ushort)(ram0[0x510] | (ram0[0x520] << 8));

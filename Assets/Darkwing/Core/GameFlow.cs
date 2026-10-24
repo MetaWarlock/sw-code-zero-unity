@@ -70,6 +70,7 @@ namespace Darkwing.Core
             // LoadTitleScreen does exactly that, so the boot screen is the real title, not a black
             // frame waiting for LoadMapScreen.
             _game.BeginPowerOn();
+            BeginPowerOnTiming();
             _game.ResidentProcess = StepReset;
         }
 
@@ -240,12 +241,17 @@ namespace Darkwing.Core
             _prevHeld = pad.ToByte();
             switch (_resetStage)
             {
-                case 0: // $FE0C-$FE19: wait for four complete vblanks before touching RAM
-                    if (--_resetWait != 0) return;
-                    _game.ResetMemoryAndVideo();
-                    _resetStage = 1;
+                case 0:
+                    if (PowerOn == null)
+                    {
+                        if (--_resetWait != 0) return;
+                        _game.ResetMemoryAndVideo();
+                        _resetStage = 1;
+                        return;
+                    }
+                    StepPowerOnTiming();
                     return;
-                case 1: // $FE86/$C595: create the master process, then $C5A2 yields
+                case 1:
                     _game.Ppu.WriteRegister(0x2000, 0x90);
                     _game.PlaySound(0xF0);
                     _resetStage = 2;

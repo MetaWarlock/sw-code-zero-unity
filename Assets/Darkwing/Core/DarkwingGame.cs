@@ -1244,8 +1244,14 @@ namespace Darkwing.Core
         {
             _parityStepped = false;
             _oamPublished = false;
+            if ((Ppu.Ctrl & 0x80) == 0)
+            {
+                LastNmiAudioServiceCycles = 0;
+                NmiAudioTimingSupported = true;
+                return;
+            }
             PublishNativeVram(0, false);
-            if ((Ppu.Ctrl & 0x80) != 0) NmiCounter++;
+            NmiCounter++;
             // $C006: LDA $F0 / ORA $9A / BEQ $C00F / JMP $C0A1 — a blanked frame keeps the last
             // latched picture, and the $18/$19/$1A/$1B/$1C/$1D latches stay armed for the next
             // NMI that is allowed to publish.
@@ -1269,7 +1275,7 @@ namespace Darkwing.Core
         {
             if (ResidentProcess != null)
             {
-                PollInput(in pad1);
+                if (Flow == null || !Flow.PowerOnActive) PollInput(in pad1);
                 PublishToOamOnce();
                 ResidentProcess(pad1);
                 if (ResidentProcess != null || !WorldRunning)

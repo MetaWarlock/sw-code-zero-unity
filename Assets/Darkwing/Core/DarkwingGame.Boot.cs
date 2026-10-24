@@ -91,6 +91,12 @@ namespace Darkwing.Core
 
         public void ResetMemoryAndVideo()
         {
+            ResetPowerOnMemory();
+            ResetPowerOnVideo();
+        }
+
+        internal void ResetPowerOnMemory()
+        {
             TileMap = null;
             // $FE26-$FE3F clear RAM; $FE69/$FE72/$FE7B hide OAM and fill both NTs.
             for (int i = 0; i < Objects.Slots.Length; i++)
@@ -99,10 +105,14 @@ namespace Darkwing.Core
                 s.Active = false; s.StateLow = s.Flags = s.AnimNumber = s.Behavior = 0;
                 s.X = s.Y = 0;
             }
+            _nmiMaskRequest = 0x1E;
+        }
+
+        internal void ResetPowerOnVideo()
+        {
             for (int i = 0; i < 256; i++) Ppu.Oam[i] = (byte)(i % 4 == 0 ? 0xF8 : 0);
             Oam.ResetShadow();
             FillVramPages(0x20, 1, 0); FillVramPages(0x24, 1, 0);
-            Ppu.WriteRegister(0x2001, 0x1E);
         }
 
         public void BeginResidentFade(bool fadeIn)
