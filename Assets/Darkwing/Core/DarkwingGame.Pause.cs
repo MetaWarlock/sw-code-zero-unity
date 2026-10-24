@@ -77,6 +77,7 @@ namespace Darkwing.Core
         /// state bytes of slots 6…15, install the plates, swap the palette, blank the bg.</summary>
         private void PauseEnter()
         {
+            BeginPauseEntryTiming();
             PlaySfx(SfxPause);
             EnsurePauseBlock();
             var b4 = Bank4;
@@ -152,11 +153,13 @@ namespace Darkwing.Core
         /// sequence (one step per frame, first at f21) stays as measured.</summary>
         private void PauseFrame()
         {
+            BeginPauseFrameTiming();
             StepFrameParity();              // $8000 INC $95, once per frame
             PublishToOamOnce();
             if (_pausePlatesArmed) SlidePlates();   // $8FBE / $8FC1
             else _pausePlatesArmed = true;
             Oam.RunFrame(FrameParity);        // $F89A
+            FinishPauseFrameTiming();
             Ppu.Render(Framebuffer);
             Frame++;
         }
@@ -202,6 +205,7 @@ namespace Darkwing.Core
         /// than saved), then slots 6…15's state bytes, then the palette, $18 and the bg bit.</summary>
         private void PauseRestore()
         {
+            BeginPauseResumeTiming(true);
             var slots = Objects.Slots;
             for (int x = 5; x >= 0; x--)
             {

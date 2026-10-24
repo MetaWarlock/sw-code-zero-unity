@@ -49,7 +49,7 @@ namespace Darkwing.Core
             else
             {
                 _scrollServiceCycles += 3 + 2 + 2 + 3 + 3 + 2 + ScrollBranch(0xDAA6, 0xDAFD, ahead >= 0x88);
-                if (ahead < 0x88) RejectScrollTiming("DC19 horizontal camera movement");
+                if (ahead < 0x88) AddLeftScrollTiming(ahead);
             }
         }
 

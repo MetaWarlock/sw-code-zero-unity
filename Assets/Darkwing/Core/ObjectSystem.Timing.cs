@@ -11,7 +11,7 @@ namespace Darkwing.Core
             reason = null;
             int mode = scrollState & 15;
             if (mode == 0) { cycles = 14; return true; }
-            if (mode != 1 && mode != 4 && mode != 8) { reason = "8090 reverse placement walk"; return false; }
+            if (mode != 1 && mode != 2 && mode != 4 && mode != 8) { reason = "8090 reverse placement walk"; return false; }
             if (Placements == null || PlacementListIndex < 0 || PlacementListIndex >= ListXloPtrLo.Length)
             { reason = "8090 placement pointer owner"; return false; }
             int listBase = ListXloPtrLo[PlacementListIndex] | ListXloPtrHi[PlacementListIndex] << 8;
@@ -20,6 +20,7 @@ namespace Darkwing.Core
             var placements = new byte[SlotCount];
             for (int slotIndex = 0; slotIndex < SlotCount; slotIndex++)
             { active[slotIndex] = Slots[slotIndex].Active; placements[slotIndex] = Slots[slotIndex].PlacementIndex; }
+            if (mode == 2) return TryMeasureReversePlacementCycles(listBase, count, scrollX, scrollY, active, placements, out cycles, out reason);
             cycles = mode == 1 ? 12 : mode == 4 ? 20 : 24;
             int cursor = CursorFwd;
             for (int visits = 0; visits < 256; visits++)
@@ -48,6 +49,40 @@ namespace Darkwing.Core
                 if (!inside) { cycles += 9; return true; }
             }
             reason = "8090 reverse-cursor adjustment wrap";
+            return false;
+        }
+
+        private bool TryMeasureReversePlacementCycles(int listBase, int count, ushort scrollX, ushort scrollY,
+            bool[] active, byte[] placements, out int cycles, out string reason)
+        {
+            cycles = 16;
+            reason = null;
+            int cursor = CursorRev;
+            bool terminated = false;
+            for (int visits = 0; visits < 256; visits++)
+            {
+                cycles += 9;
+                if (!TryMeasurePlacementWindow(cursor, listBase, count, scrollX, scrollY, out bool inside, out int window, out reason)) return false;
+                cycles += window;
+                if (!inside) { cycles += 3; terminated = true; break; }
+                cycles += 8;
+                if (!TryMeasurePlacementActivation(cursor, listBase, count, active, placements, out int activation, out reason)) return false;
+                cycles += activation + 5;
+                cursor = (cursor - 1) & 255;
+                cycles += cursor == 0 ? 2 : 3;
+                if (cursor == 0) { terminated = true; break; }
+            }
+            if (!terminated) { reason = "8090 reverse placement wrap"; return false; }
+            cycles += 3;
+            for (int visits = 0; visits < 256; visits++)
+            {
+                cursor = (cursor + 1) & 255;
+                cycles += 8;
+                if (!TryMeasurePlacementWindow(cursor, listBase, count, scrollX, scrollY, out bool inside, out int window, out reason)) return false;
+                cycles += window + (inside ? 3 : 2);
+                if (!inside) { cycles += 9; return true; }
+            }
+            reason = "8090 forward-cursor adjustment wrap";
             return false;
         }
 
