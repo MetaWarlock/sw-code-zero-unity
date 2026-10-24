@@ -2,7 +2,17 @@
 >
 > Перепроверено: det_a/b RAM с f4, OAM с f6, палитра с f7 (раннее утверждение «всё с f4» неточно); аудиометрическая membership-проверка раньше сравнивала порт с самим собой (исправлено: 33/51,44/59,26/34); 0,4367 = корреляция огибающей, не RMS. EnemySweep: f9 оказался ошибкой владельца кадра fixture (карта запущена как миссия); map-owner даёт совпадение всех пяти записей, это не покрытие bank6. Миссия 1 longroute maxX=$0394, $38 всегда 0. Панели IntroVerify — отдельный вызов процедур, а не сквозное исполнение GameFlow. Адреса и уникальные свидетельства ниже не удалены.
 
-## 2026-10-24: потоковый DE86/E698 loader и store-точка курсора (096fbf9+)
+## 2026-10-24: независимая перепроверка Qoder28e19a0 и текущий стенд
+
+| Gate | Измерение и граница |
+| --- | --- |
+| PASS_SELECTED Core | `Temp/user_stand_core_result.json`:63 неизменных C# hashes; три полных ввода24261/38886/29360 дают exports4384 byte-equal Qoder. `user_stand_m1_states.json`:22229/22229 в каждой из пяти mapped-групп с оригиналом; это не вся RAM. Newfirst17234 `$E4`68/B4 `$043F`03/04; city6388 `$E4`CC/E6 без продвижения. |
+| PASS_SELECTED clock/regressions; Suite FAIL | `user_stand_clock`: streaming loader с переносом NMI, storeE790 и72negative controls подтверждён; DDCE ещё внеclock. `user_stand_suite`:18/24 STRICT8/24 errors0, полный JSON равен Qoder;16contracts и619/199/399 PASS. |
+| PASS_SELECTED hosts | Build2f0b066afb16/source28e19a0:0errors9warnings,226source/354binary hashes проверены. FreshPlayer old/new fullinputs:23/72snapshots и15/62RGB равны Core,exit0/exceptions0. ActualDarkwingMain16000prefix:21NT/OAM/PAL snapshots15RGB7fields6negative controls,matchedCore; normalStop. `Temp/user_stand_players_result.json`, `editor_user_stand/comparison.json`; не desktop-window или PCM. |
+| PASS_SELECTED originalRGB; intro FAIL | `user_stand_original_rgb.json` и `editor_user_stand/original_rgb.json`:8целых кадров exact иportrait-rightROI exact,12negative controls. Intro остатки567/828/458/458pixels f1800/2200/2300/2400, меньше прежних624/960/480/480; не полная заставка. CityRGB NOT RUN. |
+| AWAITING HUMAN / NOT RUN audio | `Build/UserStand` обновлён на месте,3ярлыка с проверенными target:порт иMesen с/беззаписи. Короткий intro/startм1/pause/death check запрошен; результата нет. F5/аудио отложены пользователем; новая PCM/latency приёмка не проводилась. Правила reuse внесены вAGENTS; лишние3Temp helpers удалены. Полная сводка всех7миссий вACCEPTANCE_REPORT. |
+
+## 2026-10-24: потоковый DE86/E698 loader и store-точка курсора (Qoder28e19a0; исходная проверка)
 
 | Факт / gate | Доказательство и граница |
 | --- | --- |
