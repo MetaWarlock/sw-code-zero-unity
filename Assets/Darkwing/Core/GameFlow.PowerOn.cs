@@ -35,11 +35,17 @@ namespace Darkwing.Core
         internal void BeginResetNmiTiming(byte fadeFrame, byte fadeLevel, byte[] palette)
         {
             _resetNmiPending = _resetBodyPending = false;
-            if (ResetClock == null || !ResetClock.Active || _resetStage < 2 || _resetStage > 5) return;
+            if (ResetClock == null || !ResetClock.Active) return;
+            if (_resetStage == 9)
+            {
+                ResetClock.Refuse("First unpriced loader continuation $DD5D-$DE86");
+                return;
+            }
+            if (_resetStage < 2 || _resetStage > 7) return;
             try
             {
                 _resetBodyWork = ResetResidentTiming.Measure(_resetStage, fadeFrame, fadeLevel,
-                    _game.Player.StateTimer, palette, _game.Bank2);
+                    _game.Player.StateTimer, palette, _game.Bank2, (byte)_game.Oam.OamCursorBytes);
                 _resetNmiPending = ResetClock.BeginNmi(handler =>
                 {
                     if (!_game.TryMeasureNativeNmiPublication(handler, 0, 0, 0, out int cycles, out string reason))

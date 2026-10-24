@@ -104,6 +104,14 @@ namespace Darkwing.Core
             for (int i = 0; i < 256; i += 4) _shadow[i] = 0xF8;
         }
 
+        /// <summary>$C21E at the live $97: records below the cursor keep their Y byte; the
+        /// $C220/$C224 special case hides entry 0 only when the cursor is 4.</summary>
+        public void HideShadowFromCursor()
+        {
+            if (_oamCursor == 4) _shadow[0] = 0xF8;
+            for (int i = _oamCursor; i < 256; i += 4) _shadow[i] = 0xF8;
+        }
+
         /// <summary>Seed the shadow from a golden capture frame so a resumed run starts with the
         /// buffer the previous ROM walk left behind (harness only).</summary>
         public void SeedShadow(byte[] oam, int offset)

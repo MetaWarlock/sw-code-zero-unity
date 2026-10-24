@@ -278,19 +278,24 @@ namespace Darkwing.Core
                     return;
                 case 5: // $C5E8-$C5F4: Start is deliberately not read in this loop
                     if (_game.Player.StateTimer != 0) { _game.Player.StateTimer--; return; }
-                    World.CurrentWorld = 7;
-                    _game.BeginResidentFade(false); // $DD57 begins with $C248
+                    _game.ClearObjectRamAndScroll();              // $C5F7 JSR $C95C, before $DD57
+                    World.CurrentWorld = 7;                       // $C5FA LDA #$07 / STA $31
+                    _game.BeginResidentFade(false);               // $C5FE JSR $DD57 -> $C248 -> $C276
                     _resetStage = 6;
                     return;
-                case 6:
-                    if (_game.TickResidentFade()) _resetStage = 7;
+                case 6: // $C2AA fade frames; the exit pass also runs $C24B/$C24E before $C251
+                    if (_game.TickResidentFade())
+                    {
+                        _game.Objects.ClearForSectionLoad();      // $C24B JSR $C235
+                        _game.Oam.HideShadowFromCursor();         // $C24E JSR $C21E at the live $97
+                        _resetStage = 7;
+                    }
                     return;
                 case 7:
-                    _resetStage = 9; // $C251 JMP $FF06, before $DD5F
+                    _resetStage = 9; // $DD5A JSR $FF06 is a separate yield, then $DD5D
                     return;
                 case 9:
-                    _game.ClearObjectRamAndScroll();
-                    _game.BeginSceneLoad(_decoder, World.CurrentWorld);
+                    _game.BeginSceneLoad(_decoder, World.CurrentWorld);   // $DD5D-$DE24 staging
                     _resetStage = 8;
                     return;
                 case 8:
