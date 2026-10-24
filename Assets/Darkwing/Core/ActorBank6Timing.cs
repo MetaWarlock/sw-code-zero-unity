@@ -290,17 +290,17 @@ namespace Darkwing.Core
                 return cycles + 6;
             }
             if (target.Behavior == 0x0C && (target.StateLow & 2) == 0
-                && (target.T480 != 0 || (target.StateLow & 15) == 0) && target.AnimNumber != 0x43 && target.Health != 0 && (target.Direction & 1) != 0)
+                && (target.T480 != 0 || (target.StateLow & 15) == 0) && target.AnimNumber != 0x43 && target.Health != 0)
             {
                 if (slotIndex < 2 || player.State == 0x0C) throw new NotSupportedException("F200 push or EB52 state0C");
                 bool initialize = (target.StateLow & 15) == 0;
                 int velocityFraction = initialize ? 0 : target.XVelFrac;
                 int velocity = initialize ? 1 : target.XVelInt;
-                int fraction = target.XFrac + velocityFraction;
-                int lowX = (byte)target.X + velocity + (fraction >> 8);
-                int nextX = (target.X + velocity + (fraction >> 8)) & 65535;
-                int integrate = 4 + 2 + 4 + 5 + 4 + 4 + 5 + (lowX > 255 ? 2 + 4 + 2 + 5 : 3) + 6;
-                int probe = new ActorProbeTiming(player, tiles).MeasureEmptyProbe(nextX, target.Y, 0);
+                bool left = (target.Direction & 1) == 0;
+                int fraction = left ? target.XFrac - velocityFraction : target.XFrac + velocityFraction;
+                int nextX = (target.X + (left ? -velocity - (fraction < 0 ? 1 : 0) : velocity + (fraction >> 8))) & 65535;
+                int integrate = IntegrateXValues(target, left, (byte)velocity, (byte)velocityFraction);
+                int probe = new ActorProbeTiming(player, tiles).MeasureEmptyProbe(nextX, target.Y, left ? 3 : 0);
                 int walk = 3 + 3 + 6 + integrate + 2 + 3 + 6 + probe + 3 + 2 + 3 + 4 + 2 + 5 + 6;
                 int deltaX = player.X - nextX;
                 int magnitudeX = deltaX >= 0 ? (byte)deltaX : (byte)-deltaX;
@@ -309,7 +309,73 @@ namespace Darkwing.Core
                 int own = 4 + 2 + (initialize ? 2 + 5 + 2 + 5 + 7 + 2 + 5 + 6 + 23 + 5 : 3)
                     + 4 + 2 + 2 + 4 + 2 + 4 + 2 + 2 + 7 + 2 + 4 + 2 + 2
                     + 2 + 6 + 3 + 4 + 2 + 6 + 2 + 3 + 6;
-                return own + walk + distance;
+                return own + walk + distance - (left ? 2 : 0);
+            }
+            if (target.Behavior == 0x0C && (target.StateLow & 2) == 0 && (target.StateLow & 15) != 0)
+            {
+                int cycles = 4 + 2 + 3 + 4 + 2 + 2 + 4 + (target.T480 == 0 ? 3 : 2);
+                cycles += 4 + 2 + (target.AnimNumber == 0x43 ? 3 : 2);
+                if (target.AnimNumber != 0x43)
+                {
+                    if (target.T480 != 0) throw new NotSupportedException("8C64 unpriced moving thug");
+                    return cycles + 2 + 6 + 23 + 2 + 5 + 6;
+                }
+                cycles += 7 + 4;
+                if (target.T480 == 1) return cycles + 2 + 2 + 6 + 23 + 2 + 5 + 4 + 2 + 5 + 6;
+                cycles += 3 + 4;
+                if (target.Health == 0) return cycles + 3 + 6 + FaceApply(target, player) + 7 + 6;
+                cycles += 2 + 6 + DistanceX(target, player) + 2;
+                int delta = player.X - target.X;
+                int magnitude = delta >= 0 ? (byte)delta : (byte)-delta;
+                if (magnitude >= 0x32) return cycles + 3 + 6;
+                return cycles + 2 + 6 + FaceApply(target, player) + 7 + 6;
+            }
+            if (target.Behavior == 0x0C && (target.StateLow & 2) != 0)
+            {
+                if (slotIndex < 2 || target.YVelInt >= 0 || player.State == 0x0C)
+                    throw new NotSupportedException("8CBD falling thug slot or vertical branch");
+                if (events?.ReadHookLatch == null || events.ReadHookLatch() != 0)
+                    throw new NotSupportedException("F322 falling thug hook latch");
+                int fractionY = target.YFrac - target.YVelFrac;
+                int lowY = (byte)((byte)target.Y - (byte)target.YVelInt - (fractionY < 0 ? 1 : 0));
+                int pageY = target.Y >> 8;
+                if (lowY >= 0xF0) { lowY = (lowY + 16) & 255; pageY++; }
+                int nextY = ((pageY & 255) << 8) | lowY;
+                int floorCycles = 3 + 3 + 4 + 3 + 4 + 3 + 4 + 3 + 6 + IntegrateFallingY(target)
+                    + 2 + 4 + 6 + DecayY(target, player.GravityFrac) + 3 + 2 + 6;
+                var floorProbe = new ActorProbeTiming(player, tiles);
+                floorCycles += floorProbe.MeasureProbe(target.X, nextY, 6, 3, out byte floor);
+                floorCycles += 2 + 3 + 2;
+                bool landed = floor != 0 && (floor != 1 || (floorProbe.LastPointY & 15) < 8);
+                if (floor == 0) floorCycles += 3 + 6;
+                else
+                {
+                    floorCycles += 2 + (floor != 1 ? 3 : 2 + 3 + 2 + 2 + (landed ? 2 : 3));
+                    if (!landed) floorCycles += 2 + 6;
+                    else
+                    {
+                        int snap = 3 + 2 + 3 + 4 + 2 + 3 + 5
+                            + (lowY >= (floorProbe.LastPointY & 15) ? 3 : 2 + 2 + 5 + 4 + 2 + 5) + 6;
+                        floorCycles += 2 + 3 + 6 + snap + 6 + 20 + 2 + 6;
+                        lowY -= floorProbe.LastPointY & 15;
+                        if (lowY < 0) { lowY += 240; pageY--; }
+                        nextY = ((pageY & 255) << 8) | lowY;
+                    }
+                }
+                int cycles = 4 + 2 + 3 + 4 + 2 + 3 + 2 + 2 + 6 + floorCycles + 3;
+                if (landed)
+                    cycles += 2 + 4 + 2 + (target.AnimNumber == 0x41 ? 3 : 2 + 2 + 6 + 23 + 3);
+                else cycles += 3 + 2 + 6 + 23;
+                bool left = (target.Direction & 1) == 0;
+                int fractionX = left ? target.XFrac - target.XVelFrac : target.XFrac + target.XVelFrac;
+                int nextX = (target.X + (left ? -target.XVelInt - (fractionX < 0 ? 1 : 0)
+                    : target.XVelInt + (fractionX >> 8))) & 65535;
+                int wallCycles = new ActorProbeTiming(player, tiles).MeasureEmptyProbe(nextX, nextY, left ? 3 : 0);
+                int walk = 3 + 3 + 6 + IntegrateXValues(target, left, target.XVelInt, target.XVelFrac)
+                    + 2 + 3 + 6 + wallCycles + 3 + 2 + 3 + 4 + 2 + 5 + 6;
+                cycles += 2 + 4 + 2 + (left ? 3 + 2 + 6 : 2 + 2 + 6 + 3) + walk;
+                cycles += 4 + (landed ? 2 + 3 + 2 + 4 : 4);
+                return cycles + 4 + 2 + 3 + 6;
             }
             throw new NotSupportedException("bank6 behavior " + target.Behavior.ToString("X2") + " state " + target.StateLow.ToString("X2"));
         }
@@ -358,6 +424,13 @@ namespace Darkwing.Core
         private static int DistanceX(ObjectSystem.Slot target, PlayerCore player)
             => 4 + 2 + 4 + 3 + 4 + 4 + 4 + (player.X >= target.X ? 3 : 2 + 2 + 2 + 2) + 6;
 
+        private static int FaceApply(ObjectSystem.Slot target, PlayerCore player)
+        {
+            int direction = 2 + 5 + 4 + 2 + 4 + 4 + 4 + (target.X < player.X ? 3 : 2 + 2 + 5) + 6;
+            int flags = 4 + 2 + 2 + 2 + 2 + 3 + 4 + 2 + 3 + 5 + 6;
+            return 6 + direction + 6 + flags + 6;
+        }
+
         private static int IntegrateX(ObjectSystem.Slot target, bool left)
         {
             return IntegrateXValues(target, left, target.XVelInt, target.XVelFrac);
@@ -381,16 +454,25 @@ namespace Darkwing.Core
 
         private static int IntegrateAndDecayY(ObjectSystem.Slot target, byte gravity)
         {
-            int fraction = target.YFrac - target.YVelFrac;
-            int low = (byte)target.Y - (byte)target.YVelInt - (fraction < 0 ? 1 : 0);
             int cycles = 4 + (target.YVelInt >= 0 ? 3 : 2) + 6;
             if (target.YVelInt >= 0) cycles += IntegrateYSubtract(target);
-            else cycles += 4 + 2 + 4 + 5 + 4 + 4 + 5 + 2
+            else cycles += IntegrateFallingY(target);
+            return cycles + 3 + DecayY(target, gravity);
+        }
+
+        private static int IntegrateFallingY(ObjectSystem.Slot target)
+        {
+            int fraction = target.YFrac - target.YVelFrac;
+            int low = (byte)target.Y - (byte)target.YVelInt - (fraction < 0 ? 1 : 0);
+            return 4 + 2 + 4 + 5 + 4 + 4 + 5 + 2
                 + ((byte)low < 0xF0 ? 3 : 2 + 2 + 5 + 4 + 2 + 5) + 6;
-            cycles += 3;
+        }
+
+        private static int DecayY(ObjectSystem.Slot target, byte gravity)
+        {
             int velocity = unchecked((byte)target.YVelInt) - (target.YVelFrac < gravity ? 1 : 0);
             byte nextVelocity = (byte)velocity;
-            cycles += 4 + 2 + 3 + 5 + 4 + 2 + 5;
+            int cycles = 4 + 2 + 3 + 5 + 4 + 2 + 5;
             if (nextVelocity < 0x80) cycles += 3;
             else cycles += 2 + 2 + (nextVelocity >= 0xF9 ? 3 : 2 + 2 + 5 + 2 + 5);
             return cycles + 6;

@@ -5,6 +5,83 @@ using Darkwing.Core;
 
 public static class NmiTimingVerify
 {
+    public static string ThugReached()
+    {
+        if (UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorUtility.scriptCompilationFailed)
+            throw new InvalidOperationException("Refuse stale Core");
+        const string root = "D:/Art/SW Code Zero Unity/";
+        string[] records = File.ReadAllLines(root + "Temp/thug_timing_source/calls.csv");
+        byte[] entries = File.ReadAllBytes(root + "Temp/thug_timing_source/entry.bin");
+        byte[] endings = File.ReadAllBytes(root + "Temp/thug_timing_source/end.bin");
+        if (records.Length != 353 || entries.Length != 352 * 2048 || endings.Length != entries.Length)
+            throw new InvalidDataException("Incomplete bank6@8000 8C34 source fixtures");
+        byte[] Data(string name) => File.ReadAllBytes(root + "Assets/Darkwing/Data/" + name + ".bytes");
+        var decoder = new RoomDecoder(Data("prg_bank0"), Data("prg_bank1"), Data("world_bank7"), Data("levelsets"));
+        var fields = new (string name, int address)[]
+        {
+            ("Flags",0x400),("AnimFrame",0x410),("AnimNumber",0x420),("AnimTimer",0x430),("YFrac",0x460),("XFrac",0x470),
+            ("T480",0x480),("T490",0x490),("HitFlash",0x4C0),("Behavior",0x4E0),("XVelFrac",0x530),("XVelInt",0x540),
+            ("YVelFrac",0x550),("YVelInt",0x560),("BehaviorParam",0x570),("Direction",0x580),("PlacementIndex",0x590),("Health",0x5A0)
+        };
+        var seen = new HashSet<string>();
+        int exact = 0, falling = 0, negatives = 0, guards = 0;
+        for (int index = 1; index < records.Length; index++)
+        {
+            string[] record = records[index].Split(',');
+            if (!seen.Add(record[0] + "/" + record[1])) throw new InvalidDataException("Duplicate 8C34 source call");
+            int offset = (index - 1) * 2048;
+            byte Read(int address) => entries[offset + address];
+            var world = decoder.GetWorld(Read(0x31));
+            world.SetBank = Read(0x36);
+            var map = new LevelTileMap(decoder, new Ppu(null), world);
+            map.LoadRow(Read(0xFB));
+            var objects = new ObjectSystem(null);
+            for (int slotIndex = 0; slotIndex < 16; slotIndex++)
+            {
+                var slot = objects.Slots[slotIndex];
+                foreach (var field in fields)
+                {
+                    var info = typeof(ObjectSystem.Slot).GetField(field.name);
+                    object value = info.FieldType == typeof(sbyte) ? (object)unchecked((sbyte)Read(field.address + slotIndex)) : Read(field.address + slotIndex);
+                    info.SetValue(slot, value);
+                }
+                slot.Active = (Read(0x4D0 + slotIndex) & 128) != 0;
+                slot.StateLow = (byte)(Read(0x4D0 + slotIndex) & 127);
+                slot.X = (ushort)(Read(0x4F0 + slotIndex) | Read(0x500 + slotIndex) << 8);
+                slot.Y = (ushort)(Read(0x510 + slotIndex) | Read(0x520 + slotIndex) << 8);
+            }
+            var player = new PlayerCore(map)
+            {
+                Objects = objects, State = Read(0x50), X = objects.Slots[0].X, Y = objects.Slots[0].Y,
+                ScrollX = (ushort)(Read(0xFC) | Read(0xFD) << 8), ScrollY = Read(0xFA), ScrollYRow = Read(0xFB), GravityFrac = Read(0x99)
+            };
+            var target = objects.Slots[int.Parse(record[1])];
+            var events = new ActorEventTiming { ReadHookLatch = () => Read(0x5C) };
+            int expected = int.Parse(record[3]);
+            int actual = ActorBank6Timing.Behavior(target, int.Parse(record[1]), player, map, events);
+            if (actual != expected) throw new InvalidOperationException("8C34 source cost " + record[0] + " " + actual + "/" + expected);
+            exact++;
+            if (actual != expected + 1) negatives++;
+            if ((target.StateLow & 2) == 0) continue;
+            falling++;
+            foreach (int variant in new[] { 0, 1, 2 })
+            {
+                var unsupported = new ActorEventTiming { ReadHookLatch = () => variant == 0 ? (byte)1 : (byte)0 };
+                sbyte saved = target.YVelInt;
+                if (variant == 1) target.YVelInt = 0;
+                bool refused = false;
+                try { ActorBank6Timing.Behavior(target, variant == 2 ? 0 : int.Parse(record[1]), player, map, unsupported); }
+                catch (NotSupportedException) { refused = true; }
+                target.YVelInt = saved;
+                if (!refused) throw new InvalidOperationException("Unverified F2D7 branch priced");
+                guards++;
+            }
+        }
+        if (exact != 352 || falling != 48 || negatives != 352 || guards != 144)
+            throw new InvalidDataException("8C34 fixture coverage incomplete");
+        return "PASS 8C34 source352/352 including48falling;352clock negatives/144unsupported controls; source-seeded timing fixtures only";
+    }
+
     public static string CardAndEarlyGate()
     {
         if (UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorUtility.scriptCompilationFailed)
