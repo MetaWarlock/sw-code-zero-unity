@@ -5,8 +5,11 @@ namespace Darkwing.Core
     public sealed partial class GameFlow
     {
         public PowerOnContinuation PowerOn { get; private set; }
+        public ResetProcessClock ResetClock { get; private set; }
         public bool PowerOnActive => PowerOn != null && PowerOn.Active;
         public long PowerOnBoundaryMaster { get; private set; }
+        private ResetResidentTiming.BodyWork _resetBodyWork;
+        private bool _resetNmiPending, _resetBodyPending;
 
         private void BeginPowerOnTiming()
         {
@@ -25,7 +28,40 @@ namespace Darkwing.Core
                     || PowerOn.CommitMaster >= PowerOn.FirstEnabledNmiEdgeMaster)
                     throw new InvalidOperationException("Native reset did not reach Waiting before its first NMI");
                 _resetStage = 2;
+                ResetClock = new ResetProcessClock(PowerOn);
             }
+        }
+
+        internal void BeginResetNmiTiming(byte fadeFrame, byte fadeLevel, byte[] palette)
+        {
+            _resetNmiPending = _resetBodyPending = false;
+            if (ResetClock == null || !ResetClock.Active || _resetStage < 2 || _resetStage > 5) return;
+            try
+            {
+                _resetBodyWork = ResetResidentTiming.Measure(_resetStage, fadeFrame, fadeLevel,
+                    _game.Player.StateTimer, palette, _game.Bank2);
+                _resetNmiPending = ResetClock.BeginNmi(handler =>
+                {
+                    if (!_game.TryMeasureNativeNmiPublication(handler, 0, 0, 0, out int cycles, out string reason))
+                        throw new NotSupportedException(reason);
+                    return cycles;
+                });
+            }
+            catch (NotSupportedException exception) { ResetClock.Refuse(exception.Message); }
+        }
+
+        internal void CompleteResetNmiTiming()
+        {
+            if (!_resetNmiPending) return;
+            _resetNmiPending = false;
+            _resetBodyPending = ResetClock.CompleteNmi(_game.NmiAudioTimingSupported ? _game.LastNmiAudioServiceCycles : -1);
+        }
+
+        private void CompleteResetBodyTiming()
+        {
+            if (!_resetBodyPending) return;
+            _resetBodyPending = false;
+            ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
         }
 
         private void ApplyPowerOnCheckpoint(PowerOnContinuation.Checkpoint checkpoint)

@@ -133,7 +133,8 @@ namespace Darkwing.Core
             RunBank2Task(0);
             for (int i = 0; i < 16; i++)
                 _paletteSrc[i] = _palMirror[i] = Bank2[0xD15 + i];
-            SetChrAndUpload(0, 0x99, 0x99);
+            Player.ChrLatch1 = 0x99;
+            SetPaletteUploadFlag(0x99);
             RenderOn();
         }
 

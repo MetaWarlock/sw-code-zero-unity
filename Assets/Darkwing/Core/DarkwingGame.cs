@@ -1250,6 +1250,7 @@ namespace Darkwing.Core
                 NmiAudioTimingSupported = true;
                 return;
             }
+            Flow?.BeginResetNmiTiming(_fadeFrame, _fadeLevel, _paletteSrc);
             PublishNativeVram(0, false);
             NmiCounter++;
             // $C006: LDA $F0 / ORA $9A / BEQ $C00F / JMP $C0A1 — a blanked frame keeps the last
@@ -1269,6 +1270,7 @@ namespace Darkwing.Core
                 }
             }
             DrainAudioQueue();             // $C0DC/$C0F6: runs on blanked frames too
+            Flow?.CompleteResetNmiTiming();
         }
 
         private void StepBody(in NesButtons pad1, in NesButtons pad2)

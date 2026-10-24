@@ -238,6 +238,12 @@ namespace Darkwing.Core
 
         private void StepReset(NesButtons pad)
         {
+            StepResetBody(pad);
+            CompleteResetBodyTiming();
+        }
+
+        private void StepResetBody(NesButtons pad)
+        {
             _prevHeld = pad.ToByte();
             switch (_resetStage)
             {

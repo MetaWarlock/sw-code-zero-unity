@@ -198,6 +198,7 @@ namespace Darkwing.Core
                     if (!_game.TickResidentFade()) return;
                     _game.BeginPowerOn(); SetPhase(Phase.Reset);
                     PowerOn = null;
+                    ResetClock = null;
                     _resetStage = 0; _resetWait = 4;
                     _game.ResidentProcess = StepReset;
                     return;
