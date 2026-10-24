@@ -4,6 +4,10 @@
 
 ## 2026-10-24: human audio report и ярлык просмотра второго ввода
 
+Добавлен и запущен `Build/UserStand/Mesen - Плейтест 2.lnk`: существующий `Start-Playthrough.ps1` минимально расширен `-ReplayMovie`, открывает исходный ROM, ждёт загрузки окна и передаёт .mmo штатному single-instance Mesen; обычная скорость100%, без записи и сохранения CLI-настроек. Parser PASS; actual shortcut дал окно `Mesen - Darkwing Duck (USA)` PID249656. `stand.ingest_movie` подтвердил38886inputs byte-equal неизменному input.bin и указанному ниже SHA; новый полный acceptance-replay не запускался. Игра и сборка порта не менялись; отдельного helper-скрипта нет.
+
+Окно захвачено переиспользованными функциями `verify_player.ps1`: `Temp/stand_user_human/original_replay_window.png`, виден игровой экран и значок movie playback. Это подтверждает старт GUI-повтора; полный просмотр остаётся пользователю.
+
 Пользователь подтвердил задержку звуков после прыжка/при захвате/выстреле в текущем стенде; build2f0 по контексту, exact exe не установлен независимо. Это human FAIL; причину ещё не измеряли. Прямое ограничение: сейчас не исправлять. Вместо этого добавлен запрошенный `Build/UserStand/Darkwing Port - Плейтест 2.lnk` → неизменный build2f0 + существующий `-darkwing-replay` + `Playtest2.json`. Все38886bytes второго ввода восстановлены из1784ranges и побайтно равны исходному SHA137190299728c9ea6285ebf057fa25b1efaf916b9aeb2ad6d21fa46efb7f6275. Shortcut target/args/compiled replay/EXE SHA проверены; новый запуск ярлыка NOT RUN, полный ввод в этой сборке ранее пройден автоматикой. Это ускоренный просмотр, не PCM/latency check; selected PNG будут писаться в фиксированный `Build/UserStand/Playtest2_Frames`. Игра/ROM/input/goldens не менялись; новых helper-скриптов нет.
 
 ## 2026-10-24: независимая перепроверка Qoder28e19a0 и текущий стенд
