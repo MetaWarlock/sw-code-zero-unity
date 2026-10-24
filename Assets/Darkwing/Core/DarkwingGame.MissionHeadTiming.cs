@@ -13,7 +13,7 @@ namespace Darkwing.Core
         {
             LastMissionHeadCycles = -1;
             MissionHeadTimingUnsupported = null;
-            if (Player.CardWaitRemaining != 0)
+            if (Player.IntroCardPhase || Player.CardWaitRemaining != 0)
             {
                 MissionHeadTimingUnsupported = "FF02 resident Card continuation does not enter CAE2";
                 return;

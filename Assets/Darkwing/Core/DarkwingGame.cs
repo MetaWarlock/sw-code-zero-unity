@@ -1455,6 +1455,17 @@ namespace Darkwing.Core
             // the f951..f1010 window (only the audio RAM moves), and gold_w00 parks it at $01
             // over f453..f512; a port that ticks the engine there puts the whole anim clock
             // 60 frames out of phase for the rest of the run.
+            if (Player.CardPass != null && Player.CardPass.FramePending)
+            {
+                StepFrameParity();
+                PublishToOamOnce();
+                Hud.Refresh(Player);
+                Player.CardPass.ContinueFrame(FrameParity);
+                Player.CardPass.Finish();
+                Ppu.Render(Framebuffer);
+                Frame++;
+                return;
+            }
             if (Player.YieldOnlyFrame)
             {
                 ConsumeChrLatch();

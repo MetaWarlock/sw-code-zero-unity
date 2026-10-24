@@ -8,6 +8,15 @@ namespace Darkwing.Core
         public bool LastCardContinuationReleased { get; private set; }
         public string CardTimingUnsupported { get; private set; }
         public byte CardWaitRemaining => _cardWait;
+        public CardPassContinuation CardPass { get; private set; }
+
+        private void RunCardPrefix(bool entering)
+        {
+            if (CardPass == null) CardPass = new CardPassContinuation(Oam, this, value => _cardWait = value);
+            if (entering) CardPass.BeginEntry(0, 1, true);
+            else CardPass.BeginResume(PrgBank2, WorldId, 0, true);
+            CardPass.Finish();
+        }
 
         private void BeginCardContinuationTiming()
         {

@@ -95,6 +95,120 @@ public static class OamWalkVerify
             if (actual[address] != expected[offset + address]) throw new InvalidOperationException(label + " shadow $" + address.ToString("X4") + " " + actual[address] + "/" + expected[offset + address]);
     }
 
+    public static string CardPass()
+    {
+        if (UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorUtility.scriptCompilationFailed)
+            throw new InvalidOperationException("Refuse stale Core");
+        string source = Root + "Temp/card_pass_source/";
+        string[] records = File.ReadAllLines(source + "calls.csv");
+        byte[] entries = File.ReadAllBytes(source + "entry.bin");
+        byte[] endings = File.ReadAllBytes(source + "end.bin");
+        if (records.Length < 2 || entries.Length != (records.Length - 1) * 2048 || endings.Length != entries.Length)
+            throw new InvalidDataException("Incomplete Card F89A/F8B1 fixtures");
+        byte[] bank2 = File.ReadAllBytes(Root + "Assets/Darkwing/Data/prg_bank2.bytes");
+        int exact = 0, terminals = 0, frameEndings = 0, negatives = 0, splits = 0, duplicateGuards = 0, waitReuse = 0;
+        var seen = new System.Collections.Generic.HashSet<string>();
+        for (int index = 1; index < records.Length; index++)
+        {
+            string[] record = records[index].Split(',');
+            if (!seen.Add(record[0])) throw new InvalidDataException("Duplicate Card body poll");
+            int offset = (index - 1) * 2048;
+            int expected = int.Parse(record[3]);
+            var fixture = new Fixture();
+            fixture.Load(entries, offset);
+            var pass = new CardPassContinuation(fixture.Oam, fixture.Player);
+            byte world = byte.Parse(record[7]);
+            bool terminal = record[1] == "resume" && (int.Parse(record[4]) == 0x11
+                || (int.Parse(record[4]) == 0x0F && int.Parse(record[5]) == 4));
+            void Begin(CardPassContinuation continuation, Fixture state)
+            {
+                if (record[1] == "frame") continuation.BeginFrame((byte)(state.Ram[0x95] + 1), state.Ram[0x97], state.Ram[0x9A]);
+                else if (record[1] == "resume") continuation.BeginResume(bank2, world, (byte)(state.Ram[0x95] + 1));
+                else throw new InvalidDataException("Unknown Card entry kind");
+            }
+            Begin(pass, fixture);
+            if (pass.Bracket != (record[1] == "frame" ? fixture.Ram[0x9A] : 0))
+                throw new InvalidOperationException("Card entry bracket owner");
+            byte[] before = fixture.Read();
+            foreach (bool alternate in new[] { false, true })
+            {
+                bool rejected = false;
+                try
+                {
+                    if (alternate) pass.BeginResume(bank2, world, (byte)(fixture.Ram[0x95] + 2));
+                    else pass.BeginFrame((byte)(fixture.Ram[0x95] + 2), 4, 7);
+                }
+                catch (InvalidOperationException) { rejected = true; }
+                if (!rejected || pass.Cycles != 0) throw new InvalidOperationException("Card duplicate start guard");
+                duplicateGuards++;
+            }
+            pass.Finish();
+            if (pass.Cycles != expected || pass.Active || pass.ProcessState != FrameScheduler.Waiting
+                || pass.ProcessTimer != 1 || pass.Busy || pass.SwitchDepth != 0 || pass.InstructionPc != 0xFF19)
+                throw new InvalidOperationException("Card source cost/commit " + record[0] + " " + pass.Cycles + "/" + expected);
+            if (terminal)
+            {
+                if (pass.WaitCount != 0x3C || fixture.Oam.WalkCycles != 0) throw new InvalidOperationException("Card FEFF entry");
+                byte[] after = fixture.Read();
+                int[] stable = { 0x10, 0x50, 0x7C, 0x95, 0x96 };
+                foreach (int address in stable)
+                    if (before[address] != after[address]) throw new InvalidOperationException("Card terminal changed retained register");
+                for (int address = 0x400; address < 0x5A0; address++)
+                    if (before[address] != after[address]) throw new InvalidOperationException("Card terminal changed actor state");
+                terminals++;
+            }
+            else
+            {
+                Compare(fixture.Read(), endings, offset, "Card engine " + record[0]);
+                frameEndings++;
+            }
+            for (int shadow = 0; shadow < 256; shadow++)
+                if (fixture.Oam.ReadShadowByte(shadow) != endings[offset + 0x200 + shadow])
+                    throw new InvalidOperationException("Card shadow " + record[0] + "/" + shadow);
+            exact++;
+            if (pass.Cycles != expected + 1) negatives++;
+            int splitCount = terminal ? 61 : 5;
+            for (int split = 0; split < splitCount; split++)
+            {
+                var resumedFixture = new Fixture();
+                resumedFixture.Load(entries, offset);
+                var resumed = new CardPassContinuation(resumedFixture.Oam, resumedFixture.Player);
+                Begin(resumed, resumedFixture);
+                resumed.AdvanceTo(expected * split / splitCount);
+                if (resumed.ProcessState == FrameScheduler.Waiting && resumed.Active)
+                    throw new InvalidOperationException("Card premature commit");
+                resumed.Finish();
+                resumed.Finish();
+                if (resumed.Cycles != expected || resumed.Stage != CardPassContinuation.Phase.Committed)
+                    throw new InvalidOperationException("Card split/idempotence");
+                for (int shadow = 0; shadow < 256; shadow++)
+                    if (resumedFixture.Oam.ReadShadowByte(shadow) != fixture.Oam.ReadShadowByte(shadow))
+                        throw new InvalidOperationException("Card split shadow");
+                splits++;
+            }
+            if (terminal)
+            {
+                pass.BeginFrame((byte)(fixture.Ram[0x95] + 1), 0xA0, 0);
+                if (pass.WaitCount != 0) throw new InvalidOperationException("Card stale wait count");
+                pass.Finish();
+                waitReuse++;
+            }
+        }
+        if (terminals != 3 || frameEndings == 0) throw new InvalidDataException("Incomplete Card branch coverage");
+        var deferredFixture = new Fixture();
+        deferredFixture.Load(entries, 0);
+        var deferred = new CardPassContinuation(deferredFixture.Oam, deferredFixture.Player);
+        deferred.BeginFrame((byte)(deferredFixture.Ram[0x95] + 1), 0xA0, deferredFixture.Ram[0x9A]);
+        while (deferred.SwitchDepth == 0) deferred.AdvanceTo(deferred.Cycles + 1);
+        deferred.DeferredAudio = 1;
+        bool refused = false;
+        try { deferred.Finish(); }
+        catch (NotSupportedException) { refused = true; }
+        if (!refused || deferred.Active || deferred.Unsupported == null || deferred.ProcessState == FrameScheduler.Waiting)
+            throw new InvalidOperationException("Unowned deferred audio falsely committed");
+        return $"PASS Card sourcecosts={exact}, frame406byteEndings={frameEndings}, terminal256byteEndings={terminals}, clockNegatives={negatives}, splits={splits}, duplicateGuards={duplicateGuards}, waitReuse={waitReuse}, deferredUnsupportedControl; component only, not physical anchor";
+    }
+
     public static string Run(string prefix)
     {
         if (UnityEditor.EditorApplication.isCompiling || UnityEditor.EditorUtility.scriptCompilationFailed)

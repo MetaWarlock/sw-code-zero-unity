@@ -964,8 +964,14 @@ namespace Darkwing.Core
             if (_cardWait == 0)
             {
                 if (s0 == null) return;
+                bool entering = !_cardPhase;
                 _cardPhase = true;                          // $9605 owns the process from here
                 if (Oam != null) Oam.MissionCardHold = true;
+                if (Oam != null && PrgBank2 != null && WorldId <= 6)
+                {
+                    RunCardPrefix(entering);
+                    return;
+                }
                 if (s0.AnimNumber != 0x2B)                  // $9600/$9602 first visit
                 {
                     Oam?.HideShadow();
