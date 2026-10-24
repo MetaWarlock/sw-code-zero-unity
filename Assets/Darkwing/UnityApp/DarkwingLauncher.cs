@@ -104,7 +104,7 @@ namespace Darkwing.UnityApp
             if (Application.isFocused && keyboard != null && keyboard.f5Key.wasPressedThisFrame && _audioOut != null)
                 _audioOut.ToggleMute();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (_replay != null) { for (int i = 0; i < 8; i++) ReplayFrame(); return; }
+            if (_replay != null && !_replay.realtime) { for (int i = 0; i < 8; i++) ReplayFrame(); return; }
 #endif
             var now = System.DateTime.UtcNow;
             if (!_clockStarted) { _last = now; _clockStarted = true; return; }
@@ -115,6 +115,9 @@ namespace Darkwing.UnityApp
             while (_accumulator >= frame)
             {
                 _accumulator -= frame;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                if (_replay != null) { ReplayFrame(); continue; }
+#endif
                 var pad = ReadPad1();
                 // $C595 master loop: the bank-7 phase runs first and decides whether the
                 // world engine gets this frame (WorldRunning) before the core steps.
@@ -159,6 +162,7 @@ namespace Darkwing.UnityApp
             public int[] captures;
             public string output;
             public bool captureAtStart; // poll boundary used by stand.py; default preserves older after-step captures
+            public bool realtime;
         }
         [System.Serializable] public sealed class ReplayState
         {
