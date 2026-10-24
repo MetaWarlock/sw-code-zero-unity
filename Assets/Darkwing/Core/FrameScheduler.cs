@@ -71,6 +71,18 @@ namespace Darkwing.Core
             ExecutionCycle += cycles;
         }
 
+        /// <summary>The loader's in-line $DE86 loop keeps slot 0 Running between an FF06
+        /// dispatch and its next yield; NMI service leaves that state alone and resumes the
+        /// interrupted PC after RTI.</summary>
+        public void BeginRunning(long cycle, ushort pc)
+        {
+            if (State[0] != Running) throw new InvalidOperationException("Scheduler slot 0 is not running");
+            ExecutionCycle = cycle;
+            ExecutionPc = pc;
+            _executionIndex = 0;
+            DispatchPending = false;
+        }
+
         public void AdvanceExecutionTo(long deadline)
         {
             while (!DispatchPending && ExecutionCycle < deadline)

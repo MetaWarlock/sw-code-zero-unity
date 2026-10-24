@@ -296,10 +296,15 @@ namespace Darkwing.Core
                     return;
                 case 9:
                     MeasureResetStaging();                        // $DD5D-$DE86 at the resumed state
-                    _game.BeginSceneLoad(_decoder, World.CurrentWorld);   // $DD5D-$DE86 staging
+                    _game.BeginSceneLoadStreaming(_decoder, World.CurrentWorld);  // $DD5D prelude, loop deferred
+                    if (BeginResetStreamingTiming())
+                        RunLoaderStreamFrame();                   // $DE86-$DE91 in this frame's budget
+                    else
+                        _game.FallbackSceneLoad();                // unclocked per-frame staging approximation
                     _resetStage = 8;
                     return;
                 case 8:
+                    if (LoaderStreaming) { RunLoaderStreamFrame(); return; }
                     if (!_game.TickSceneLoad()) return;
                     SetPhase(Phase.Intro);
                     _introStage = 0; _introDelay = 30;

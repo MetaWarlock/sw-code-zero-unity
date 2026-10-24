@@ -411,7 +411,7 @@ namespace Darkwing.Core
         /// position is only half re-anchored here: the $DE24 block zeroes $0500 (X high) and
         /// $DEC8 writes $0520 (Y high), so a reload frame keeps the death frame's low bytes
         /// (gold_m1_longroute f814: X=$0094/Y=$0305 out of X=$0394/Y=$0405).</summary>
-        public void ApplyWorldPrelude(RoomDecoder.World w)
+        public void ApplyWorldPrelude(RoomDecoder.World w, bool stageFirstBands = true)
         {
             TilesetBank = w.SetBank;                        // $36 ($DD76)
             CellIndex = CellIndexNext = w.StartCell;        // $22/$23 ($DD7B)
@@ -438,7 +438,7 @@ namespace Darkwing.Core
             // captures show is CPU-time only (10-19 passes/frame, 23 in the first window),
             // which $StageSectionPass approximates with a constant; see StagePassesPerFrame
             // and G62.
-            StageSectionPass();
+            if (stageFirstBands) StageSectionPass();
         }
 
         /// <summary>Drains the $DE86-$DE91 staging loop in one call — the ROM-faithful shape,
@@ -543,14 +543,31 @@ namespace Darkwing.Core
         public bool StageSectionPass()
         {
             for (int i = 0; i < StagePassesPerFrame; i++)
-            {
-                StageBand?.Invoke(StageCursor);             // $E69C builds the band from the cursor as it stands
-                StageCursor = (byte)(StageCursor + StageStep);
-                if ((StageCursor & 0x7F) == StageBoundary)
-                    CellIndexNext = (byte)(CellIndexNext + StageStep);
-                if (StageCursor == StageTarget) return true;
-            }
+                if (StageSectionStep()) return true;
             return false;
+        }
+
+        /// <summary>One $DE86-$DE91 iteration: the $E698 band at the current cursor, the
+        /// $E78A-$E790 step, the $E792-$E79F cell step and the $DE8D target compare.</summary>
+        public bool StageSectionStep()
+        {
+            StageBandStep();
+            StageCursorStep();
+            return StageCursor == StageTarget;
+        }
+
+        /// <summary>$E698 paints the band from $25 as it stands; the store to $25 happens
+        /// near the end of that helper ($E78A-$E790), so a clocked pass must not advance the
+        /// cursor at its head — the NMI can interrupt the pass before the store.</summary>
+        public void StageBandStep() => StageBand?.Invoke(StageCursor);
+
+        /// <summary>$E78A-$E790 cursor step plus the $E792-$E79F cell step; the caller
+        /// applies it once the charged pass time has reached the store.</summary>
+        public void StageCursorStep()
+        {
+            StageCursor = (byte)(StageCursor + StageStep);
+            if ((StageCursor & 0x7F) == StageBoundary)
+                CellIndexNext = (byte)(CellIndexNext + StageStep);
         }
 
         public byte LastRedrawScroll;    // $28 (scroll X at the end of the last redraw)

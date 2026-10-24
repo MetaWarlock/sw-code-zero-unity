@@ -34,6 +34,42 @@ namespace Darkwing.Core
             return cycles;
         }
 
+        /// <summary>One $DE86-$DE91 pass of the reset loader: a fresh JSR $E698 (the band helper
+        /// already owns its 6-cycle call), the $E792-$E7AC tail, the $C115 flush, the $DE8D
+        /// compare and the next $DE86 head. $C115 writes one 3-byte header plus `len` payload
+        /// bytes per record (`$C119-$C137`: 22 header + 14/15 per byte + 9), so a band with four
+        /// two-byte tile runs and one attribute byte costs 297 and the band-row-7 case with only
+        /// rows 28/29 visible costs 177 — the validated gold flush costs. The steady-state form
+        /// is used for every pass; the $DE91 exit pass is six cycles cheaper, which never changes
+        /// whether a whole pass fits the frame.</summary>
+        public int MeasureStagingPassCycles(byte cursor, byte gridIndex, sbyte step, byte boundary)
+            => MeasureStagingPassCycles(cursor, gridIndex, step, boundary, out _);
+
+        /// <summary><paramref name="incrementAt"/> is the cycle count into the pass at which
+        /// $E790 has stored the new $25 (the band's last chunk ends at $E792). The clocked
+        /// loader charges a frame's remainder first and only then this prefix has elapsed;
+        /// an NMI that interrupts the pass before that point observes the old cursor.</summary>
+        public int MeasureStagingPassCycles(byte cursor, byte gridIndex, sbyte step, byte boundary, out int incrementAt)
+        {
+            byte descriptor = 0;
+            int cycles = MeasureHorizontalBandCycles(cursor, gridIndex, ref descriptor);
+            incrementAt = cycles;
+            // Band row 7 stages rows 28..31; the $DE78/$DE7E trim leaves only 28/29 in the queue.
+            int rows = (cursor & 7) == 7 ? 2 : 4;
+            int flush = 57 + 60 * rows;
+            byte next = (byte)(cursor + step);
+            bool crossed = (next & 0x7F) == boundary;
+            cycles += 2 + 4;                       // $E792 AND #$7F / $E794 CMP $E7BF,X
+            cycles += crossed ? 14 : 3;            // $E797 BNE / $E799-$E79F grid step
+            cycles += 5 + 3;                       // $E7A1 DEC $05 / $E7A3 BEQ
+            cycles += 3 + 2 + 3;                   // $E7A8 LDA $F0 / BEQ / JMP $C115
+            cycles += flush;                       // $C115-$C137
+            cycles += 6;                           // $C139 RTS back to $DE8D
+            cycles += 3 + 2 + 3;                   // $DE8D / $DE8F / $DE91 taken
+            cycles += 2 + 3;                       // next $DE86 LDA #$01 / STA $05
+            return cycles;
+        }
+
         public int MeasureHorizontalStreamCycles(byte scroll, byte last, byte mode, byte previousMode, byte cursor, byte gridIndex, bool? renderingBlanked = null)
         {
             int difference = (sbyte)(byte)(scroll - last);

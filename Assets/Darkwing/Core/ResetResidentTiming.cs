@@ -20,6 +20,9 @@ namespace Darkwing.Core
 
         private static int Branch(int pc, int target, bool taken) => !taken ? 2 : 3 + (((pc + 2) & 0xFF00) != (target & 0xFF00) ? 1 : 0);
 
+        // $DDCB/$DE03 JSR $FF06 yields push their frame back to $B9.
+        private const ushort LoaderYieldStack = 0xB9;
+
         public static BodyWork Measure(int stage, byte fadeFrame, byte fadeLevel, byte timer, byte[] palette0320, byte[] bank2, byte oamCursor)
         {
             const ushort masterStack = 0xBF;
@@ -86,6 +89,25 @@ namespace Darkwing.Core
             cycles += 121;                                                     // $DE2A-$DE84 with $23 == 0
             if (world.StartCell != 0) cycles += 12;                            // $DE7C falls into $DE7E-$DE84
             return new BodyWork(cycles, false, -1, 0xDD5D, 0, 0xBB, 0xDE86);
+        }
+
+        /// <summary>$DDCB JSR $FF06 after the staging loop exits: the same 55-cycle yield
+        /// shape as the $DD5A stage. The $DD5A yield resumed at $BB, and this JSR pushes
+        /// its frame back to $B9 (the $DE03 yield after $DDCE shows the same owner).</summary>
+        public static BodyWork MeasureLoaderYield()
+        {
+            return new BodyWork(6 + 49, true, -1, 0xDDCB, 0, LoaderYieldStack);
+        }
+
+        /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99
+        /// (not taken) / RTS, followed by the $DDCB JSR $FF06. Mission worlds ($31 &lt; 7)
+        /// branch into the unpriced $DE99 placement anchor instead.</summary>
+        public static BodyWork MeasureLoaderCompletion(byte worldId)
+        {
+            if (worldId < 7)
+                throw new NotSupportedException("$DE99 placement anchor after the loader is unpriced");
+            const int exit = 3 + 2 + 3 + 3 + 2 + 6;   // $DE93/$DE95/$DE97/$DEA5/$DEA7/$DEA9
+            return new BodyWork(exit + 6 + 49, true, -1, 0xDE93, 0, LoaderYieldStack);
         }
 
         /// <summary>$F84E at a ring slot: 45 cycles when the slot is empty, 30 when the

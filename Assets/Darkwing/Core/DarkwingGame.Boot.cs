@@ -139,6 +139,91 @@ namespace Darkwing.Core
         }
 
         private int _sceneLoadStage;
+        private bool _sceneLoadStreaming, _loaderExited;
+        private int _streamPassRemaining, _streamPassCharged, _streamPassIncrementAt;
+        private bool _streamPassLast, _streamPassIncrementPending;
+
+        /// <summary>True once the $DE86 loop reached $0F and the $DDCB yield is due.</summary>
+        public bool LoaderExited => _loaderExited;
+
+        /// <summary>$DD5D-$DE86 with the staging loop left to the caller. The reset clock
+        /// streams the loop pass by pass, so the prelude must not paint the first bands.</summary>
+        public void BeginSceneLoadStreaming(RoomDecoder decoder, byte worldId)
+        {
+            _worldDecoder = decoder; _worldId = worldId;
+            WorldPrelude(false);
+            _sceneLoadStage = 0;
+            _sceneLoadStreaming = true;
+            _streamPassRemaining = _streamPassCharged = 0;
+            _streamPassLast = _streamPassIncrementPending = false;
+            _loaderExited = false;
+        }
+
+        /// <summary>Leaves the $DE86 loop to the caller's $DDCB yield when the clock could
+        /// not stream it and the old per-frame approximation finishes the staging.</summary>
+        public void FallbackSceneLoad()
+        {
+            _sceneLoadStreaming = false;
+            _sceneLoadStage = 0;
+        }
+
+        /// <summary>Charges the $DE86/$E698 passes one frame's remaining CPU time can hold and
+        /// returns the cycles consumed. The pass paints its band and stores $25 near the end of
+        /// $E698 ($E790), so a pass that does not fit leaves the old cursor visible to the NMI;
+        /// the store is applied when the charged cycles cross that point. The uncharged
+        /// remainder of the same pass is carried into the next frame, where the RTI resumes it.
+        /// The pass that reaches $0F is six cycles cheaper: $DE8F does not branch back to a
+        /// fresh $DE86 head. The final pass starts like every other one: the NMI may interrupt
+        /// it too, and only the $DE93 tail must not cross the edge.</summary>
+        public int StreamSceneLoad(int budgetCycles)
+        {
+            if (!_sceneLoadStreaming) throw new System.InvalidOperationException("Reset loader is not streaming");
+            if (budgetCycles < 0) throw new System.ArgumentOutOfRangeException(nameof(budgetCycles));
+            int used = 0;
+            while (true)
+            {
+                if (_streamPassRemaining == 0)
+                {
+                    if (_loaderExited || budgetCycles - used <= 0) break;
+                    int cost = TileMap.MeasureStagingPassCycles(Player.StageCursor, Player.CellIndexNext,
+                        Player.StageStep, Player.StageBoundary, out int incrementAt);
+                    bool last = (byte)(Player.StageCursor + Player.StageStep) == Player.StageTarget;
+                    if (last) cost -= 6;
+                    _streamPassLast = last;
+                    _streamPassRemaining = cost;
+                    _streamPassCharged = 0;
+                    _streamPassIncrementAt = incrementAt;
+                    _streamPassIncrementPending = true;
+                    Player.StageBandStep();
+                }
+                int room = budgetCycles - used;
+                int charge = _streamPassRemaining <= room ? _streamPassRemaining : room;
+                _streamPassCharged += charge;
+                if (_streamPassIncrementPending && _streamPassCharged >= _streamPassIncrementAt)
+                {
+                    _streamPassIncrementPending = false;
+                    Player.StageCursorStep();
+                }
+                used += charge;
+                if (charge == _streamPassRemaining)
+                {
+                    _streamPassRemaining = 0;
+                    if (_streamPassLast) { _loaderExited = true; _streamPassLast = false; }
+                    continue;
+                }
+                _streamPassRemaining -= charge;
+                break;
+            }
+            return used;
+        }
+
+        /// <summary>After $DDCB: the next frame's spawn runs through the existing
+        /// $DDCE/$DE00/$DE03 path.</summary>
+        public void FinishSceneLoadStream()
+        {
+            _sceneLoadStreaming = false;
+            _sceneLoadStage = 3;
+        }
 
         /// <summary>The bank-5 $8000 walk called by the resident $F89A service.</summary>
         public void ResidentWalk()

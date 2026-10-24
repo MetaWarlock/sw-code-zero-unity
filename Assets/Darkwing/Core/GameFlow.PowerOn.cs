@@ -9,7 +9,12 @@ namespace Darkwing.Core
         public bool PowerOnActive => PowerOn != null && PowerOn.Active;
         public long PowerOnBoundaryMaster { get; private set; }
         private ResetResidentTiming.BodyWork _resetBodyWork;
+        private ResetResidentTiming.BodyWork _loaderCompletion;
         private bool _resetNmiPending, _resetBodyPending;
+
+        /// <summary>The in-line $DE86/$E698 loop currently streams inside the frame budget;
+        /// the resident stays in its native $DD5D body until the loop reaches $0F.</summary>
+        private bool LoaderStreaming { get; set; }
 
         private void BeginPowerOnTiming()
         {
@@ -37,8 +42,9 @@ namespace Darkwing.Core
             _resetNmiPending = _resetBodyPending = false;
             if (ResetClock == null || !ResetClock.Active) return;
             bool staging = _resetStage == 9;
-            if (!staging && (_resetStage < 2 || _resetStage > 7)) return;
-            if (!staging)
+            bool streaming = _resetStage == 8 && LoaderStreaming;
+            if (!staging && !streaming && (_resetStage < 2 || _resetStage > 7)) return;
+            if (!staging && !streaming)
             {
                 try
                 {
@@ -88,6 +94,50 @@ namespace Darkwing.Core
             if (!_resetBodyPending) return;
             _resetBodyPending = false;
             ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
+        }
+
+        /// <summary>$DE93/$DEA5/$DEA9 RTS back to $DDCB and its JSR $FF06. The loader exits
+        /// to $DE00 rather than $DE99, so the priced $DEA5 fall-through owns this pass.</summary>
+        private bool BeginResetStreamingTiming()
+        {
+            _resetBodyPending = false;
+            if (ResetClock == null || ResetClock.Stage != ResetProcessClock.Phase.Body) return false;
+            try
+            {
+                _loaderCompletion = ResetResidentTiming.MeasureLoaderCompletion(World.CurrentWorld);
+            }
+            catch (NotSupportedException exception)
+            {
+                ResetClock.Refuse(exception.Message);
+                return false;
+            }
+            if (!ResetClock.BeginStreaming(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer))
+                return false;
+            LoaderStreaming = true;
+            return true;
+        }
+
+        /// <summary>$DE86/$DE91 for one frame, then the $DE93 tail and the $DDCB JSR $FF06.
+        /// The loader never yields inside the loop, so slot 0 stays Running across the NMI.</summary>
+        private void RunLoaderStreamFrame()
+        {
+            if (!LoaderStreaming) return;
+            long budget = ResetClock.StreamBudgetCycles;
+            if (budget > int.MaxValue) budget = int.MaxValue;
+            int used = _game.StreamSceneLoad((int)budget);
+            ResetClock.AdvanceStream(used);
+            if (!_game.LoaderExited) return;
+            // The NMI interrupts an unfinished $DE93 tail; RTI resumes it in the next frame.
+            if (ResetClock.StreamBudgetCycles <= _loaderCompletion.Cycles) return;
+            LoaderStreaming = false;
+            if (!ResetClock.CompleteStream(_loaderCompletion, _loaderCompletion.YieldStackPointer))
+            {
+                _game.FinishSceneLoadStream();
+                return;
+            }
+            // $DDCB is a real yield; the flow it resumes into ($DDCE/$DE03) is not clocked yet.
+            ResetClock.StopAfterCommit(0xDDCB);
+            _game.FinishSceneLoadStream();
         }
 
         private void ApplyPowerOnCheckpoint(PowerOnContinuation.Checkpoint checkpoint)

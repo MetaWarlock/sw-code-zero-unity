@@ -219,8 +219,10 @@ namespace Darkwing.Core
         }
 
         /// <summary>$DD5F-$DDC8 plus the $DE24 render-off/staging restart — the half of
-        /// $DD57 that runs before its $DDCB yield.</summary>
-        private void WorldPrelude()
+        /// $DD57 that runs before its $DDCB yield. <paramref name="stageFirstBands"/> false
+        /// leaves the $DE86 loop to the caller (the reset clock streams it pass by pass);
+        /// every other entry point keeps the inline approximation.</summary>
+        private void WorldPrelude(bool stageFirstBands = true)
         {
             var w = _worldDecoder.GetWorld(_worldId);
             _world = w;
@@ -230,7 +232,7 @@ namespace Darkwing.Core
             Player.TileMap = TileMap;
             _gridByte = null; _flagByte = null;             // ($32)/($34) now point at this world
             RenderOff();                                    // $DE24 → $C14E: blank while it streams
-            Player.ApplyWorldPrelude(w);
+            Player.ApplyWorldPrelude(w, stageFirstBands);
             BossBehaviors.DamageAccum = BossBehaviors.InvulnTimer = 0; // $DE54/$DE56
             if (Bank7 != null)
                 Player.CardReleaseChr = RoomDecoder.DescByte(Bank7, 0xD589, _worldId);  // $D562 ($1A on $9600 release)
