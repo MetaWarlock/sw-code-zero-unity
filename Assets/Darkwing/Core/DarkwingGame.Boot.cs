@@ -39,7 +39,10 @@ namespace Darkwing.Core
             {
                 p.GasEnergyLo = p.ActiveGasEnergyLo; p.GasEnergyHi = p.ActiveGasEnergyHi;
                 if (p.WeaponSelected == 2)
-                    for (int i=4;i>=2;i--) { Objects.Slots[i].Active=false; Objects.Slots[i].StateLow=0; }
+                    // $CAE7-$CAFB releases active Thunder bolts into their fall.
+                    // It writes only slots 2/3's state; slot 4 and inactive slots stay intact.
+                    for (int i=2;i<=3;i++)
+                        if (Objects.Slots[i].Active) Objects.Slots[i].StateLow=0x83;
                 p.WeaponActive = p.GasActive = p.ActiveGasEnergyHi = p.ActiveGasEnergyLo = 0;
             }
         }

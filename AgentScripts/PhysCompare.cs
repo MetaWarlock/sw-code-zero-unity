@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using UnityEngine;
 
 public static class PhysCompare
@@ -2379,7 +2380,38 @@ public static class PhysCompare
             Darkwing.Core.BossBehaviors.Dispatch(14, geyser, 0x59, ctx);
             Check(geyser.StateLow == 0x82, "Geyser A0BB increments state 1->2, not OR2->3");
         }
-        return $"PASS {checks}/{checks} Thunder tail/edge controls, arena-bank lifetime and Liquidator single-step movement";
+        {
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance) { Objects = objects, X = 0x2A0 };
+            var ctx = new Darkwing.Core.EnemyDispatcher(null, objects, player);
+            var dropper = objects.Slots[15];
+            dropper.Active = true; dropper.StateLow = 0x80; dropper.Behavior = 0x2D;
+            dropper.X = 0x2A8; dropper.Y = 0x160; dropper.AnimNumber = 0x7E; dropper.T490 = 0x5A;
+            Darkwing.Core.EnemyBehaviors.Dispatch(15, dropper, 0x2D, ctx);
+            Check(dropper.StateLow == 0x82 && dropper.T480 == 0x1E && dropper.T490 == 0x5A && dropper.BehaviorParam == 0x57,
+                "Dropper A53E init+arm: INC twice, timer1E, no write to0490");
+            dropper.AnimFrame = 0x23; dropper.AnimTimer = 4; dropper.Flags = 0xD0;
+            Darkwing.Core.EnemyBehaviors.Dispatch(15, dropper, 0x2D, ctx);
+            var children = objects.Slots.Where(s => s.Active && s.Behavior == 6).ToArray();
+            Check(children.Length == 2 && dropper.AnimNumber == 0x7F, "Dropper A592/A5BF emits two children");
+            Check(children.All(s => s.X == 0x288 && s.Y == 0x15E && s.StateLow == 0x81 && s.AnimNumber == 0x80 &&
+                s.BehaviorParam == 0x0A && s.YVelInt == 3 && s.YVelFrac == 0x44 && s.XVelInt == 0 && s.XVelFrac == 0x80),
+                "Dropper native child coordinates, velocity and hitbox");
+            Check(children.Select(s => s.Direction).OrderBy(d => d).SequenceEqual(new byte[] { 5, 6 }), "Dropper child direction pair");
+            dropper.AnimFrame = 0x0A; dropper.AnimTimer = 2;
+            Darkwing.Core.EnemyBehaviors.Dispatch(15, dropper, 0x2D, ctx);
+            Check(dropper.AnimNumber == 0x7E, "Dropper A59F animation7F returns to7E");
+        }
+        {
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance) { Objects = objects, ScrollYRow = 1, GravityFrac = 0x40 };
+            var ctx = new Darkwing.Core.EnemyDispatcher(null, objects, player) { Tiles = Darkwing.Core.EmptyTileMap.Instance };
+            var jumper=objects.Slots[14];jumper.Active=true;jumper.StateLow=0x81;jumper.Behavior=0x3B;
+            jumper.X=0x34C;jumper.Y=0x194;jumper.AnimNumber=0x4F;jumper.YVelInt=4;jumper.T480=1;jumper.Direction=2;
+            Darkwing.Core.EnemyBehaviors.Dispatch(14,jumper,0x3B,ctx);
+            Check(jumper.T480==1&&jumper.AnimNumber==0x50&&jumper.Y==0x190,"Jumper A689 airborne return preserves landing counter");
+        }
+        return $"PASS {checks}/{checks} Thunder, arena-bank lifetime, Liquidator movement, viewport probes, Dropper and Jumper";
     }
 
     /// <summary>Explicit diagnostic fixtures for the successful $D6B4 -> $D709 exit.
@@ -2457,6 +2489,18 @@ public static class PhysCompare
         Check(p.GasEnergyHi==0x73&&p.GasEnergyLo==0x78,"saved meter uses the same borrow");
         g.Step(in idle);p.State=9;g.Step(in select);
         Check(p.WeaponActive==0&&p.GasToggle==0,"mission entry guards Select");
+        g.Step(in idle);p.State=0x0F;p.GasToggle=p.GasActive=1;p.WeaponActive=p.WeaponSelected=2;
+        p.GasEnergyLo=p.ActiveGasEnergyLo=0x70;p.ActiveGasEnergyHi=0x73;
+        foreach(int i in new[]{2,3,4})
+        {
+            var bolt=g.Objects.Slots[i];bolt.Active=true;bolt.StateLow=0x82;
+            bolt.Behavior=3;bolt.AnimNumber=0x29;bolt.Flags=0x90;bolt.BehaviorParam=0x84;
+            bolt.X=0x2C;bolt.Y=0x1B1;bolt.T480=0x51;bolt.YVelFrac=1;
+        }
+        g.Step(in select);
+        Check(g.Objects.Slots[2].Active&&g.Objects.Slots[3].Active&&g.Objects.Slots[2].StateLow==0x83&&g.Objects.Slots[3].StateLow==0x83,
+            "$CAE7 Select stows Thunder by releasing live bolts, not deleting them");
+        Check(g.Objects.Slots[4].Active&&g.Objects.Slots[4].StateLow==0x82,"$CAF1 does not write slot4");
         return "PASS "+checks+" checks: $C9B3 Select and indexed meter subtraction";
     }
 

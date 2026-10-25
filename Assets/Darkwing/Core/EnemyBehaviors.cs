@@ -2776,7 +2776,10 @@ namespace Darkwing.Core
             }
             if ((s.Direction & 1) != 0) WalkRight(ctx, s, 0, 2);
             else WalkLeft(ctx, s, 3, 2);
-            if (landed && ctx.ProbeResult >= 3)
+            // $A688 PLP restores the landing carry. The airborne path returns at
+            // $A6B3 without clearing the wall-hop counter from the previous landing.
+            if (!landed) return;
+            if (ctx.ProbeResult >= 3)
             {
                 s.T480++;
                 if (s.T480 == 3)
@@ -3566,23 +3569,20 @@ namespace Darkwing.Core
             return a == 0 ? 5 : a;
         }
 
-        /// <summary>$A53E behavior 2D: dropper spawner — arms at |dx| < $30 (param
-        /// $57) or retreats (flags $D8, param 0); armed: anim frame $23/timer 4 →
-        /// behavior-6 child (anim $80) at X±2; frame $0A/timer 2 → anim $7E;
-        /// frame $1C → SFX $2D.</summary>
+        /// <summary>Bank6 $A53E: proximity-armed dropper; $A5BF emits two
+        /// behavior-6 children at X±$20, Ylo−2, with directions 6/5.</summary>
         private static void Dropper(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             if ((s.StateLow & 0x0F) == 0)
             {
-                s.StateLow = 1;
-                s.T480 = 0;
-                s.T490 = 0;
+                s.StateLow++;
+                s.T480 = 0x1E;
             }
             if ((s.StateLow & 0x02) == 0)
             {
                 if (DistX(ctx, s) < 0x30)
                 {
-                    s.StateLow |= 0x02;
+                    s.StateLow++;
                     s.BehaviorParam = 0x57;
                     return;
                 }
@@ -3590,22 +3590,33 @@ namespace Darkwing.Core
                 s.BehaviorParam = 0;
                 return;
             }
-            FacePlayerApply(ctx, s); // $F81D
-            if (s.AnimFrame == 0x23 && s.AnimTimer == 4)
+            if (s.AnimNumber != 0x7F)
             {
-                int y = FindFreeSlot(ctx);
-                if (y >= 0)
+                FacePlayerApply(ctx, s); // $A576 JSR $F81D
+                if (s.Flags == 0x50 || s.Flags == 0x10) return;
+                if (s.AnimFrame == 0x23 && s.AnimTimer == 4)
                 {
-                    var t = ctx.Objects.Slots[y];
-                    t.X = (ushort)(s.X - 2);
-                    t.Y = s.Y;
-                    SpawnInit(ctx, y, 0x80);
-                    t.Behavior = 0x06;
+                    for (int child = 1; child >= 0; child--)
+                    {
+                        int y = FindFreeSlot(ctx);
+                        if (y < 0) break;
+                        var t = ctx.Objects.Slots[y];
+                        t.X = (ushort)(s.X + ((s.Direction & 2) == 0 ? 0x20 : -0x20));
+                        // $A5E6 subtracts only from Ylo; row is copied separately.
+                        t.Y = (ushort)((s.Y & 0xFF00) | (byte)((byte)s.Y - 2));
+                        SpawnInit(ctx, y, 0x80);
+                        t.BehaviorParam = 0x0A;
+                        t.Direction = (byte)(child == 1 ? 6 : 5);
+                        t.StateLow = 0x81;
+                        t.Behavior = 0x06;
+                        t.YVelFrac = 0x44; t.YVelInt = 3;
+                        t.XVelFrac = 0x80; t.XVelInt = 0;
+                    }
+                    SetAnim(s, 0x7F);
+                    return;
                 }
-                SetAnim(s, 0x7F);
-                return;
             }
-            if (s.AnimFrame == 0x0A && s.AnimTimer == 2) { SetAnim(s, 0x7E); return; }
+            else if (s.AnimFrame == 0x0A && s.AnimTimer == 2) { SetAnim(s, 0x7E); return; }
             if (s.AnimFrame == 0x1C) ctx.Sfx?.Invoke(0x2D);
         }
 
