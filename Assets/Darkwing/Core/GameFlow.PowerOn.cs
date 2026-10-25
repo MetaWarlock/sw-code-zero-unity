@@ -16,7 +16,8 @@ namespace Darkwing.Core
         private ResetResidentTiming.BodyWork _loaderCompletion;
         private bool _resetNmiPending, _resetBodyPending;
         private bool _resetFadeStart;
-        private bool _resetIntro, _resetTextWalk;
+        private bool _resetIntro, _resetTextWalk, _resetIntroFlight;
+        private int _resetFirstFlightWalk;
         private byte[] _resetFadePalette;
 
         /// <summary>The in-line $DE86/$E698 loop currently streams inside the frame budget;
@@ -50,6 +51,8 @@ namespace Darkwing.Core
             if (ResetClock == null || !ResetClock.Active) return;
             _resetIntro=Stage==Phase.Intro&&_introStage<=5;
             _resetTextWalk=false;
+            _resetIntroFlight=false;
+            _resetFirstFlightWalk=-1;
             bool staging = Stage==Phase.Reset&&_resetStage == 9;
             bool streaming = Stage==Phase.Reset&&_resetStage == 8 && LoaderStreaming;
             bool loaded = Stage==Phase.Reset&&_resetStage == 8 && !LoaderStreaming;
@@ -113,9 +116,19 @@ namespace Darkwing.Core
         {
             if (!_resetBodyPending) return;
             _resetBodyPending = false;
-            if(_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeStart(_resetFadePalette,_game.Oam.WalkCycles);
-            if(_resetTextWalk)_resetBodyWork=ResetResidentTiming.IncludeTextOam(_resetBodyWork,_game.Oam.WalkCycles);
-            ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
+            try
+            {
+                if(_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeStart(_resetFadePalette,_game.Oam.WalkCycles);
+                if(_resetTextWalk)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_game.Oam.WalkCycles);
+                if(_resetIntroFlight)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_resetFirstFlightWalk);
+                ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
+            }
+            catch(NotSupportedException exception) { ResetClock.Refuse(exception.Message); }
+        }
+
+        private void RecordResetIntroFlightWalk()
+        {
+            if(_resetBodyPending&&_resetIntroFlight)_resetFirstFlightWalk=_game.Oam.WalkCycles;
         }
 
         private void MeasureResetIntroTiming()
@@ -136,7 +149,10 @@ namespace Darkwing.Core
                             : ResetResidentTiming.MeasureIntroHold(_introDelay,0x0F);
                         break;
                     case 4: _resetBodyWork=ResetResidentTiming.MeasureIntroTextReturn(0x0F); break;
-                    case 5: _resetBodyWork=ResetResidentTiming.StopBeforeIntroFlight(); break;
+                    case 5:
+                        _resetBodyWork=ResetResidentTiming.MeasureIntroFlight(_game.Objects.Slots[0],_game.Player.GravityFrac);
+                        _resetIntroFlight=true;
+                        break;
                 }
             }
             catch(NotSupportedException exception)

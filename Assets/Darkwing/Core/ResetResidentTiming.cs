@@ -193,7 +193,7 @@ namespace Darkwing.Core
         // F8AA..FF19 clears the bracket and commits the one-frame yield.
         private static int TextWalkWithoutOam => 3+3+5+6+Wipe(4)+2+6+55+6+2+3+6+49;
 
-        public static BodyWork IncludeTextOam(in BodyWork work, int walkCycles)
+        public static BodyWork IncludeOam(in BodyWork work, int walkCycles)
         {
             if(walkCycles<0)throw new NotSupportedException("Intro text OAM walk is unpriced");
             return new BodyWork(work.Cycles+walkCycles,work.Commits,work.CopyrightSetupCycles,
@@ -209,7 +209,24 @@ namespace Darkwing.Core
             return new BodyWork(cycles,true,-1,0xF8B1,0,(ushort)(stream==0x0E ? 0xB9 : 0xBB));
         }
 
-        public static BodyWork StopBeforeIntroFlight() => new BodyWork(0,false,-1,0xC621,0,0xBF,0xC621);
+        /// <summary>C621: F5A4 radix-240 subtraction, F5DA acceleration/clamp,
+        /// bank5 OAM and the height test. The caller adds this first OAM's price,
+        /// even when the legacy presentation starts a second walk in the same pass.</summary>
+        public static BodyWork MeasureIntroFlight(ObjectSystem.Slot player, byte gravity)
+        {
+            if(player==null)throw new ArgumentNullException(nameof(player));
+            int fraction=player.YFrac-player.YVelFrac;
+            int low=((player.Y&255)-(player.YVelInt&255)-(fraction<0 ? 1 : 0))&255;
+            int integrate=39;
+            if(low>=240) { low-=240;integrate=56; }
+            byte velocityHigh=(byte)(((sbyte)player.YVelInt*256+player.YVelFrac-gravity)>>8);
+            int acceleration=velocityHigh<0x80 ? 34 : velocityHigh>=0xF9 ? 38 : 51;
+            int cycles=2+6+integrate+6+acceleration+2+6+55+2+3+6;
+            bool flying=low<0x5C;
+            cycles+=4+2+Branch(0xC63A,0xC61E,flying);
+            if(flying)return new BodyWork(cycles+6+49,true,-1,0xC621,0,0xBB);
+            return new BodyWork(cycles,false,-1,0xC621,0,0xBF,0xC63C);
+        }
 
         /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99
         /// (not taken) / RTS, followed by the $DDCB JSR $FF06. Mission worlds ($31 &lt; 7)

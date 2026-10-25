@@ -897,17 +897,17 @@ public static class ResetClockVerify
     public static string IntroText()
     {
         byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
-        var rows=RunNative(input,false,out _,out var clock,463);
+        var rows=RunNative(input,false,out _,out var clock,462);
         var source=new Dictionary<(int poll,string pc),string[]>();
         foreach(var line in File.ReadAllLines(Root+"Temp/intro_text_clock.csv"))
         {
             var c=line.Split(',');if(c[0]=="poll")continue;
-            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<338||poll>463)continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<338||poll>462)continue;
             if(c[2]=="C000"||c[2]=="FECF"||c[2]=="FF02"||c[2]=="AA03"||c[2]=="F8B1"||c[2]=="FF19"||c[2]=="C621")source.Add((poll,c[2]),c);
         }
         int Compare(List<Snapshot> actual)
         {
-            Require(actual.Count==463-FirstPoll+1,"Intro text missing/extra records");int checks=0;
+            Require(actual.Count==462-FirstPoll+1,"Intro text missing/extra records");int checks=0;
             for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro text skipped/duplicated poll");
             foreach(var row in actual)
             {
@@ -916,10 +916,10 @@ public static class ResetClockVerify
                 Require(row.Handler-2==At("C000"),"Intro text handler "+poll+" native="+(row.Handler-2)+" source="+At("C000"));
                 Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro text interrupted PC "+poll+" native="+row.Interrupted.ToString("X4")+" source="+source[(poll,"C000")][15]);
                 Require(row.Resume-2==At("FECF"),"Intro text resume "+poll+" native="+(row.Resume-2)+" source="+At("FECF"));
-                string pc=poll==463 ? "C621" : poll==338||poll==409 ? "AA03" : poll>=379&&poll<=408 ? "FF02" : "F8B1";
+                string pc=poll==338||poll==409 ? "AA03" : poll>=379&&poll<=408 ? "FF02" : "F8B1";
                 Require(row.Body-2==At(pc),"Intro text body "+poll+" native="+(row.Body-2)+" source="+At(pc));
-                Require(poll==463||row.Stage==ResetProcessClock.Phase.Waiting,"Intro text did not yield "+poll);
-                string end=poll==463 ? "C621" : "FF19";
+                Require(row.Stage==ResetProcessClock.Phase.Waiting,"Intro text did not yield "+poll);
+                string end="FF19";
                 Require(row.Finish-2==At(end),"Intro text finish "+poll+" native="+(row.Finish-2)+" source="+At(end));checks+=5;
             }
             return checks;
@@ -933,7 +933,7 @@ public static class ResetClockVerify
         }
         var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
         var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
-        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC621&&clock.ProcessState==FrameScheduler.Running,"Stop Running before unpriced intro flight");
+        Require(clock.Stage==ResetProcessClock.Phase.Waiting&&clock.ProcessState==FrameScheduler.Waiting,"C61E yield committed natively");
         byte[] original=File.ReadAllBytes(Root+"Temp/human_164819_fulla/replay1/buffers.bin");
         Require(original.Length==38886*4384,"Text clear source completeness");
         var game=CreateGame(out _);int queueChecks=0;
@@ -952,7 +952,50 @@ public static class ResetClockVerify
             Reject(()=>CompareQueue(altered,101,poll+1));negatives++;
             Reject(()=>CompareQueue(game.NativeVram.Bytes,100,poll+1));negatives++;
         }
-        return "PASS AA00 streams0E/0F and FEFF: "+count+" exact clock checks on126 resumes, "+queueChecks+" descriptor bytes, "+negatives+" negatives; stopC621";
+        return "PASS AA00 streams0E/0F and FEFF: "+count+" exact clock checks on125 resumes, "+queueChecks+" descriptor bytes, "+negatives+" negatives; C61E yield";
+    }
+
+    public static string IntroFlight()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        var rows=RunNative(input,false,out _,out var clock,489);
+        var source=new Dictionary<(int poll,string pc),string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/intro_flight_clock.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<463||poll>489)continue;
+            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="C621"||c[2]=="C63C"||c[2]=="FF19")source.Add((poll,c[2]),c);
+        }
+        int Compare(List<Snapshot> actual)
+        {
+            Require(actual.Count==489-FirstPoll+1,"Intro flight missing/extra records");int checks=0;
+            for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro flight skipped/duplicated poll");
+            foreach(var row in actual)
+            {
+                int poll=row.Poll;if(poll<463)continue;
+                long At(string pc)=>long.Parse(source[(poll,pc)][1],CultureInfo.InvariantCulture);
+                Require(row.Handler-2==At("C000"),"Intro flight handler "+poll+" native="+(row.Handler-2)+" source="+At("C000"));
+                Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro flight interrupted PC "+poll);
+                Require(row.Resume-2==At("FECF"),"Intro flight resume "+poll+" native="+(row.Resume-2)+" source="+At("FECF"));
+                Require(row.Body-2==At("C621"),"Intro flight body "+poll);
+                string end=poll==489 ? "C63C" : "FF19";
+                Require(row.Finish-2==At(end),"Intro flight finish "+poll+" native="+(row.Finish-2)+" source="+At(end));
+                Require(row.Stage==(poll==489 ? ResetProcessClock.Phase.Stopped : ResetProcessClock.Phase.Waiting),"Intro flight phase "+poll);
+                checks+=6;
+            }
+            return checks;
+        }
+        int count=Compare(rows),negatives=0;
+        foreach(string field in new[]{"Handler","Interrupted","Resume","Body","Finish","Stage"})
+        {
+            var altered=new List<Snapshot>(rows);int index=463-FirstPoll;altered[index]=altered[index].Copy();var row=altered[index];
+            if(field=="Handler")row.Handler++;else if(field=="Interrupted")row.Interrupted^=1;else if(field=="Resume")row.Resume++;else if(field=="Body")row.Body++;else if(field=="Finish")row.Finish++;else row.Stage=ResetProcessClock.Phase.Running;
+            Reject(()=>Compare(altered));negatives++;
+        }
+        var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
+        var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
+        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC63C&&clock.ProcessState==FrameScheduler.Running,"Stop Running before intro presentation");
+        return "PASS intro flight "+count+" exact checks on27 resumes, "+negatives+" negatives; first OAM preserved on double-walk exit; stopC63C";
     }
 
     public static string IntroBlips()

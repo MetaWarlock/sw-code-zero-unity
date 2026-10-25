@@ -66,6 +66,7 @@ namespace Darkwing.Core
                     return;
                 case 5:
                     _game.StepIntroFlight();
+                    RecordResetIntroFlightWalk();
                     if ((s.Y & 0xFF) < 0x5C) return;
                     _game.PlaySfx(0x10); _game.Oam.HideShadow();
                     EnemyBehaviors.SetAnim(s, 0x2B);
