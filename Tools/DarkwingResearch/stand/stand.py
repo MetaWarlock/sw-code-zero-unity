@@ -135,17 +135,33 @@ def read_trace(path: Path):
 
 
 def read_port_trace(path: Path):
+    """Read named columns: current exports include gameFrame; older ones do not."""
+    import csv
     rows, fulls = {}, {}
     if not path.is_file():
         return rows, fulls
+    header = None
     for line in path.read_text(encoding="utf-8").splitlines():
         if line.startswith("# full"):
             parts = dict(p.split("=") for p in line.split()[3:])
             fulls[int(line.split()[2])] = (int(parts["nt"]), int(parts["oam"]))
-        elif line and not line.startswith("frame,"):
-            f = line.split(",")
-            rows[int(f[0])] = {"x": int(f[1]), "y": int(f[2]), "state": int(f[3]),
-                               "ctrl": int(f[4]), "mask": int(f[5]), "pal_sum": int(f[6])}
+        elif not line or line.startswith("#"):
+            continue
+        else:
+            values = next(csv.reader([line]))
+            if header is None:
+                header = values
+                required = {"frame", "x", "y", "state", "ctrl", "mask", "pal_sum"}
+                if not required.issubset(header) or len(set(header)) != len(header):
+                    raise ValueError("Missing/duplicate port trace columns")
+                continue
+            if len(values) != len(header):
+                raise ValueError("Truncated/extra port trace columns")
+            row = dict(zip(header, values))
+            frame = int(row["frame"])
+            if frame != len(rows) + 1:
+                raise ValueError("Missing/duplicate/out-of-order port trace frame")
+            rows[frame] = {key: int(row[key]) for key in ("x", "y", "state", "ctrl", "mask", "pal_sum")}
     return rows, fulls
 
 
@@ -383,7 +399,7 @@ def cmd_replay(args):
         raise SystemExit("Replays diverged in the original - the stand is not deterministic")
 
 
-def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio_state=False) -> dict:
+def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio_state=False, timeout: int = 0) -> dict:
     """Feed the recorded track to the port: same bytes, same frame numbers, cold boot at frame 1."""
     track = track_bytes(session)
     out = Path(output).resolve() if output else session / "unity"
@@ -399,10 +415,12 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio
         "spec": str(out / "spec.json"), "session": str(session), "fullEvery": full_every,
         "shots": list(shots), "audioState": audio_state}), encoding="utf-8")
     unity = shutil.which("unity") or str(Path.home() / "AppData/Local/Unity/bin/unity.exe")
+    budget = timeout or 270
+    timeout_ms = (budget - 30) * 1000 if budget > 30 else budget * 1000
     cmd = [unity, "command", "run_script", "--file", "AgentScripts/StandRoute.cs",
            "--entry", "StandRoute.Run", "--project-path", str(ROOT), "--caller", "plugin",
-           "--skill", "unity-cli", "--timeout", "270", "--timeout_ms", "240000", "--format", "json"]
-    run = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=300)
+           "--skill", "unity-cli", "--timeout", str(budget), "--timeout_ms", str(timeout_ms), "--format", "json"]
+    run = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=budget + 30)
     (out / "run_script.json").write_text(run.stdout, encoding="utf-8")
     (out / "run_script_err.txt").write_text(run.stderr, encoding="utf-8")
     try:
@@ -419,7 +437,7 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio
 
 def cmd_unity(args):
     shots = [int(s) for s in (args.png.split(",") if args.png else [])]
-    print(json.dumps(run_port(Path(args.session).resolve(), shots, args.full_every, args.output, args.frames, args.audio_state), indent=2))
+    print(json.dumps(run_port(Path(args.session).resolve(), shots, args.full_every, args.output, args.frames, args.audio_state, getattr(args, "timeout", 0)), indent=2))
 
 
 SHARED = ("x", "y", "state", "ctrl", "mask", "pal_sum")
@@ -438,6 +456,9 @@ def scan(orig, ofull, port, pfull, start_at):
             return poll, bad
         if poll in ofull and poll in pfull and ofull[poll] != pfull[poll]:
             return poll, [f"nt/oam sum: original={ofull[poll]} port={pfull[poll]}"]
+    extra = sorted(set(port) - set(orig))
+    if extra:
+        return extra[0], ["extra port trace frame"]
     return None, []
 
 
@@ -766,6 +787,7 @@ def main():
     u.add_argument("--png", help="comma list of frames to dump as PNG in the port")
     u.add_argument("--full-every", type=int, default=60)
     u.add_argument("--audio-state", action="store_true", help="diagnostic export of persistent audio ZP and $0700-$077F; no RAM seed")
+    u.add_argument("--timeout", type=int, default=0, help="wall-clock cap for unity execution in seconds")
     u.set_defaults(func=cmd_unity)
     d = sub.add_parser("diff")
     d.add_argument("session")

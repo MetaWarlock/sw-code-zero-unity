@@ -54,6 +54,7 @@ public class Win32Cap {
   [DllImport("user32.dll")] public static extern bool GetClientRect(IntPtr h, out WINRECT r);
   [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr h, ref WINPOINT p);
   [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr h, IntPtr hdc, uint flags);
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr wParam, IntPtr lParam);
   public static IntPtr PlayerWindow(int processId) {
     IntPtr found=IntPtr.Zero; int area=0;
     EnumWindows((h,unused) => {
@@ -70,8 +71,8 @@ public class Win32Cap {
   function CaptureWindow([System.Diagnostics.Process]$proc, [string]$out) {
     $proc.Refresh()
     if ($proc.HasExited) { throw 'Player exited before capture' }
-    $h = $proc.MainWindowHandle
-    if ($h -eq [IntPtr]::Zero) { $h = [Win32Cap]::PlayerWindow($proc.Id) }
+    $h = [Win32Cap]::PlayerWindow($proc.Id)
+    if ($h -eq [IntPtr]::Zero) { $h = $proc.MainWindowHandle }
     if ($h -eq [IntPtr]::Zero) { throw 'Player has no window' }
     $r = New-Object WINRECT
     if (-not [Win32Cap]::GetWindowRect($h, [ref]$r)) { throw 'GetWindowRect failed' }
@@ -144,7 +145,9 @@ public class Win32Cap {
     $result.route = $route
   }
   $result.framesDiffer = $result.captureA.sha256 -ne $result.captureB.sha256
-  if (-not $p.CloseMainWindow()) { throw 'CloseMainWindow refused' }
+  $playerH = [Win32Cap]::PlayerWindow($p.Id)
+  if ($playerH -ne [IntPtr]::Zero) { [Win32Cap]::PostMessage($playerH, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null }
+  $p.CloseMainWindow() | Out-Null
   if (-not $p.WaitForExit(10000)) { throw 'Player did not exit cleanly in 10 seconds' }
   $result.playerExitCode = $p.ExitCode
   $result.cleanExit = $true

@@ -162,5 +162,37 @@ foreach($case in $cases) {
                 stand.cmd_scene(SimpleNamespace(route=route, session=session, core=root / "missing"))
 
 
+class PortTraceColumnsTests(unittest.TestCase):
+    def test_scan_rejects_missing_extra_and_changed_frames(self):
+        frame = dict.fromkeys(stand.SHARED, 0)
+        self.assertEqual(stand.scan({1: frame}, {}, {1: frame}, {}, 1), (None, []))
+        for port, first in [({}, 1), ({1: frame, 2: frame}, 2), ({1: dict(frame, y=1)}, 1)]:
+            at, why = stand.scan({1: frame}, {}, port, {}, 1)
+            self.assertEqual(at, first)
+            self.assertTrue(why)
+
+    def test_current_and_legacy_columns(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "trace.csv"
+            for header, row in [
+                ("frame,gameFrame,x,y,state,ctrl,mask,pal_sum", "1,0,381,180,2,128,30,321"),
+                ("frame,x,y,state,ctrl,mask,pal_sum", "1,381,180,2,128,30,321"),
+            ]:
+                path.write_text(header + "\n" + row + "\n# finalGameFrame=0\n")
+                rows, _ = stand.read_port_trace(path)
+                self.assertEqual(rows[1], dict(x=381, y=180, state=2, ctrl=128, mask=30, pal_sum=321))
+
+    def test_rejects_missing_extra_and_duplicate_data(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "trace.csv"
+            header = "frame,gameFrame,x,y,state,ctrl,mask,pal_sum\n"
+            row = "1,0,381,180,2,128,30,321\n"
+            for body in [row.replace(",321", ""), row.rstrip() + ",0\n", row + row,
+                         row.replace("1,0,", "2,0,"), header.replace("x,", "") + row]:
+                path.write_text(header + body)
+                with self.assertRaises(ValueError):
+                    stand.read_port_trace(path)
+
+
 if __name__ == "__main__":
     unittest.main()
