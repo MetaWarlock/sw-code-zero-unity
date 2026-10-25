@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
+using System.Text;
 using Darkwing.Core;
 
 public static class CardGameVerify
@@ -58,6 +59,14 @@ public static class CardGameVerify
                 throw new InvalidOperationException(label + " $" + Address(index).ToString("X4") + " " + actual[index] + "/" + expected[index]);
     }
 
+    /// <summary>Field mismatches stay a FAIL of the whole run, but are collected so the run still
+    /// reports every differing call and the independent K1 timing evidence before failing.</summary>
+    private static void Collect(byte[] actual, byte[] expected, string label, List<string> mismatches)
+    {
+        try { Compare(actual, expected, label); }
+        catch (InvalidOperationException exception) { mismatches.Add(exception.Message); }
+    }
+
     private static void Control(byte actual, byte expected, string label)
     {
         if (actual != expected) throw new InvalidOperationException("Card Game " + label + " " + actual + "/" + expected);
@@ -81,6 +90,70 @@ public static class CardGameVerify
         catch (InvalidDataException) { refused = true; }
         catch (InvalidOperationException) { refused = true; }
         if (!refused) throw new InvalidOperationException("Card Game comparator accepted " + label);
+    }
+
+    // K1: a Card body is dispatched only after the NMI that made slot0 Ready, so its FF17 commit is
+    // bounded from that NMI, not from the unknown earlier clock. 17 + latest dispatch + body must fit
+    // the shortest NMI-to-NMI interval for the next NMI to find slot0 Waiting in the idle scan.
+    private static void K1Waiting(byte state, byte timer, byte bracket, byte depth, byte deferred)
+    {
+        if (state != FrameScheduler.Waiting || timer != 1 || bracket != 0 || depth != 0 || deferred != 0)
+            throw new InvalidOperationException("K1 dispatch NMI lacks a native Card Waiting commit");
+    }
+
+    private static int K1Handler(int publication, int timers, int bank, bool audioRuns, int audio)
+    {
+        if (publication < 0 || !audioRuns || audio < 0) throw new InvalidOperationException("K1 native NMI cost unsupported");
+        return publication + timers + bank + audio;
+    }
+
+    private static int K1Slack(int delay, int body, int interval) => interval - (FrameScheduler.CommitToIdleCycles + delay + body);
+
+    private static void K1Bound(int delay, int body, int interval)
+    {
+        if (K1Slack(delay, body, interval) < 0) throw new InvalidOperationException("K1 Card commit may reach the next NMI");
+    }
+
+    /// <summary>Shortest sampling-threshold distance: edges 89341/89342 dots apart (4 master ticks
+    /// per dot), sampled at ceil(edge/12)+1 for every CPU/PPU master alignment and CPU parity.</summary>
+    private static int K1MinimumInterval()
+    {
+        int result = int.MaxValue;
+        foreach (int dots in new[] { 262 * 341 - 1, 262 * 341 })
+            for (int alignment = 0; alignment < 24; alignment++)
+                result = Math.Min(result, (alignment + 4 * dots + 11) / 12 - (alignment + 11) / 12);
+        return result;
+    }
+
+    /// <summary>Latest FECF dispatch after the sampling threshold (cycle 0) over every Waiting
+    /// position: each idle-scan residue and the FF19…FE91 tail, including an FF17 that straddles
+    /// the threshold.</summary>
+    private static int K1MaxDispatchDelay(int handler)
+    {
+        int result = int.MinValue;
+        for (int entry = 0; entry < 95 + 22; entry++)
+        {
+            var scheduler = new FrameScheduler();
+            if (entry < 95)
+            {
+                scheduler.Wait(0, 1, 0x1B5);
+                scheduler.BeginExecution(-entry - 4);
+            }
+            else scheduler.BeginExecutionAfterCommit(0, 98 - entry, 0x1B5);
+            while (!scheduler.DispatchPending && scheduler.ExecutionCycle < 0) scheduler.StepExecution();
+            if (scheduler.DispatchPending) throw new InvalidOperationException("K1 Waiting entry dispatched before NMI");
+            scheduler.Nmi();
+            scheduler.ElapseInterrupt(FrameScheduler.NmiEntryCycles + handler);
+            for (int step = 0; !scheduler.DispatchPending; step++)
+            {
+                if (step > 400) throw new InvalidOperationException("K1 scheduler did not dispatch");
+                scheduler.StepExecution();
+            }
+            if (scheduler.DispatchSlot != 0 || !scheduler.DispatchNeedsInput)
+                throw new InvalidOperationException("K1 scheduler did not resume slot0 input");
+            result = Math.Max(result, checked((int)scheduler.ExecutionCycle));
+        }
+        return result;
     }
 
     public static string Run()
@@ -141,21 +214,47 @@ public static class CardGameVerify
         var flow = new GameFlow(game, decoder);
         var checkedPolls = new List<int>();
         int endFields = 0, resumeEntryFields = 0, prices = 0, negativeFields = 0, negativePrices = 0, negativeControls = 0;
+        int k1Interval = K1MinimumInterval(), k1Evaluated = 0, k1Failed = 0, k1Offset = -1;
+        int k1MinSlack = int.MaxValue, k1MinPoll = 0, k1MinDelay = 0, k1MinBody = 0, k1MinPublication = 0, k1MinTimers = 0, k1MinBank = 0;
+        int k1MaxBody = 0, k1MaxHandler = 0, k1MinAllowedBody = int.MaxValue;
+        var k1Unsupported = new List<string>();
+        var fieldMismatches = new List<string>();
+        var k1Rows = new StringBuilder();
         for (int poll = 1; poll <= lastPoll; poll++)
         {
             bool expectedCall = calls.TryGetValue(poll, out var call);
             byte beforeWait = game.Player.CardWaitRemaining;
             byte beforeParity = game.FrameParity;
+            string k1Reason = null;
+            int k1Publication = -1;
+            byte k1State = 0, k1Timer = 0, k1Bracket = 0, k1Depth = 0, k1Deferred = 0;
             if (expectedCall)
             {
                 Control(beforeParity, entries[call.Offset + 0x95], "entry completed-frame parity");
                 if (call.Resume)
                 {
                     if (game.Player.CardPass == null) throw new InvalidOperationException("Card resume has no preceding continuation");
-                    Compare(Actual(game), Expected(entries, call.Offset), "Card resume entry " + poll);
+                    Collect(Actual(game), Expected(entries, call.Offset), "Card resume entry " + poll, fieldMismatches);
                     resumeEntryFields += 416;
                     Control(game.Player.CardPass.Bracket, entries[call.Offset + 0x9A], "resume entry bracket");
                     Control((byte)game.Oam.OamCursorBytes, entries[call.Offset + 0x97], "resume entry cursor");
+                    // The dispatch NMI publishes what the previous native Card body left. Native Card
+                    // paths return before HorizontalScroll/$CA59, so $1C/$1D have no producer here.
+                    var prior = game.Player.CardPass;
+                    k1State = prior.ProcessState; k1Timer = prior.ProcessTimer; k1Bracket = prior.Bracket;
+                    k1Depth = prior.SwitchDepth; k1Deferred = prior.DeferredAudio;
+                    if (prior.Active || prior.Stage != CardPassContinuation.Phase.Committed)
+                        k1Reason = "K1 previous Card continuation is not committed";
+                    else if (checkedPolls.Count == 0 || checkedPolls[checkedPolls.Count - 1] != poll - 1)
+                        k1Reason = "K1 previous poll is not a committed native Card call";
+                    else if ((game.Ppu.Ctrl & 0x80) == 0)
+                        k1Reason = "K1 dispatch NMI disabled";
+                    for (int handlerParity = 0; handlerParity < 2 && k1Reason == null; handlerParity++)
+                    {
+                        if (!game.TryMeasureNativeNmiPublication(handlerParity, k1Bracket, 0, 0, out int cycles, out string reason))
+                            k1Reason = "K1 publication " + reason;
+                        else k1Publication = Math.Max(k1Publication, cycles);
+                    }
                 }
             }
             game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
@@ -169,7 +268,7 @@ public static class CardGameVerify
                 throw new InvalidOperationException("Actual Card did not commit " + poll);
             byte[] actual = Actual(game);
             byte[] expected = Expected(endings, call.Offset);
-            Compare(actual, expected, "Card committed " + poll);
+            Collect(actual, expected, "Card committed " + poll, fieldMismatches);
             endFields += actual.Length;
             byte[] controls = { game.FrameParity, pass.Bracket, (byte)game.Oam.OamCursorBytes };
             int[] addresses = { 0x95, 0x9A, 0x97 };
@@ -185,6 +284,43 @@ public static class CardGameVerify
                 Reject(() => Price(pass.Cycles, call.Cycles + 1), "resume clock mutation");
                 prices++;
                 negativePrices++;
+                if (k1Reason == null)
+                {
+                    try
+                    {
+                        K1Waiting(k1State, k1Timer, k1Bracket, k1Depth, k1Deferred);
+                        // Slots 1-3 have no native Mission owner; they are taken Free here and reported.
+                        int timers = NmiTiming.ProcessTimerCycles(new[] { k1State, FrameScheduler.Free, FrameScheduler.Free, FrameScheduler.Free },
+                            new byte[] { k1Timer, 0, 0, 0 });
+                        int bank = NmiTiming.BankGateCycles(k1Depth, k1Deferred, out bool audioRuns);
+                        int handler = K1Handler(k1Publication, timers, bank, audioRuns,
+                            game.NmiAudioTimingSupported ? game.LastNmiAudioServiceCycles : -1);
+                        if (game.LastInputHookCycles < 0) throw new InvalidOperationException("K1 native input hook unsupported");
+                        if ((game.Ppu.Ctrl & 0x80) == 0) throw new InvalidOperationException("K1 next NMI disabled");
+                        int body = InputTiming.ResumeCallCycles + game.LastInputHookCycles + InputTiming.ResumeEpilogueCycles + pass.Cycles;
+                        int delay = K1MaxDispatchDelay(handler);
+                        if (k1Offset < 0) k1Offset = delay - handler;
+                        else if (delay - handler != k1Offset) throw new InvalidOperationException("K1 dispatch delay is not handler-linear");
+                        int slack = K1Slack(delay, body, k1Interval);
+                        k1Evaluated++;
+                        if (slack < 0) k1Failed++;
+                        k1MaxBody = Math.Max(k1MaxBody, body);
+                        k1MaxHandler = Math.Max(k1MaxHandler, handler);
+                        k1MinAllowedBody = Math.Min(k1MinAllowedBody, slack + body);
+                        if (slack < k1MinSlack)
+                        {
+                            k1MinSlack = slack; k1MinPoll = poll; k1MinDelay = delay; k1MinBody = body;
+                            k1MinPublication = k1Publication; k1MinTimers = timers; k1MinBank = bank;
+                        }
+                        k1Rows.Append(k1Rows.Length == 0 ? "" : ",").Append('[').Append(poll).Append(',').Append(pass.WaitCount != 0 ? 1 : 0)
+                            .Append(',').Append(k1Publication).Append(',').Append(timers).Append(',').Append(bank)
+                            .Append(',').Append(game.LastNmiAudioServiceCycles).Append(',').Append(handler).Append(',').Append(delay)
+                            .Append(',').Append(game.LastInputHookCycles).Append(',').Append(pass.Cycles).Append(',').Append(body)
+                            .Append(',').Append(slack).Append(']');
+                    }
+                    catch (InvalidOperationException exception) { k1Reason = exception.Message; }
+                }
+                if (k1Reason != null) k1Unsupported.Add(poll + ":" + k1Reason);
             }
             if (negativeFields == 0)
             {
@@ -217,6 +353,40 @@ public static class CardGameVerify
         negativeControls += 4;
         if (checkedPolls.Count != 240 || prices != 237 || endFields != 99840 || resumeEntryFields != 98592)
             throw new InvalidDataException("Incomplete actual Card Game coverage");
-        return $"PASS actual reset-input Card calls={checkedPolls.Count}; endMappedBytes={endFields}; resumeEntryMappedBytes={resumeEntryFields}; sourceExactResumePrices={prices}; committed95/9A/97=720; negativeFields={negativeFields}, negativePrices={negativePrices}, negativeControls={negativeControls}. No source RAM/state seeding; 10x16 actor fields plus256shadow only, not whole RAM/RGB/audio. First3 BeginEntry prefixes are not fully priced or source-entry-snapshot compared; parity is checked only at completed boundaries, not a physical-clock anchor. Input prefix1..{lastPoll}; later gameplay and177pureyields/3releases are outside this focused check.";
+        int k1Controls = 0;
+        if (k1Evaluated > 0)
+        {
+            K1Bound(k1MinDelay, k1MinBody, k1Interval);
+            Reject(() => K1Bound(k1MinDelay, k1MinBody + k1MinSlack + 1, k1Interval), "K1 body beyond slack");
+            Reject(() => K1Handler(k1MinPublication, k1MinTimers, k1MinBank, true, -1), "K1 unsupported audio");
+            Reject(() => K1Handler(-1, k1MinTimers, k1MinBank, true, 0), "K1 unsupported publication");
+            Reject(() => K1Handler(k1MinPublication, k1MinTimers, k1MinBank, false, 0), "K1 deferred bank-switch NMI");
+            Reject(() => K1Waiting(FrameScheduler.Running, 1, 0, 0, 0), "K1 Running dispatch NMI");
+            Reject(() => K1Waiting(FrameScheduler.Waiting, 2, 0, 0, 0), "K1 multi-frame wait");
+            Reject(() => K1Waiting(FrameScheduler.Waiting, 1, 1, 0, 0), "K1 busy bracket");
+            Reject(() => K1Waiting(FrameScheduler.Waiting, 1, 0, 1, 0), "K1 interrupted bank switch");
+            k1Controls = 8;
+        }
+        string k1Verdict = k1Evaluated == 237 && k1Unsupported.Count == 0 && k1Failed == 0 ? "PASS" : k1Failed != 0 ? "FAIL" : "UNSUPPORTED";
+        File.WriteAllText(Root + "Temp/card_k1_slack.json",
+            "{\n  \"verdict\": \"" + k1Verdict + "\",\n  \"evaluated\": " + k1Evaluated + ",\n  \"failed\": " + k1Failed
+            + ",\n  \"unsupported\": [" + string.Join(",", k1Unsupported.ConvertAll(value => "\"" + value.Replace("\"", "'") + "\"")) + "]"
+            + ",\n  \"minimumInterval\": " + k1Interval + ",\n  \"commitToIdle\": " + FrameScheduler.CommitToIdleCycles
+            + ",\n  \"dispatchDelayMinusHandler\": " + k1Offset + ",\n  \"minSlack\": " + (k1Evaluated > 0 ? k1MinSlack : 0)
+            + ",\n  \"minSlackPoll\": " + k1MinPoll + ",\n  \"maxBody\": " + k1MaxBody + ",\n  \"maxHandler\": " + k1MaxHandler
+            + ",\n  \"minAllowedBody\": " + (k1Evaluated > 0 ? k1MinAllowedBody : 0) + ",\n  \"negativeControls\": " + k1Controls
+            + ",\n  \"cardFieldComparison\": \"" + (fieldMismatches.Count == 0 ? "PASS" : "FAIL " + fieldMismatches.Count + " calls, first " + fieldMismatches[0]) + "\""
+            + ",\n  \"guards\": \"previous poll native Card commit Waiting/1, bracket0, bank switch complete; NMI enabled at both NMIs; $1C/$1D structurally absent in native Card paths; slots1-3 ASSUMED Free (no native Mission owner)\""
+            + ",\n  \"scope\": \"Native Core on 164819Z input 1..14300, 237 Card resume calls. Publication max over DMA parity, audio/hook/CardPass from native objects; source clocks/RAM not used. Pure FEFF yields, releases and entry frames not evaluated.\""
+            + ",\n  \"columns\": [\"poll\",\"terminal\",\"publication\",\"timers\",\"bank\",\"audio\",\"handler\",\"maxDispatchAfterThreshold\",\"inputHook\",\"cardPass\",\"body\",\"slack\"]"
+            + ",\n  \"rows\": [" + k1Rows + "]\n}\n");
+        if (fieldMismatches.Count != 0)
+            throw new InvalidOperationException(fieldMismatches[0] + "; mismatched calls=" + fieldMismatches.Count
+                + "; K1 " + k1Verdict + " evaluated=" + k1Evaluated + " minSlack=" + (k1Evaluated > 0 ? k1MinSlack : 0) + " (Temp/card_k1_slack.json)");
+        if (k1Verdict != "PASS")
+            throw new InvalidOperationException("K1 " + k1Verdict + " evaluated=" + k1Evaluated + " failed=" + k1Failed
+                + " unsupported=" + k1Unsupported.Count + (k1Unsupported.Count > 0 ? " first " + k1Unsupported[0] : ""));
+        return $"PASS actual reset-input Card calls={checkedPolls.Count}; endMappedBytes={endFields}; resumeEntryMappedBytes={resumeEntryFields}; sourceExactResumePrices={prices}; committed95/9A/97=720; negativeFields={negativeFields}, negativePrices={negativePrices}, negativeControls={negativeControls}. No source RAM/state seeding; 10x16 actor fields plus256shadow only, not whole RAM/RGB/audio. First3 BeginEntry prefixes are not fully priced or source-entry-snapshot compared; parity is checked only at completed boundaries, not a physical-clock anchor. Input prefix1..{lastPoll}; later gameplay and177pureyields/3releases are outside this focused check."
+            + $" K1 PASS resume={k1Evaluated}/237 minSlack={k1MinSlack}@{k1MinPoll} (interval{k1Interval}, dispatch=handler+{k1Offset}, maxBody{k1MaxBody}, maxHandler{k1MaxHandler}, minAllowedBody{k1MinAllowedBody}); controls={k1Controls}; slots1-3 Free ASSUMED; Temp/card_k1_slack.json.";
     }
 }
