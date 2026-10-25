@@ -11,6 +11,15 @@ namespace Darkwing.Core
             _introStage = 13;
         }
 
+        // $C675/$C68E/$C6A7: the panel's RTS falls into JSR $C95C, STA $31 and JSR $DD57 in the
+        // same frame, and $DD57 opens with the $C276 fade-out's first ramp.
+        private void BeginIntroPanelLoad(byte world)
+        {
+            _game.ClearObjectRamAndScroll();
+            World.CurrentWorld = world;
+            _game.BeginResidentFade(false); _introStage = 21;
+        }
+
         private byte ResidentPad(NesButtons pad)
         {
             byte held = pad.ToByte();
@@ -83,12 +92,11 @@ namespace Darkwing.Core
                     _game.IntroPanel8F00Seed(); _game.ResidentWalk(); _introStage = 12;
                     return;
                 case 12:
-                    if (pressed == 0 && _game.IntroPanel8F00Step(0)) return;
+                    if (_game.IntroPanel8F00Step(pressed)) return;
                     // A button returns from the first panel directly into $C792.
-                    // The timed panel chain uses the same scene loader when no button is pressed.
-                    if (pressed == 0) { World.CurrentWorld = 0x0E; _introStage = 20; return; }
-                    _game.PlaySound(0xF0); _game.BeginResidentFade(false);
-                    _introStage = 13;
+                    // The timed panel chain falls into the next scene loader in the same frame.
+                    if (pressed == 0) { BeginIntroPanelLoad(0x0E); return; }
+                    ExitResidentIntro();
                     return;
                 case 13:
                     if (_game.TickResidentFade()) _introStage = 15;
@@ -105,9 +113,6 @@ namespace Darkwing.Core
                     _game.LoadTitleScreen(false); _game.SyncScenePlayer(); _game.ResidentWalk();
                     SetPhase(Phase.Title); _game.ResidentProcess = StepResidentTitle;
                     return;
-                case 20:
-                    _game.ClearObjectRamAndScroll();
-                    _game.BeginResidentFade(false); _introStage = 21; return;
                 case 21:
                     if (_game.TickResidentFade()) _introStage = 22;
                     return;
@@ -124,29 +129,28 @@ namespace Darkwing.Core
                     else if (World.CurrentWorld == 0x0A)
                     {
                         _game.IntroEntryA000(); _game.SyncScenePlayer();
-                        _game.Player.PrevPlayerX = _game.Player.X;
                         _introStage = 29;
                     }
-                    else { _game.IntroPanel9100Seed(); _introStage = 25; }
+                    else { _game.IntroPanel9100Seed(); _game.ResidentWalk(); _introStage = 25; } // $9155
                     return;
                 case 25:
                     if (_game.IntroPanel9100Step(pressed)) return;
                     if (pressed != 0) { ExitResidentIntro(); return; }
-                    World.CurrentWorld = 0x0C; _introStage = 20;
+                    BeginIntroPanelLoad(0x0C);
                     return;
                 case 26:
-                    if (pressed != 0) { ExitResidentIntro(); return; }
+                    if (pressed != 0) { _game.IntroPanel9000SettleExit(); ExitResidentIntro(); return; }
                     if (!_game.StepIntroPanel9000Settle()) return;
                     _introDelay = 10; _introStage = 27;
                     return;
                 case 27:
                     if (--_introDelay > 0) return;
-                    _game.IntroPanel9000Seed(); _introStage = 28;
+                    _game.IntroPanel9000Seed(); _game.ResidentWalk(); _introStage = 28; // $9079…$907D
                     return;
                 case 28:
                     if (_game.IntroPanel9000Step(pressed)) return;
                     if (pressed != 0) { ExitResidentIntro(); return; }
-                    World.CurrentWorld = 0x0A; _introStage = 20;
+                    BeginIntroPanelLoad(0x0A);
                     return;
                 case 29:
                     if ((pressed & 0x10) != 0) { ExitResidentIntro(); return; }
@@ -165,8 +169,7 @@ namespace Darkwing.Core
                     _game.LoadIntroAttractTitle(); _game.ResidentWalk();
                     _attractLow = _attractHigh = 0; _introStage = 33;
                     return;
-                case 33:
-                    _game.ResidentWalk();
+                case 33: // resumes at $C733 after the $C730 yield; the $C721 walk ends the frame
                     if ((s.StateLow & 15) == 0)
                     {
                         if (_game.Player.StateTimer != 0) _game.Player.StateTimer--;
@@ -192,7 +195,8 @@ namespace Darkwing.Core
                         if (_attractLow == 0xFF) _attractHigh++;
                     }
                     _game.SyncScenePlayer();
-                    if ((pressed & 0x10) != 0) ExitResidentIntro();
+                    if ((pressed & 0x10) != 0) { ExitResidentIntro(); return; }   // $C78C…$C790 → $C792
+                    _game.ResidentWalk();                                            // $C721…$C72D, $C730 JSR $FF06
                     return;
                 case 34:
                     if (!_game.TickResidentFade()) return;

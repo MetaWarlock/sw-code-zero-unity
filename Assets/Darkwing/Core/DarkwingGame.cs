@@ -899,24 +899,39 @@ namespace Darkwing.Core
             IntroScene = true; MapScreen = false; WorldRunning = false;
         }
 
-        /// <summary>One iteration of <c>$8F63…$8F79</c>: $F89A, the $14 exit gate ($8F66 → $8F7B),
-        /// slot 1 <c>X -= $0541.$0531</c> through $F51B, slot 2 <c>X += $0542.$0532</c> through $F4FD,
-        /// then <c>$04F1 &gt;= 4</c> re-arms the loop. False = the body reached $8F82 RTS.</summary>
+        /// <summary>One frame of the <c>$8F5F…$8F79</c> loop, resumed after the previous
+        /// <c>$F89A</c> yield: the $14 exit gate ($8F66 → $8F7B), slot 1 <c>X -= $0541.$0531</c>
+        /// through $F51B, slot 2 <c>X += $0542.$0532</c> through $F4FD, then <c>$04F1 &gt;= 4</c>
+        /// re-arms the loop, whose $8F63 JSR $F89A walks and yields — so the walk ends the frame
+        /// and sees this frame's positions. The seed frame's own walk is the caller's. False = the
+        /// body reached $8F82 RTS without a walk.</summary>
         public bool IntroPanel8F00Step(byte justPressed)
         {
-            StepEndingFrame();                                    // $8F63 JSR $F89A (+ compose)
-            if (justPressed != 0) { IntroScene = false; return false; }   // $8F66 BNE $8F7B
+            if (justPressed != 0) return ExitIntroPanel();         // $8F66 BNE $8F7B
             EnemyBehaviors.IntegrateXNeg(Objects.Slots[1]);       // $8F6C LDX #$01 / JSR $F51B
             EnemyBehaviors.IntegrateXPos(Objects.Slots[2]);       // $8F71 LDX #$02 / JSR $F4FD
-            if ((Objects.Slots[1].X & 0xFF) >= 0x04) return true;  // $8F74/$8F77 BCS $8F5F
-            IntroScene = false;
-            return false;                                          // $8F7B…$8F82
+            if ((Objects.Slots[1].X & 0xFF) < 0x04) return ExitIntroPanel();   // $8F74/$8F77
+            StepEndingFrame();                                    // $8F79 BCS $8F5F … $8F63 JSR $F89A
+            return true;
         }
 
-        /// <summary>$9100's sprite seeds (<c>$9100…$9153</c>): slot 1 = anim $2D, flags $E0, StateLow $80,
+        /// <summary>$8F7B/$909C/$9196, the shared panel exit: <c>LDA #$04 / STA $97 / JSR $C21E /
+        /// RTS</c> hides every shadow sprite in the exit frame, before the caller's $C95C.</summary>
+        private bool ExitIntroPanel()
+        {
+            Oam.RestoreCursor(0x04);
+            Oam.HideShadowFromCursor();
+            IntroScene = false;
+            return false;
+        }
+
+        /// <summary>$9000's settle-stage exit on a press: <c>$900F BEQ / $9011 JMP $909C</c>.</summary>
+        public void IntroPanel9000SettleExit() => ExitIntroPanel();
+
+        /// <summary>$9100's sprite seeds (<c>$9100…$9150</c>): slot 1 = anim $2D, flags $E0, StateLow $80,
         /// X $0080, Y $005C; slot 2 = anim $B5, flags $A0, StateLow $80, X $0080, Y $0048; sprite palette
-        /// $919E → $0310/$0330, $18=$FF. The single $F89A at $9155 and the $0550/$0560 scroll-settle
-        /// stage are in <see cref="IntroPanel9100Step"/>, not here.</summary>
+        /// $919E → $0310/$0330, $18=$FF. The seed frame then ends in the $9151/$9155 walk, which the
+        /// caller runs; the $0550/$0560 scroll-settle stage is in <see cref="IntroPanel9100Step"/>.</summary>
         public void IntroPanel9100Seed()
         {
             EndingSlot(1, 0xE0, 0x0080, 0x005C, 0x2D);            // $9100 head/$911B/$9121/$9127/$912D
@@ -936,7 +951,7 @@ namespace Darkwing.Core
             IntroScene = true; MapScreen = false; WorldRunning = false;
         }
 
-        private int _intro9100Stage;   // 0 = $9155 walk, 1 = $9162 settle, 2 = $9188 animation gate
+        private int _intro9100Stage;   // 0 = $9158 velocity frame, 1 = $9162 settle, 2 = $9188 animation gate
 
         /// <summary>$F7E0 as the panel uses it: <c>LDA #$04 / STA $2F</c> then <c>JMP $DC6E</c>
         /// (the saved <c>LDA $F1 / PHA … PLA / JMP $FF55</c> bank push is a no-op — the panel is
@@ -947,26 +962,25 @@ namespace Darkwing.Core
             Player.ScrollSceneDown(Player.ScrollStep);
         }
 
-        /// <summary>The three stages of <c>$9100</c>: one <c>$F89A</c> at $9155, then the $9162…$9186
-        /// settle (<c>JSR $FF06</c> + $F539 on slot 0 + $F7E0, NO walk — the golden freezes $0431=$01
+        /// <summary>The three stages of <c>$9100</c> after the seed frame's $9155 walk: the resumed
+        /// $9158…$915F velocity frame that yields at $9162, then the $9162…$9186 settle
+        /// (<c>JSR $FF06</c> + $F539 on slot 0 + $F7E0, NO walk — the golden freezes $0431=$01
         /// while $FA chases slot 0's $0510 up to $A4), then the $9188…$9194 gate that walks until
-        /// <c>$0411 == $11</c>. The settle scroll and the gate's first walk are reported one frame
-        /// apart because a settle frame captures at its $FF06 while the gate captures inside $F89A
-        /// (gold f1117 $FA=$A1/$0431=$01, f1118 $FA=$A4/$0431=$02), so the walk is deferred by one
-        /// step. 84 gate walks end with $0431/$0432 = $00/$04 at f1201. False = $9196…$919D.</summary>
+        /// <c>$0411 == $11</c>. The settle frame that reaches $FA=$A4 falls into $9188 and walks
+        /// in the same frame; each later frame resumes at $918F and tests the walk that just
+        /// yielded, so the exit frame does not walk. False = $9196…$919D.</summary>
         public bool IntroPanel9100Step(byte justPressed)
         {
             if (_intro9100Stage == 0)
             {
-                StepEndingFrame();                                 // $9155 JSR $F89A
                 Objects.Slots[0].YVelFrac = 0x80;                  // $9158/$915A STA $0550
                 Objects.Slots[0].YVelInt = 0x02;                   // $915D/$915F STA $0560
                 _intro9100Stage = 1;
-                return true;
+                return true;                                       // $9162 JSR $FF06
             }
             if (_intro9100Stage == 1)
             {
-                if (justPressed != 0) { IntroScene = false; return false; }   // $9165/$9167 BNE $9196
+                if (justPressed != 0) return ExitIntroPanel();     // $9165/$9167 BNE $9196
                 var s0 = Objects.Slots[0];
                 EnemyBehaviors.IntegrateYRideSlot(s0);             // $9169 LDX #$00 / JSR $F539
                 int d = (s0.Y & 0xFF) - Player.ScrollY;            // $916E SEC / SBC $FA
@@ -974,17 +988,13 @@ namespace Darkwing.Core
                 Player.ScrollStep = (byte)d;                       // $9179 STA $10
                 IntroVerticalScroll();                             // $917B JSR $F7E0
                 if (Player.ScrollYRow != 0 || Player.ScrollY != 0xA4) return true;   // $917E…$9186
-                // The settle frame's own capture sits at its $FF06 (BEFORE $F539/$F7E0), so the
-                // $FA=$A4 this step produced and the $918C walk that follows it in the same frame
-                // are only both visible at the NEXT capture, which is inside $F89A (gold f1117 =
-                // $FA $A1/$0431 $01, gold f1118 = $FA $A4/$0431 $02). Hence the walk is deferred.
                 _intro9100Stage = 2;
+                StepEndingFrame();                                 // $9188…$918C JSR $F89A
                 return true;
             }
-            StepEndingFrame();                                    // $918C JSR $F89A
-            if (Objects.Slots[1].AnimFrame != 0x11) return true;   // $918F/$9192/$9194 BNE $9188
-            IntroScene = false;
-            return false;                                          // $9196…$919D LDA #$04/STA $97/$C21E/RTS
+            if (Objects.Slots[1].AnimFrame == 0x11) return ExitIntroPanel();   // $918F/$9192/$9194
+            StepEndingFrame();                                    // $9188…$918C JSR $F89A
+            return true;
         }
 
         /// <summary>$9000's sprite seeds, i.e. everything after its $FA/$FB scroll-settle stage and
@@ -1001,19 +1011,20 @@ namespace Darkwing.Core
             IntroScene = true; MapScreen = false; WorldRunning = false;
         }
 
-        /// <summary>One iteration of <c>$9079…$909A</c>: $97=$04, $F89A, the $14 gate, slot 1
-        /// <c>X -= $0541.$0531</c>, the mid-flight flag flip <c>$04F1 &lt; $70 → $0400,X=$90</c>
-        /// ($9089…$9093) and the <c>$04F1 &gt;= 4</c> re-arm. False at $909C…$909F RTS.</summary>
+        /// <summary>One frame of the <c>$9079…$909A</c> loop, resumed after the previous $F89A
+        /// yield: the $14 gate, slot 1 <c>X -= $0541.$0531</c>, the mid-flight flag flip
+        /// <c>$04F1 &lt; $70 → $0400,X=$90</c> ($9089…$9093) and the <c>$04F1 &gt;= 4</c> re-arm,
+        /// whose $9079…$907D walk ends the frame. The seed frame's own walk is the caller's.
+        /// False at $909C…$90A3 RTS without a walk.</summary>
         public bool IntroPanel9000Step(byte justPressed)
         {
-            StepEndingFrame();                                    // $907D JSR $F89A
-            if (justPressed != 0) { IntroScene = false; return false; }   // $9080 BNE $909C
+            if (justPressed != 0) return ExitIntroPanel();         // $9080 BNE $909C
             var s1 = Objects.Slots[1];
             EnemyBehaviors.IntegrateXNeg(s1);                      // $9084 LDX #$01 / JSR $F51B
             if ((s1.X & 0xFF) < 0x70) s1.Flags = 0x90;              // $9089…$9093
-            if ((s1.X & 0xFF) >= 0x04) return true;                 // $9095/$9097 BCS $9079
-            IntroScene = false;
-            return false;
+            if ((s1.X & 0xFF) < 0x04) return ExitIntroPanel();      // $9095/$9098
+            StepEndingFrame();                                    // $909A BCS $9079 … $907D JSR $F89A
+            return true;
         }
 
         /// <summary>$A000 — the panel chain's last call ($C6B6) is not a panel but the scene-$0A
@@ -1031,6 +1042,9 @@ namespace Darkwing.Core
             o.Slots[0].XVelInt = 0x00; o.Slots[1].XVelInt = 0x00;   // $A02D/$A030 STA $0540/$0541
             o.Slots[0].XVelFrac = 0x99; o.Slots[1].XVelFrac = 0x99; // $A033/$A035/$A038 $0530/$0531
             Player.ScrollX = (ushort)((Player.ScrollX & 0xFF) | (0x02 << 8));   // $A021 STA $FD
+            // $A023 STA $6F only: $6E keeps its old low byte, so the first $C6CA $DA70 pass
+            // sees slot 0 ahead of $6E/$6F and leaves the camera; $C6CD/$C6D2 then copy X.
+            Player.PrevPlayerX = (ushort)((Player.PrevPlayerX & 0xFF) | (0x02 << 8));
             for (int i = 0; i < 16; i++)                            // $A03B…$A047
                 _paletteSrc[16 + i] = _palMirror[16 + i] = Bank2[0xA04C - 0x8000 + i];
             SetPaletteUploadFlag(0x00);                             // $A049 STY $18 with Y = 0
