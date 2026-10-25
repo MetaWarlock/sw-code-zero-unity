@@ -102,8 +102,7 @@ public static class ResetClockVerify
 
     private static byte[] Data(string name) => File.ReadAllBytes(Root + "Assets/Darkwing/Data/" + name + ".bytes");
 
-    private static List<Snapshot> RunNative(byte[] input, bool dropCopyrightRequest, out int dropped,
-        out ResetProcessClock stopClock, int lastPoll=StopPoll)
+    private static DarkwingGame CreateGame(out GameFlow flow)
     {
         var data = DataLoader.Load(Data("chr_full"), Data("levelsets"), Data("screens"), Data("levels"), Data("anims"));
         var decoder = new RoomDecoder(Data("prg_bank0"), Data("prg_bank1"), Data("world_bank7"), Data("levelsets"));
@@ -114,7 +113,14 @@ public static class ResetClockVerify
             ObjectTypeTable = Data("object_types"), MapNametable = Data("map_nametable"), MapPalette = Data("map_palette"),
             MapChrBank0 = WorldState.MapSpriteChrBank, MapChrBank1 = WorldState.MapChrBank
         };
-        var flow = new GameFlow(game, decoder);
+        flow = new GameFlow(game, decoder);
+        return game;
+    }
+
+    private static List<Snapshot> RunNative(byte[] input, bool dropCopyrightRequest, out int dropped,
+        out ResetProcessClock stopClock, int lastPoll=StopPoll)
+    {
+        var game = CreateGame(out var flow);
         var instructionLog = new System.Text.StringBuilder("servicePoll,cycle,pc,cost\n");
         int currentPoll=0;
         if(!dropCopyrightRequest) game.LoaderInstructionObserver=(pc,cycle,cost)=>instructionLog.Append(currentPoll).Append(',').Append(cycle).Append(',').Append(pc.ToString("X4")).Append(',').Append(cost).Append('\n');
@@ -789,8 +795,8 @@ public static class ResetClockVerify
         }
         var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>CompareCompletion(missing,source));negatives++;
         var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>CompareCompletion(extra,source));negatives++;
-        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC601&&clock.ProcessState==FrameScheduler.Running,"Clock stops Running at the actual unpriced first intro hold");
-        return "PASS continued first loader DDCE/DE03/C254/fade: "+checks+" exact handler/PC/resume/body/finish checks on18 polls; "+negatives+" negatives; honest stop C601 before FEFF hold";
+        Require(clock.Stage==ResetProcessClock.Phase.Waiting&&clock.CommitCycle>0,"First FEFF yield committed natively");
+        return "PASS continued first loader DDCE/DE03/C254/fade: "+checks+" exact handler/PC/resume/body/finish checks on18 polls; "+negatives+" negatives; first FEFF yield included";
     }
 
     private static int CompareCompletion(List<Snapshot> rows,Dictionary<(int poll,string pc),string[]> source)
@@ -807,7 +813,7 @@ public static class ResetClockVerify
             Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Continued interrupted PC "+poll);
             Require(row.Resume-2==At(poll,"FECF"),"Continued resume "+poll+" native="+(row.Resume-2)+" source="+At(poll,"FECF"));
             Require(row.Body-2==At(poll,poll==290?"DDCE":poll==291?"DE06":"C2AA"),"Continued body "+poll);
-            Require(row.Finish-2==At(poll,poll==307?"C601":"FF19"),"Continued finish "+poll+" native="+(row.Finish-2)+" source="+At(poll,poll==307?"C601":"FF19"));
+            Require(row.Finish-2==At(poll,"FF19"),"Continued finish "+poll+" native="+(row.Finish-2)+" source="+At(poll,"FF19"));
             checks+=5;
         }
         return checks;
@@ -848,4 +854,152 @@ public static class ResetClockVerify
         }
         return "PASS source instruction boundaries="+checks+" first14 passes; old aggregate price differences="+oldPriceDifferences+" deltas="+string.Join(",",differences);
     }
+    public static string IntroHold()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        var rows=RunNative(input,false,out _,out var clock,337);
+        var source=new Dictionary<(int poll,string pc),string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/intro_text_clock.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<308||poll>337)continue;
+            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="FF02"||c[2]=="C606"||c[2]=="FF19")source.Add((poll,c[2]),c);
+        }
+        int Compare(List<Snapshot> actual)
+        {
+            Require(actual.Count==337-FirstPoll+1,"Intro hold missing/extra records");int checks=0;
+            for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro hold skipped/duplicated poll");
+            foreach(var row in actual)
+            {
+                int poll=row.Poll;if(poll<308)continue;
+                long At(string pc)=>long.Parse(source[(poll,pc)][1],CultureInfo.InvariantCulture);
+                Require(row.Handler-2==At("C000"),"Intro hold handler "+poll);
+                Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro hold interrupted PC "+poll);
+                Require(row.Resume-2==At("FECF"),"Intro hold resume "+poll);
+                Require(row.Body-2==At("FF02"),"Intro hold body "+poll);
+                Require(row.Finish-2==At("FF19"),"Intro hold finish "+poll+" native="+(row.Finish-2)+" source="+At("FF19"));checks+=5;
+            }
+            return checks;
+        }
+        int count=Compare(rows),negatives=0;
+        foreach(string field in new[]{"Handler","Interrupted","Resume","Body","Finish"})
+        {
+            var altered=new List<Snapshot>(rows);int index=308-FirstPoll;altered[index]=altered[index].Copy();var row=altered[index];
+            if(field=="Handler")row.Handler++;else if(field=="Interrupted")row.Interrupted^=1;else if(field=="Resume")row.Resume++;else if(field=="Body")row.Body++;else row.Finish++;
+            Reject(()=>Compare(altered));negatives++;
+        }
+        var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
+        var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
+        Require(clock.Stage==ResetProcessClock.Phase.Waiting&&clock.ProcessState==FrameScheduler.Waiting,"First AA00 clear committed natively");
+        return "PASS FEFF continuation: "+count+" exact checks on30 resumes, "+negatives+" negatives; first AA00 clear included";
+    }
+
+    public static string IntroText()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        var rows=RunNative(input,false,out _,out var clock,463);
+        var source=new Dictionary<(int poll,string pc),string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/intro_text_clock.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<338||poll>463)continue;
+            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="FF02"||c[2]=="AA03"||c[2]=="F8B1"||c[2]=="FF19"||c[2]=="C621")source.Add((poll,c[2]),c);
+        }
+        int Compare(List<Snapshot> actual)
+        {
+            Require(actual.Count==463-FirstPoll+1,"Intro text missing/extra records");int checks=0;
+            for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro text skipped/duplicated poll");
+            foreach(var row in actual)
+            {
+                int poll=row.Poll;if(poll<338)continue;
+                long At(string pc)=>long.Parse(source[(poll,pc)][1],CultureInfo.InvariantCulture);
+                Require(row.Handler-2==At("C000"),"Intro text handler "+poll+" native="+(row.Handler-2)+" source="+At("C000"));
+                Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro text interrupted PC "+poll+" native="+row.Interrupted.ToString("X4")+" source="+source[(poll,"C000")][15]);
+                Require(row.Resume-2==At("FECF"),"Intro text resume "+poll+" native="+(row.Resume-2)+" source="+At("FECF"));
+                string pc=poll==463 ? "C621" : poll==338||poll==409 ? "AA03" : poll>=379&&poll<=408 ? "FF02" : "F8B1";
+                Require(row.Body-2==At(pc),"Intro text body "+poll+" native="+(row.Body-2)+" source="+At(pc));
+                Require(poll==463||row.Stage==ResetProcessClock.Phase.Waiting,"Intro text did not yield "+poll);
+                string end=poll==463 ? "C621" : "FF19";
+                Require(row.Finish-2==At(end),"Intro text finish "+poll+" native="+(row.Finish-2)+" source="+At(end));checks+=5;
+            }
+            return checks;
+        }
+        int count=Compare(rows),negatives=0;
+        foreach(string field in new[]{"Handler","Interrupted","Resume","Body","Finish"})
+        {
+            var altered=new List<Snapshot>(rows);int index=338-FirstPoll;altered[index]=altered[index].Copy();var row=altered[index];
+            if(field=="Handler")row.Handler++;else if(field=="Interrupted")row.Interrupted^=1;else if(field=="Resume")row.Resume++;else if(field=="Body")row.Body++;else row.Finish++;
+            Reject(()=>Compare(altered));negatives++;
+        }
+        var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
+        var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
+        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC621&&clock.ProcessState==FrameScheduler.Running,"Stop Running before unpriced intro flight");
+        byte[] original=File.ReadAllBytes(Root+"Temp/human_164819_fulla/replay1/buffers.bin");
+        Require(original.Length==38886*4384,"Text clear source completeness");
+        var game=CreateGame(out _);int queueChecks=0;
+        void CompareQueue(byte[] actual,int length,int capture)
+        {
+            Require(length==101,"Text clear descriptor length");
+            for(int i=0;i<101;i++)Require(actual[i]==original[(capture-1)*4384+0x360+i],"Text clear descriptor byte"+i);
+        }
+        for(int poll=1;poll<=408;poll++)
+        {
+            game.AdvanceFrame(NesButtons.FromByte(input[poll-1]));
+            if(poll!=337&&poll!=408)continue;
+            Require(game.NativeVram.Unsupported==null&&game.NativeVram.Pending==0xFF,"Text clear supported native queue");
+            CompareQueue(game.NativeVram.Bytes,game.NativeVram.DescriptorBytes,poll+1);queueChecks+=101;
+            var altered=(byte[])game.NativeVram.Bytes.Clone();altered[4]^=1;
+            Reject(()=>CompareQueue(altered,101,poll+1));negatives++;
+            Reject(()=>CompareQueue(game.NativeVram.Bytes,100,poll+1));negatives++;
+        }
+        return "PASS AA00 streams0E/0F and FEFF: "+count+" exact clock checks on126 resumes, "+queueChecks+" descriptor bytes, "+negatives+" negatives; stopC621";
+    }
+
+    public static string IntroBlips()
+    {
+        var expected=new HashSet<int>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/intro_text_clock.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);
+            if(poll>=338&&poll<=377&&c[2]=="F850"&&c[9]=="3F")expected.Add(poll);
+        }
+        Require(expected.Count==10,"Original first text blip coverage");
+        var game=CreateGame(out _);int checks=0;
+        for(int poll=1;poll<=377;poll++)
+        {
+            game.AdvanceFrame(default(NesButtons));
+            if(poll<338)continue;
+            Require((game.Text.SfxToPlay==0x3F)==expected.Contains(poll),"Intro blip poll"+poll+" native="+game.Text.SfxToPlay);
+            checks++;
+        }
+        return "PASS "+checks+" text-resume SFX checks including terminator";
+    }
+
+    public static string LoaderInputGate()
+    {
+        var game=CreateGame(out _);
+        var observed=new Dictionary<int,(byte pressed,byte held)>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/loader_input_gate.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll"||c[2]!="0000")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll>294)continue;
+            observed.Add(poll,(Convert.ToByte(c[16],16),Convert.ToByte(c[17],16)));
+        }
+        Require(observed.Count==15,"Original input gate capture coverage");
+        int checks=0;
+        for(int poll=1;poll<=294;poll++)
+        {
+            if(poll>=280)
+            {
+                var expected=observed[poll];
+                Require(game.PressedP1==expected.pressed&&game.HeldP1==expected.held,
+                    "Input gate poll"+poll+" native="+game.PressedP1+"/"+game.HeldP1+" source="+expected.pressed+"/"+expected.held);
+                checks+=2;
+            }
+            game.AdvanceFrame(NesButtons.FromByte((byte)(poll>=282&&poll<=290 ? 0x80 : 0)));
+        }
+        return "PASS loader input gate: "+checks+" source pressed/held checks; A held across Running and native resume";
+    }
+
 }

@@ -7,11 +7,16 @@ namespace Darkwing.Core
         public PowerOnContinuation PowerOn { get; private set; }
         public ResetProcessClock ResetClock { get; private set; }
         public bool PowerOnActive => PowerOn != null && PowerOn.Active;
+        // A Running inline pass resumes after RTI without another FECF/C162 hook.
+        // Once the timed region ends, the existing untimed resident keeps ownership.
+        internal bool ResidentInputHookReady => !PowerOnActive &&
+            (ResetClock == null || !ResetClock.Active || ResetClock.Stage == ResetProcessClock.Phase.Body);
         public long PowerOnBoundaryMaster { get; private set; }
         private ResetResidentTiming.BodyWork _resetBodyWork;
         private ResetResidentTiming.BodyWork _loaderCompletion;
         private bool _resetNmiPending, _resetBodyPending;
         private bool _resetFadeStart;
+        private bool _resetIntro, _resetTextWalk;
         private byte[] _resetFadePalette;
 
         /// <summary>The in-line $DE86/$E698 loop currently streams inside the frame budget;
@@ -43,12 +48,16 @@ namespace Darkwing.Core
         {
             _resetNmiPending = _resetBodyPending = false;
             if (ResetClock == null || !ResetClock.Active) return;
-            bool staging = _resetStage == 9;
-            bool streaming = _resetStage == 8 && LoaderStreaming;
-            bool loaded = _resetStage == 8 && !LoaderStreaming;
+            _resetIntro=Stage==Phase.Intro&&_introStage<=5;
+            _resetTextWalk=false;
+            bool staging = Stage==Phase.Reset&&_resetStage == 9;
+            bool streaming = Stage==Phase.Reset&&_resetStage == 8 && LoaderStreaming;
+            bool loaded = Stage==Phase.Reset&&_resetStage == 8 && !LoaderStreaming;
             _resetFadeStart=false;
-            if (!staging && !streaming && !loaded && (_resetStage < 2 || _resetStage > 7)) return;
-            if(loaded)
+            if (!_resetIntro&&!staging&&!streaming&&!loaded&&(Stage!=Phase.Reset||_resetStage<2||_resetStage>7))
+            { ResetClock.Refuse("Resident continuation outside the priced region");return; }
+            if(_resetIntro) { } // Text reads $92 and the audio ring after this NMI.
+            else if(loaded)
             {
                 _resetFadeStart=_game.SceneLoadStage==1;
                 _resetFadePalette=palette;
@@ -105,7 +114,33 @@ namespace Darkwing.Core
             if (!_resetBodyPending) return;
             _resetBodyPending = false;
             if(_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeStart(_resetFadePalette,_game.Oam.WalkCycles);
+            if(_resetTextWalk)_resetBodyWork=ResetResidentTiming.IncludeTextOam(_resetBodyWork,_game.Oam.WalkCycles);
             ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
+        }
+
+        private void MeasureResetIntroTiming()
+        {
+            if(!_resetBodyPending||!_resetIntro)return;
+            try
+            {
+                switch(_introStage)
+                {
+                    case 0: _resetBodyWork=ResetResidentTiming.MeasureIntroHold(_introDelay); break;
+                    case 1:
+                    case 3:
+                        _resetBodyWork=ResetResidentTiming.MeasureIntroText(_game.Text,_game.Bank2,_game.NmiCounter,_game.AudioQueueCanEnqueue);
+                        _resetTextWalk=true;
+                        break;
+                    case 2:
+                        _resetBodyWork=_introDelay==31 ? ResetResidentTiming.MeasureIntroTextReturn(0x0E)
+                            : ResetResidentTiming.MeasureIntroHold(_introDelay,0x0F);
+                        break;
+                    case 4: _resetBodyWork=ResetResidentTiming.MeasureIntroTextReturn(0x0F); break;
+                    case 5: _resetBodyWork=ResetResidentTiming.StopBeforeIntroFlight(); break;
+                }
+            }
+            catch(NotSupportedException exception)
+            { _resetBodyPending=false;ResetClock.Refuse(exception.Message); }
         }
 
         /// <summary>$DE93/$DEA5/$DEA9 RTS back to $DDCB and its JSR $FF06. The loader exits

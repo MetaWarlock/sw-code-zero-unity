@@ -1311,7 +1311,7 @@ namespace Darkwing.Core
         {
             if (ResidentProcess != null)
             {
-                if (Flow == null || !Flow.PowerOnActive) PollInput(in pad1);
+                if (Flow == null || Flow.ResidentInputHookReady) PollInput(in pad1);
                 PublishToOamOnce();
                 ResidentProcess(pad1);
                 if (ResidentProcess != null || !WorldRunning)

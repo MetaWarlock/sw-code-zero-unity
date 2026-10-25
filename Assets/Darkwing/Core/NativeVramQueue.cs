@@ -154,6 +154,24 @@ namespace Darkwing.Core
             if (!deferred) Publish(null,0,0);
         }
 
+        /// <summary>Bank2 $AADD builds one marker and three descending 29-byte runs.
+        /// The map uses a different producer and must not enter this grouping.</summary>
+        public void TextClear(int[] lines, byte value, bool deferred)
+        {
+            if (lines == null || lines.Length != 3)
+                throw new ArgumentException("AADD requires three line bases");
+            TextEvents++;
+            Unsupported = BandEvents == 0 && RowEvents == 0 && TextEvents == 1 ? null
+                : "Multiple VRAM producer grouping is not implemented";
+            Span<byte> fill = stackalloc byte[29];
+            fill.Fill(value);
+            int cursor = Run(0, 0x22FE, fill.Slice(0, 1));
+            for (int line = 2; line >= 0; line--) cursor = Run(cursor, lines[line], fill);
+            End(cursor);
+            Pending = 0xFF;
+            if (!deferred) Publish(null, 0, 0);
+        }
+
         public bool Publish(Ppu destination, byte blank, byte busy)
         {
             if ((blank | busy) != 0) return false;

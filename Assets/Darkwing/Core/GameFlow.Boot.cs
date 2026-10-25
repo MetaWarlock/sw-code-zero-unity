@@ -31,6 +31,13 @@ namespace Darkwing.Core
         // Bank 7 $C601-$C672. Each case resumes at an actual $FF06 boundary.
         private void StepResidentIntro(NesButtons pad)
         {
+            MeasureResetIntroTiming();
+            StepResidentIntroBody(pad);
+            CompleteResetBodyTiming();
+        }
+
+        private void StepResidentIntroBody(NesButtons pad)
+        {
             byte pressed = ResidentPad(pad);
             PhaseFrames++;
             var text = _game.Text;

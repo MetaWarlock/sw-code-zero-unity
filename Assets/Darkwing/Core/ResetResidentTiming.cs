@@ -124,9 +124,92 @@ namespace Darkwing.Core
             cycles+=3+2+3+3+2+2+3; // C2B0..C2BB, BEQ50 not taken
             bool again=(level&0x80)==0;
             cycles+=Branch(0xC2BD,0xC285,again);
-            if(!again)return new BodyWork(cycles+6,false,-1,0xC2AA,0,0xBD,0xC601);
+            // C2BF returns to C601: LDX #1E, JSR FEFF and its first FF06.
+            if(!again)return new BodyWork(cycles+6+2+6+6+49,true,-1,0xC2AA,0,0xB9);
             return new BodyWork(cycles+Fade(palette,level)+3+3+6+49,true,-1,0xC2AA,0,0xB8);
         }
+
+        public static BodyWork MeasureIntroHold(int remaining, int stream = 0x0E)
+        {
+            if(remaining<1||remaining>30)throw new ArgumentOutOfRangeException(nameof(remaining));
+            IntroGate(stream);
+            // FF02 DEX / FF03 BNE FEFF crosses the FF/FE page when taken.
+            if(remaining>1)return new BodyWork(2+Branch(0xFF03,0xFEFF,true)+6+49,true,-1,0xFF02,0,0xB9);
+            // The first dialog also switches PRG to2; the second already owns that bank.
+            int entry = stream == 0x0E ? 2+3+2+6+55+6 : 2+3+6;
+            return new BodyWork(2+Branch(0xFF03,0xFEFF,false)+6+entry+6+TextClear(stream)+49,
+                true,-1,0xFF02,0,0xB9);
+        }
+
+        private static int IntroGate(int stream)
+        {
+            if(stream!=0x0E&&stream!=0x0F)throw new NotSupportedException("Clocked text requires an auto-advance intro stream");
+            return stream==0x0E ? 3+2+3 : 3+2+2+2+3;
+        }
+
+        // Bank2 AADD..AB54: marker, descriptor headers, 29 iterations filling
+        // all three lines, terminator and JMP FF06. Both filler gates are executed.
+        private static int TextClear(int stream) => 18+IntroGate(stream)+2+54+IntroGate(stream)+2+29*22-1+12;
+
+        /// <summary>AA03 or F8B1 through the next text F89A/FF06. The caller adds
+        /// the actual native OAM walk after executing this body; there is no fixture price.</summary>
+        public static BodyWork MeasureIntroText(TextEngine text, byte[] bank2, byte frame, bool audioSlotFree)
+        {
+            if(text==null||!text.Running||bank2==null||bank2.Length!=0x4000)
+                throw new ArgumentException("Running native text and bank2 required");
+            int stream=text.StreamId, gate=IntroGate(stream);
+            bool first=text.Yielding;
+            int cycles=first ? 22+10+gate : 62+((frame&3)!=0 ? 30 : 37+SoundEnqueue(audioSlotFree)-3);
+            ushort pc=(ushort)(first ? 0xAA03 : 0xF8B1);
+            int pointer=bank2[0x2BAA+stream]|bank2[0x2BBD+stream]<<8;
+            int index=text.ByteIndex,line=text.Line;
+            for(int step=0;step<3;step++)
+            {
+                if((uint)(pointer+index-0x8000)>=(uint)bank2.Length)
+                    throw new NotSupportedException("Text stream byte outside bank2");
+                int page=((pointer&255)+index)>255 ? 1 : 0;
+                byte value=bank2[pointer+index-0x8000];index++;
+                if(value==0xFF)
+                {
+                    // AAA4..AAD0 seeds the intro-flight object for stream0F.
+                    cycles+=48+page+(stream==0x0F ? 94 : 8)+3+11;
+                    return new BodyWork(cycles+TextWalkWithoutOam,true,-1,pc,0,0xB6);
+                }
+                if(value==0xFE)
+                {
+                    cycles+=52+page+5+3+2;
+                    line++;
+                    if(line>=3)throw new NotSupportedException("Intro text page-flip continuation is not priced");
+                    cycles+=Branch(0xAA83,0xAA17,true)+5+gate;
+                    continue;
+                }
+                cycles+=87+page;
+                return new BodyWork(cycles+TextWalkWithoutOam,true,-1,pc,0,0xB4);
+            }
+            throw new NotSupportedException("Intro text lacks a next glyph/terminator");
+        }
+
+        // F89A: save bank, bracket, C21E wipe(cursor4), switch bank5, JSR8000;
+        // F8AA..FF19 clears the bracket and commits the one-frame yield.
+        private static int TextWalkWithoutOam => 3+3+5+6+Wipe(4)+2+6+55+6+2+3+6+49;
+
+        public static BodyWork IncludeTextOam(in BodyWork work, int walkCycles)
+        {
+            if(walkCycles<0)throw new NotSupportedException("Intro text OAM walk is unpriced");
+            return new BodyWork(work.Cycles+walkCycles,work.Commits,work.CopyrightSetupCycles,
+                work.BodyPc,work.BodyPcOffset,work.YieldStackPointer,work.StopPc,work.RenderOnAtCycles);
+        }
+
+        public static BodyWork MeasureIntroTextReturn(int stream)
+        {
+            int gate=IntroGate(stream);
+            // F8B1 bank return, AB5E JSR AB72, AB61 stream gate and RTS;
+            // then C612's first FEFF yield or C61E's plain FF06 yield.
+            int cycles=62+6+gate+6+gate+6+(stream==0x0E ? 2+6+6+49 : 6+49);
+            return new BodyWork(cycles,true,-1,0xF8B1,0,(ushort)(stream==0x0E ? 0xB9 : 0xBB));
+        }
+
+        public static BodyWork StopBeforeIntroFlight() => new BodyWork(0,false,-1,0xC621,0,0xBF,0xC621);
 
         /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99
         /// (not taken) / RTS, followed by the $DDCB JSR $FF06. Mission worlds ($31 &lt; 7)

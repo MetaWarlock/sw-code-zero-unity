@@ -28,6 +28,7 @@ namespace Darkwing.Core
     public sealed class TextEngine
     {
         public System.Action<int, byte, bool> NativeQueueWrite;
+        public System.Action<int[], byte, bool> NativeQueueClear;
         // Bank-2 addresses. Every exported bank asset is exactly one 16 KB PRG bank mapped at
         // $8000-$BFFF, so the array index of an address is `addr - $8000` (no bank number).
         private const int PtrLoTable = 0xABAA - 0x8000;   // $ABAA stream pointer, low bytes
@@ -55,6 +56,7 @@ namespace Darkwing.Core
         private bool _running;
         private bool _waiting, _endWait, _mapMode;
         private bool _initialGate;
+        private bool _resumeTypedWalk;
         public bool WalkRequired { get; private set; }
         public bool DeferWrites;
         private readonly System.Collections.Generic.List<(int addr, byte tile)> _pendingWrites
@@ -116,6 +118,7 @@ namespace Darkwing.Core
             _running = true;
             Done = false;
             _initialGate = true;
+            _resumeTypedWalk = false;
             if (DeferWrites) { ClearTextLines(); _cleared = true; }
         }
 
@@ -126,6 +129,13 @@ namespace Darkwing.Core
             WalkRequired = false;
             if (!_running) return;
             _frame = frameCounter;
+            // $AA67 runs after the previous glyph's $F89A returns, including
+            // when the next byte is a line break or the final $FF terminator.
+            if (_resumeTypedWalk)
+            {
+                _resumeTypedWalk = false;
+                if ((_frame & 3) == 0) SfxToPlay = 0x3F;
+            }
 
             // $AB57 stays resident until A/B/Start ($14 & $D0), for both page
             // breaks and the terminator. It does not auto-advance ordinary dialogs.
@@ -190,7 +200,9 @@ namespace Darkwing.Core
                 }
                 WriteTile(_lineAddr[_line] + _column, (byte)b);
                 _column++;
-                if ((_frame & 3) == 0) SfxToPlay = 0x3F;   // $AA6F/$AA75
+                if (_mapMode)
+                { if ((_frame & 3) == 0) SfxToPlay = 0x3F; }
+                else _resumeTypedWalk = true;
                 return;
             }
         }
@@ -201,21 +213,23 @@ namespace Darkwing.Core
         /// <summary>The $AB57 wait for every other stream: A/B/START ends the page.</summary>
         public bool WaitingForInput => _running && _waiting;
 
-        /// <summary>$AADD: three 29-tile blank runs at the line bases plus one tile at $23FE.
+        /// <summary>$AADD: marker $22FE, then three 29-tile blank runs from bottom to top.
         /// The filler is tile $00 for $0E/$0F/$11 and tile $02 for every other stream.</summary>
         public void ClearTextLines()
         {
             byte blank = (byte)(_streamId == 0x0E || _streamId == 0x0F || _streamId == 0x11 ? 0x00 : 0x02);
+            bool grouped = !_mapMode && NativeQueueClear != null;
             for (int i = 0; i < LineCount; i++)
                 for (int t = 0; t < (_mapMode ? 19 : LineTiles); t++)
-                    WriteTile(_lineAddr[i] + t, blank);
-            WriteTile(_mapMode ? 0x2379 : 0x22FE, blank);
+                    WriteTile(_lineAddr[i] + t, blank, !grouped);
+            WriteTile(_mapMode ? 0x2379 : 0x22FE, blank, !grouped);
+            if (grouped) NativeQueueClear(_lineAddr, blank, DeferWrites);
         }
 
         /// <summary>One ROM queue entry: [hi][lo][count-1][tile][$FF terminator].</summary>
-        private void WriteTile(int addr, byte tile)
+        private void WriteTile(int addr, byte tile, bool notifyNative = true)
         {
-            NativeQueueWrite?.Invoke(addr, tile, DeferWrites);
+            if (notifyNative) NativeQueueWrite?.Invoke(addr, tile, DeferWrites);
             if (DeferWrites) { _pendingWrites.Add((addr, tile)); return; }
             _queue[0] = (byte)(addr >> 8);
             _queue[1] = (byte)addr;

@@ -14,7 +14,11 @@ namespace Darkwing.Core
                 TileMap.NativeBandQueued = (map,stage,grid) => NativeVram.Band(map,stage,grid,_blankDepth != 0);
                 TileMap.NativeRowQueued = (map,row,grid,page) => NativeVram.Row(map,Player,row,grid,page);
             }
-            if (_text != null) _text.NativeQueueWrite = (address,value,deferred) => NativeVram.TextTile(address,value,deferred);
+            if (_text != null)
+            {
+                _text.NativeQueueWrite = (address,value,deferred) => NativeVram.TextTile(address,value,deferred);
+                _text.NativeQueueClear = (lines,value,deferred) => NativeVram.TextClear(lines,value,deferred);
+            }
         }
 
         public void BeginNativeVramBody() => NativeVram?.BeginBody();
