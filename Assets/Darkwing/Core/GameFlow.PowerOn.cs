@@ -16,7 +16,7 @@ namespace Darkwing.Core
         private ResetResidentTiming.BodyWork _loaderCompletion;
         private bool _resetNmiPending, _resetBodyPending;
         private bool _resetFadeStart;
-        private bool _resetIntro, _resetTextWalk, _resetIntroFlight, _resetIntroCard;
+        private bool _resetIntro, _resetTextWalk, _resetIntroFlight, _resetIntroCard, _resetIntroCardIteration;
         private int _resetFirstFlightWalk, _resetCardWalk;
         private byte[] _resetFadePalette;
 
@@ -49,10 +49,11 @@ namespace Darkwing.Core
         {
             _resetNmiPending = _resetBodyPending = false;
             if (ResetClock == null || !ResetClock.Active) return;
-            _resetIntro=Stage==Phase.Intro&&_introStage<=5;
+            _resetIntro=Stage==Phase.Intro&&_introStage<=6;
             _resetTextWalk=false;
             _resetIntroFlight=false;
             _resetIntroCard=false;
+            _resetIntroCardIteration=false;
             _resetFirstFlightWalk=-1;
             _resetCardWalk=-1;
             bool staging = Stage==Phase.Reset&&_resetStage == 9;
@@ -124,8 +125,9 @@ namespace Darkwing.Core
                 if(_resetTextWalk)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_game.Oam.WalkCycles);
                 if(_resetIntroFlight)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_resetFirstFlightWalk);
                 if(_resetIntroCard)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_resetCardWalk);
+                if(_resetIntroCardIteration)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_resetCardWalk);
                 ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
-                if(_resetIntroCard) ResetClock.StopAfterCommit(0xF8B1);
+                if(_resetIntroCardIteration) ResetClock.StopAfterCommit(0xF8B1);
             }
             catch(NotSupportedException exception) { ResetClock.Refuse(exception.Message); }
         }
@@ -137,7 +139,7 @@ namespace Darkwing.Core
 
         private void RecordResetIntroCardWalk()
         {
-            if(_resetBodyPending&&_resetIntroCard)_resetCardWalk=_game.Oam.WalkCycles;
+            if(_resetBodyPending&&(_resetIntroCard||_resetIntroCardIteration))_resetCardWalk=_game.Oam.WalkCycles;
         }
 
         private void MeasureResetIntroTiming()
@@ -162,6 +164,10 @@ namespace Darkwing.Core
                         _resetBodyWork=ResetResidentTiming.MeasureIntroFlight(_game.Objects.Slots[0],_game.Player.GravityFrac);
                         _resetIntroFlight=true;
                         _resetIntroCard=_resetBodyWork.StopPc==0xC63C;
+                        break;
+                    case 6:
+                        _resetBodyWork=ResetResidentTiming.MeasureIntroCardIteration();
+                        _resetIntroCardIteration=true;
                         break;
                 }
             }

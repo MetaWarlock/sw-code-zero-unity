@@ -958,17 +958,17 @@ public static class ResetClockVerify
     public static string IntroFlight()
     {
         byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
-        var rows=RunNative(input,false,out _,out var clock,489);
+        var rows=RunNative(input,false,out _,out var clock,490);
         var source=new Dictionary<(int poll,string pc),string[]>();
-        foreach(var line in File.ReadAllLines(Root+"Temp/intro_flight_clock.csv"))
+        foreach(var path in new[]{Root+"Temp/intro_flight_clock.csv",Root+"Temp/intro_card_clock.csv"}) foreach(var line in File.ReadAllLines(path))
         {
             var c=line.Split(',');if(c[0]=="poll")continue;
-            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<463||poll>489)continue;
-            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="C621"||c[2]=="C63C"||c[2]=="FF19")source.Add((poll,c[2]),c);
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<463||poll>490)continue;
+            if((c[2]=="C000"||c[2]=="FECF"||c[2]=="C621"||c[2]=="C63C"||c[2]=="F8B1"||c[2]=="FF19") && !source.ContainsKey((poll,c[2])))source.Add((poll,c[2]),c);
         }
         int Compare(List<Snapshot> actual)
         {
-            Require(actual.Count==489-FirstPoll+1,"Intro flight missing/extra records");int checks=0;
+            Require(actual.Count==490-FirstPoll+1,"Intro flight missing/extra records");int checks=0;
             for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro flight skipped/duplicated poll");
             foreach(var row in actual)
             {
@@ -977,10 +977,11 @@ public static class ResetClockVerify
                 Require(row.Handler-2==At("C000"),"Intro flight handler "+poll+" native="+(row.Handler-2)+" source="+At("C000"));
                 Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro flight interrupted PC "+poll);
                 Require(row.Resume-2==At("FECF"),"Intro flight resume "+poll+" native="+(row.Resume-2)+" source="+At("FECF"));
-                Require(row.Body-2==At("C621"),"Intro flight body "+poll);
+                string body=poll==490 ? "F8B1" : "C621";
+                Require(row.Body-2==At(body),"Intro flight body "+poll);
                 string end="FF19";
                 Require(row.Finish-2==At(end),"Intro flight finish "+poll+" native="+(row.Finish-2)+" source="+At(end));
-                Require(row.Stage==(poll==489 ? ResetProcessClock.Phase.Stopped : ResetProcessClock.Phase.Waiting),"Intro flight phase "+poll);
+                Require(row.Stage==(poll==490 ? ResetProcessClock.Phase.Stopped : ResetProcessClock.Phase.Waiting),"Intro flight phase "+poll);
                 checks+=6;
             }
             return checks;
@@ -995,7 +996,7 @@ public static class ResetClockVerify
         var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
         var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
         Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xF8B1&&clock.ProcessState==FrameScheduler.Waiting,"Stop after first intro-card FF19");
-        return "PASS intro flight/card "+count+" exact checks on27 resumes, "+negatives+" negatives; both flight/card OAM prices included; stopF8B1";
+        return "PASS intro flight/card "+count+" exact checks on28 resumes, "+negatives+" negatives; first and next card OAM prices included; stopF8B1";
     }
 
     public static string IntroCardSeedProbe()

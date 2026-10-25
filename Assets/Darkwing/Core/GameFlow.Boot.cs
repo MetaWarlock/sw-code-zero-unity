@@ -80,6 +80,7 @@ namespace Darkwing.Core
                     if (s.AnimFrame == 0x11 || (s.AnimFrame == 0x0F && s.AnimTimer == 4))
                     { _introDelay = 120; _introStage = 7; return; } // $9630 + $C650, 60 each
                     _game.ResidentWalk();
+                    RecordResetIntroCardWalk();
                     return;
                 case 7:
                     if (--_introDelay > 0) return;

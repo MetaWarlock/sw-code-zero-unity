@@ -233,6 +233,12 @@ namespace Darkwing.Core
             return new BodyWork(cycles+cardFixed,true,-1,0xC621,0,0xB6,0xC63C);
         }
 
+        /// <summary>One ordinary $960C/$9605 iteration after the first card frame.
+        /// The live OAM walk is added after the flow body; terminal $9630 and
+        /// $967A branches remain outside this first continuation.</summary>
+        public static BodyWork MeasureIntroCardIteration()
+            => new BodyWork(571 + 11 + 49, true, -1, 0xF8B1, 0, 0xB6);
+
         /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99
         /// (not taken) / RTS, followed by the $DDCB JSR $FF06. Mission worlds ($31 &lt; 7)
         /// branch into the unpriced $DE99 placement anchor instead.</summary>
