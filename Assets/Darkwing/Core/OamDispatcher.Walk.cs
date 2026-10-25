@@ -275,9 +275,9 @@ namespace Darkwing.Core
             yield return 3;
             yield return 4;
             byte animation = state.AnimNumber;
-            yield return 4 + IndexedReadExtra(0xB429, animation);
+            yield return 4 + IndexedReadExtra(UseBank4Tables ? 0xB222 : 0xB429, animation);
             yield return 3;
-            yield return 4 + IndexedReadExtra(0xB4F0, animation);
+            yield return 4 + IndexedReadExtra(UseBank4Tables ? 0xB292 : 0xB4F0, animation);
             yield return 3;
             int entry = AnimEntryAddress(animation);
             yield return 4;
@@ -291,7 +291,7 @@ namespace Darkwing.Core
                 state.AnimTimer++;
                 yield return 2;
                 yield return 5 + IndexedReadExtra(entry + 0x8000, 1);
-                bool advance = previous == _bank5[entry + 1];
+                bool advance = previous == Bank[entry + 1];
                 yield return advance ? 2 : 3;
                 if (advance)
                 {
@@ -302,7 +302,7 @@ namespace Darkwing.Core
                     yield return 5;
                     yield return 2;
                     yield return 4;
-                    bool wrap = state.AnimFrame == (_bank5[entry] & 0x7F);
+                    bool wrap = state.AnimFrame == (Bank[entry] & 0x7F);
                     yield return 3;
                     yield return 7;
                     state.AnimFrame++;
@@ -340,7 +340,7 @@ namespace Darkwing.Core
             yield return 2;
             int entry = AnimEntryAddress(state.AnimNumber);
             yield return 5 + IndexedReadExtra(entry + 0x8000, frameIndex);
-            int frameId = _bank5[entry + frameIndex];
+            int frameId = Bank[entry + frameIndex];
             yield return 3;
             yield return frameId == 0 ? 2 : 3;
             if (frameId == 0)
@@ -356,20 +356,22 @@ namespace Darkwing.Core
             }
             yield return 2;
             yield return 5;
-            bool high = (_bank5[entry] & 0x80) != 0;
+            // Bank 4's composer has no entry-bit7 split ($995B-$996B: the part CPU always
+            // comes from $A325/$A3C5; no bank-4 entry carries bit 7).
+            bool high = !UseBank4Tables && (Bank[entry] & 0x80) != 0;
             yield return high ? 2 : 3;
             yield return 3;
-            int tableLo = high ? 0x9C0B : 0x9B0B;
-            int tableHi = high ? 0x9D45 : 0x9C45;
+            int tableLo = UseBank4Tables ? 0xA325 : high ? 0x9C0B : 0x9B0B;
+            int tableHi = UseBank4Tables ? 0xA3C5 : high ? 0x9D45 : 0x9C45;
             yield return 4 + IndexedReadExtra(tableLo, frameId);
             yield return 3;
             yield return 4 + IndexedReadExtra(tableHi, frameId);
             yield return 3;
             if (high) yield return 3;
-            int partsCpu = _bank5[B5(tableLo) + frameId] | (_bank5[B5(tableHi) + frameId] << 8);
+            int partsCpu = Bank[B5(tableLo) + frameId] | (Bank[B5(tableHi) + frameId] << 8);
             byte[] parts;
             int partsBase;
-            if (partsCpu >= 0x8000) { parts = _bank5; partsBase = B5(partsCpu); }
+            if (partsCpu >= 0x8000) { parts = Bank; partsBase = B5(partsCpu); }
             else if (partsCpu == 0x05B0 && _hud != null) { parts = _hud.Param; partsBase = 0; }
             else if (!TryRamPartBlock(partsCpu, out parts, out partsBase))
                 throw new InvalidOperationException("Unmapped OAM part block: " + partsCpu.ToString("X4"));
@@ -398,14 +400,16 @@ namespace Darkwing.Core
             yield return 3;
             yield return 4;
             yield return 2;
-            yield return 4 + IndexedReadExtra(0xAE53, coordId);
+            int coordLo = UseBank4Tables ? 0xAF27 : 0xAE53;
+            int coordHi = UseBank4Tables ? 0xAFAF : 0xAF23;
+            yield return 4 + IndexedReadExtra(coordLo, coordId);
             yield return 2;
             yield return 2;
             yield return 3;
-            yield return 4 + IndexedReadExtra(0xAF23, coordId);
+            yield return 4 + IndexedReadExtra(coordHi, coordId);
             yield return 2;
             yield return 3;
-            int coordsCpu = (_bank5[B5(0xAE53) + coordId] | (_bank5[B5(0xAF23) + coordId] << 8)) - 2;
+            int coordsCpu = (Bank[B5(coordLo) + coordId] | (Bank[B5(coordHi) + coordId] << 8)) - 2;
             int coordsBase = B5(coordsCpu);
             yield return 3;
             int cursor = _oamCursor;
@@ -424,12 +428,12 @@ namespace Darkwing.Core
                 yield return 3;
                 yield return 2;
                 yield return 5 + IndexedReadExtra(coordsCpu, partIndex);
-                int sumY = relY + _bank5[coordsBase + partIndex];
+                int sumY = relY + Bank[coordsBase + partIndex];
                 bool carryY = sumY > 255;
                 yield return 5;
                 _shadow[cursor] = (byte)sumY;
                 yield return 5 + IndexedReadExtra(coordsCpu, partIndex);
-                bool negativeY = (_bank5[coordsBase + partIndex] & 0x80) != 0;
+                bool negativeY = (Bank[coordsBase + partIndex] & 0x80) != 0;
                 yield return negativeY ? 3 : 2;
                 bool hiddenY = negativeY ? !carryY : carryY;
                 yield return negativeY ? hiddenY ? 3 : 2 : carryY ? 2 : 3;
@@ -460,12 +464,12 @@ namespace Darkwing.Core
                     yield return 3;
                     yield return 2;
                     yield return 5 + IndexedReadExtra(coordsCpu, partIndex);
-                    int sumX = relX + _bank5[coordsBase + partIndex];
+                    int sumX = relX + Bank[coordsBase + partIndex];
                     bool carryX = sumX > 255;
                     yield return 5;
                     _shadow[cursor + 3] = (byte)sumX;
                     yield return 5 + IndexedReadExtra(coordsCpu, partIndex);
-                    bool negativeX = (_bank5[coordsBase + partIndex] & 0x80) != 0;
+                    bool negativeX = (Bank[coordsBase + partIndex] & 0x80) != 0;
                     yield return negativeX ? 3 : 2;
                     bool hiddenX = negativeX ? !carryX : carryX;
                     yield return negativeX ? hiddenX ? 3 : 2 : carryX ? 2 : 3;

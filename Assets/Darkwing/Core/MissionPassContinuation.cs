@@ -74,7 +74,8 @@ namespace Darkwing.Core
         private IEnumerable<int> Execute()
         {
             Stage = Phase.Oam;
-            yield return At(0xCABB, 6);
+            bool bank4 = _oam.UseBank4Tables;
+            yield return At(bank4 ? (ushort)0xCAD1 : (ushort)0xCABB, 6);
             while (_oam.WalkActive)
             {
                 InstructionPc = 0;
@@ -82,10 +83,10 @@ namespace Darkwing.Core
                 _oam.StepWalkInstruction();
             }
             Stage = Phase.PostOam;
-            yield return At(0xCABE, 2);
-            yield return At(0xCAC0, 3);
+            yield return At(bank4 ? (ushort)0xCAD4 : (ushort)0xCABE, 2);
+            yield return At(bank4 ? (ushort)0xCAD6 : (ushort)0xCAC0, 3);
             _oam.RestoreCursor(4);
-            yield return At(0xCAC2, 3);
+            if (!bank4) yield return At(0xCAC2, 3);
             yield return At(0xCAD8, 6);
             Stage = Phase.Rng;
             yield return At(0xC2DE, 2);

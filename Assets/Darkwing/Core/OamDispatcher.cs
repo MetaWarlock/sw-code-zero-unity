@@ -58,6 +58,25 @@ namespace Darkwing.Core
         /// <summary>Late binding for the bank-5 tables (constructed before data load completes).</summary>
         public void SetBank5(byte[] bank5) => _bank5 = bank5;
 
+        /// <summary>
+        /// Bank 4 runs its own copy of the object pass ($9800…$99E7, FACTS "в банке 4 живёт
+        /// независимая копия композитора") whenever the mission cell byte ($32),$22 is one of
+        /// $34/$56/$76/$97/$B5/$98 — the boss arenas among them ($CA8F → $CAC5 → $CAD1 JSR
+        /// $9800 with bank 4 mapped). The copy is instruction-identical to bank 5's walk but
+        /// reads its own tables: anim entries $B222/$B292 (the wolf anims tick at dur 4/8/11
+        /// here, not the bank-5 $B1EC dur $10), part CPUs $A325/$A3C5 and coordinate pairs
+        /// $AF27/$AFAF. No bank-4 entry carries bit 7, so the composer's high pair never
+        /// fires on its data.
+        /// </summary>
+        private byte[] _bank4;
+        public void SetBank4(byte[] bank4) => _bank4 = bank4;
+
+        /// <summary>True for the frames the cell class routes to the bank-4 pass.</summary>
+        public bool UseBank4Tables { get; set; }
+
+        /// <summary>The image the walk's table reads address this frame.</summary>
+        private byte[] Bank => UseBank4Tables ? _bank4 : _bank5;
+
         /// <summary>Late binding for the HUD's $05B0…$05C1 block (slot 1's part table).</summary>
         public void SetHud(HudComposer hud) => _hud = hud;
 
@@ -199,6 +218,9 @@ namespace Darkwing.Core
         /// content=f-1 plus HUD placement from RAM[f].$95, and 0 for every other pairing.</summary>
         public void RunFrame(byte parity)
         {
+            // Direct callers are resident $F89A/$8000 walks (intro, card, pause,
+            // clear). Only the mission-tail entry selects the arena's bank 4.
+            UseBank4Tables = false;
             BeginFrameWalk(parity);
             FinishWalk();
         }
@@ -396,9 +418,15 @@ namespace Darkwing.Core
             _oamCursor = (byte)x;
         }
 
-        /// <summary>Anim entry pointer (bank5 offset) from $B429/$B4F0 tables.</summary>
+        /// <summary>Anim entry pointer (bank-image offset): $B429/$B4F0 for the bank-5 pass,
+        /// $B222/$B292 when the cell class routed the frame to the bank-4 pass.</summary>
         private int AnimEntryAddress(byte anim)
         {
+            if (UseBank4Tables)
+            {
+                int cpu4 = _bank4[B5(0xB222) + anim] | (_bank4[B5(0xB292) + anim] << 8);
+                return B5(cpu4);
+            }
             int cpu = _bank5[B5(0xB429) + anim] | (_bank5[B5(0xB4F0) + anim] << 8);
             return B5(cpu);
         }
@@ -407,8 +435,9 @@ namespace Darkwing.Core
         public (byte last, byte duration) AnimHeader(byte anim)
         {
             int entry = AnimEntryAddress(anim);
-            if (_bank5 == null || entry < 0 || entry + 1 >= _bank5.Length) return (0, 0);
-            return ((byte)(_bank5[entry] & 0x7F), _bank5[entry + 1]);
+            byte[] bank = UseBank4Tables ? _bank4 : _bank5;
+            if (bank == null || entry < 0 || entry + 1 >= bank.Length) return (0, 0);
+            return ((byte)(bank[entry] & 0x7F), bank[entry + 1]);
         }
     }
 }

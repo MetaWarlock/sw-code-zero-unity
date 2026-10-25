@@ -666,6 +666,10 @@ public static class PhysCompare
             Darkwing.Core.BossBehaviors.DefeatTimer = ram0[0x3B];
             Darkwing.Core.BossBehaviors.DamageAccum = ram0[0xEE];
             Darkwing.Core.BossBehaviors.InvulnTimer = ram0[0xED];
+            // $EF is the boss slot whose $B36A pass owns the $ED countdown; a mid-fight seed
+            // without it freezes $ED on the seeded value and blocks every later hit
+            // (pilot14: $ED stuck at $13, the f38 bolt never registered).
+            Darkwing.Core.BossBehaviors.ProjectileSlot = ram0[0xEF];
             p.IntroHoldFlag = ram0[0x3B];
             game.FrameParity = ram0[0x95];
             for (int s = 0; s < 16; s++)
@@ -785,6 +789,7 @@ public static class PhysCompare
         Darkwing.Core.EnemyBehaviors.RngE5 = ram0[0xE5];
         Darkwing.Core.EnemyBehaviors.RngE6 = ram0[0xE6];
         Darkwing.Core.EnemyBehaviors.RngE7 = ram0[0xE7];
+        game.SeedPrevHeld(input(seedFrame));
         p.LastVerticalRedraw = ram0[0x29]; p.VerticalRedrawRow = ram0[0x2A]; p.PrevVerticalMode = ram0[0x21];
         frameObserver?.Invoke(seedFrame, game);
         for (int f = seedFrame + 1; f < avail && (limit <= 0 || f - seedFrame <= limit); f++)
@@ -833,7 +838,7 @@ public static class PhysCompare
                     if (blk[i] != g[0x5C2 + i]) bad = $"${0x5C2 + i:X3} port={blk[i]:X2} rom={g[0x5C2 + i]:X2}";
                 if (bad == null && p.InvulnFrames != g[0x7C]) bad = $"$7C port={p.InvulnFrames:X2} rom={g[0x7C]:X2}";
                 if (bad == null && game.Ppu.Mask != g[0xFE]) bad = $"$FE port={game.Ppu.Mask:X2} rom={g[0xFE]:X2}";
-                // PackedSlots does not carry $0410/$0430, so read the two anim bytes off the slots.
+                // Read the two live animation bytes directly for the player diagnostics.
                 for (int s = 0; s <= 5 && bad == null; s++)
                 {
                     var sl = game.Objects.Slots[s];
@@ -848,6 +853,7 @@ public static class PhysCompare
             {
                 sb.Append($"f{f} P X={p.X:X4} xv={p.XVelInt:X2},{p.XVelFrac:X2} xfc={p.XFrac:X2} Y={p.Y:X4} vy={p.YVelInt:X2},{p.YVelFrac:X2} ffc={p.YFrac:X2} st={p.State:X2} an={s0.AnimNumber:X2}/{s0.AnimFrame:X2}/{s0.AnimTimer:X2} | O X={gx:X4} xv={g[0x540]:X2},{g[0x530]:X2} xfc={g[0x470]:X2} Y={gy:X4} vy={g[0x560]:X2},{g[0x550]:X2} ffc={g[0x460]:X2} st={g[0x50]:X2} an={g[0x420]:X2}/{g[0x410]:X2}/{g[0x430]:X2} p95={game.FrameParity:X2}/{g[0x95]:X2} r97={g[0x97]:X2} t92={g[0x92]:X2}");
                 sb.Append($" H pre={p.PrevState:X2} ho={p.HurtOrigin:X2} p10={p.ProbeResultForTest:X2} iv={p.InvulnFrames:X2} hl={p.HitLadder:X2} | O10={g[0x10]:X2} O7C={g[0x7C]:X2} Ohl={g[0x5B2]:X2},{g[0x5B4]:X2},{g[0x5B6]:X2},{g[0x5B8]:X2}{DeathDiag(g, s0)}");
+                sb.Append($" BB ee={Darkwing.Core.BossBehaviors.DamageAccum:X2}/{g[0xEE]:X2} ed={Darkwing.Core.BossBehaviors.InvulnTimer:X2}/{g[0xED]:X2} ef={Darkwing.Core.BossBehaviors.ProjectileSlot:X2}/{g[0xEF]:X2} 3b={Darkwing.Core.BossBehaviors.DefeatTimer:X2}/{g[0x3B]:X2}");
                 sb.Append($" | S 22={p.CellIndex:X2}/{g[0x22]:X2} 23={p.CellIndexNext:X2}/{g[0x23]:X2} 25={p.StageCursor:X2}/{g[0x25]:X2} 28={p.LastRedrawScroll:X2}/{g[0x28]:X2} 2F={p.ScrollMode:X2}/{g[0x2F]:X2} FC={p.ScrollX & 0xFF:X2}/{g[0xFC]:X2}");
                 var hs = game.Enemies != null && game.Enemies.HurtSlot >= 0
                     ? game.Objects.Slots[game.Enemies.HurtSlot] : null;
@@ -1831,6 +1837,8 @@ public static class PhysCompare
             pr[0x4F0 + sl] = (byte)(s.X & 0xFF); pr[0x500 + sl] = (byte)(s.X >> 8);
             pr[0x510 + sl] = (byte)(s.Y & 0xFF); pr[0x520 + sl] = (byte)(s.Y >> 8);
             pr[0x420 + sl] = s.AnimNumber;
+            pr[0x410 + sl] = s.AnimFrame;
+            pr[0x430 + sl] = s.AnimTimer;
             pr[0x530 + sl] = s.XVelFrac; pr[0x540 + sl] = (byte)s.XVelInt;
             pr[0x550 + sl] = s.YVelFrac; pr[0x560 + sl] = (byte)s.YVelInt;
         }
@@ -1895,7 +1903,7 @@ public static class PhysCompare
             if (!active && !inactive) continue;
             // An inactive slot is only interesting while it still carries a template.
             if (!active && r[0x4E0 + sl] == 0 && r[0x420 + sl] == 0) continue;
-            s.Append($"{(active ? "" : "-")}{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}q{r[0x490 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2}p{r[0x570 + sl]:X2}f{r[0x400 + sl]:X2}vy{r[0x560 + sl]:X2},{r[0x550 + sl]:X2} ");
+            s.Append($"{(active ? "" : "-")}{sl:X2}:{r[0x4F0 + sl] | (r[0x500 + sl] << 8):X4},{r[0x510 + sl] | (r[0x520 + sl] << 8):X4}/an{r[0x420 + sl]:X2}af{r[0x410 + sl]:X2}at{r[0x430 + sl]:X2}bh{r[0x4E0 + sl]:X2}st{r[0x4D0 + sl]:X2}t{r[0x480 + sl]:X2}q{r[0x490 + sl]:X2}d{r[0x580 + sl]:X2}pl{r[0x590 + sl]:X2}p{r[0x570 + sl]:X2}f{r[0x400 + sl]:X2}vy{r[0x560 + sl]:X2},{r[0x550 + sl]:X2} ");
         }
         return s.ToString();
     }
@@ -2123,7 +2131,7 @@ public static class PhysCompare
     {
         int checks=0;
         void Check(bool ok,string label){if(!ok)throw new System.Exception(label);checks++;}
-        var o=new Darkwing.Core.ObjectSystem(null);var p=new Darkwing.Core.PlayerCore(new PushProbeMap()){Objects=o};
+        var o=new Darkwing.Core.ObjectSystem(null);var p=new Darkwing.Core.PlayerCore(new PushProbeMap()){Objects=o,ScrollYRow=1};
         var map=new LobProbeMap();var c=new Darkwing.Core.EnemyDispatcher(new byte[16384],o,p){Tiles=map};
         var s=o.Slots[2];s.Active=true;s.StateLow=0x80;s.AnimNumber=0x16;s.Behavior=2;s.X=0xF80;s.Y=0x158;
         Darkwing.Core.EnemyBehaviors.Dispatch(2,s,2,c);
@@ -2303,6 +2311,75 @@ public static class PhysCompare
                 throw new System.Exception("Mission-1 regression: "+tail);
         }
         return sb.ToString();
+    }
+
+    public static string Mission23Contracts()
+    {
+        int checks = 0;
+        void Check(bool ok, string why) { checks++; if (!ok) throw new System.Exception(why); }
+        // ROM bank6 $8483/$84A8 are tail JMPs. They must neither probe nor kill
+        // the bolt after the integrator. The two $84BA outcomes differ as well.
+        foreach (var test in new[] {
+            (scroll: (byte)4, x: (ushort)0xF0, right: true, playerX: (ushort)0x30, alive: true, end: (ushort)0xF1, probes: false),
+            (scroll: (byte)4, x: (ushort)0x0F, right: false, playerX: (ushort)0x30, alive: true, end: (ushort)0x0E, probes: false),
+            (scroll: (byte)0, x: (ushort)0x0F, right: false, playerX: (ushort)0x29, alive: true, end: (ushort)0x0E, probes: false),
+            (scroll: (byte)0, x: (ushort)0x0F, right: false, playerX: (ushort)0x2A, alive: false, end: (ushort)0x0F, probes: false),
+            (scroll: (byte)4, x: (ushort)0x80, right: true, playerX: (ushort)0x30, alive: true, end: (ushort)0x81, probes: true) })
+        {
+            var map = new PushProbeMap();
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(map) { Objects = objects, X = test.playerX, ScrollState = test.scroll, ScrollYRow = 0 };
+            var ctx = new Darkwing.Core.EnemyDispatcher(null, objects, player) { Tiles = map };
+            var bolt = objects.Slots[3];
+            bolt.Active = true; bolt.StateLow = 0x81; bolt.AnimNumber = 0x17;
+            bolt.Direction = (byte)(test.right ? 1 : 2); bolt.X = test.x; bolt.XVelInt = 1; bolt.Y = 0x80;
+            Darkwing.Core.EnemyBehaviors.Dispatch(3, bolt, 3, ctx);
+            Check(bolt.Active == test.alive && bolt.X == test.end, "Thunder tail/left-edge branch");
+            Check((map.Reads > 0) == test.probes, "Thunder tail must not continue through the wall probe");
+        }
+        byte[] D(string n) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + n + ".bytes");
+        var data = Darkwing.Core.DataLoader.Load(D("chr_full"),D("levelsets"),D("screens"),D("levels"),D("anims"));
+        var game = new Darkwing.Core.DarkwingGame(data) { Bank5 = D("prg_bank5"), Bank4 = D("prg_bank4") };
+        game.Oam.UseBank4Tables = true;
+        Check(game.Oam.AnimHeader(0x6B).duration == 4, "Arena uses bank4 animation duration");
+        game.Oam.RunFrame(1);
+        Check(!game.Oam.UseBank4Tables && game.Oam.AnimHeader(0x6B).duration == 0x10,
+            "Resident bank5 walk must not inherit arena tables");
+        foreach (bool right in new[] { false, true })
+        {
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance) { Objects = objects };
+            var ctx = new Darkwing.Core.EnemyDispatcher(null, objects, player) { Tiles = Darkwing.Core.EmptyTileMap.Instance };
+            var boss = objects.Slots[15];
+            boss.Active = true; boss.StateLow = 0x82; boss.Behavior = 0x57; boss.AnimNumber = 0x41;
+            boss.X = 0xF30; boss.XVelInt = 1; boss.Direction = (byte)(right ? 1 : 2);
+            Darkwing.Core.BossBehaviors.Dispatch(15, boss, 0x57, ctx);
+            Check(boss.X == (right ? 0xF31 : 0xF2F), "Liquidator F24B/F2A6 face + exactly one X integration");
+        }
+        {
+            var map = new LobProbeMap { Type = 3 };
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(map) { Objects = objects, GravityFrac = 0x40, ScrollYRow = 0 };
+            var ctx = new Darkwing.Core.EnemyDispatcher(null, objects, player) { Tiles = map };
+            var crawler = objects.Slots[12];
+            crawler.Active = true; crawler.StateLow = 0x86; crawler.Behavior = 0x37;
+            crawler.X = 0x129; crawler.Y = 228; crawler.YFrac = 120;
+            crawler.YVelInt = -5; crawler.YVelFrac = 43; crawler.XVelInt = 2; crawler.Direction = 2;
+            Darkwing.Core.EnemyBehaviors.Dispatch(12, crawler, 0x37, ctx);
+            Check(crawler.Y == 233 && crawler.T480 == 0 && crawler.YVelInt == -6 && crawler.YVelFrac == 235,
+                "Original m3 poll3170->3171: no landing on the next viewport's floor");
+        }
+        {
+            var objects = new Darkwing.Core.ObjectSystem(null);
+            var player = new Darkwing.Core.PlayerCore(Darkwing.Core.EmptyTileMap.Instance) { Objects = objects };
+            var ctx = new Darkwing.Core.EnemyDispatcher(null, objects, player);
+            var geyser = objects.Slots[14];
+            geyser.Active = true; geyser.StateLow = 0x81; geyser.Behavior = 0x59;
+            geyser.Y = 0x230; geyser.T4A0 = 0x38; geyser.YVelInt = 1;
+            Darkwing.Core.BossBehaviors.Dispatch(14, geyser, 0x59, ctx);
+            Check(geyser.StateLow == 0x82, "Geyser A0BB increments state 1->2, not OR2->3");
+        }
+        return $"PASS {checks}/{checks} Thunder tail/edge controls, arena-bank lifetime and Liquidator single-step movement";
     }
 
     /// <summary>Explicit diagnostic fixtures for the successful $D6B4 -> $D709 exit.
@@ -2824,7 +2901,7 @@ public static class PhysCompare
     {
         byte[] ram = File.ReadAllBytes(
             Root + "/Research/DarkwingDuck/reference/tmp_boss_pilot14_wolf_defeat/ram_frames.bin");
-        _enemyDumpLo = 34; _enemyDumpHi = 44;
+        _enemyDumpLo = 0; _enemyDumpHi = 48;
         try
         {
             return Compare("boss_pilot14_wolf_defeat", ram.Length / 2048,
@@ -2836,6 +2913,126 @@ public static class PhysCompare
     }
 
     public static string PaletteDeath() => PaletteWindow(786, 860);
+
+    /// <summary>
+    /// Thunder bolt (behavior 3, bank 6 $841C-$85BB) against the ORIGINAL: the golden is the
+    /// RAM slice of the second human recording `20261022T164819Z` (polls 34291-34600 of
+    /// Temp/human_164819_fulla/replay1/buffers.bin, provenance.json beside it) — world 1 with
+    /// the picked Thunder actually fired. Seeded at local 21 (orig poll34312): the bolt is in
+    /// flight (anim $14 pre-launch), sticks to the wall at local f40 (param $84/state $82)
+    /// and rides the stuck chain to timer $78/anim $29 at f175 (orig f34465). The recorded
+    /// input bytes drive the port. These captures are PRE-input, whereas Compare's ordinary
+    /// fixtures are POST-input: step f therefore consumes input[f-1]. The fire frame itself
+    /// stays outside this seeded fixture's claim.
+    /// </summary>
+    public static string ThunderWorld1() => ThunderWorld1Seed(21);
+
+    public static string ThunderWorld1Seed(int seedFrame)
+    {
+        byte[] ram = File.ReadAllBytes(
+            Root + "/Research/DarkwingDuck/reference/thunder_world1_164819Z/ram_frames.bin");
+        byte[] input = File.ReadAllBytes(
+            Root + "/Research/DarkwingDuck/reference/thunder_world1_164819Z/input_slice.bin");
+        byte previous = File.ReadAllBytes(Root + "/Playthroughs/20261022T164819Z/input.bin")[34289];
+        _enemyDumpLo = 0; _enemyDumpHi = 60;
+        try
+        {
+            return Compare("thunder_world1_164819Z", ram.Length / 2048, f => f == 0 ? previous : input[f - 1],
+                seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true, world: 1,
+                goldenDir: "thunder_world1_164819Z", trace: true, residentFade: false);
+        }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
+
+    /// <summary>
+    /// G90 — the ROM golden where the wolf actually THROWS the runner child:
+    /// `tmp_boss_pilot15_wolf_throw` (600 frames, same midfight520.mss load, NO $EE patch,
+    /// B held 4 frames every 40 from f55). Determinism: two independent runs byte-identical
+    /// across all 600 RAM frames. The child (behaviour $55) lives in slot 13 at f288-f295
+    /// (X $0F3B, Y $01C8 rising), so the $9BEC handler and its $04AF kill are measurable.
+    /// </summary>
+    public static string BossFightWolfThrow() => BossWolfThrowSeed(0);
+
+    /// <summary>Local immutable slice of original mission-3 input/RAM, polls 68633–71800.
+    /// Starts after the arena intro; diagnostic boss combat, not a natural route PASS.</summary>
+    public static string LiquidatorArena()
+    {
+        string dir = Root + "/Temp/liquidator_reference_slice";
+        byte[] input = File.ReadAllBytes(dir + "/input_slice.bin");
+        byte[] ram = File.ReadAllBytes(dir + "/ram_frames.bin");
+        byte previous = File.ReadAllBytes(Root + "/Playthroughs/20261024T183247Z/input.bin")[68631];
+        int bossSamples = 0, bossMatched = 0, bossFirst = -1, bossAddress = -1;
+        // State at poll N precedes input[N]; Compare's step into record f uses f-1.
+        string result = Compare("liquidator_arena", input.Length, f => f == 0 ? previous : input[f - 1],
+            camera: true, enemies: true, scoreEnemies: true, world: 2,
+            goldenDir: "../../../Temp/liquidator_reference_slice", trace: true,
+            frameObserver: (f, game) =>
+            {
+                var s = game.Objects.Slots[15];
+                int[] addresses = {0x40F,0x41F,0x42F,0x43F,0x48F,0x49F,0x4AF,0x4DF,0x4EF,
+                    0x4FF,0x50F,0x51F,0x52F,0x57F,0x58F,0x5AF,0xED,0xEE,0xEF,0x3B};
+                int[] values = {s.Flags,s.AnimFrame,s.AnimNumber,s.AnimTimer,s.T480,s.T490,s.T4A0,
+                    s.Active ? s.StateLow | 0x80 : s.StateLow,s.Behavior,
+                    s.X & 255,s.X >> 8,s.Y & 255,s.Y >> 8,s.BehaviorParam,s.Direction,s.Health,
+                    Darkwing.Core.BossBehaviors.InvulnTimer,Darkwing.Core.BossBehaviors.DamageAccum,
+                    Darkwing.Core.BossBehaviors.ProjectileSlot,Darkwing.Core.BossBehaviors.DefeatTimer};
+                bool equal = true;
+                for (int i = 0; i < addresses.Length; i++)
+                    if (values[i] != ram[f * 2048 + addresses[i]])
+                    { equal = false; if (bossFirst < 0) { bossFirst = f; bossAddress = addresses[i]; } }
+                bossSamples++; if (equal) bossMatched++;
+            });
+        return result + $"\nLIQUIDATOR_BOSS20: {bossMatched}/{bossSamples}; first={bossFirst} address={bossAddress:X4}. Seeded diagnostic, not route acceptance.";
+    }
+
+    public static string BossWolfThrowSeed(int seedFrame)
+    {
+        byte[] ram = File.ReadAllBytes(
+            Root + "/Research/DarkwingDuck/reference/tmp_boss_pilot15_wolf_throw/ram_frames.bin");
+        _enemyDumpLo = 150; _enemyDumpHi = 320;
+        try
+        {
+            return Compare("boss_pilot15_wolf_throw", ram.Length / 2048,
+                f => (f >= 55 && f % 40 >= 15 && f % 40 <= 18) ? (byte)0x40 : (byte)0x00,
+                seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true, world: 1,
+                goldenDir: "tmp_boss_pilot15_wolf_throw", trace: true, residentFade: false);
+        }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
+
+    /// <summary>Diagnostic: per-frame af/at of slots 14 (wolf), 2/3/4 (bolts) and the walk
+    /// cursor phase, to locate why enemy anim timers stay frozen in the throw fixture.</summary>
+    public static string BossFightWolfThrowProbe()
+    {
+        byte[] ram = File.ReadAllBytes(
+            Root + "/Research/DarkwingDuck/reference/tmp_boss_pilot15_wolf_throw/ram_frames.bin");
+        var log = new System.Text.StringBuilder();
+        _enemyDumpLo = 150; _enemyDumpHi = 320;
+        try
+        {
+            var r = Compare("boss_pilot15_wolf_throw", 230,
+                f => (f >= 55 && f % 40 >= 15 && f % 40 <= 18) ? (byte)0x40 : (byte)0x00,
+                seedFrame: 0, camera: true, enemies: true, scoreEnemies: true, world: 1,
+                goldenDir: "tmp_boss_pilot15_wolf_throw", trace: true, residentFade: false,
+                frameObserver: (f, game) =>
+                {
+                    if (f < 214 || f > 224) return;
+                    var o = game.Objects;
+                    log.Append($"f{f} walkActive={game.Oam.WalkActive} slot=");
+                    for (int s = 1; s <= 15; s++)
+                    {
+                        var sl = o.Slots[s];
+                        if (!sl.Active) continue;
+                        log.Append($"{s:X2}(an{sl.AnimNumber:X2} af{sl.AnimFrame:X2} at{sl.AnimTimer:X2}) ");
+                    }
+                    log.Append('\n');
+                });
+            File.WriteAllText(Root + "/Temp/wolf_throw_anim_probe.txt",
+                log.ToString() + "\n==== verdict ====\n" + VerdictTail(r));
+            return "wrote Temp/wolf_throw_anim_probe.txt";
+        }
+        finally { _enemyDumpLo = _enemyDumpHi = -1; }
+    }
 
     public static string PaletteWindow(int lo, int hi, string golden = "m1_longroute", bool runPort = false)
     {

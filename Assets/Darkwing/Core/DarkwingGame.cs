@@ -49,6 +49,7 @@ namespace Darkwing.Core
                 ? new OamDispatcher(_bank5 ?? System.Array.Empty<byte>(), Objects, Ppu, Player)
                 : null;
             Oam?.SetHud(Hud);
+            if (_bank4 != null) Oam?.SetBank4(_bank4);
             Player.Oam = Oam;   // $9605 mission-card composition reaches the dispatcher
             Player.ResetHud = SeedHudSlot;
             Player.Sound = PlaySound;
@@ -116,7 +117,8 @@ namespace Darkwing.Core
         /// Raw PRG bank 4 (ROM $8000–$BFFF window while gameplay is paused): the
         /// pause/status routine $8F00–$9025 and its tables. Index with <c>addr - $8000</c>.
         /// </summary>
-        public byte[] Bank4 { get; set; }
+        private byte[] _bank4;
+        public byte[] Bank4 { get => _bank4; set { _bank4 = value; if (Oam != null) Oam.SetBank4(value); } }
 
         /// <summary>The loaded mission's placement data (spawner source).</summary>
         public GameData.LevelDef CurrentLevel { get; set; }
@@ -1206,6 +1208,11 @@ namespace Darkwing.Core
             _prevHeld = input.HeldP1;
             LastInputHookCycles = input.HookCycles;
         }
+
+        /// <summary>Seeded runs resume mid-hold: the pressed-edge detector needs the held
+        /// byte the original carried into the seed frame, or the first stepped frame turns
+        /// a held button into a fresh edge (thunder_world1 f22 spawned a duplicate bolt).</summary>
+        public void SeedPrevHeld(byte held) => _prevHeld = held;
         private System.Func<int, byte> _gridByte, _flagByte;   // cached ($32)/($34) lookups for $DA70
         // The pause phase lives in DarkwingGame.Pause.cs (bank 4 $8F00…$9025).
         private bool _parityStepped;
@@ -1605,6 +1612,17 @@ namespace Darkwing.Core
                 RunPaletteScript();
             }
             Enemies?.RunFrame();
+            // $CA8F: the cell byte ($32),$22 picks the pass — $14 keeps the bank-5 walk, and
+            // $34/$56/$76/$97/$B5/$98 switch to bank 4 ($CAC5 → $CAD1 JSR $9800): the copy is
+            // instruction-identical but reads its own anim/part/coord tables. The boss arenas
+            // are special-class cells, which is why their anims tick at bank-4 durations
+            // (wolf 6B dur 4, not the bank-5 0x10).
+            if (TileMap != null)
+            {
+                byte cell = TileMap.GridByte(Player.CellIndex);
+                Oam.UseBank4Tables = cell is 0x34 or 0x56 or 0x76 or 0x97 or 0xB5 or 0x98;
+            }
+            else Oam.UseBank4Tables = false;
             // $8000 is the engine's own entry: INC $95 is its first instruction, so the value
             // the blink/iteration-order tests read is the one this frame's pass produced.
             StepFrameParity();                                   // $8000-$8002

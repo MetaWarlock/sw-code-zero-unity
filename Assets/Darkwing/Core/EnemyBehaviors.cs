@@ -47,7 +47,7 @@ namespace Darkwing.Core
         // E6 += E5 + C ($8745/$875F debris)
         private static byte RngE6PlusE5(bool carry) { int v = RngE6 + RngE5 + (carry ? 1 : 0); RngE6 = (byte)v; return RngE6; }
         // E7 += E6 + C ($AA69-region / $8785 second E6 update uses E6 += E7)
-        private static byte RngE7PlusE6(bool carry) { int v = RngE7 + RngE6 + (carry ? 1 : 0); RngE7 = (byte)v; return RngE7; }
+        internal static byte RngE7PlusE6(bool carry) { int v = RngE7 + RngE6 + (carry ? 1 : 0); RngE7 = (byte)v; return RngE7; }
         // E5 += E4 - $0490,X (perturbed, $A7AB Bushroot — implemented at its site)
         // E4 += E5, E4 EOR $04F0 → E4/E6 (orb spawner $9447 — implemented at its site)
         private static void RngIncE6E7() { RngE6++; RngE7++; } // cheap bump (bank 6 $BAD0 class)
@@ -55,7 +55,14 @@ namespace Darkwing.Core
         // ---- per-site wrappers (BossBehaviors consumes these) ----
         internal static int RngE5Mask7(bool carry = false) => RngE5PlusE4(carry) & 7; // $9959 ball
         internal static int RngE5Mask15() => RngE5PlusE4(false);                    // $AF74/$AAEC-class
-        internal static int RngE7PlusE6Wrap() { RngE6 = RngE7PlusE6(false); return RngE6; } // E6 += E7
+        // $99EE wolf wait roll: the only entry is the equal CMP #$0D, so C is always 1 and
+        // the roll is E6 = E7 + E6 + 1 with the index from the NEW E6 (E7 untouched).
+        internal static int RngWolfWaitRoll() => RngE6PlusE7(true);
+        // $9E81→$9F43 Liquidator turn roll: all three arena-mark BEQs leave C=1, so
+        // E7 = E6 + E7 + 1 with the index from the NEW E7 (E6 untouched).
+        internal static int RngLiquidatorTurnRoll() => RngE7PlusE6(true);
+        // $A0ED: CPY #$47 in $8810 leaves C=1 through the state-0 geyser entry.
+        internal static int RngGeyserPeakRoll() { RngE4 = (byte)(RngE5 + RngE4 + 1); return RngE4 & 7; }
         internal static int RngE4PlusE6() { int v = RngE4 + RngE6; RngE4 = (byte)v; return RngE4; } // $AF0F-class
         internal static int RngBushroot(int hop)                                    // $A7AB E5 += E4 - $0490
         {
@@ -134,7 +141,7 @@ namespace Darkwing.Core
         };
 
         // 24-sector direction → direction code table ($F9A2, 32 entries).
-        private static readonly byte[] SectorTable =
+        internal static readonly byte[] SectorTable =
         {
             0x04,0x05,0x06,0x04, 0x08,0x07,0x06,0x04, 0x0C,0x0B,0x0A,0x04, 0x08,0x09,0x0A,0x04,
             0x04,0x03,0x02,0x04, 0x00,0x01,0x02,0x04, 0x0C,0x0D,0x0E,0x04, 0x00,0x0F,0x0E,0x04
@@ -447,6 +454,7 @@ namespace Darkwing.Core
         {
             if (ctx.Tiles == null) return 0;
             byte result = 0;
+            bool enemy = ctx.Objects != null && System.Array.IndexOf(ctx.Objects.Slots, s) >= 2;
             for (int i = 0; i <= setY; i++)
             {
                 int idx = setX + i;
@@ -454,7 +462,12 @@ namespace Darkwing.Core
                 int py = ProbePointY(s, (sbyte)ProbeY[idx]);
                 ctx.ProbePointX = px;
                 ctx.ProbePointY = py;
-                byte t = ctx.Tiles.TypeAt(px, py);
+                // $EC4D-$EC64: an enemy (X >= 2) cannot probe into another
+                // vertical viewport. The subtraction is in the ROM's row/low-byte
+                // representation, including the borrow from low - $FA into row - $FB.
+                // Eagerly decoding the next room invented a floor for sewer $37.
+                int relativeY = (ushort)(py - ((ctx.Player.ScrollYRow << 8) | ctx.Player.ScrollY));
+                byte t = enemy && relativeY >= 0x100 ? (byte)0 : ctx.Tiles.TypeAt(px, py);
                 if (t > result) result = t;
             }
             if (result == 7) s.Flags |= 0x20;                   // $EBDB
@@ -811,88 +824,127 @@ namespace Darkwing.Core
             }
         }
 
-        /// <summary>$841C behavior 3: thunder bolt. Wait phase, then 3.6 px/f travel;
-        /// wall stick ($0570=$84), player proximity release, timer $FF→$78 → anim $29
-        /// lightning fall ($F5C9).</summary>
+        /// <summary>$841C thunder bolt. State 0 drains and records the meter, then every
+        /// frame: anim $14 pre-launch travel (frame 4 hands the stick anim $17 with speed
+        /// 3.99), the state-2/$83 stuck chain ($851E), or the launch travel ($846D) whose
+        /// side probe of >=3 (and !=7) pins the bolt to the wall ($0570=$84, state 2).</summary>
         private static void ThunderBolt(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if ((s.StateLow & 0x0F) == 0)
+            if ((s.StateLow & 0x0F) == 0)                              // $841C
             {
-                s.YVelInt = 0; s.XVelInt = 0; s.XVelFrac = 0;
-                s.YVelFrac = 1;
-                ctx.Player.DrainActiveMeter(0xFD);
-                ctx.Player.AddSavedMeter(0xFD);
-                s.StateLow = 1;
-                s.T480 = 0xFF;
+                s.YVelInt = 0; s.XVelInt = 0; s.XVelFrac = 0;          // $8423-$8429
+                s.YVelFrac = 1;                                        // $842E
+                ctx.Player.DrainActiveMeter(0xFD);                     // $8433 JSR $8982
+                ctx.Player.AddSavedMeter(0xFD);                        // $8438 JSR $890B
+                s.StateLow++;                                          // $843B INC $04D0,X
+                s.T480 = 0xFF;                                         // $843E
             }
-            if (s.AnimNumber != 0x14)
+            if (s.AnimNumber == 0x14)                                  // $8443
             {
-                // travel ($8443..): anim frame 4 → anim $17 stick
-                if (s.AnimFrame == 4 && s.AnimNumber == 0x14)
+                if (s.AnimFrame == 4)                                  // $844D
                 {
-                    SetAnim(s, 0x17);
-                    s.XVelFrac = 0x99; s.XVelInt = 3;
-                }
-                if ((s.StateLow & 0x02) == 0)
-                {
-                    bool right = (s.Direction & 1) != 0;
-                    int screenX = (short)(s.X - ctx.Player.ScrollX);
-                    if (ctx.Player.ScrollYRow == 4)
-                    {
-                        if (right) { if (s.X < 0xF0) IntegrateXPos(s); }
-                        else if (s.X >= 0x10) IntegrateXNeg(s);
-                    }
-                    else if (right)
-                    {
-                        if (((s.X - ctx.Player.ScrollX) & 0xFF) >= 0xF4) { KillSlot(s); return; }
-                        WalkRight(ctx, s, 0x18, 1);
-                    }
-                    else
-                    {
-                        if (screenX < 0x10 && s.X < 0x2A) { KillSlot(s); return; }
-                        WalkLeft(ctx, s, 0x1B, 1);
-                    }
-                    // wall stick ($84DF: screen edge → param $84 + bit1 latch)
-                    int screenX2 = (short)(s.X - ctx.Player.ScrollX);
-                    if (screenX2 >= 3 && screenX2 != 7)
-                    {
-                        s.BehaviorParam = 0x84;
-                        s.StateLow |= 0x02;
-                    }
+                    SetAnim(s, 0x17);                                  // $8454
+                    s.XVelFrac = 0x99; s.XVelInt = 3;                  // $8459-$8460 3.99
                 }
                 else
                 {
-                    StuckBolt(s, ctx);
+                    ThunderPreLaunch(s, ctx);                          // $84F2
+                    return;
                 }
-                return;
             }
-            // stuck chain ($851E): proximity to the player → release into the fall
-            if ((s.StateLow & 0x0F) == 3) { s.BehaviorParam = 0; MoveY(s); return; }
-            if (DistX(ctx, s) < 0x0C && DistY(ctx, s) < 0x0E && ctx.Player.State == 0)
-            {
-                s.StateLow++;
-                return;
-            }
-            if (s.T480 == 0) { s.StateLow++; return; }
-            if (DistX(ctx, s) >= 0x10) return;
-            if (s.Y >= 0x10 && ctx.Player.Y < 0xEC)
-            {
-                s.T480--;
-                if (s.T480 == 0x78) SetAnim(s, 0x29);
-            }
+            if ((s.StateLow & 0x02) != 0) { ThunderStuck(s, ctx); return; }  // $8466 → $851E
+            ThunderTravel(s, ctx);                                     // $846D
         }
 
-        /// <summary>$84F2/$851E stuck bolt: travel + anim $17 release into the lightning fall.</summary>
-        private static void StuckBolt(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        /// <summary>$846D launch travel: the $2B==4 screen-edge integrator branches, the
+        /// $FC screen-edge kill (right >= $F4; left < $10 kills regardless of the dead
+        /// player-$2A check), then the walk whose probe result sticks the bolt to a wall.</summary>
+        private static void ThunderTravel(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if ((s.StateLow & 0x0F) == 3) { s.BehaviorParam = 0; MoveY(s); return; }
-            bool right = (s.Direction & 1) != 0;
-            if (right) WalkRight(ctx, s, 0x0C, 1); else WalkLeft(ctx, s, 0x0F, 1);
-            int screenX = (short)(s.X - ctx.Player.ScrollX);
-            if (screenX != 3) return;
-            SetAnim(s, 0x17);
-            s.BehaviorParam = 0;
-            s.StateLow = 0x83;
+            bool right = (s.Direction & 1) != 0;                       // $846F-$8474
+            if (right)
+            {
+                if (ctx.Player.ScrollState == 4 && (s.X & 0xFF) >= 0xF0)  // $8476-$8483 JMP, not JSR
+                { IntegrateXPos(s); return; }                          // $F4FD returns to caller
+                if ((byte)(s.X - ctx.Player.ScrollX) >= 0xF4) { KillSlot(s); return; }  // $8486-$8492
+                WalkRight(ctx, s, 0x18, 2);                            // $8493 (Y=$02 from $846D)
+            }
+            else
+            {
+                if (ctx.Player.ScrollState == 4 && (s.X & 0xFF) < 0x10)   // $849B-$84A8 JMP
+                { IntegrateXNeg(s); return; }                          // $F51B returns to caller
+                if ((byte)(s.X - ctx.Player.ScrollX) < 0x10)           // $84AB-$84B4
+                {
+                    // $84BA BCC $84A8 tail-jumps to the left integrator; only the
+                    // other branch reaches $84BC JMP $FA9A.
+                    if ((ctx.Player.X & 0xFF) < 0x2A) { IntegrateXNeg(s); return; }
+                    KillSlot(s);                                       // $FA9A
+                    return;
+                }
+                WalkLeft(ctx, s, 0x1B, 2);                             // $84BF
+            }
+            // $84C4: the $66 zone gate skips the stick check while a door flagged it negative
+            // (right: Xlo >= $F0 and left: Xlo < $10 stay untouched).
+            if ((sbyte)ctx.Player.PendingMissionFlag < 0)
+            {
+                if (right) { if ((s.X & 0xFF) >= 0xF0) return; }
+                else if ((s.X & 0xFF) < 0x10) return;                  // $84C8-$84DD
+            }
+            int probe = ctx.ProbeResult;                               // $84DF LDA $10
+            if (probe < 3 || probe == 7) return;                       // $84E1-$84E7
+            s.BehaviorParam = 0x84;                                    // $84E9
+            s.StateLow++;                                              // $84EE → state 2
+        }
+
+        /// <summary>$84F2 pre-launch travel (anim $14, frame != 4): short walk with probe
+        /// Y=1; a probe of 3 releases the bolt into the fall ($0570=0, anim $17, state $83).</summary>
+        private static void ThunderPreLaunch(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if ((s.Direction & 1) != 0) WalkRight(ctx, s, 0x0C, 1);    // $84F4-$84FD
+            else WalkLeft(ctx, s, 0x0F, 1);                            // $8503
+            if (ctx.ProbeResult != 3) return;                          // $8508-$850C
+            SetAnim(s, 0x17);                                          // $850E
+            s.BehaviorParam = 0;                                       // $8513
+            s.StateLow = 0x83;                                         // $8518
+        }
+
+        /// <summary>$851E stuck chain. State 3 ($83) releases into the fall; state 2 counts
+        /// $0480 from $FF to $78 (anim $29) and releases when the player stands close (X
+        /// < $0C, Y < $0E, idle), when its own timer hits 0, or when the player waits below
+        /// (X < $10, own Ylo < $10, player Ylo >= $EC). Two bolts free their partner: while
+        /// slot 2 is active the pair within |dx| < $18 / |dy| < $08 hands slot 2 state $83.</summary>
+        private static void ThunderStuck(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            if ((s.StateLow & 0x0F) == 3) { s.BehaviorParam = 0; ApplyYVelocityDecay(s, ctx.Player.GravityFrac); return; }  // $8527 → $85B3
+            if (DistX(ctx, s) < 0x0C && DistY(ctx, s) < 0x0E && ctx.Player.State == 0)  // $852A-$853C
+            {
+                s.StateLow++;                                          // $853E state 2→3: release
+                return;
+            }
+            // $8542 pair release: the OTHER bolt of the pair is slot 2 (this one is slot 3).
+            if (System.Array.IndexOf(ctx.Objects.Slots, s) != 2)
+            {
+                var other = ctx.Objects.Slots[2];
+                if (other.Active)
+                {
+                    int dx = System.Math.Abs((int)s.X - other.X) & 0xFF; // $855A keeps only the low byte
+                    if (dx < 0x18)                                    // $8561
+                    {
+                        int dy = (other.Y & 0xFF) - (s.Y & 0xFF);
+                        if (System.Math.Abs(dy) < 0x08)                // $8573
+                            other.StateLow = 0x83;                     // $8577
+                    }
+                }
+            }
+            if ((s.StateLow & 0x0F) == 3) { s.BehaviorParam = 0; ApplyYVelocityDecay(s, ctx.Player.GravityFrac); return; }  // $857C-$8583
+            if (s.T480 == 0) { s.StateLow++; return; }                 // $8585-$858C state 2→3
+            if (DistX(ctx, s) < 0x10 && (s.Y & 0xFF) < 0x10 && (ctx.Player.Y & 0xFF) >= 0xEC)  // $858E-$85A1
+            {
+                s.StateLow++;                                          // $858A state 2→3: release
+                return;
+            }
+            s.T480--;                                                  // $85A3
+            if (s.T480 == 0x78) SetAnim(s, 0x29);                      // $85A6-$85AF
         }
 
         /// <summary>$85BC behavior 4: arrow/bomb. No motion; anim frame 4 + timer 2 →
@@ -2570,9 +2622,9 @@ namespace Darkwing.Core
                 CarrierRelease(ctx, s);
         }
 
-        /// <summary>$965D behavior 37: Quackerjack core (bank-6 copy, state table
-        /// $9670/$9677: 0 init $967E, 1 wait $96A6, 2 teleport/throw $96B6, 3 rise
-        /// $973B, 4 jump $9771, 5 timer $9783, 6 ball walk $9796).</summary>
+        /// <summary>$965D behavior 37: Sewer dropper/ceiling crawler (bank-6 copy, state table
+        /// $9670/$9677: 0 init $967E, 1 wait $96A6, 2 move/probe $96B6, 3 rise $973B,
+        /// 4 fall $9771, 5 land delay $9783, 6 wall-hop patrol $9796).</summary>
         private static void QuackerjackCore6(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             switch (s.StateLow & 0x0F)
@@ -2582,7 +2634,8 @@ namespace Darkwing.Core
                     s.YVelInt = 1; s.XVelInt = 1;
                     s.StateLow = 1;
                     s.T480 = 8; s.T490 = 0x0A;
-                    if ((SectorToPlayer(ctx, s) & 8) != 0) s.T4A0++;
+                    int sectorIdx = SectorToPlayer(ctx, s) & 31;
+                    if ((SectorTable[sectorIdx] & 8) != 0) s.T4A0++;
                     break;
                 case 1: // $96A6 wait |dx| >= $60
                     if (DistX(ctx, s) >= 0x60)
@@ -2591,25 +2644,79 @@ namespace Darkwing.Core
                         s.StateLow = 2;
                     }
                     break;
-                case 2: // $96B6 teleport + throw
-                    if (s.T480 == 0) { QuackerjackBallWalk(s, ctx); return; }
-                    if (s.Health != 8) { QuackerjackThrowReady(s, ctx); return; }
-                    if (s.Y >= 0x28) { QuackerjackRise(s, ctx); return; }
-                    QuackerjackDrop(s, ctx);
+                case 2: // $96B6 crawl/probe ceiling
+                    if (s.T480 == 0)
+                    {
+                        s.T490--;
+                        if (s.T490 == 0)
+                        {
+                            s.T480 = 0x10;
+                            s.T490 = 0x0A;
+                            s.T4A0 ^= 1;
+                        }
+                        return;
+                    }
+                    if (s.Health != 8)
+                    {
+                        FacePlayerApply(ctx, s); // $F81D
+                        s.BehaviorParam = 0x42;
+                        SetAnim(s, 0xA9);
+                        s.Health = 0;
+                        SpawnBallChild(ctx, s);
+                        s.StateLow++;
+                        s.YVelFrac = 0xAB; s.YVelInt = -1; // $F5FC
+                        return;
+                    }
+                    byte yLo = (byte)s.Y;
+                    if (yLo < 0x28)
+                    {
+                        IntegrateYRideSlot(s); // $F539
+                    }
+                    else
+                    {
+                        IntegrateYRideSlot(s); // $F2AF -> $F539 + Probe
+                        byte hit = Probe(ctx, s, 0x28, 1);
+                        if (hit >= 3) SnapToFloor(ctx, s);
+                        if (hit != 0)
+                        {
+                            s.StateLow += 2; // to State 4
+                            SetAnim(s, 0xA8);
+                            s.BehaviorParam = 0x42;
+                            s.Health = 2;
+                            FacePlayerApply(ctx, s);
+                            SpawnBallChild(ctx, s);
+                            return;
+                        }
+                    }
+                    s.T480--;
+                    if (s.T4A0 == 0) IntegrateXNeg(s); // $96FF $F51B
+                    else IntegrateXPos(s);             // $9703 $F4FD
                     break;
                 case 3: // $973B rise
-                    s.YVelFrac += 0x40;
-                    if (s.Y < 0x28) { MoveY(s); return; }
-                    if (Probe(ctx, s, 0x28, 1) != 0)
+                    int yv = s.YVelFrac + 0x40;
+                    s.YVelFrac = (byte)yv;
+                    s.YVelInt += (sbyte)(yv >> 8);
+                    byte yLo3 = (byte)s.Y;
+                    if (yLo3 < 0x28)
                     {
-                        s.StateLow++;
+                        IntegrateYRideSlot(s);
+                        return;
+                    }
+                    IntegrateYRideSlot(s);
+                    byte hit3 = Probe(ctx, s, 0x28, 1);
+                    if (hit3 >= 3) SnapToFloor(ctx, s);
+                    if (hit3 != 0)
+                    {
+                        s.StateLow++; // to State 4
                         s.YVelFrac = (byte)0xD1; s.YVelInt = 2;
                     }
                     break;
-                case 4: // $9771 jump arc
-                    if (!FallAndLand(ctx, s, 0x28, 1)) return;
-                    s.T480 = 0x0A;
-                    s.StateLow++;
+                case 4: // $9771 jump arc / fall
+                    if (FallAndLand(ctx, s, 0x28, 1))
+                    {
+                        s.T480 = 0x0A;
+                        s.StateLow++;
+                    }
                     break;
                 case 5: // $9783 timer
                     s.T480--;
@@ -2619,50 +2726,34 @@ namespace Darkwing.Core
                         s.XVelFrac = 0; s.XVelInt = 2;
                     }
                     break;
-                case 6: // $9796 ball-throw walk
-                    QuackerjackBallWalk(s, ctx);
+                case 6: // $9796 wall-hop patrol
+                    bool landed = FallAndLand(ctx, s, 0x28, 1);
+                    byte probeWall;
+                    if ((s.Direction & 1) != 0)
+                        probeWall = WalkRight(ctx, s, 0x24, 1);
+                    else
+                        probeWall = WalkLeft(ctx, s, 0x26, 1);
+                    if (!landed) return;
+                    if (probeWall >= 3)
+                    {
+                        s.T480++;
+                        if (s.T480 == 3)
+                        {
+                            s.Direction ^= 3;
+                            s.T480 = 0;
+                        }
+                        else
+                        {
+                            s.YVelFrac = 0; s.YVelInt = 4;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        s.T480 = 0;
+                    }
                     break;
             }
-        }
-
-        private static void QuackerjackThrowReady(ObjectSystem.Slot s, EnemyDispatcher ctx)
-        {
-            FacePlayerApply(ctx, s); // $F81D
-            s.BehaviorParam = 0x42;
-            SetAnim(s, 0xA9);
-            s.Health = 0;
-            SpawnBallChild(ctx, s);
-            s.StateLow++;
-            ctx.Player.YVelFrac = 0xAB; ctx.Player.YVelInt = -1; // $F5FC
-        }
-
-        private static void QuackerjackRise(ObjectSystem.Slot s, EnemyDispatcher ctx)
-        {
-            MoveY(s); // $F539 down? rise: $F539 with $0560=1 → climbs
-        }
-
-        private static void QuackerjackDrop(ObjectSystem.Slot s, EnemyDispatcher ctx)
-        {
-            // $96C2: teleport to the player's X and re-arm the throw cadence
-            s.X = ctx.Player.X;
-            s.T490 = 0x0A;
-            s.Health = 8;
-            s.StateLow = 2;
-            s.BehaviorParam = 0x42;
-            SetAnim(s, 0xA8);
-            FacePlayerApply(ctx, s);
-            s.T4A0 = 2;
-            s.Health = 2;
-            FacePlayerApply(ctx, s);
-        }
-
-        private static void QuackerjackBallWalk(ObjectSystem.Slot s, EnemyDispatcher ctx)
-        {
-            s.T490--;
-            if (s.T490 != 0) return;
-            s.T480 = 0x10;
-            s.T490 = 0x0A;
-            s.T4A0 ^= 1;
         }
 
         /// <summary>$A631 behavior 3B: jumper — hop arcs (F2D7 $06,$02), anim $4F/$50
@@ -3611,16 +3702,22 @@ namespace Darkwing.Core
             if (ctx.Player.State != 6 && ctx.Player.State != 7) ctx.Player.State = 0x0F;
         }
 
-        /// <summary>$B4BA child-object projectile check: weak projectiles (anim
-        /// $14/$16) are destroyed; others convert to behavior $1F, SFX $1A.</summary>
-        public static void ConvertWeakProjectile(EnemyDispatcher ctx)
+        /// <summary>$B4BA child-object projectile check: $FAAE finds the projectile covering
+        /// the boss (CS = none), behavior $1F is left alone, weak projectiles (anim $14/$16)
+        /// are destroyed, others convert to behavior $1F with velocity 3.$80/$80 and SFX $1A.
+        /// The scan is the routine's own $FAAE call — a stale ProjSlot from another slot's
+        /// pass converted nothing (pilot15 f175).</summary>
+        public static void ConvertWeakProjectile(EnemyDispatcher ctx, ObjectSystem.Slot s)
         {
-            int p = ctx.ProjSlot;
-            if (p < 0) return;
-            var t = ctx.Objects.Slots[p];
-            if (t.AnimNumber is 0x14 or 0x16) { EnemyBehaviors.KillSlot(t); return; }
-            t.Behavior = 0x1F;
-            t.Direction = t.Direction switch { 1 => 0x0A, 9 => 0x0A, 5 => 0x0A, 2 => 0x09, 0x0A => 0x09, 6 => 0x09, _ => t.Direction };
+            if (!ctx.ProjectileOverlapHit(s)) return;                 // $B4BA JSR $FAAE / BCS
+            var t = ctx.Objects.Slots[ctx.ProjSlot];
+            if (t.Behavior == 0x1F) return;                           // $B509-$B50E
+            if (t.AnimNumber is 0x14 or 0x16) { EnemyBehaviors.KillSlot(t); return; } // $B4F6
+            t.Direction = t.Direction switch { 1 => 0x0A, 9 => 0x0A, 5 => 0x0A, 2 => 0x09, 0x0A => 0x09, 6 => 0x09, _ => t.Direction }; // $B507
+            t.XVelFrac = 0x80; t.YVelFrac = 0x80;                     // $B4D6-$B4DB
+            t.XVelInt = 3; t.YVelInt = 3;                             // $B4DE-$B4E3
+            t.Behavior = 0x1F;                                        // $B4E6
+            t.BehaviorParam = 0;                                      // $B4EB
             ctx.Sfx?.Invoke(0x1A);
         }
 
@@ -3663,7 +3760,7 @@ namespace Darkwing.Core
                 case 0x53: WolfduckController(s, ctx); break;       // $9D4C
                 case 0x54: Wolfduck(s, ctx); break;                 // $9971
                 case 0x55: WolfduckChild(s, ctx); break;            // $9BEC
-                case 0x56: case 0x65: case 0x67: Spawner(s, ctx); break; // $8CE6
+                case 0x56: case 0x65: case 0x67: MovingPlatform(s, ctx); break; // $8CE6
                 case 0x57: Liquidator(s, ctx); break;               // $9DA7
                 case 0x58: case 0x59: Geyser(s, ctx); break;        // $9FDE/$A05A
                 case 0x5A: Megavolt(s, ctx); break;                 // $A977
@@ -3729,23 +3826,91 @@ namespace Darkwing.Core
             if ((byte)s.Y >= 0xE0) ctx.Player.State = 0x15;
         }
 
-        /// <summary>$8CE6 spawner: timed child spawn (anim $33).</summary>
-        private static void Spawner(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        /// <summary>
+        /// Bank 1 $8CE6 behaviors $56, $65, $67: moving floating sewer platform.
+        /// Travels at 0.50 px/f (XVelFrac = 0x80), reverses on wall contact,
+        /// and carries the player (+0.80 X subpixels/frame) when standing on it.
+        /// </summary>
+        private static void MovingPlatform(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.T480 == 0)
+            switch (s.StateLow & 0x0F)
             {
-                int y = ctx.FindFreeSlot();
-                if (y >= 0)
+                case 0: // $8CF9 Init
+                    s.XVelInt = 0;
+                    s.T480 = 0;
+                    s.XVelFrac = 0x80;
+                    s.Direction = (byte)(s.Behavior == 0x56 ? 2 : 1);
+                    s.StateLow++;
+                    break;
+
+                case 1: // $8D1A Wait for player proximity
+                    if ((s.X >> 8) == (ctx.Player.X >> 8))
+                    {
+                        if (EnemyBehaviors.DistY(ctx, s) < 0x15 && EnemyBehaviors.DistX(ctx, s) < 0x10)
+                        {
+                            s.StateLow++;
+                        }
+                    }
+                    break;
+
+                default: // $8D34 Active moving platform
                 {
-                    var t = ctx.Objects.Slots[y];
-                    t.X = s.X; t.Y = s.Y;
-                    EnemyBehaviors.SpawnInit(ctx, y, 0x33);
-                    t.Behavior = 0x66;
+                    bool dirLeft = s.Direction == 2;
+                    byte hit = dirLeft ? EnemyBehaviors.WalkLeft(ctx, s, 0x5F, 2) : EnemyBehaviors.WalkRight(ctx, s, 0x5C, 2);
+                    if (hit != 0)
+                    {
+                        s.Direction ^= 3; // toggle direction between 1 and 2
+                        if (s.T480 != 0 && s.Direction == 2)
+                        {
+                            ctx.Player.X++;
+                        }
+                    }
+                    s.T480 = 0;
+
+                    // Check player on/near platform ($8D72)
+                    if ((s.Y >> 8) == (ctx.Player.Y >> 8) && EnemyBehaviors.DistY(ctx, s) < 0x15 && EnemyBehaviors.DistX(ctx, s) < 0x10)
+                    {
+                        if (ctx.Player.State == 0x0E && EnemyBehaviors.DistY(ctx, s) < 0x10)
+                        {
+                            ctx.Player.State = 1;
+                            ctx.Player.CutVelocity();
+                            s.BehaviorParam = 0;
+                        }
+                        else if (ctx.Player.YVelInt >= 0)
+                        {
+                            s.BehaviorParam = 0x8E;
+                        }
+
+                        // Check supported player states: 0, 2, 3, 6, 0x0E
+                        byte pst = ctx.Player.State;
+                        if (pst == 0 || pst == 2 || pst == 3 || pst == 6 || pst == 0x0E)
+                        {
+                            s.T480 = 1;
+                            if (s.Direction == 2)
+                            {
+                                // Carry left ($8E13)
+                                int xf = ctx.Player.XFrac - 0x80;
+                                ctx.Player.XFrac = (byte)xf;
+                                if (xf < 0) ctx.Player.X--;
+                                byte pwall = ctx.Player.ProbeSide(false);
+                                if (pwall >= 4 && ctx.Player.InvulnFrames == 0) ctx.Player.HurtByTile(); // $8E47
+                                if (pwall >= 3) ctx.Player.SnapX(false);
+                            }
+                            else
+                            {
+                                // Carry right ($8DD0)
+                                int xf = ctx.Player.XFrac + 0x80;
+                                ctx.Player.XFrac = (byte)xf;
+                                if (xf >= 0x100) ctx.Player.X++;
+                                byte pwall = ctx.Player.ProbeSide(true);
+                                if (pwall >= 4 && ctx.Player.InvulnFrames == 0) ctx.Player.HurtByTile(); // $8E04
+                                if (pwall >= 3) ctx.Player.SnapX(true);
+                            }
+                        }
+                    }
+                    break;
                 }
-                s.T480 = 0x40;
-                return;
             }
-            s.T480--;
         }
 
         /// <summary>$8937 ball child walker: short walk then pop.</summary>
@@ -4199,7 +4364,7 @@ namespace Darkwing.Core
         private static void WolfduckWait(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             HitFlash(ctx, s);                                          // $B36A
-            ConvertWeakProjectile(ctx);                                // $B4BA
+            ConvertWeakProjectile(ctx, s);                             // $B4BA
             if (s.Behavior == 0x4F) return;                            // $99C1
             if (s.AnimNumber != 0x67 && (ctx.Objects.Slots[15].X & 0xFF) < 4)
             {
@@ -4213,7 +4378,7 @@ namespace Darkwing.Core
                 return;
             }
             if (s.AnimFrame != 0x0D) return;                           // $99EA
-            int i = EnemyBehaviors.RngE7PlusE6Wrap() & 0x0F;           // $99EE-$99F6
+            int i = EnemyBehaviors.RngWolfWaitRoll() & 0x0F;           // $99EE-$99F6
             s.StateLow = WolfNextState[i];                             // $99F7
             EnemyBehaviors.SetAnim(s, WolfNextAnim[i]);                // $99FD
             if (s.AnimNumber != 0x6C) return;                          // $9A08
@@ -4228,7 +4393,7 @@ namespace Darkwing.Core
         private static void WolfduckThrow(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             HitFlash(ctx, s);                                          // $9A3F
-            ConvertWeakProjectile(ctx);                                // $9A42
+            ConvertWeakProjectile(ctx, s);                             // $9A42
             if (s.Behavior == 0x4F) return;                            // $9A48
             if (s.AnimNumber == 0x6B)                                  // $9A4F
             {
@@ -4311,7 +4476,7 @@ namespace Darkwing.Core
         private static void WolfduckCharge(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
             HitFlash(ctx, s);                                          // $9B4C
-            ConvertWeakProjectile(ctx);                                // $9B4F
+            ConvertWeakProjectile(ctx, s);                             // $9B4F
             if (s.Behavior == 0x4F) return;                            // $9B57
             if (s.AnimNumber == 0x68) return;                          // $9B5E
             if ((s.T490 & 1) != 0) EnemyBehaviors.IntegrateXPos(s);    // $9B67 $F4FD
@@ -4345,63 +4510,234 @@ namespace Darkwing.Core
             t.YVelInt = 3;                                             // $9BE4
         }
 
-        /// <summary>$9BEC Wolfduck runner child: runs, hops $F2D7 vel $56, throws at
-        /// frame 1/timer 2, turns at the X = $E8/$18 screen edges.</summary>
+        /// <summary>$9BEC wolf runner child. State 1 drops to the floor ($F55E below Ylo
+        /// $B8) and counts $0480 to 7: SFX $36, the 16-sector aim at the player ($F93F →
+        /// $F9A2 → $A967 direction + the $9CAC/$9CBC/$9CCC/$9CDC velocity quadruples),
+        /// then state 2 runs 8-way by the direction byte. A projectile while anim != $5D
+        /// bursts 4 behavior-$0B shards ($9CEC) and kills the slot ($FA9A).</summary>
+        private static readonly byte[] WolfChildDir =      // $A967
+        {
+            0x08,0x09,0x09,0x09, 0x01,0x05,0x05,0x05,
+            0x04,0x06,0x06,0x06, 0x02,0x0A,0x0A,0x0A
+        };
+        private static readonly byte[] WolfChildXVelFrac = // $9CAC
+        {
+            0x00,0x48,0x2E,0x28, 0x80,0x28,0x2E,0x48,
+            0x00,0x48,0x2E,0x28, 0x80,0x28,0x2E,0x48
+        };
+        private static readonly byte[] WolfChildXVelInt =  // $9CBC
+        {
+            0x00,0x01,0x03,0x04, 0x04,0x04,0x03,0x01,
+            0x00,0x01,0x03,0x04, 0x04,0x04,0x03,0x01
+        };
+        private static readonly byte[] WolfChildYVelFrac = // $9CCC
+        {
+            0x80,0x28,0x2E,0x48, 0x00,0x48,0x2E,0x28,
+            0x80,0x28,0x2E,0x48, 0x00,0x48,0x2E,0x28
+        };
+        private static readonly byte[] WolfChildYVelInt =  // $9CDC
+        {
+            0x04,0x04,0x03,0x01, 0x00,0x01,0x03,0x04,
+            0x04,0x04,0x03,0x01, 0x00,0x01,0x03,0x04
+        };
+        private static readonly byte[] WolfShardVelFrac = { 0xE2,0xE2,0xE2,0xE2 };  // $9D40
+        private static readonly byte[] WolfShardVelInt  = { 0x03,0x03,0x03,0x03 };  // $9D44
+        private static readonly byte[] WolfShardDir     = { 0x0A,0x06,0x09,0x05 };  // $9D48
+
         private static void WolfduckChild(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.StateLow == 0) { s.StateLow = 1; s.T490 = 1; s.Direction = 2; }
-            if ((s.T490 & 1) != 0) { EnemyBehaviors.IntegrateXNeg(s); EnemyBehaviors.WalkFaceL(s); }
-            else { EnemyBehaviors.IntegrateXPos(s); EnemyBehaviors.WalkFaceR(s); }
-            int screenX = (short)(s.X - ctx.Player.ScrollX);
-            if (screenX >= 0xE8 || screenX < 0x18)
+            if ((s.StateLow & 0x0F) == 0)                              // $9BEC
             {
-                s.T4AF--; // kill when it exits (doc: DEC $04AF)
-                if (s.T4AF == 0) EnemyBehaviors.KillSlot(s);
+                s.T480 = 0;                                            // $9BF3
+                s.Flags &= 0xDF;                                       // $9BF6-$9BFB
+                s.StateLow++;                                          // $9BFE
             }
-            if (s.AnimFrame == 1 && s.AnimTimer == 2)
+            if ((s.StateLow & 0x02) == 0)                              // $9C01
             {
-                EnemyBehaviors.FacePlayerApply(ctx, s);
-                ctx.Sfx?.Invoke(0x1D); // $9B93 throw
-            }
-            ctx.FallLand(s, 0x56, 2);
-        }
-
-        // ---- 2.3 Liquidator (mission 2) ----
-
-        /// <summary>$9DA7 Liquidator: init ($0530=0 $0540=1, $0480=$0F); walk cycle
-        /// turns at arena marks X = $C0/$80/$40 → RNG walk-time {00,30...}, anim
-        /// {41,42...}, timer {00,01...}; attack frames spawn geysers at the player
-        /// column (anim $45/$46, behavior $59/$58, $0570=$44, HP 1).</summary>
-        private static void Liquidator(ObjectSystem.Slot s, EnemyDispatcher ctx)
-        {
-            EnemyBehaviors.HitFlashShared(ctx, s);
-            if (s.StateLow == 0)
-            {
-                s.XVelFrac = 0; s.XVelInt = 1;
-                s.T480 = 0x0F;
-                s.StateLow = 1;
+                if ((s.Y & 0xFF) >= 0xB8) EnemyBehaviors.IntegrateYSub(s);  // $9C08-$9C0F $F55E
+                s.T480++;                                              // $9C12
+                if (s.T480 < 7) return;                                // $9C15-$9C1A
+                ctx.Sfx?.Invoke(0x36);                                 // $9C1C
+                int sector = EnemyBehaviors.SectorTable[EnemyBehaviors.SectorToPlayer(ctx, s) & 31];  // $9C21-$9C24
+                s.Direction = WolfChildDir[sector];                    // $9C25-$9C28
+                s.XVelFrac = WolfChildXVelFrac[sector];                // $9C2B-$9C34
+                s.XVelInt = WolfChildXVelInt[sector];
+                s.YVelFrac = WolfChildYVelFrac[sector];
+                s.YVelInt = (sbyte)WolfChildYVelInt[sector];
+                s.StateLow++;                                          // $9C43
                 return;
             }
-            if (s.T480 != 0) { s.T480--; return; }
-            if ((s.Direction & 1) != 0) ctx.WalkRight(s, 0, 2); else ctx.WalkLeft(s, 3, 2);
-            int sx = (short)(s.X - ctx.Player.ScrollX);
-            if (sx == 0xC0 || sx == 0x80 || sx == 0x40)
+            if (s.AnimNumber != 0x5D)                                  // $9C47-$9C4C
             {
-                int i = EnemyBehaviors.RngE7PlusE6Wrap() & 0x0F; // E6 += E7
-                s.T480 = new byte[] { 0x00,0x30,0x00,0x30,0x00,0x30,0x00,0x30,0x00,0x30,0x00,0x30,0x00,0x30,0x00,0x30 }[i];
-                EnemyBehaviors.SetAnim(s, new byte[] { 0x41,0x42,0x41,0x42,0x41,0x42,0x41,0x42,0x41,0x42,0x41,0x42,0x41,0x42,0x41,0x42 }[i]);
-                s.T490 = new byte[] { 0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01,0x00,0x01 }[i];
-            }
-            if (s.AnimNumber == 0x41 || s.AnimNumber == 0x42)
-            {
-                if (s.AnimFrame == 2 && s.AnimTimer == 8)
+                s.BehaviorParam = 6;                                   // $9C4E
+                if (ctx.ProjectileOverlapHit(s))                       // $9C53
                 {
-                    EnemyBehaviors.SetAnim(s, 0x44);
-                    s.BehaviorParam = 6;
+                    WolfduckChildBurst(ctx, s);                        // $9CEC
+                    EnemyBehaviors.KillSlot(s);                        // $9C61 → $FA9A
+                    return;
                 }
-                if (s.AnimFrame == 3 || s.AnimFrame == 4) ctx.Sfx?.Invoke(0x37);
-                if (s.T4A0 == 0 && (s.AnimFrame is 5 or 8 or 0x0B) && s.AnimTimer == 4)
-                    SpawnGeyser(ctx, s);
+            }
+            switch (s.Direction)                                       // $9C64-$9CA9
+            {
+                case 0x01: EnemyBehaviors.IntegrateXPos(s); break;                    // $9C88 $F4FD
+                case 0x02: EnemyBehaviors.IntegrateXNeg(s); break;                    // $9C8B $F51B
+                case 0x08: EnemyBehaviors.IntegrateYSub(s); break;                    // $9C8E $F55E
+                case 0x04: EnemyBehaviors.IntegrateYRideSlot(s); break;               // $9C91 $F539
+                case 0x09: EnemyBehaviors.IntegrateXPos(s); EnemyBehaviors.IntegrateYSub(s); break;      // $9C94
+                case 0x05: EnemyBehaviors.IntegrateXPos(s); EnemyBehaviors.IntegrateYRideSlot(s); break; // $9C9A
+                case 0x0A: EnemyBehaviors.IntegrateXNeg(s); EnemyBehaviors.IntegrateYSub(s); break;      // $9CA0
+                case 0x06: EnemyBehaviors.IntegrateXNeg(s); EnemyBehaviors.IntegrateYRideSlot(s); break; // $9CA6
+            }
+        }
+
+        /// <summary>$9CEC: the shot child bursts up to 4 behavior-$0B shards at its own
+        /// position ($FA4C slots, anim $69 via $FA84, velocity $9D40/$9D44/$9D48[X] with
+        /// X = 3..0, param $0A) and returns to the caller's $FA9A kill.</summary>
+        private static void WolfduckChildBurst(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            for (int x = 3; x >= 0; x--)                               // $01 = 3…0
+            {
+                int y = ctx.FindFreeSlot();                            // $FA4C
+                if (y < 0) return;                                     // $9CEF BCS
+                var t = ctx.Objects.Slots[y];
+                t.XVelFrac = WolfShardVelFrac[x];                      // $9CF3-$9CF9
+                t.YVelFrac = WolfShardVelFrac[x];
+                t.XVelInt = WolfShardVelInt[x];                        // $9CFC-$9D02
+                t.YVelInt = (sbyte)WolfShardVelInt[x];
+                t.Direction = WolfShardDir[x];                         // $9D05-$9D08
+                EnemyBehaviors.SpawnInit(ctx, y, 0x69);                // $9D0B $FA84
+                t.Behavior = 0x0B;                                     // $9D12-$9D14
+                t.X = s.X; t.Y = s.Y;                                  // $9D17-$9D2C
+                t.Health = 0;                                          // $9D2F-$9D31
+                t.BehaviorParam = 0x0A;                                // $9D34-$9D36
+            }
+        }
+
+        // ---- 2.3 Liquidator (mission 3 / world 2) ----
+
+        private static readonly byte[] LiquidatorT490 = { 0x00,0x30,0x00,0x30,0x00,0x30,0x00,0x30,0x30,0x00,0x30,0x00,0x30,0x00,0x30,0x00 }; // $9F5F
+        private static readonly byte[] LiquidatorAnim = { 0x41,0x42,0x41,0x42,0x41,0x42,0x41,0x42,0x42,0x41,0x42,0x41,0x42,0x41,0x42,0x41 }; // $9F6F
+        private static readonly byte[] LiquidatorT480 = { 0x00,0x01,0x00,0x00,0x00,0x01,0x00,0x00,0x01,0x00,0x00,0x00,0x01,0x00,0x00,0x00 }; // $9F7F
+        private static readonly byte[] GeyserYVelInt = { 7, 8, 9, 7 };                                                                           // $A056
+        private static readonly byte[] GeyserPeakY = { 0x28, 0x48, 0x38, 0x58, 0x78, 0x58, 0x38, 0x48 };                                       // $A0FA
+
+        /// <summary>$9DA7 Liquidator: 5-state boss state machine ($9DBA jump table).
+        /// State 0 ($9DC4): init $0530=0, $0540=1, $0480=$0F, StateLow=1.
+        /// State 1 ($9DDA): intro wait on $0480, then anim $43; on frame 2 timer 8 -> anim $41, StateLow=2.
+        /// State 2 ($9E19): walking loop. If anim $41: projectile reflection ($B4BA); else TakeProjectileHit ($B39E).
+        ///   Turns at arena edges X=$18 and X=$E8. At marks X=$C0/$80/$40 picks RNG attack cadence.
+        ///   When $0490 != 0 and anim frame 2 timer 8 -> anim $44, param $06, StateLow=3.
+        /// State 3 ($9EA0): attack howling (SFX $37 at frame 3 timer 4), spawns geysers ($9F8F) on frames 5, 8, 11 timer 4.
+        ///   Sets $04A0=1 at frame 12 timer 4, waits for $0490 countdown, then anim $43, param $10, StateLow=4.
+        /// State 4 ($9F10): transition back to puddle. Frame 2 timer 8 -> anim $41, resets $04A0/$0490=0, StateLow=0x82 (State 2).
+        /// </summary>
+        private static void Liquidator(ObjectSystem.Slot s, EnemyDispatcher ctx)
+        {
+            switch (s.StateLow & 0x0F)
+            {
+                case 0: // $9DC4
+                    s.XVelFrac = 0; s.XVelInt = 1;
+                    s.T480 = 0x0F;
+                    s.StateLow++;
+                    return;
+
+                case 1: // $9DDA
+                    if (s.AnimNumber != 0x43)
+                    {
+                        if (s.T480 != 0) { s.T480--; return; }
+                        s.T480 = 0;
+                        EnemyBehaviors.SetAnim(s, 0x43);
+                        return;
+                    }
+                    if (s.AnimFrame == 2 && s.AnimTimer == 8)
+                    {
+                        EnemyBehaviors.SetAnim(s, 0x41);
+                        s.StateLow++;
+                    }
+                    return;
+
+                case 2: // $9E19
+                    EnemyBehaviors.HitFlashShared(ctx, s);
+                    if (s.AnimNumber == 0x41)
+                    {
+                        ConvertWeakProjectile(ctx, s);
+                        if (s.Behavior == 0x4F) return;
+                    }
+                    else
+                    {
+                        if (s.Behavior == 0x4F) return;
+                        TakeProjectileHit(ctx, s);
+                    }
+                    if (s.T490 != 0)
+                    {
+                        if (s.AnimFrame == 2 && s.AnimTimer == 8)
+                        {
+                            EnemyBehaviors.SetAnim(s, 0x44);
+                            s.BehaviorParam = 6;
+                            s.StateLow++;
+                        }
+                        return;
+                    }
+                    if ((s.Direction & 1) != 0)
+                    {
+                        s.Flags |= 0x40;                              // $F24B only faces right
+                        EnemyBehaviors.IntegrateXPos(s);
+                        if ((byte)s.X >= 0xE8) s.Direction ^= 3;
+                    }
+                    else
+                    {
+                        s.Flags &= 0xBF;                              // $F2A6 only faces left
+                        EnemyBehaviors.IntegrateXNeg(s);
+                        if ((byte)s.X < 0x18) s.Direction ^= 3;
+                    }
+                    byte lx = (byte)s.X;
+                    if (lx == 0xC0 || lx == 0x80 || lx == 0x40)
+                    {
+                        int i = EnemyBehaviors.RngLiquidatorTurnRoll() & 0x0F;
+                        s.T490 = LiquidatorT490[i];
+                        EnemyBehaviors.SetAnim(s, LiquidatorAnim[i]);
+                        s.T480 = LiquidatorT480[i];
+                    }
+                    return;
+
+                case 3: // $9EA0
+                    if (s.AnimFrame == 3 && s.AnimTimer == 4)
+                        ctx.Sfx?.Invoke(0x37);
+                    EnemyBehaviors.HitFlashShared(ctx, s);
+                    if (s.Behavior == 0x4F) return;
+                    TakeProjectileHit(ctx, s);
+                    if (s.T4A0 == 0)
+                    {
+                        if ((s.AnimFrame is 5 or 8 or 0x0B) && s.AnimTimer == 4)
+                            SpawnGeyser(ctx, s);
+                        if (s.AnimFrame == 0x0C && s.AnimTimer == 4)
+                            s.T4A0++;
+                        return;
+                    }
+                    s.AnimFrame = 0; s.AnimTimer = 0;
+                    if (s.T490 == 0)
+                    {
+                        EnemyBehaviors.SetAnim(s, 0x43);
+                        s.BehaviorParam = 0x10;
+                        s.StateLow++;
+                    }
+                    else
+                    {
+                        s.T490--;
+                    }
+                    return;
+
+                case 4: // $9F10
+                    EnemyBehaviors.HitFlashShared(ctx, s);
+                    if (s.Behavior != 0x4F) TakeProjectileHit(ctx, s);
+                    if (s.AnimFrame == 2 && s.AnimTimer == 8)
+                    {
+                        EnemyBehaviors.SetAnim(s, 0x41);
+                        s.T4A0 = 0; s.T490 = 0;
+                        s.StateLow = 0x82;
+                    }
+                    s.BehaviorParam = 0x10;
+                    return;
             }
         }
 
@@ -4410,31 +4746,123 @@ namespace Darkwing.Core
             int y = ctx.FindFreeSlot();
             if (y < 0) return;
             var t = ctx.Objects.Slots[y];
-            t.X = ctx.Player.X;                 // player column
-            t.Y = 0xF0;
-            EnemyBehaviors.SpawnInit(ctx, y, (byte)(s.T480 != 0 ? 0x46 : 0x45));
-            t.Behavior = (byte)(s.T480 != 0 ? 0x59 : 0x58);
+            t.Direction = s.Direction;
+            t.X = ctx.Player.X;
+            t.Y = (ushort)((ctx.Player.Y & 0xFF00) | 0xF0);           // $9FAD inherits player row
+            t.BehaviorParam = 0x44;
+            if (s.T480 == 0)
+            {
+                EnemyBehaviors.SpawnInit(ctx, y, 0x45);
+                t.Behavior = 0x59;
+            }
+            else
+            {
+                EnemyBehaviors.SpawnInit(ctx, y, 0x46);
+                t.Behavior = 0x58;
+            }
             t.BehaviorParam = 0x44;
             t.Health = 1;
         }
 
-        /// <summary>$9FDE/$A05A water geyser: erupts from the floor and retracts.</summary>
+        /// <summary>$9FDE/$A05A water geysers:
+        /// $58 ($9FDE): vertical geyser erupts upward (YSub) until Y &lt; $D0, waits $14 frames at peak,
+        /// then retracts downward (YAdd) with random velocity from $A052/$A056 and splash SFX $38 on descent.
+        /// $59 ($A05A): arcing geyser rises upward with horizontal velocity, then falls toward floor.</summary>
         private static void Geyser(ObjectSystem.Slot s, EnemyDispatcher ctx)
         {
-            if (s.StateLow == 0)
+            if (s.Behavior == 0x58)
             {
-                s.StateLow = 1;
-                s.YVelFrac = 0x40; s.YVelInt = 4;
-                s.T480 = 0x3C;
+                // $9FDE
+                if ((s.StateLow & 0x0F) == 0)
+                {
+                    s.T480 = 0;
+                    s.T4A0 = 0;
+                    s.YVelFrac = 0;
+                    s.YVelInt = 1;
+                    s.Health = 1;
+                    s.T490 = 0x14;
+                    s.StateLow++;
+                }
+                if (s.T480 == 0)
+                {
+                    EnemyBehaviors.IntegrateYRising(s);                 // $A005 JSR $F55E
+                    if ((byte)s.Y < 0xD0)
+                    {
+                        s.T480 = 0xFF;
+                        int r = EnemyBehaviors.RngE5Mask7() & 0x03;
+                        s.YVelFrac = 0xEA;
+                        s.YVelInt = (sbyte)GeyserYVelInt[r];
+                    }
+                    return;
+                }
+                if (s.T490 != 0)
+                {
+                    s.T490--;
+                    return;
+                }
+                EnemyBehaviors.ApplyYVelocityDecay(s, ctx.Player.GravityFrac); // $A01D JSR $F5C9
+                if (s.T4A0 == 0 && (byte)s.Y < 0xB0)
+                {
+                    s.T4A0 = 1;
+                    SpawnGeyserSplash(ctx, s);                         // $A02F
+                    ctx.Sfx?.Invoke(0x38);
+                }
             }
-            if (s.T480 != 0)
+            else
             {
-                s.T480--;
-                EnemyBehaviors.IntegrateYSub(s); // erupt upward
-                return;
+                // 0x59: $A05A
+                if ((s.StateLow & 0x0F) == 0)
+                {
+                    s.T480 = 0;
+                    s.YVelFrac = 0;
+                    s.XVelFrac = 0;
+                    s.YVelInt = 1;
+                    s.XVelInt = 3;
+                    s.Health = 1;
+                    int r = EnemyBehaviors.RngGeyserPeakRoll();          // $A0ED writes E4, not E5
+                    s.T4A0 = GeyserPeakY[r];
+                    s.T490 = 0x14;
+                    s.StateLow++;
+                }
+                if ((s.StateLow & 0x02) == 0)
+                {
+                    s.AnimFrame = 0; s.AnimTimer = 0;
+                    EnemyBehaviors.FacePlayerApply(ctx, s);
+                    EnemyBehaviors.IntegrateYRising(s);                 // $A099 JSR $F55E
+                    if (s.T480 == 0 && (byte)s.Y < 0xB0)
+                    {
+                        s.T480 = 1;
+                        SpawnGeyserSplash(ctx, s);                     // $A0A8
+                        ctx.Sfx?.Invoke(0x38);
+                    }
+                    if ((byte)s.Y < s.T4A0)
+                    {
+                        s.StateLow++;                                  // $A0BB INC, state 1 -> 2
+                        EnemyBehaviors.FacePlayerApply(ctx, s);
+                        s.YVelFrac = 0xD4; s.XVelFrac = 0xD4;
+                        s.YVelInt = 2; s.XVelInt = 2;
+                    }
+                    return;
+                }
+                s.AnimFrame = 1; s.AnimTimer = 1;                      // $A0D2 writes 1 to both
+                if ((s.Direction & 1) != 0)
+                    EnemyBehaviors.IntegrateXPos(s);
+                else
+                    EnemyBehaviors.IntegrateXNeg(s);
+                EnemyBehaviors.IntegrateYRideSlot(s);                  // $A0EA JMP $F539
             }
-            EnemyBehaviors.IntegrateYAdd(s); // retract
-            if (s.Y >= 0xF0) EnemyBehaviors.KillSlot(s);
+        }
+
+        private static void SpawnGeyserSplash(EnemyDispatcher ctx, ObjectSystem.Slot s)
+        {
+            int y = ctx.FindFreeSlot();                                // $A102
+            if (y < 0) return;
+            var t = ctx.Objects.Slots[y];
+            t.X = s.X;
+            t.Y = (ushort)((s.Y & 0xFF00) | 0xB0);
+            t.BehaviorParam = 0;
+            t.Behavior = 0;
+            EnemyBehaviors.SpawnInit(ctx, y, 0x47);                    // $A126-$A128
         }
 
         // ---- 2.4 Moliarty (mission 3) ----
@@ -4696,7 +5124,12 @@ namespace Darkwing.Core
                         bool landed = ctx.FallLand(s, 0x56, 2);
                         if (landed)
                         {
-                            int i = EnemyBehaviors.RngE7PlusE6Wrap() & 0x0F;
+                            // $AA58 JSR $AA69 runs right after JSR $EDD2, so the roll carry is
+                            // EDD2's exit: C=1 when Ylo >= point-nibble (no borrow), else the
+                            // $0520,X SBC #$01 borrow (C=0 only from a zero page byte).
+                            int n = ctx.ProbePointY & 0x0F;
+                            bool rollCarry = (s.Y & 0xFF) >= n || (s.Y >> 8) >= 1;
+                            int i = EnemyBehaviors.RngE7PlusE6(rollCarry) & 0x0F;
                             bool attack = new byte[] { 0,0xFF,0,0xFF,0,0xFF,0,0xFF,0,0xFF,0,0xFF,0,0xFF,0,0xFF }[i] != 0;
                             if (attack) ctx.Sfx?.Invoke(0x3B);
                             EnemyBehaviors.SetAnim(s, (byte)(attack ? 0x5A : 0x58));

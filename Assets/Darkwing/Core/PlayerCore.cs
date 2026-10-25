@@ -1271,13 +1271,7 @@ namespace Darkwing.Core
             // lands on the type-4 block at X=$0081 and hurts on the very next frame.
             if (_probeResult == 4 && InvulnFrames == 0)
             {
-                State = 6;
-                StateTimer = 0x0F;
-                SetAnimPlayer(0x09);
-                Sfx?.Invoke(0x15);
-                InvulnFrames = 0x3C;
-                TakeHit(Objects != null ? Objects.Slots[0].AnimNumber : 0); // $F9C2, X=0 → $0420
-                HurtOrigin = 1;                                            // $CB93 tile site
+                HurtByTile();
                 return;
             }
 
@@ -1451,7 +1445,7 @@ namespace Darkwing.Core
         /// makes the room-0x02 pylon wall rest at X=$114 (sample $120, nibble 0 → no
         /// subtract), which gold_traverse_m1 shows from frame 159 on.
         /// </summary>
-        private void SnapX(bool right)
+        internal void SnapX(bool right)
         {
             if (right)
             {
@@ -1597,6 +1591,19 @@ namespace Darkwing.Core
                 // the bank-15 $8062 offscreen-slot-0 test read a row difference of 1 and
                 // start the death throes ($806E STA $50 = $07).
                 IntegrateYRise();
+                if (PushPairOrScan(out byte risePush, out byte hitAnim, out byte hitSlot))
+                {
+                    bool set0E = true;
+                    if (hitAnim is 0x30 or 0x32 or 0x3A or 0x3C) set0E = false;
+                    else if (hitAnim == 0x33 && WorldId == 3)
+                    {
+                        if (PushDx(hitSlot) >= 12) set0E = false;
+                    }
+                    if (set0E) State = 0x0E;
+                    PushDownByObject(risePush);
+                    CutVelocity();
+                    return false;
+                }
                 ApplyGravity();
                 byte ceil = ProbeCeiling();
                 _probeResult = ceil;                // $10 as left by $EB52
@@ -1844,16 +1851,25 @@ namespace Darkwing.Core
         /// exit is JMP $F784, not RTS). Slots 2..15 with $04D0, $0400 AND $0570 all negative —
         /// bit7 of $0570 is armed at runtime only, e.g. the CeilingGrabber's mine goes $47 →
         /// $87 as it settles. The first hit wins and $F79E jumps to $F7DE to return SEC.</summary>
-        private bool PushScanAll(out byte push)
+        private bool PushScanAll(out byte push) => PushScanAll(out push, out _, out _);
+
+        private bool PushScanAll(out byte push, out byte hitAnim, out byte hitSlot)
         {
             push = 0;
+            hitAnim = 0;
+            hitSlot = 0;
             var o = Objects;
             if (o == null) return false;
             for (byte y = 2; y < 16; y++)                               // $F784/$F7A1-$F7A4
             {
                 var s = o.Slots[y];
                 if (!s.Active || (s.Flags & 0x80) == 0 || (s.BehaviorParam & 0x80) == 0) continue;
-                if (PushScanOne(y, out push)) return true;              // $F79E JMP $F7DE
+                if (PushScanOne(y, out push))
+                {
+                    hitAnim = s.AnimNumber;
+                    hitSlot = y;
+                    return true;
+                }
             }
             return false;                                               // $F7A6 CLC
         }
@@ -1862,26 +1878,32 @@ namespace Darkwing.Core
         /// all-slot scan on every rejection. The pair path's two rewrites of $11 both subtract
         /// with C = 0 inherited from the CMP that gated them ($F66E CMP #$19 / $F684 CMP #$11),
         /// so each is constant - $11 - 1, and the RTS carries that SBC's no-borrow.</summary>
-        private bool PushPairOrScan(out byte push)
+        private bool PushPairOrScan(out byte push) => PushPairOrScan(out push, out _, out _);
+
+        private bool PushPairOrScan(out byte push, out byte hitAnim, out byte hitSlot)
         {
             push = 0;
+            hitAnim = 0;
+            hitSlot = 0;
             var o = Objects;
             if (o == null) return false;
             var s = o.Slots[1];                                         // $F64B EOR #$01
             if (!s.Active || (Flags & 0x80) == 0 || (s.Flags & 0x80) == 0 || s.Behavior == 0)
-                return PushScanAll(out push);                           // $F651-$F660 → $F696
-            if (PushDx(1) >= 0x10) return PushScanAll(out push);        // $F665/$F667
+                return PushScanAll(out push, out hitAnim, out hitSlot); // $F651-$F660 → $F696
+            if (PushDx(1) >= 0x10) return PushScanAll(out push, out hitAnim, out hitSlot); // $F665/$F667
             byte dy = PushDy(1, out bool below);                        // $F669
-            if (below) return PushScanAll(out push);                    // $F66C BCS
-            if (dy >= 0x19) return PushScanAll(out push);               // $F66E/$F670
+            if (below) return PushScanAll(out push, out hitAnim, out hitSlot); // $F66C BCS
+            if (dy >= 0x19) return PushScanAll(out push, out hitAnim, out hitSlot); // $F66E/$F670
             push = dy;                                                  // $F672 STA $11
+            hitAnim = s.AnimNumber;
+            hitSlot = 1;
             if (s.AnimNumber != 0)                                      // $F674/$F677
             {
                 int v = 0x19 - push - 1;                                // $F679/$F67B SBC $11, C=0
                 push = (byte)v;
                 return v >= 0;
             }
-            if (push >= 0x11) return PushScanAll(out push);             // $F684/$F686
+            if (push >= 0x11) return PushScanAll(out push, out hitAnim, out hitSlot); // $F684/$F686
             int w = 0x11 - push - 1;                                    // $F688/$F68A SBC $11, C=0
             push = (byte)w;
             return w >= 0;
@@ -1903,6 +1925,15 @@ namespace Darkwing.Core
             int yl = (Y & 0xFF) - push;                                 // $D7E0-$D7E6
             int yh = Y >> 8;
             if (yl < 0) { yl -= 0x10; yh -= 1; }                        // $D7EB-$D7F5
+            Y = (ushort)(((yh & 0xFF) << 8) | (yl & 0xFF));
+        }
+
+        private void PushDownByObject(byte push)
+        {
+            if (push > 4) push = 4;                                     // $F402-$F408
+            int yl = (Y & 0xFF) + push;                                 // $F40A-$F410
+            int yh = Y >> 8;
+            if (yl >= 0xF0) { yl += 0x10; yh += 1; }                    // $F413-$F421
             Y = (ushort)(((yh & 0xFF) << 8) | (yl & 0xFF));
         }
 
@@ -2613,6 +2644,20 @@ namespace Darkwing.Core
         public byte PrevState;
         public byte HurtOrigin;
         public byte ProbeResultForTest => _probeResult;   // $10 after the last probe service
+
+        /// <summary>$8E56 / $CB93: called by moving platforms (bank 1 $8E04/$8E47) or floor probes
+        /// when carrying or walking the player into a type-4 hazard tile/wall.</summary>
+        public void HurtByTile()
+        {
+            if (InvulnFrames != 0) return;
+            State = 6;
+            StateTimer = 0x0F;
+            SetAnimPlayer(0x09);
+            Sfx?.Invoke(0x15);
+            InvulnFrames = 0x3C;
+            TakeHit(Objects != null ? Objects.Slots[0].AnimNumber : 0);
+            HurtOrigin = 1;
+        }
 
         /// <summary>
         /// $F9C2 hurt ladder. It runs ONLY for a caller that has just written
