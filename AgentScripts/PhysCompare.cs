@@ -343,7 +343,12 @@ public static class PhysCompare
             : $"FAIL {failures.Count}/{checks}: " + string.Join("; ", failures);
     }
 
-    private const string Root = "D:/Art/SW Code Zero Unity";
+    private static readonly string Root =
+#if UNITY_EDITOR
+        Directory.GetParent(Application.dataPath).FullName.Replace('\\', '/');
+#else
+        Path.GetFullPath(".").Replace('\\', '/');
+#endif
 
     public static string SpritePaletteWorldContract()
     {
@@ -504,7 +509,7 @@ public static class PhysCompare
         bool residentFade = false, bool mapScreen = false,
         System.Action<int, Darkwing.Core.DarkwingGame> frameObserver = null)
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         string gdir = goldenDir ?? $"gold_{name}";
         byte[] ramAll = File.ReadAllBytes(root + $"/Research/DarkwingDuck/reference/{gdir}/ram_frames.bin");
         byte[] palAll = palette
@@ -1345,7 +1350,7 @@ public static class PhysCompare
                 return b;
             },
             camera: true, enemies: true, goldenDir: "gold_m1_longroute", scoreOam: true));
-        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/hud_oam_sweep.txt", sb.ToString());
+        File.WriteAllText(Root + "/Temp/hud_oam_sweep.txt", sb.ToString());
         return sb.ToString();
     }
 
@@ -1554,7 +1559,7 @@ public static class PhysCompare
         One("m5(w04)", M5Route);
         One("m6(w05)", M6Route);
         One("m7(w06)", M7Route);
-        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/routes_summary.txt", sb.ToString());
+        File.WriteAllText(Root + "/Temp/routes_summary.txt", sb.ToString());
         return sb.ToString();
     }
 
@@ -1586,7 +1591,7 @@ public static class PhysCompare
         One("w4(m5_route)", M5Route);
         One("w5(m6_route)", M6Route);
         One("w6(m7_route)", M7Route);
-        File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/zone_score.txt", sb.ToString());
+        File.WriteAllText(Root + "/Temp/zone_score.txt", sb.ToString());
         return sb.ToString();
     }
 
@@ -1630,14 +1635,14 @@ public static class PhysCompare
         foreach (string dir in new[] { "probe_enemy_verify", "probe_enemy_verify2", "probe_enemy_verify3",
                                         "probe_enemy_verify4", "probe_enemy_verify5" })
         {
-            if (!System.IO.File.Exists("D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/" + dir + "/ram_frames.bin"))
+            if (!System.IO.File.Exists(Root + "/Research/DarkwingDuck/reference/" + dir + "/ram_frames.bin"))
             { sb.Append($"{dir}: NO CAPTURE\n"); continue; }
             string r = Compare("enemy_sweep_" + dir, 600, f => 0, enemies: true, world: 0,
                 goldenDir: dir, scoreEnemies: true, mapScreen: true, trace: false);
             int i = r.IndexOf("ENEMIES:");
             sb.Append($"{dir}: {(i >= 0 ? r.Substring(i) : "(no enemy verdict)")} \n");
         }
-        System.IO.File.WriteAllText("D:/Art/SW Code Zero Unity/Temp/enemy_sweep.txt", sb.ToString());
+        System.IO.File.WriteAllText(Root + "/Temp/enemy_sweep.txt", sb.ToString());
         return sb.ToString();
     }
 
@@ -1649,7 +1654,7 @@ public static class PhysCompare
     /// Fixture note: the world id is injected, the loader and all data are the original ROM's.</summary>
     public static string WorldSeeds()
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         var data = Darkwing.Core.DataLoader.Load(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),
@@ -1842,7 +1847,7 @@ public static class PhysCompare
     /// identified by RAM address instead of guessed.</summary>
     public static string DeathDump()
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_m1_longroute/ram_frames.bin");
         int avail = ramAll.Length / 2048;
         var sb = new System.Text.StringBuilder();
@@ -1946,7 +1951,7 @@ public static class PhysCompare
     /// $FD/$FB, and the ROM walker slot $0D spawns one cell AHEAD of the camera).</summary>
     public static string ProbeLevel()
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         var data = Darkwing.Core.DataLoader.Load(
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/chr_full.bytes"),
             File.ReadAllBytes(root + "/Assets/Darkwing/Data/levelsets.bytes"),
@@ -2469,7 +2474,7 @@ public static class PhysCompare
     /// </summary>
     public static string Hurt()
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_hurt_a41/ram_frames.bin");
         int avail = ramAll.Length / 2048;
         ValidateCapture(root + "/Research/DarkwingDuck/reference/" + "gold_hurt_a41", ramAll, 173);
@@ -2665,7 +2670,7 @@ public static class PhysCompare
     /// </summary>
     public static string Door()
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         byte[] ramAll = File.ReadAllBytes(root + "/Research/DarkwingDuck/reference/gold_door_id1/ram_frames.bin");
         int avail = ramAll.Length / 2048;
         ValidateCapture(root + "/Research/DarkwingDuck/reference/gold_door_id1", ramAll, 21);
@@ -2800,7 +2805,7 @@ public static class PhysCompare
     public static string BossFightSeed(int seedFrame)
     {
         byte[] ram = File.ReadAllBytes(
-            "D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/tmp_boss_pilot1/ram_frames.bin");
+            Root + "/Research/DarkwingDuck/reference/tmp_boss_pilot1/ram_frames.bin");
         return Compare($"boss_pilot1_qjack", ram.Length / 2048, f => 0,
             seedFrame: seedFrame, camera: true, enemies: true, scoreEnemies: true,
             goldenDir: "tmp_boss_pilot1", trace: true, residentFade: true);
@@ -2818,7 +2823,7 @@ public static class PhysCompare
     public static string BossWolfDefeatSeed(int seedFrame)
     {
         byte[] ram = File.ReadAllBytes(
-            "D:/Art/SW Code Zero Unity/Research/DarkwingDuck/reference/tmp_boss_pilot14_wolf_defeat/ram_frames.bin");
+            Root + "/Research/DarkwingDuck/reference/tmp_boss_pilot14_wolf_defeat/ram_frames.bin");
         _enemyDumpLo = 34; _enemyDumpHi = 44;
         try
         {
@@ -2834,7 +2839,7 @@ public static class PhysCompare
 
     public static string PaletteWindow(int lo, int hi, string golden = "m1_longroute", bool runPort = false)
     {
-        string root = "D:/Art/SW Code Zero Unity";
+        string root = Root;
         string dir = root + $"/Research/DarkwingDuck/reference/gold_{golden}";
         byte[] palAll = File.ReadAllBytes(dir + "/palette_frames.bin");
         byte[] ramAll = File.ReadAllBytes(dir + "/ram_frames.bin");

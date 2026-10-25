@@ -66,7 +66,7 @@ These are explicit reading instructions; do not assume ZCode automatically impor
 
 ## Implementation rules
 
-- Target the existing project at `D:\Art\SW Code Zero Unity`; specify this project path in Unity commands because another Editor may be running.
+- The primary project is `D:\Art\SW Code Zero Unity`. When the human assigns an isolated worktree, that assigned directory is the implementation target and must be passed explicitly to Unity commands; the primary project then serves only as a read-only reference. Never control another worktree's Editor or write outputs into its folders.
 - Preserve `Art/Darkwing Duck (USA).nes` unchanged. Use its documented SHA-256 to identify the source revision.
 - Deliver native, editable C# gameplay in Unity. An emulator wrapper or ROM execution inside Unity does not complete the task. A dedicated APU synthesizer is allowed for sound.
 - Preserve original behavior and content. Do not invent constants, skip unknown object IDs, replace bosses with generic behavior, or silently simplify mechanics.
@@ -83,3 +83,12 @@ These are explicit reading instructions; do not assume ZCode automatically impor
 - Keep work local unless the user separately requests publishing or remote repository changes.
 
 Use Russian for user-facing progress and handoff notes. Keep reports short and evidence-based.
+
+## Parallel mission worktrees
+
+- Read the assigned `PROMPT_RU.md` when present. Work only in its project directory and Git branch; do not switch, merge into or push `main` from a mission worktree. Integration is a separate task.
+- Independent LLM branches may change the same source files, including `EnemyBehaviors.cs` and shared helpers, when the assigned mission requires it. Describe shared behavior changes and their evidence so integration can reconcile them against the original.
+- A human-playable mission through the real boss and progression is an intermediate milestone. Known shared timing differences remain recorded; original mechanics and final accuracy/coverage gates still apply. Do not replace bosses, skip objects or alter goldens to obtain that milestone.
+- Keep each worktree's `Temp`, `Build`, recordings, emulator configuration and Editor separate. Existing historical artifacts in the primary project may be read; copy needed immutable inputs before generating new outputs. Check hard-coded paths in older tools before using them. The primary project and another worker's outputs must never be modified by a mission worker.
+- Private Mesen GUI copies use `Preferences.SingleInstance=false` so simultaneous workers cannot forward recording commands into another emulator. The IPC-based `Start-Playthrough.ps1 -ReplayMovie` launcher requires SingleInstance and must not be used in these private parallel copies; use the existing headless replay tools or open the movie through that instance's menu. Do not change the primary Mesen configuration.
+- Commit source, task instructions and compact evidence metadata in the assigned branch. Keep ROM, recordings, raw dumps and generated captures local under the existing ignore rules. Preserve the original input bytes and source records.

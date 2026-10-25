@@ -1,0 +1,37 @@
+{
+  "recordingId": "20261024T183247Z",
+  "mission": 3,
+  "worldId": 2,
+  "boss": "Liquidator",
+  "registeredOn": "2026-10-25",
+  "humanReportedMissionCompletion": true,
+  "sourceSession": "Playthroughs/20261024T183247Z",
+  "preservedBackup": "D:\\Art\\Darkwing Playthrough Backups\\mission3_20261024T183247Z",
+  "frames": 73407,
+  "startPoint": "power-on reset; original recording metadata",
+  "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "movieInputEqualsInputBin": true,
+  "files": {
+    "movie.mmo": {
+      "bytes": 11661,
+      "sha256": "2b2398f56da22fff21d7612cd6232d0bbbbce050d79aa94594494d83e106b720"
+    },
+    "input.bin": {
+      "bytes": 73407,
+      "sha256": "fe01e37d28252b79ee80098c70c2f9a29a03f35a765558f5e0afc7d4f34b20e4"
+    },
+    "meta.json": {
+      "bytes": 1762,
+      "sha256": "a24fe3a7feb8aad2fe426f0fd033509ad1d11a6c42a8e2e5d31ef94190751d13"
+    },
+    "movie.json": {
+      "bytes": 1605,
+      "sha256": "584eb5c3a7725f97b3f8ebeb31b0aafbbaebb61876a94df9fb2956adaad3b47b"
+    }
+  },
+  "originalIndependentReplays": "NOT RUN",
+  "visibleBossAndReturnVerification": "NOT RUN; completion reported by human",
+  "portComparison": "NOT RUN",
+  "acceptance": "Recording registered; mission not accepted",
+  "rawRecordingCommitted": false
+}

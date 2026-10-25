@@ -1,4 +1,6 @@
-# GAPS — действующие пробелы, 2026-10-24
+# GAPS — действующие пробелы, 2026-10-25
+
+М3: зарегистрирована полная человеческая запись `20261024T183247Z`,73407кадров, inputSHAfe01e37d28252b79ee80098c70c2f9a29a03f35a765558f5e0afc7d4f34b20e4. Детерминизм2×original, видимые босс/возврат и port comparison NOT RUN; эти проверки назначаются исполнителю м3. М2 и м3 разрабатываются в отдельных назначенных ветках/проектах до человеческой проходимости; общий временной блокер остаётся отдельной задачей, критерии точности не меняются.
 
 Текущий viewer checkpoint **build_9d3c2ad03f94**, Core/Audio Qoder28e19a0 без изменений60CSharp files. Второй ввод38886 в UserStand теперь real-time. FreshEditor1200prefix5snapshots3RGB7fields6negativecontrols иFreshPlayer3RGB exactCore,60.053/60.083poll/s; окно осмотрено, servicepreview нормально закрыт. Human падение/смерть у крюков теперь предварительно ОК; подтверждено более позднее расхождение. Остальные human gates открыты; этот эпизод повторно не запрашивать без новой причины. Полный normal-speed viewer до конца NOT RUN. Старый/второй fullCore24261/38886 byte-equal прежним; city6388 переиспользует неизменный Core baseline, freshcitydelta NOT RUN. Suite18/24 STRICT8/24 errors0 FAIL;16contracts619/199/399 PASS. Аудиозадержка не исправлялась; fullRAM/fullimage/PCM/latency приёмка остаётся открытой.
 

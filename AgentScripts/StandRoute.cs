@@ -13,7 +13,12 @@ using UnityEngine;
 /// </summary>
 public static class StandRoute
 {
-    const string Root = "D:/Art/SW Code Zero Unity";
+    static readonly string Root =
+#if UNITY_EDITOR
+        Directory.GetParent(Application.dataPath).FullName.Replace('\\', '/');
+#else
+        Path.GetFullPath(".").Replace('\\', '/');
+#endif
     static byte[] Data(string name) => File.ReadAllBytes(Root + "/Assets/Darkwing/Data/" + name + ".bytes");
 
     private static void WriteActorHeader(DarkwingGame game, byte[] ram, int index)
