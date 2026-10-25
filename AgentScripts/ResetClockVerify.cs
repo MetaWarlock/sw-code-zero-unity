@@ -978,7 +978,7 @@ public static class ResetClockVerify
                 Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro flight interrupted PC "+poll);
                 Require(row.Resume-2==At("FECF"),"Intro flight resume "+poll+" native="+(row.Resume-2)+" source="+At("FECF"));
                 Require(row.Body-2==At("C621"),"Intro flight body "+poll);
-                string end=poll==489 ? "C63C" : "FF19";
+                string end="FF19";
                 Require(row.Finish-2==At(end),"Intro flight finish "+poll+" native="+(row.Finish-2)+" source="+At(end));
                 Require(row.Stage==(poll==489 ? ResetProcessClock.Phase.Stopped : ResetProcessClock.Phase.Waiting),"Intro flight phase "+poll);
                 checks+=6;
@@ -994,8 +994,21 @@ public static class ResetClockVerify
         }
         var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
         var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
-        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC63C&&clock.ProcessState==FrameScheduler.Running,"Stop Running before intro presentation");
-        return "PASS intro flight "+count+" exact checks on27 resumes, "+negatives+" negatives; first OAM preserved on double-walk exit; stopC63C";
+        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xF8B1&&clock.ProcessState==FrameScheduler.Waiting,"Stop after first intro-card FF19");
+        return "PASS intro flight/card "+count+" exact checks on27 resumes, "+negatives+" negatives; both flight/card OAM prices included; stopF8B1";
+    }
+
+    public static string IntroCardSeedProbe()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        var game=CreateGame(out var flow);
+        for(int poll=1;poll<=489;poll++) game.AdvanceFrame(NesButtons.FromByte(input[poll-1]));
+        int parityAfter=(game.FrameParity);
+        int measured=game.Oam.MeasureFrameCycles((byte)parityAfter);
+        return "frame="+game.Frame+" stage="+flow.Stage+" reset="+flow.ResetClock.Stage+" stop="+flow.ResetClock.StopPc.ToString("X4")+
+            " parity="+parityAfter.ToString("X2")+" walk="+game.Oam.WalkCycles+" measured8000="+measured+
+            " playerAnim="+game.Objects.Slots[0].AnimNumber.ToString("X2")+"/"+game.Objects.Slots[0].AnimFrame.ToString("X2")+
+            " missionCard="+game.Oam.MissionCardHold;
     }
 
     public static string IntroBlips()

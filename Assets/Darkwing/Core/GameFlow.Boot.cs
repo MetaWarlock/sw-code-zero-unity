@@ -72,6 +72,7 @@ namespace Darkwing.Core
                     EnemyBehaviors.SetAnim(s, 0x2B);
                     _game.Oam.MissionCardHold = true;
                     _game.ResidentWalk(); // $9609 starts its own $F89A before yielding
+                    RecordResetIntroCardWalk();
                     _introStage = 6;
                     return;
                 case 6: // $960C tests the walk that just returned from its yield

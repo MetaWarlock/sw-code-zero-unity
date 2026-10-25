@@ -225,7 +225,12 @@ namespace Darkwing.Core
             bool flying=low<0x5C;
             cycles+=4+2+Branch(0xC63A,0xC61E,flying);
             if(flying)return new BodyWork(cycles+6+49,true,-1,0xC621,0,0xBB);
-            return new BodyWork(cycles,false,-1,0xC621,0,0xBF,0xC63C);
+            // Terminal flight falls through C63C and immediately enters the
+            // world-7 intro card.  The fixed C63C..8000 prefix plus F8AA..FF19
+            // tail is 1682 + 11 + 49; both OAM walks are added from the live
+            // dispatcher after the body has executed.
+            const int cardFixed = 1682 + 11 + 49;
+            return new BodyWork(cycles+cardFixed,true,-1,0xC621,0,0xB6,0xC63C);
         }
 
         /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99
