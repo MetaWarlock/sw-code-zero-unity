@@ -29,9 +29,63 @@
       "sha256": "584eb5c3a7725f97b3f8ebeb31b0aafbbaebb61876a94df9fb2956adaad3b47b"
     }
   },
-  "originalIndependentReplays": "NOT RUN",
-  "visibleBossAndReturnVerification": "NOT RUN; completion reported by human",
-  "portComparison": "NOT RUN",
+  "originalIndependentReplays": {
+    "verdict": "PASS",
+    "runs": 2,
+    "framesPerRun": 73407,
+    "recordBytes": 4384,
+    "comparedFrames": [
+      8,
+      73407
+    ],
+    "excludedPowerOnFrames": [
+      1,
+      7
+    ],
+    "sha256FromFrame8": "0a3acd1a60b6ecc2f671e782ed8cf2c1f8b96973684e020d3d8101b313dc6ccf",
+    "artifacts": "Temp/m3_original_validation/replay1 and replay2/buffers.bin",
+    "scope": "2048 RAM + 2048 NT + 256 OAM + 32 PAL; independently rechecked during integration"
+  },
+  "visibleBossAndReturnVerification": "RAM checkpoints verified: boss enters at68496, defeat71714, map completed count1/mask4 at72757. Fresh original RGB checkpoint NOT RUN.",
+  "portComparison": {
+    "revision": "9ca6015",
+    "fullInput": "EXECUTED_FAIL_SELECTED_FIELDS",
+    "diagnosticPrefixFrames": 12000,
+    "firstActiveObjectDifference": {
+      "poll": 5798,
+      "slot": 15,
+      "behavior": "2D",
+      "address": "048F",
+      "original": 30,
+      "port": 0
+    },
+    "firstRngDifference": {
+      "poll": 10060,
+      "address": "00E4",
+      "original": 115,
+      "port": 185
+    },
+    "firstPlayerDifference": {
+      "poll": 10061,
+      "address": "0430",
+      "original": 5,
+      "port": 6
+    },
+    "xyzStateContinuousMatchPolls": [
+      8,
+      10060
+    ],
+    "build": "build_13ebfad699ce",
+    "human": "AWAITING HUMAN; remind after final report at user request",
+    "frames": 73407,
+    "final": {
+      "phase": "Mission",
+      "world": "0",
+      "completed": "0",
+      "maskCompleted": "0"
+    },
+    "naturalLiquidatorFirstPoll": null
+  },
   "acceptance": "Recording registered; mission not accepted",
   "rawRecordingCommitted": false
 }
