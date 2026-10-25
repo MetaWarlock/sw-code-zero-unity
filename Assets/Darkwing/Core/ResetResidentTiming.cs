@@ -6,15 +6,16 @@ namespace Darkwing.Core
     {
         public readonly struct BodyWork
         {
-            public readonly int Cycles, CopyrightSetupCycles, BodyPcOffset;
+            public readonly int Cycles, CopyrightSetupCycles, BodyPcOffset, RenderOnAtCycles;
             public readonly bool Commits;
             public readonly ushort BodyPc, YieldStackPointer, StopPc;
 
-            public BodyWork(int cycles, bool commits, int copyrightSetupCycles, ushort bodyPc, int bodyPcOffset, ushort yieldStackPointer, ushort stopPc = 0xC5F7)
+            public BodyWork(int cycles, bool commits, int copyrightSetupCycles, ushort bodyPc, int bodyPcOffset, ushort yieldStackPointer, ushort stopPc = 0xC5F7, int renderOnAtCycles = -1)
             {
                 Cycles = cycles; Commits = commits; CopyrightSetupCycles = copyrightSetupCycles;
                 BodyPc = bodyPc; BodyPcOffset = bodyPcOffset; YieldStackPointer = yieldStackPointer;
                 StopPc = stopPc;
+                RenderOnAtCycles=renderOnAtCycles;
             }
         }
 
@@ -97,6 +98,34 @@ namespace Darkwing.Core
         public static BodyWork MeasureLoaderYield()
         {
             return new BodyWork(6 + 49, true, -1, 0xDDCB, 0, LoaderYieldStack);
+        }
+
+        public static BodyWork MeasureLoaderSpawn(byte world)
+        {
+            if(world!=7)throw new NotSupportedException("Clocked first-loader spawn requires world7");
+            // DDCE..DDDE, FA78, DDE1..DDEC, DE09..DE13; then C158 and the DE03 yield.
+            int head=2+3+3+2+4+2+5+6+20+2+5+3+2+2+3+3+2+2+2+2+3;
+            return new BodyWork(head+6+20+6+49,true,-1,0xDDCE,0,LoaderYieldStack,renderOnAtCycles:head+6+14);
+        }
+
+        public static BodyWork MeasureLoaderFadeStart(byte[] palette,int walkCycles)
+        {
+            if(walkCycles<0)throw new NotSupportedException("Clocked first-loader OAM walk");
+            int prefix=3+2+6+55+6+walkCycles+3+23; // DE06, C254/FF55/8000/C25C/C270
+            return new BodyWork(prefix+Fade(palette,0x30)+3+3+6+49,true,-1,0xDE06,0,0xB8);
+        }
+
+        public static BodyWork MeasureLoaderFadeResume(byte frame,byte level,byte[] palette)
+        {
+            bool ramp=(frame&3)==0;
+            int cycles=4+2+2+Branch(0xC2AE,0xC2A6,!ramp);
+            if(!ramp)return new BodyWork(cycles+3+6+49,true,-1,0xC2AA,0,0xB8);
+            level=(byte)(level-0x10);
+            cycles+=3+2+3+3+2+2+3; // C2B0..C2BB, BEQ50 not taken
+            bool again=(level&0x80)==0;
+            cycles+=Branch(0xC2BD,0xC285,again);
+            if(!again)return new BodyWork(cycles+6,false,-1,0xC2AA,0,0xBD,0xC601);
+            return new BodyWork(cycles+Fade(palette,level)+3+3+6+49,true,-1,0xC2AA,0,0xB8);
         }
 
         /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99

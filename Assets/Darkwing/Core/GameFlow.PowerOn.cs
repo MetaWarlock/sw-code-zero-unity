@@ -11,6 +11,8 @@ namespace Darkwing.Core
         private ResetResidentTiming.BodyWork _resetBodyWork;
         private ResetResidentTiming.BodyWork _loaderCompletion;
         private bool _resetNmiPending, _resetBodyPending;
+        private bool _resetFadeStart;
+        private byte[] _resetFadePalette;
 
         /// <summary>The in-line $DE86/$E698 loop currently streams inside the frame budget;
         /// the resident stays in its native $DD5D body until the loop reaches $0F.</summary>
@@ -43,8 +45,17 @@ namespace Darkwing.Core
             if (ResetClock == null || !ResetClock.Active) return;
             bool staging = _resetStage == 9;
             bool streaming = _resetStage == 8 && LoaderStreaming;
-            if (!staging && !streaming && (_resetStage < 2 || _resetStage > 7)) return;
-            if (!staging && !streaming)
+            bool loaded = _resetStage == 8 && !LoaderStreaming;
+            _resetFadeStart=false;
+            if (!staging && !streaming && !loaded && (_resetStage < 2 || _resetStage > 7)) return;
+            if(loaded)
+            {
+                _resetFadeStart=_game.SceneLoadStage==1;
+                _resetFadePalette=palette;
+                if(_game.SceneLoadStage==3)_resetBodyWork=ResetResidentTiming.MeasureLoaderSpawn(World.CurrentWorld);
+                else if(!_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeResume(fadeFrame,fadeLevel,palette);
+            }
+            else if (!staging && !streaming)
             {
                 try
                 {
@@ -60,7 +71,7 @@ namespace Darkwing.Core
                     if (!_game.TryMeasureNativeNmiPublication(handler, 0, 0, 0, out int cycles, out string reason))
                         throw new NotSupportedException(reason);
                     return cycles;
-                });
+                },_game.LoaderBankSwitchDepth,_game.LoaderDeferredAudio);
             }
             catch (NotSupportedException exception) { ResetClock.Refuse(exception.Message); }
         }
@@ -93,6 +104,7 @@ namespace Darkwing.Core
         {
             if (!_resetBodyPending) return;
             _resetBodyPending = false;
+            if(_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeStart(_resetFadePalette,_game.Oam.WalkCycles);
             ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
         }
 
@@ -125,7 +137,7 @@ namespace Darkwing.Core
             long budget = ResetClock.StreamBudgetCycles;
             if (budget > int.MaxValue) budget = int.MaxValue;
             int used = _game.StreamSceneLoad((int)budget);
-            ResetClock.AdvanceStream(used);
+            ResetClock.AdvanceStream(used,_game.LoaderNextInstructionPc);
             if (!_game.LoaderExited) return;
             // The NMI interrupts an unfinished $DE93 tail; RTI resumes it in the next frame.
             if (ResetClock.StreamBudgetCycles <= _loaderCompletion.Cycles) return;
@@ -135,8 +147,6 @@ namespace Darkwing.Core
                 _game.FinishSceneLoadStream();
                 return;
             }
-            // $DDCB is a real yield; the flow it resumes into ($DDCE/$DE03) is not clocked yet.
-            ResetClock.StopAfterCommit(0xDDCB);
             _game.FinishSceneLoadStream();
         }
 

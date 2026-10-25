@@ -165,7 +165,7 @@ namespace Darkwing.Core
         /// $2E), so the source cell follows the cursor chain — never scrollX plus page — while
         /// bit7 of the cursor only picks the destination page.
         /// </summary>
-        public void StreamBand(byte cursor, int gridIndex)
+        public void StreamBand(byte cursor, int gridIndex, bool writeVram = true)
         {
             int page = (cursor >> 7) & 1;
             int bandRow = cursor & 7;
@@ -183,7 +183,7 @@ namespace Darkwing.Core
             for (int k = 0; k < 4; k++)
             {
                 int row = bandRow * 4 + k;
-                if (row >= 30) continue;                 // the status-bar rows are not streamed
+                if (row >= 30 || !writeVram) continue;   // the clocked loader flushes at $C12D
                 nt[baseNt + row * 32 + inRoomCol] = _bandTable[2 * halfCol + 4 * k];
                 nt[baseNt + row * 32 + inRoomCol + 1] = _bandTable[2 * halfCol + 4 * k + 1];
             }
@@ -193,7 +193,7 @@ namespace Darkwing.Core
             int mask = halfCol == 0 ? 0x33 : 0xCC;
             int value = halfCol == 0 ? _bandPalettes[0] | (_bandPalettes[2] << 4)
                                      : (_bandPalettes[1] << 2) | (_bandPalettes[3] << 6);
-            nt[attrIndex] = (byte)((nt[attrIndex] & ~mask) | value);
+            if (writeVram) nt[attrIndex] = (byte)((nt[attrIndex] & ~mask) | value);
             NativeBandQueued?.Invoke(this, cursor, gridIndex);
         }
 

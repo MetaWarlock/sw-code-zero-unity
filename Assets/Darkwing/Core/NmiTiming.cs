@@ -84,7 +84,7 @@ namespace Darkwing.Core
         {
             audioRuns = switchDepth == 0 || deferred == 0xFF;
             if (switchDepth == 0) return 36;
-            return audioRuns ? 42 : 13;
+            return audioRuns ? 42 : 14; // $C0C5 BNE $C10E crosses C0/C1 page
         }
 
         public static int EmptyAudioQueueCycles => 12;

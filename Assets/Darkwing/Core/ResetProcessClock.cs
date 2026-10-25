@@ -9,6 +9,8 @@ namespace Darkwing.Core
         private int _publication, _timers;
         private long _streamCycle;
         private bool _nmiFromRunning;
+        private byte _switchDepth, _deferred;
+        private ushort _streamInterruptedPc;
 
         public ResetProcessClock(PowerOnContinuation power)
         {
@@ -53,11 +55,11 @@ namespace Darkwing.Core
         public bool Streaming => Stage == Phase.Running;
 
         /// <summary>CPU cycle at the loader body's next instruction boundary. Pass-level
-        /// granularity: the model splits a pass at the NMI threshold, not inside it.</summary>
+        /// granularity: every priced native instruction completes before NMI acceptance.</summary>
         public long StreamCycle => _streamCycle;
 
         /// <summary>CPU cycles the loader may still execute before the next NMI edge.
-        /// Zero outside the stream.</summary>
+        /// Zero outside the stream or once an instruction reached its edge.</summary>
         public long StreamBudgetCycles
         {
             get
@@ -90,14 +92,15 @@ namespace Darkwing.Core
         }
 
         /// <summary>Charge loader passes against the current frame. The caller may fill the
-        /// budget exactly; crossing it is a bug because the NMI owns the rest of the pass.</summary>
-        public void AdvanceStream(int cycles)
+        /// budget at a real instruction boundary, at most six cycles past the threshold.</summary>
+        public void AdvanceStream(int cycles, ushort nextPc = 0)
         {
             if (Stage != Phase.Running) throw new InvalidOperationException("Reset loader is not streaming");
             if (cycles < 0) throw new ArgumentOutOfRangeException(nameof(cycles));
-            if (_streamCycle + cycles > NmiThreshold(PhysicalEdgeMaster))
+            if (_streamCycle + cycles > NmiThreshold(PhysicalEdgeMaster)+6)
                 throw new InvalidOperationException("Reset loader stream crossed its next NMI edge");
             _streamCycle += cycles;
+            _streamInterruptedPc=nextPc;
         }
 
         /// <summary>$DE93/$DEA5/$DEA9 and the $DDCB JSR $FF06 after the loop reaches $0F.
@@ -121,8 +124,9 @@ namespace Darkwing.Core
             return true;
         }
 
-        public bool BeginNmi(Func<long, int> publicationCycles)
+        public bool BeginNmi(Func<long, int> publicationCycles, byte switchDepth=0, byte deferred=0)
         {
+            _switchDepth=switchDepth;_deferred=deferred;
             if (publicationCycles == null) throw new ArgumentNullException(nameof(publicationCycles));
             if (Stage == Phase.Running) return BeginStreamingNmi(publicationCycles);
             if (Stage != Phase.Waiting) throw new InvalidOperationException("Reset clock NMI has no pending native yield");
@@ -143,16 +147,14 @@ namespace Darkwing.Core
             return true;
         }
 
-        /// <summary>The in-line loader is interrupted wherever the NMI edge falls; the pass
-        /// granularity means the exact interrupted PC is unknown, so only the cursor state at
-        /// the boundary is claimed. Service resumes the same pass after RTI (6 cycles).</summary>
+        /// <summary>NMI enters after the last completed instruction. Its exact next
+        /// PC and live bank-switch state survive until RTI resumes the same body.</summary>
         private bool BeginStreamingNmi(Func<long, int> publicationCycles)
         {
             long threshold = NmiThreshold(PhysicalEdgeMaster);
-            if (_streamCycle > threshold) return Reject("Reset loader stream already crossed its NMI edge");
-            _streamCycle = threshold;
-            InterruptedPc = 0;
-            HandlerCycle = threshold + FrameScheduler.NmiEntryCycles;
+            if (_streamCycle < threshold || _streamCycle > threshold+6) return Reject("Reset loader lacks a reached NMI instruction boundary");
+            InterruptedPc = _streamInterruptedPc;
+            HandlerCycle = _streamCycle + FrameScheduler.NmiEntryCycles;
             LastNmiEdgeMaster = PhysicalEdgeMaster;
             LastNmiOrdinal = EdgeOrdinal;
             PreRender339Master = LastNmiEdgeMaster + (20 * 341 + 337) * 4;
@@ -171,15 +173,15 @@ namespace Darkwing.Core
             if (audioServiceCycles < 0) return Reject("Reset native NMI audio cost unsupported");
             if ((HandlerCycle + _publication - 12) * 12 + CpuOffset >= PreRender339Master)
                 return Reject("Reset NMI mask restore reaches pre-render339");
-            int bank = NmiTiming.BankGateCycles(0, 0, out bool audioRuns);
-            if (!audioRuns) return Reject("Reset completed bank-switch invariant failed");
+            int bank = NmiTiming.BankGateCycles(_switchDepth, _deferred, out bool audioRuns);
+            if (!audioRuns) audioServiceCycles=NmiTiming.ReturnWithoutBankRestoreCycles;
             _scheduler.Nmi();
             long service = (long)FrameScheduler.NmiEntryCycles + _publication + _timers + bank + audioServiceCycles;
             if (service > int.MaxValue) return Refuse("Reset NMI service exceeds its clock range");
             if (_nmiFromRunning)
             {
-                _streamCycle = HandlerCycle + _publication + _timers + bank + audioServiceCycles
-                    + 6; // RTI back into the interrupted loader pass
+                // Both return paths include RTI already (57/26). Do not charge it twice.
+                _streamCycle = HandlerCycle + _publication + _timers + bank + audioServiceCycles;
                 RenderingAt339 = false;
                 PhysicalEdgeMaster = LastNmiEdgeMaster + PowerOnContinuation.FullFrameMaster;
                 EdgeOrdinal++;
@@ -208,6 +210,8 @@ namespace Darkwing.Core
             BodyStartCycle = ResumeCycle + InputTiming.ResumeCallCycles + inputHookCycles + InputTiming.ResumeEpilogueCycles;
             long finish = BodyStartCycle + work.Cycles;
             RenderingAt339 = true;
+            if(work.RenderOnAtCycles>=0)
+                RenderingAt339=(BodyStartCycle+work.RenderOnAtCycles)*12+CpuOffset<=PreRender339Master;
             if (work.CopyrightSetupCycles >= 0)
             {
                 long off = (BodyStartCycle + 6 + 5 + 2 + 3 + 4) * 12 + CpuOffset;
@@ -219,7 +223,7 @@ namespace Darkwing.Core
             if (finish * 12 + CpuOffset >= nextEdge) return Reject("Reset native body needs an NMI continuation before its next yield");
             if (!work.Commits)
             {
-                _scheduler.ElapseInterrupt(checked((int)(finish - _scheduler.ExecutionCycle)));
+                _scheduler.BeginRunning(finish,work.StopPc);
                 StopPc = work.StopPc;
                 StopCycle = finish;
                 CommitCycle = -1;

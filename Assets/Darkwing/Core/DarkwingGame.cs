@@ -253,9 +253,15 @@ namespace Darkwing.Core
                 SetPaletteSource(bg, 0);
                 SetPaletteSource(sp, 16);
             }
-            Ppu.Chr0Bank = (byte)(w.ChrReq0 & 0x7F);        // $FF21 applies the $1A request
-            Ppu.Chr1Bank = (byte)(w.ChrReq1 & 0x7F);        // $FF3B applies the $1B request
-            Player.ChrLatch0 = 0; Player.ChrLatch1 = 0;
+            if(stageFirstBands)
+            {
+                // Synchronous host entry keeps its existing immediate publication.
+                Ppu.Chr0Bank = (byte)(w.ChrReq0 & 0x7F);
+                Ppu.Chr1Bank = (byte)(w.ChrReq1 & 0x7F);
+                Player.ChrLatch0 = 0; Player.ChrLatch1 = 0;
+            }
+            // The native inline loader retains DD99/DD9E requests while F0 is set.
+            // The first unblanked NMI owns both $FF21/$FF3B transfers and their cost.
             // $DDA0-$DDAA: the ring event is only re-queued when $D9 was still non-zero.
             if (_audioLastId != 0) PlaySound(w.RingEvent);
         }
@@ -1295,7 +1301,9 @@ namespace Darkwing.Core
                     _nmiMaskRequest = null;
                 }
             }
-            DrainAudioQueue();             // $C0DC/$C0F6: runs on blanked frames too
+            if (DeferLoaderNmiAudio())
+            { LastNmiAudioServiceCycles=0;NmiAudioTimingSupported=true; }
+            else DrainAudioQueue();        // $C0DC/$C0F6, or $FF8C after an interrupted switch
             Flow?.CompleteResetNmiTiming();
         }
 

@@ -142,9 +142,23 @@ namespace Darkwing.Core
         }
 
         private int _sceneLoadStage;
+        public int SceneLoadStage => _sceneLoadStage;
         private bool _sceneLoadStreaming, _loaderExited;
-        private int _streamPassRemaining, _streamPassCharged, _streamPassIncrementAt;
-        private bool _streamPassLast, _streamPassIncrementPending;
+        private System.Collections.Generic.IEnumerator<LevelTileMap.StagingTimingStep> _loaderInstructions;
+        private LevelTileMap.StagingTimingStep _loaderInstruction;
+        private bool _loaderInstructionReady;
+        private int _loaderFlushIndex, _loaderPayloadIndex, _loaderVramAddress;
+        public byte LoaderBankSwitchDepth { get; private set; }
+        public byte LoaderDeferredAudio { get; private set; }
+        public int LastLoaderDeferredAudioCycles { get; private set; }
+        public System.Action<ushort,long,int> LoaderInstructionObserver;
+        public ushort LoaderNextInstructionPc => _loaderInstructionReady ? _loaderInstruction.Pc : (ushort)(_loaderExited ? 0xDE93 : 0xDE86);
+        internal bool DeferLoaderNmiAudio()
+        {
+            if (!_sceneLoadStreaming || LoaderBankSwitchDepth == 0) return false;
+            LoaderDeferredAudio++;
+            return LoaderDeferredAudio != 0;
+        }
 
         /// <summary>True once the $DE86 loop reached $0F and the $DDCB yield is due.</summary>
         public bool LoaderExited => _loaderExited;
@@ -157,9 +171,9 @@ namespace Darkwing.Core
             WorldPrelude(false);
             _sceneLoadStage = 0;
             _sceneLoadStreaming = true;
-            _streamPassRemaining = _streamPassCharged = 0;
-            _streamPassLast = _streamPassIncrementPending = false;
             _loaderExited = false;
+            _loaderInstructions?.Dispose(); _loaderInstructions = null; _loaderInstructionReady = false;
+            LoaderBankSwitchDepth = LoaderDeferredAudio = 0;
         }
 
         /// <summary>Leaves the $DE86 loop to the caller's $DDCB yield when the clock could
@@ -170,52 +184,65 @@ namespace Darkwing.Core
             _sceneLoadStage = 0;
         }
 
-        /// <summary>Charges the $DE86/$E698 passes one frame's remaining CPU time can hold and
-        /// returns the cycles consumed. The pass paints its band and stores $25 near the end of
-        /// $E698 ($E790), so a pass that does not fit leaves the old cursor visible to the NMI;
-        /// the store is applied when the charged cycles cross that point. The uncharged
-        /// remainder of the same pass is carried into the next frame, where the RTI resumes it.
-        /// The pass that reaches $0F is six cycles cheaper: $DE8F does not branch back to a
-        /// fresh $DE86 head. The final pass starts like every other one: the NMI may interrupt
-        /// it too, and only the $DE93 tail must not cross the edge.</summary>
+        /// <summary>Advance native loader instructions to the next NMI acceptance
+        /// boundary. A crossing instruction completes; the NMI resumes its next PC.
+        /// Physical writes occur at C12D and the cursor/cell stores stay separate.</summary>
         public int StreamSceneLoad(int budgetCycles)
         {
             if (!_sceneLoadStreaming) throw new System.InvalidOperationException("Reset loader is not streaming");
             if (budgetCycles < 0) throw new System.ArgumentOutOfRangeException(nameof(budgetCycles));
             int used = 0;
-            while (true)
+            while (used < budgetCycles && !_loaderExited)
             {
-                if (_streamPassRemaining == 0)
+                if (_loaderInstructions == null)
                 {
-                    if (_loaderExited || budgetCycles - used <= 0) break;
-                    int cost = TileMap.MeasureStagingPassCycles(Player.StageCursor, Player.CellIndexNext,
-                        Player.StageStep, Player.StageBoundary, out int incrementAt);
                     bool last = (byte)(Player.StageCursor + Player.StageStep) == Player.StageTarget;
-                    if (last) cost -= 6;
-                    _streamPassLast = last;
-                    _streamPassRemaining = cost;
-                    _streamPassCharged = 0;
-                    _streamPassIncrementAt = incrementAt;
-                    _streamPassIncrementPending = true;
-                    Player.StageBandStep();
+                    _loaderInstructions = TileMap.StagingPassInstructions(Player.StageCursor,Player.CellIndexNext,
+                        Player.StageStep,Player.StageBoundary,last,()=>LoaderDeferredAudio!=0).GetEnumerator();
+                    // Decode the queue without publishing it. The only physical NT writes
+                    // in this inline path are the individual $C12D stores below.
+                    TileMap.StreamBand(Player.StageCursor,Player.CellIndexNext,false);
                 }
-                int room = budgetCycles - used;
-                int charge = _streamPassRemaining <= room ? _streamPassRemaining : room;
-                _streamPassCharged += charge;
-                if (_streamPassIncrementPending && _streamPassCharged >= _streamPassIncrementAt)
+                if (!_loaderInstructionReady)
                 {
-                    _streamPassIncrementPending = false;
-                    Player.StageCursorStep();
+                    if (!_loaderInstructions.MoveNext()) throw new System.InvalidOperationException("Loader lacks a pending instruction");
+                    _loaderInstruction = _loaderInstructions.Current;
+                    _loaderInstructionReady = true;
                 }
-                used += charge;
-                if (charge == _streamPassRemaining)
+                int cycles = _loaderInstruction.Cycles;
+                if (cycles < 0)
                 {
-                    _streamPassRemaining = 0;
-                    if (_streamPassLast) { _loaderExited = true; _streamPassLast = false; }
-                    continue;
+                    DrainAudioQueue();
+                    if (!NmiAudioTimingSupported) throw new System.NotSupportedException("Deferred loader audio price");
+                    cycles = LastNmiAudioServiceCycles - NmiTiming.RestoreBankAndReturnCycles;
+                    LastLoaderDeferredAudioCycles=cycles;
+                    if (cycles > budgetCycles-used) throw new System.NotSupportedException("NMI inside deferred loader audio");
                 }
-                _streamPassRemaining -= charge;
-                break;
+                LoaderInstructionObserver?.Invoke(_loaderInstruction.Pc,Flow.ResetClock.StreamCycle+used,cycles);
+                used += cycles;
+                switch (_loaderInstruction.Pc)
+                {
+                    case 0xFF59: LoaderBankSwitchDepth++; break;
+                    case 0xFF70: LoaderBankSwitchDepth=0; break;
+                    case 0xFFAB: LoaderDeferredAudio=0; break;
+                    case 0xE790: Player.StageCursor=(byte)(Player.StageCursor+Player.StageStep); break;
+                    case 0xE79F: Player.CellIndexNext=(byte)(Player.CellIndexNext+Player.StageStep); break;
+                    case 0xC115: _loaderFlushIndex=0; break;
+                    case 0xC124:
+                        _loaderVramAddress=(NativeVram.Bytes[_loaderFlushIndex]<<8)|NativeVram.Bytes[_loaderFlushIndex+1];
+                        _loaderPayloadIndex=_loaderFlushIndex+3;
+                        break;
+                    case 0xC12D: Ppu.WriteVram(_loaderVramAddress++,NativeVram.Bytes[_loaderPayloadIndex++]); break;
+                    case 0xC137: _loaderFlushIndex=_loaderPayloadIndex; break;
+                }
+                _loaderInstructionReady=false;
+                if (_loaderInstructions.MoveNext())
+                { _loaderInstruction=_loaderInstructions.Current;_loaderInstructionReady=true; }
+                else
+                {
+                    _loaderInstructions.Dispose();_loaderInstructions=null;
+                    if(Player.StageCursor==Player.StageTarget) _loaderExited=true;
+                }
             }
             return used;
         }

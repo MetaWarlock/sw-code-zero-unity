@@ -23,6 +23,7 @@ public static class ResetClockVerify
         public long Edge, LastEdge, Ordinal;
         public int CpuOff, PpuOff;
         public int Cursor;
+        public int DeferredAudio;
         public ushort Interrupted, StopPc;
         public byte State, Timer;
         public bool Commits, Streaming;
@@ -102,7 +103,7 @@ public static class ResetClockVerify
     private static byte[] Data(string name) => File.ReadAllBytes(Root + "Assets/Darkwing/Data/" + name + ".bytes");
 
     private static List<Snapshot> RunNative(byte[] input, bool dropCopyrightRequest, out int dropped,
-        out ResetProcessClock stopClock)
+        out ResetProcessClock stopClock, int lastPoll=StopPoll)
     {
         var data = DataLoader.Load(Data("chr_full"), Data("levelsets"), Data("screens"), Data("levels"), Data("anims"));
         var decoder = new RoomDecoder(Data("prg_bank0"), Data("prg_bank1"), Data("world_bank7"), Data("levelsets"));
@@ -114,11 +115,15 @@ public static class ResetClockVerify
             MapChrBank0 = WorldState.MapSpriteChrBank, MapChrBank1 = WorldState.MapChrBank
         };
         var flow = new GameFlow(game, decoder);
+        var instructionLog = new System.Text.StringBuilder("servicePoll,cycle,pc,cost\n");
+        int currentPoll=0;
+        if(!dropCopyrightRequest) game.LoaderInstructionObserver=(pc,cycle,cost)=>instructionLog.Append(currentPoll).Append(',').Append(cycle).Append(',').Append(pc.ToString("X4")).Append(',').Append(cost).Append('\n');
         var rows = new List<Snapshot>();
         dropped = 0;
         stopClock = null;
-        for (int poll = 1; poll <= StopPoll; poll++)
+        for (int poll = 1; poll <= lastPoll; poll++)
         {
+            currentPoll=poll;
             if (dropCopyrightRequest && game.Player.ChrLatch1 == 0x99)
             {
                 game.Player.ChrLatch1 = 0;
@@ -132,6 +137,7 @@ public static class ResetClockVerify
                 Poll = poll, Handler = clock.HandlerCycle, Resume = clock.ResumeCycle, Body = clock.BodyStartCycle,
                 Interrupted = clock.InterruptedPc, State = clock.ProcessState, Timer = clock.ProcessTimer,
                 Stage = clock.Stage, Streaming = clock.Streaming, Cursor = game.Player.StageCursor,
+                DeferredAudio=game.LastLoaderDeferredAudioCycles,
                 Stream = clock.StreamCycle, Commit = clock.CommitCycle,
                 Budget = clock.StreamBudgetCycles,
                 Edge = clock.PhysicalEdgeMaster, LastEdge = clock.LastNmiEdgeMaster,
@@ -154,12 +160,14 @@ public static class ResetClockVerify
             else
             {
                 stopClock = clock;
-                row.Finish = clock.StopCycle;
+                Require(clock.Supported,"Clock unsupported at "+poll+": "+clock.Unsupported);
+                row.Finish = clock.Stage==ResetProcessClock.Phase.Waiting ? clock.CommitCycle : clock.StopCycle;
                 row.StopPc = clock.StopPc;
             }
             rows.Add(row);
         }
         Require(flow.ResetClock != null && flow.ResetClock.MinimumCommitSlackCycles > 0, "Missing actual reset commit bound");
+        if(!dropCopyrightRequest)File.WriteAllText(Root+"Temp/first_loader_native.csv",instructionLog.ToString());
         return rows;
     }
 
@@ -422,6 +430,8 @@ public static class ResetClockVerify
     private static void Compare(List<Snapshot> actual, Dictionary<int, Dictionary<ushort, string[]>> boundaries,
         LoaderSource loader, StreamSource stream)
     {
+        var instructions=InstructionNmis();
+        for(int poll=281;poll<=290;poll++)Require(stream.Nmi[poll]==instructions[poll].cycle,"Source traces disagree on NMI "+poll);
         ValidateLoader(loader);
         ValidateStream(stream, loader);
         Require(actual.Count == ExpectedRows, "Missing or extra actual reset calls: " + actual.Count);
@@ -484,14 +494,10 @@ public static class ResetClockVerify
         Require(first.Body - 2 == loader.At(FirstStreamPoll, 0xDD5D), "First stream poll staging anchor mismatch");
         Require(first.Body - first.Resume == InputTiming.ResumeCallCycles + 525 + InputTiming.ResumeEpilogueCycles,
             "First stream poll resume/body hook scope changed");
-        // The stream splits the interrupted $E698 pass at the edge-derived threshold, while
-        // Mesen logs $C000 at the first instruction boundary after the physical NMI. The
-        // loader loop's 2-6 cycle instructions make that boundary land 5-7 CPU cycles after
-        // the threshold; the pass-level clock cannot resolve which boundary inside a priced
-        // pass the CPU had reached. The band below is that quantization range, not slack:
-        // the cursor, budget and completion checks around it stay exact.
-        long streamEdge = stream.Nmi[FirstStreamPoll + 1];
-        Require(first.Stream <= streamEdge - 5 && first.Stream >= streamEdge - 7,
+        // The hardware interrupt, native continuation PC and commit now agree
+        // exactly; the global +2 is the established source/model cycle origin.
+        long streamEdge = instructions[FirstStreamPoll+1].cycle;
+        Require(first.Stream == streamEdge-7+2,
             "First stream poll did not consume its whole frame budget: stream " + first.Stream
             + " source edge band " + (streamEdge - 7) + ".." + (streamEdge - 5) + " budget " + first.Budget
             + " edge " + first.Edge + " last " + first.LastEdge + " ordinal " + first.Ordinal
@@ -506,13 +512,13 @@ public static class ResetClockVerify
             Require(row.Stage == ResetProcessClock.Phase.Running, "Stream poll left Running at " + poll);
             Require(row.State == FrameScheduler.Running && row.Timer == 0,
                 "Stream poll re-selected a scheduler phase at " + poll + ": " + row.State + "/" + row.Timer);
-            Require(row.Handler - 2 <= stream.Nmi[poll] && row.Handler - 2 >= stream.Nmi[poll] - 2,
-                "Stream poll handler outside the source quantization band at " + poll + ": model "
+            Require(row.Handler - 2 == instructions[poll].cycle,
+                "Stream poll handler differs from exact source boundary at " + poll + ": model "
                 + (row.Handler - 2) + " source " + stream.Nmi[poll]);
-            Require(row.Interrupted == 0, "Stream poll invented an interrupted PC at " + poll);
-            Require(row.Stream <= stream.Nmi[poll + 1] - 5 && row.Stream >= stream.Nmi[poll + 1] - 7,
-                "Stream poll did not consume its whole frame budget at " + poll + ": model "
-                + row.Stream + " source band " + (stream.Nmi[poll + 1] - 7) + ".." + (stream.Nmi[poll + 1] - 5));
+            Require(row.Interrupted == instructions[poll].pc, "Stream interrupted PC at " + poll+" actual="+row.Interrupted.ToString("X4")+" source="+instructions[poll].pc.ToString("X4"));
+            Require(row.Stream == instructions[poll+1].cycle-7+2,
+                "Stream poll did not consume its whole frame budget at " + poll + ": deferredAudio="+row.DeferredAudio+" model "
+                + row.Stream + " source boundary " + (stream.Nmi[poll + 1] - 7) + ".." + (stream.Nmi[poll + 1] - 5));
             Require(row.Budget == 0, "Stream poll left an unused frame budget at " + poll);
             Require(row.Cursor == stream.Cursor[poll + 1],
                 "Stream poll cursor mismatch at " + poll + ": $" + row.Cursor.ToString("X2")
@@ -521,16 +527,15 @@ public static class ResetClockVerify
 
         var stop = actual[StopPoll - FirstPoll];
         Require(stop.Poll == StopPoll, "Last reset call is not the $DDCB yield");
-        Require(!stop.Commits && stop.Stage == ResetProcessClock.Phase.Stopped,
-            "Reset clock did not stop at the unclocked $DDCE resume: " + stop.Stage);
-        Require(stop.StopPc == 0xDDCB, "Reset clock stopped at $" + stop.StopPc.ToString("X4"));
-        Require(stop.StopPc == 0xDDCB && stop.Commit > 0, "Reset clock did not commit the $DDCB yield");
+        Require(!stop.Commits && stop.Stage == ResetProcessClock.Phase.Waiting,
+            "Reset clock lost the native $DDCB commit: " + stop.Stage);
+        Require(stop.StopPc == 0 && stop.Commit > 0, "Reset clock did not continue after the $DDCB yield");
         Require(stop.Commit == stop.Finish, "Reset stop cycle is not the committed yield cycle");
         Require(stop.State == FrameScheduler.Waiting && stop.Timer == 1,
             "Reset stop re-selected a scheduler phase: " + stop.State + "/" + stop.Timer);
-        Require(stop.Interrupted == 0, "Reset stop invented an interrupted PC");
-        Require(stop.Handler - 2 <= stream.Nmi[StopPoll] && stop.Handler - 2 >= stream.Nmi[StopPoll] - 2,
-            "Reset stop handler outside the source quantization band: model " + (stop.Handler - 2)
+        Require(stop.Interrupted == instructions[StopPoll].pc, "Reset stop interrupted PC");
+        Require(stop.Handler - 2 == instructions[StopPoll].cycle,
+            "Reset stop handler differs from exact source boundary: model " + (stop.Handler - 2)
             + " source " + stream.Nmi[StopPoll]);
         Require(stop.Cursor == stream.Cursor[StopPoll + 1],
             "Reset stop cursor mismatch: $" + stop.Cursor.ToString("X2"));
@@ -538,6 +543,24 @@ public static class ResetClockVerify
             + (stop.Finish - stop.Stream) + " cycles");
         Require(stop.Finish - 2 > stream.Nmi[StopPoll] && stop.Finish - 2 < stream.Nmi[StopPoll + 1] - 5,
             "Reset stop cycle is outside the $DDCB frame: " + stop.Finish);
+        Require(stop.Finish-2==instructions[-1].cycle,"Exact loader FF19 commit, actual="+(stop.Finish-2)+" source="+instructions[-1].cycle);
+    }
+
+    private static Dictionary<int,(long cycle,ushort pc)> _instructionNmis;
+    private static Dictionary<int,(long cycle,ushort pc)> InstructionNmis()
+    {
+        if(_instructionNmis!=null)return _instructionNmis;
+        var rows=new Dictionary<int,(long cycle,ushort pc)>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/first_loader_instruction.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);
+            if(c[2]=="C000") rows.Add(poll,(long.Parse(c[1],CultureInfo.InvariantCulture),Convert.ToUInt16(c[15],16)));
+            if(poll==289&&c[2]=="FF19") rows.Add(-1,(long.Parse(c[1],CultureInfo.InvariantCulture),(ushort)0xFF19));
+        }
+        for(int poll=281;poll<=290;poll++)Require(rows.ContainsKey(poll),"Missing instruction NMI "+poll);
+        Require(rows.ContainsKey(-1),"Missing instruction loader commit");
+        return _instructionNmis=rows;
     }
 
     private static void Reject(Action action)
@@ -561,11 +584,26 @@ public static class ResetClockVerify
         var stream = LoadStreamSource();
         var actual = RunNative(input, false, out int untouched, out ResetProcessClock stopClock);
         Require(untouched == 0, "Unexpected native request mutation");
-        Require(stopClock != null && stopClock.Stage == ResetProcessClock.Phase.Stopped
-            && stopClock.StopPc == 0xDDCB && stopClock.StopCycle > 0 && stopClock.CommitCycle == stopClock.StopCycle,
-            "Unpriced $DDCE resume did not stop the clock: "
+        Require(stopClock != null && stopClock.Stage == ResetProcessClock.Phase.Waiting
+            && stopClock.StopPc == 0 && stopClock.CommitCycle > 0,
+            "Native loader did not retain its committed clock: "
                 + (stopClock == null ? "missing clock" : stopClock.Stage + " $" + stopClock.StopPc.ToString("X4")));
         Compare(actual, boundaries, loader, stream);
+        var nativeInstructions=new List<string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/first_loader_native.csv"))
+            if(!line.StartsWith("servicePoll,"))nativeInstructions.Add(line.Split(','));
+        int exactInstructions=CompareInstructionTrace(nativeInstructions);
+        int instructionNegatives=0;
+        foreach(int column in new[]{0,1,2,3})
+        {
+            var changed=new List<string[]>(nativeInstructions);changed[0]=(string[])changed[0].Clone();
+            changed[0][column]=column==2?"DE87":(int.Parse(changed[0][column],CultureInfo.InvariantCulture)+1).ToString(CultureInfo.InvariantCulture);
+            Reject(()=>CompareInstructionTrace(changed));instructionNegatives++;
+        }
+        var missingInstruction=new List<string[]>(nativeInstructions);missingInstruction.RemoveAt(missingInstruction.Count-1);
+        Reject(()=>CompareInstructionTrace(missingInstruction));instructionNegatives++;
+        var extraInstruction=new List<string[]>(nativeInstructions);extraInstruction.Add(nativeInstructions[nativeInstructions.Count-1]);
+        Reject(()=>CompareInstructionTrace(extraInstruction));instructionNegatives++;
 
         int negatives = 0;
         foreach (int index in new[] { 0, 18, 257, 273, 274 })
@@ -630,7 +668,7 @@ public static class ResetClockVerify
             else if (field == "Commit") row.Commit++;
             else if (field == "Finish") row.Finish++;
             else if (field == "Cursor") row.Cursor ^= 1;
-            else if (field == "Stage") row.Stage = ResetProcessClock.Phase.Waiting;
+            else if (field == "Stage") row.Stage = ResetProcessClock.Phase.Stopped;
             else if (field == "State") row.State = FrameScheduler.Running;
             else if (field == "Timer") row.Timer = 0;
             else row.Stream++;
@@ -654,10 +692,9 @@ public static class ResetClockVerify
         Reject(() => Compare(actual, boundaries, interrupted, stream)); negatives++;
         foreach (var target in new[] { new[] { 284, 0xC000 }, new[] { 285, 0xC000 } })
         {
-            // A one-cycle NMI shift stays inside the handler quantization band by design;
-            // shift past it to prove the comparator observes the source boundary.
+            // Instruction-level comparison now rejects even one source-cycle change.
             var altered = stream.Copy();
-            altered.Nmi[target[0]] += 3;
+            altered.Nmi[target[0]]++;
             Reject(() => Compare(actual, boundaries, loader, altered)); negatives++;
         }
         var alteredCursor = stream.Copy();
@@ -680,19 +717,135 @@ public static class ResetClockVerify
 
         var dropped = RunNative(input, true, out int droppedCount, out ResetProcessClock droppedStop);
         Require(droppedCount == 1, "Missing native CHR-request negative");
-        Require(droppedStop != null && (droppedStop.Stage == ResetProcessClock.Phase.Stopped
-                || droppedStop.Stage == ResetProcessClock.Phase.Unsupported),
-            "Missing CHR request did not change the clock outcome");
+        Require(droppedStop != null && dropped.Count==actual.Count,
+            "Missing CHR request negative did not complete its observation window");
         Reject(() => Compare(dropped, boundaries, loader, stream)); negatives++;
         Require(actual[18].Handler == dropped[18].Handler && actual[18].Resume - dropped[18].Resume == 49,
             "Missing CHR request did not expose the expected service-path difference");
-        return "PASS actual Game.Flow.ResetClock: committed loader calls275 (polls6-280), streaming loader8 polls (281-288: handler, "
-            + "cursor $0F/$1F/$2F/$40/$51/$61/$72/$85, whole-frame budgets), honest stop1 at the $DDCB yield after poll289 "
+        return "PASS actual Game.Flow.ResetClock: committed loader calls275 (polls6-280), streaming loader8 polls (281-288: exact handler/PC, "
+            + "cursor $0F/$1F/$2F/$40/$51/$61/$72/$85, instruction boundaries), exact $DDCB commit after poll289 "
             + "(136 passes to $88, SP=B9, completion74, no new Waiting); "
             + "source spans C235=367 C95C=401 C5F7->FF19=1696 ordinary69 ramp1281(267,271,275) exit1491 DD5A=55 DD5D->DE86=1540; "
             + "stream source 15 heads f281 ($00-$0E costs 1768/1778/1773/1717), NMI $00->$88, no input hook polls282-289, "
             + "$DE00/$DE03 yield poll290 and $DE06 resume poll291; loader buffer identity393 records from f8; strict negativeControls="
-            + negatives + ". No external clock instantiation or source-state seed. $DE86/$E698 now runs natively; the $DDCE spawn "
-            + "path stays outside the clock.";
+            + negatives + "; "+exactInstructions+" exact native instructions/"+instructionNegatives+" instruction negative controls. No source-state seed. F5/F6/audio deferred and physical C12D stores connected.";
+    }
+
+    private static int CompareInstructionTrace(List<string[]> native)
+    {
+        var source=new List<string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/first_loader_instruction.csv"))
+            if(!line.StartsWith("poll,"))source.Add(line.Split(','));
+        int index=source.FindIndex(c=>c[2]=="DE86");
+        Require(index>=0,"Missing first source loader instruction");
+        // The source poll tag changes at InputPolled, 1–3 cycles before NMI
+        // acceptance. Native rows name the service interval that executed an op.
+        int servicePoll=0;
+        for(int i=0;i<index;i++)if(source[i][2]=="C000")servicePoll=int.Parse(source[i][0],CultureInfo.InvariantCulture);
+        foreach(var row in native)
+        {
+            while(source[index][2]=="0000"||source[index][2]=="C000"||source[index][2]=="C114")
+            {
+                if(source[index][2]=="C000")servicePoll=int.Parse(source[index][0],CultureInfo.InvariantCulture);
+                index++;
+            }
+            var expected=source[index];
+            Require(int.Parse(row[0],CultureInfo.InvariantCulture)==servicePoll&&row[2]==expected[2]&&long.Parse(row[1],CultureInfo.InvariantCulture)-2==long.Parse(expected[1],CultureInfo.InvariantCulture),"Instruction trace PC/service/time "+row[2]);
+            int next=index+1;
+            while(source[next][2]=="0000")next++;
+            if(row[2]=="FF8C")while(source[next][2]!="FFA9")next++;
+            long cost=long.Parse(source[next][1],CultureInfo.InvariantCulture)-long.Parse(expected[1],CultureInfo.InvariantCulture);
+            if(source[next][2]=="C000")cost-=FrameScheduler.NmiEntryCycles;
+            Require(cost==int.Parse(row[3],CultureInfo.InvariantCulture),"Instruction trace price "+row[2]);
+            index=next;
+        }
+        Require(source[index][2]=="DE93","Missing/extra native loader instruction");
+        return native.Count;
+    }
+
+    public static string LoaderCompletion()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        var rows=RunNative(input,false,out _,out var clock,307);
+        var source=new Dictionary<(int poll,string pc),string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/first_loader_instruction_extended.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);
+            if(poll<290||poll>307)continue;
+            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="DDCE"||c[2]=="DE06"||c[2]=="C2AA"||c[2]=="C601"||c[2]=="FF19")source.Add((poll,c[2]),c);
+        }
+        int checks=CompareCompletion(rows,source);
+        int negatives=0;
+        foreach(string field in new[]{"Handler","Interrupted","Resume","Body","Finish"})
+        {
+            var altered=new List<Snapshot>(rows);int index=291-FirstPoll;altered[index]=altered[index].Copy();var row=altered[index];
+            if(field=="Handler")row.Handler++;
+            else if(field=="Interrupted")row.Interrupted^=1;
+            else if(field=="Resume")row.Resume++;
+            else if(field=="Body")row.Body++;
+            else row.Finish++;
+            Reject(()=>CompareCompletion(altered,source));negatives++;
+        }
+        var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>CompareCompletion(missing,source));negatives++;
+        var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>CompareCompletion(extra,source));negatives++;
+        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC601&&clock.ProcessState==FrameScheduler.Running,"Clock stops Running at the actual unpriced first intro hold");
+        return "PASS continued first loader DDCE/DE03/C254/fade: "+checks+" exact handler/PC/resume/body/finish checks on18 polls; "+negatives+" negatives; honest stop C601 before FEFF hold";
+    }
+
+    private static int CompareCompletion(List<Snapshot> rows,Dictionary<(int poll,string pc),string[]> source)
+    {
+        Require(rows.Count==307-FirstPoll+1,"Missing/extra completion rows");
+        for(int index=0;index<rows.Count;index++)Require(rows[index].Poll==index+FirstPoll,"Duplicated/skipped completion poll");
+        long At(int poll,string pc)=>long.Parse(source[(poll,pc)][1],CultureInfo.InvariantCulture);
+        int checks=0;
+        foreach(var row in rows)
+        {
+            if(row.Poll<290)continue;
+            int poll=row.Poll;
+            Require(row.Handler-2==At(poll,"C000"),"Continued handler "+poll+" native="+(row.Handler-2)+" source="+At(poll,"C000"));
+            Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Continued interrupted PC "+poll);
+            Require(row.Resume-2==At(poll,"FECF"),"Continued resume "+poll+" native="+(row.Resume-2)+" source="+At(poll,"FECF"));
+            Require(row.Body-2==At(poll,poll==290?"DDCE":poll==291?"DE06":"C2AA"),"Continued body "+poll);
+            Require(row.Finish-2==At(poll,poll==307?"C601":"FF19"),"Continued finish "+poll+" native="+(row.Finish-2)+" source="+At(poll,poll==307?"C601":"FF19"));
+            checks+=5;
+        }
+        return checks;
+    }
+
+    public static string LoaderInstructions()
+    {
+        var decoder = new RoomDecoder(Data("prg_bank0"),Data("prg_bank1"),Data("world_bank7"),Data("levelsets"));
+        var map = new LevelTileMap(decoder,new Ppu(null),decoder.GetWorld(7));
+        var source = new List<string[]>();
+        bool started=false;
+        foreach(string line in File.ReadAllLines(Root+"Temp/first_loader_instruction.csv"))
+        {
+            var c=line.Split(',');
+            if(c[0]!="281") continue;
+            if(c[2]=="DE86") started=true;
+            if(started) source.Add(c);
+        }
+        int index=0,checks=0,oldPriceDifferences=0;
+        var differences=new HashSet<int>();
+        byte grid=0;
+        for(byte cursor=0;cursor<14;cursor++)
+        {
+            int cycles=0;
+            long begin=long.Parse(source[index][1],CultureInfo.InvariantCulture);
+            foreach(var op in map.StagingPassInstructions(cursor,grid,1,0, false,()=>false))
+            {
+                var actual=source[index++];
+                Require(Convert.ToUInt16(actual[2],16)==op.Pc,"Staging PC cursor"+cursor+" source="+actual[2]+" native="+op.Pc.ToString("X4"));
+                Require(long.Parse(actual[1],CultureInfo.InvariantCulture)-begin==cycles,
+                    "Staging cost cursor"+cursor+" PC"+op.Pc.ToString("X4")+" native="+cycles+" source="+(long.Parse(actual[1],CultureInfo.InvariantCulture)-begin));
+                cycles+=op.Cycles;checks++;
+            }
+            Require(source[index][2]=="DE86"&&long.Parse(source[index][1],CultureInfo.InvariantCulture)-begin==cycles,"Staging pass endpoint");
+            int difference=map.MeasureStagingPassCycles(cursor,grid,1,0)-cycles;
+            if(difference!=0) oldPriceDifferences++;
+            differences.Add(difference);
+        }
+        return "PASS source instruction boundaries="+checks+" first14 passes; old aggregate price differences="+oldPriceDifferences+" deltas="+string.Join(",",differences);
     }
 }

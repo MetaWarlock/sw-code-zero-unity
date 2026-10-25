@@ -206,7 +206,7 @@ public static class NmiTimingVerify
         var blocked = new NmiTiming.Publication(0, 1, 0xFF, 0xFF, 0xFF, 0x80, 0x90, 0xFF,
             address => throw new Exception("Blocked NMI read VRAM descriptor"));
         if (NmiTiming.PublicationCycles(in blocked, 0) != 27) throw new Exception("Bracket gate control");
-        if (NmiTiming.BankGateCycles(1, 0, out bool runs) != 13 || runs) throw new Exception("Deferred bank skip");
+        if (NmiTiming.BankGateCycles(1, 0, out bool runs) != 14 || runs) throw new Exception("Deferred bank skip includes C0C5 page cross");
         if (NmiTiming.BankGateCycles(1, 0xFF, out runs) != 42 || !runs) throw new Exception("Deferred bank wrap");
         return $"PASS publication={publications} timer={timers} bank-gate={gates} return={returns} rejected={negatives}; DMA/bracket/bank controls; source CPU fixtures only";
     }
