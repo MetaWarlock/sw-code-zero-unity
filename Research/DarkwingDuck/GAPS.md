@@ -1,6 +1,6 @@
 # GAPS — действующие пробелы, 2026-10-25
 
-Интеграция м2/м3 (Core9ca6015): натуральные полные маршруты и человеческая приёмка остаются OPEN. Старый м1 сохранён:22229×5 mapped groups,15PNG; второй ввод всё ещё17234,74PNG прежние. М3 original2× PASS f8–73407, карта count1/mask4 подтверждена RAM; fresh original RGB:5exact/2residual. Общий build13ebfad699ce и scene/Player smoke PASS; human м1-start/Thunder/платформы AWAITING HUMAN. Исторические названия сборок ниже не означают текущую поставку.
+Интеграция м2/м3 (Core9ca6015): натуральные полные маршруты и человеческая приёмка остаются OPEN. Старый м1 сохранён:22229×5 mapped groups,15PNG; второй ввод всё ещё17234,74PNG прежние. М3 original2× PASS f8–73407, карта count1/mask4 подтверждена RAM; fresh original RGB:5exact/2residual. Текущий build_d29939297aaf прошёл SceneAudit, Editor m1 route (23/15 RGB), standalone smoke и standalone m1 completion; human м1-start/Thunder/платформы AWAITING HUMAN. Исторические названия сборок ниже не означают текущую поставку.
 
 **М3, ошибки до NMI:** исправлены Dropper5798 (INC/state82,timer1E), Select/Thunder8107 (CAE7 даёт падение83 вместо удаления) и Jumper8371 (A689 сохраняет timer в воздухе). Prefix11000: пять mapped-групп f3000–10059 совпадают; firstactive/RNG10060, player10061. Полный73407 завершён: те же первые расхождения; boss57/map4 не достигнуты.
 
