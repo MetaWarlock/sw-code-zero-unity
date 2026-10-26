@@ -1364,14 +1364,10 @@ namespace Darkwing.Core
                 int before = X;
                 MoveHorizontal(right);
                 bool moved = X != before;
-                // wall block ($CCDF: blocked if $9E negative)
+                // $F200/$F254 side probe: a wall class snaps X ($ED85/$ED9D). $9E (the $CCC0/$CCDF
+                // veto) is not written here; only $CE1F/$D2D5/$DE68 clear it and a boss sets it.
                 byte side = ProbeSide(right);
-                if (side >= 3)
-                {
-                    WallBlocked = 0xFF;
-                    SnapX(right);
-                }
-                else WallBlocked = 0;
+                if (side >= 3) SnapX(right);
                 return;
             }
 
@@ -1546,17 +1542,20 @@ namespace Darkwing.Core
             _wasAirborne = State is 1 or 0x0B or 0x10;
             if (falling)
             {
-                ushort previousY = Y;                                // $F2DB-$F2E3
+                _scratch02 = (byte)Y; _scratch03 = (byte)(Y >> 8);   // $F2DB-$F2E3
                 IntegrateY();               // $F2ED JSR $F5A4 (down)
                 if (PushPairOrScan(out byte supportLift))             // $F2F4/$F2F7
                 {
                     LiftByObject(supportLift);                       // $F2F9-$F316
-                    bool movedUp = Y < previousY;                    // $F49C-$F4A7
+                    bool movedUp = Y < (_scratch03 << 8 | _scratch02); // $F49C-$F4A7 vs $02/$03
                     byte contact = movedUp ? ProbeCeiling() : ProbeFloor();
                     _probeResult = contact;
                     if (movedUp && contact >= 3) SnapBelowHead();
                     else if (!movedUp && contact >= 2) SnapFeetUpToRow();
                     CutVelocity();                                   // $F319 -> $F49C -> $F347
+                    // $F347 returns SEC, so the state-1 handler's $CE08 lands here too: the
+                    // $F49C probe class left in $10 vetoes the SFX only when it is 2.
+                    if (cutOnLand && _wasAirborne && contact != 2) Sfx?.Invoke(0x10);
                     LandedFlag = 1;
                     return true;                                     // no gravity on this branch
                 }
@@ -1749,6 +1748,10 @@ namespace Darkwing.Core
         // they are fields, not locals.
         private byte _push00;
         private byte _push01;
+        // $02/$03: $F2DB/$F2E0 park the pre-move Y there for $F49C, but $F7A8 reuses $02 for the
+        // touch class and $F7CF $03 for |dY|, so a stand-on-actor hit compares against those.
+        private byte _scratch02;
+        private byte _scratch03;
 
         private bool HorizontalPushPairOrScan(out byte push)
         {
@@ -1838,11 +1841,13 @@ namespace Darkwing.Core
             var o = Objects;
             if (o == null) return false;
             byte cls = (byte)(o.Slots[y].BehaviorParam & 0x1F);         // $F7AB AND #$1F
+            _scratch02 = cls;                                           // $F7AD STA $02
             PushDx(y);
             if (_push01 != 0) return false;                             // $F7B4 BNE $F7DC
             if (_push00 >= EnemyBehaviors.TouchXHalf[cls]) return false; // $F7BA BCS $F7DC
             byte dy = PushDy(y, out _);                                 // $F7C1
             if (dy > EnemyBehaviors.TouchYHalf[cls]) return false;      // $F7CB
+            _scratch03 = dy;                                            // $F7CF STA $03
             push = (byte)(EnemyBehaviors.TouchYHalf[cls] - dy);         // $F7D3 LDA $FBE9,Y; SEC; SBC $03
             return true;                                               // dy <= TouchYHalf, so SBC carries
         }

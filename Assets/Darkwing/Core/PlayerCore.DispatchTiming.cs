@@ -9,6 +9,8 @@ namespace Darkwing.Core
         public Func<bool> TimingAudioQueueAccepts;
         public Func<bool> TimingRenderingBlanked;
         internal byte HookLatchForTiming => _hookLatch;
+        /// <summary>Diagnostic parts of the last state-01 price: [0] $CCBA side, [1] $F2D7.</summary>
+        public readonly int[] TimingParts = new int[4];
 
         private void BeginPlayerDispatchTiming(byte held, byte pressed)
         {
@@ -24,11 +26,17 @@ namespace Darkwing.Core
                 supported = TryMeasureState04Cycles(held, pressed, out cycles, out reason);
             else if (State == 0x0B)
                 supported = TryMeasureAirborne0BCycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else if (State == 2)
+                supported = TryMeasureCrouch02Cycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else if (State == 3)
+                supported = TryMeasureLookUp03Cycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else if (State == 0x13)
+                supported = TryMeasureCarried13Cycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
             else
             {
                 supported = false;
                 cycles = -1;
-                reason = "CB41 state outside reached dispatch timing";
+                reason = $"CB41 state {State:X2} outside reached dispatch timing";
             }
             if (supported)
             {
@@ -54,8 +62,9 @@ namespace Darkwing.Core
             }
         }
 
-        private static readonly sbyte[] TimingPointX = {12,12,12,-12,-12,-12,-11,0,11,-11,0,11};
-        private static readonly sbyte[] TimingPointY = {-11,0,11,-11,0,11,12,12,12,-12,-12,-12};
+        // $EBE8 point offsets: X at $ED19+point, Y at $ECAD+point (64 entries in the fixed bank).
+        private static readonly sbyte[] TimingPointX = {12,12,12,-12,-12,-12,-11,0,11,-11,0,11,2,2,2,-2,-2,-2,-1,1,1,-1,1,1,12,12,12,-12,-12,-12,-1,0,1,-1,0,1,9,9,-9,-9,-8,8,-8,8,20,20,-20,-20,-1,1,-1,1,4,4,4,-4,-4,-4,-1,0,1,-1,0,1};
+        private static readonly sbyte[] TimingPointY = {-11,0,11,-11,0,11,12,12,12,-12,-12,-12,-1,1,1,-1,1,1,2,2,2,-2,-2,-2,-1,0,1,-1,0,1,2,2,2,-2,-2,-2,-7,7,-7,7,8,8,-8,-8,-4,4,-4,4,2,2,-2,-2,-3,0,3,-3,0,3,-20,-20,-20,-3,-3,-3};
 
         public bool TryMeasureRisingAirborneCycles(byte held, byte pressed,
             out PlayerDispatchCost result, out string unsupported)
@@ -93,7 +102,7 @@ namespace Darkwing.Core
                 int integrateX = 4 + 2 + 4 + 5 + 4 + 4 + 5 + ScrollBranch(0xF52E, 0xF538, lowX >= 0);
                 if (lowX < 0) integrateX += 4 + 2 + 5;
                 integrateX += 6;
-                int pair = TimingRejectedHorizontalPair();
+                int pair = TimingRejectedHorizontalPair(nextX, nextY);
                 int side = TimingEmptyProbeSet(nextX, nextY, 2, points, 3);
                 int wrapper = 0;
                 int dispatch = 4 + ScrollBranch(0xCAFF, 0xCB41, true);
@@ -119,7 +128,9 @@ namespace Darkwing.Core
             }
         }
 
-        private int TimingRejectedHorizontalPair()
+        /// <summary>$F612 for the player at (x, y), then the $F724 side scan: solid actors run
+        /// the $F74E geometry unless the player is in state $0B.</summary>
+        private int TimingRejectedHorizontalPair(int x, int y)
         {
             var partner = Objects.Slots[1];
             int cycles = 2 + 2 + 2 + 4 + ScrollBranch(0xF619, 0xF646, !partner.Active);
@@ -156,7 +167,16 @@ namespace Darkwing.Core
                     skip = (state.BehaviorParam & 0x80) == 0;
                     cycles += 4 + ScrollBranch(0xF733, 0xF747, skip);
                 }
-                if (!skip) cycles += 3 + 2 + ScrollBranch(0xF739, 0xF747, State == 0x0B);
+                if (!skip)
+                {
+                    cycles += 3 + 2 + ScrollBranch(0xF739, 0xF747, State == 0x0B);
+                    if (State != 0x0B)
+                    {
+                        cycles += 3 + 6 + TimingSideGeometry(x, y, state, out bool hit) + 3;
+                        if (hit) throw new NotSupportedException("F744 side actor contact");
+                        cycles += ScrollBranch(0xF742, 0xF747, true);
+                    }
+                }
                 cycles += 2 + 2 + ScrollBranch(0xF74A, 0xF726, slot != 15);
             }
             return cycles + 2 + 6;

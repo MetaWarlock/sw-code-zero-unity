@@ -4,6 +4,7 @@ namespace Darkwing.Core
 {
     public static class ActorBank6Timing
     {
+        private static readonly byte[] CorpseSwapAnims = { 0xA0, 0x7E, 0x7F, 0x69, 0x6B, 0x6A, 0x72 };
         private static readonly byte[] BayonetPhases = { 9,10,11,12,13,14,15,1,2,3,4,5,6,7 };
         private static readonly byte[] BayonetX = { 0,0,0x61,0,0xB5,0,0xEC,0,0,1,0xEC,0,0xB5,0,0x61,0,0,0,0x9F,0xFF,0x4B,0xFF,0x14,0xFF,0,0xFF,0x14,0xFF,0x4B,0xFF,0x9F,0xFF };
         public static int DispatchEnvelope(ObjectSystem.Slot slot)
@@ -167,19 +168,23 @@ namespace Darkwing.Core
                     }
                     cycles += 3 + 2 + 6;
                 }
-                int carry = left ? (target.XFrac < fraction ? 1 : 0) : (target.XFrac + fraction) >> 8;
-                int nextX = (target.X + (left ? -velocity - carry : velocity + carry)) & 65535;
-                int probe = new ActorProbeTiming(player, tiles).MeasureEmptyProbe(nextX, target.Y, left ? 15 : 12, 2);
-                cycles += 3 + 3 + 6 + IntegrateXValues(target, left, velocity, fraction) + 2 + 3 + 6 + probe;
-                cycles += 3 + 2 + 3 + 4 + 2 + 5 + 6;
-                if (!left) cycles += 3;
-                return cycles + 3 + 2 + 3 + 6;
+                var motion = ActorMotion.From(target);
+                cycles += ActorMotionTiming.MoveX(ref motion, velocity, fraction, left, left ? 15 : 12, 1, player, tiles);
+                if (!left) cycles += 3;                                    // JMP $836B
+                // $836B: a wall class ≥3 bursts the shot ($FA6C anim $14) or clears a gas cloud ($18).
+                cycles += 3 + 2;
+                byte wall = motion.ProbeClass;
+                if (wall < 3) return cycles + 3 + 6;
+                cycles += 2 + 2;
+                if (wall == 7) return cycles + 3 + 6;
+                cycles += 2 + 4 + 2;
+                if (target.AnimNumber == 0x18) return cycles + 3 + 3 + ClearSlotCycles;
+                return cycles + 2 + 2 + 6 + 23 + 6;
             }
-            if (target.Behavior == 0x05
-                && target.AnimNumber != 0xA0 && target.AnimNumber != 0x7E && target.AnimNumber != 0x7F
-                && target.AnimNumber != 0x69 && target.AnimNumber != 0x6B && target.AnimNumber != 0x6A && target.AnimNumber != 0x72)
+            if (target.Behavior == 0x05)
             {
-                if (target.AnimNumber == 0x5F || (target.StateLow & 2) != 0) throw new NotSupportedException("86F8 corpse turn");
+                // $86A2 corpse: state 0 spawns debris unless the anim is one of five; $86C9 swaps
+                // seven anims for their falling pose ($FA6C) before the common $86F8 tail.
                 int cycles = 4 + 2;
                 if ((target.StateLow & 15) != 0) cycles += 3;
                 else
@@ -194,11 +199,36 @@ namespace Darkwing.Core
                     }
                     if (!skipDebris) cycles += 6 + ActorEventTiming.DeathDebris(player.Objects, target);
                 }
-                cycles += 6 + 18 + 4 + 7 * (2 + 2) + 3
-                    + 4 + 2 + 2 + 4 + 2 + 3 + 3 + 4 + 2;
+                cycles += 6 + 18 + 4;
+                int swap = Array.IndexOf(CorpseSwapAnims, target.AnimNumber);
+                byte animationAfter = target.AnimNumber;
+                if (swap < 0) cycles += CorpseSwapAnims.Length * (2 + 2) + 3;
+                else
+                {
+                    cycles += swap * (2 + 2) + 2 + 3 + 2 + (swap <= 2 ? 3 : 0) + 6 + 23;
+                    animationAfter = swap == 0 ? (byte)0xA2 : swap <= 2 ? (byte)0x44 : (byte)0xBA;
+                }
+                if (animationAfter == 0x5F || (target.StateLow & 2) != 0) throw new NotSupportedException("86F8 corpse turn");
+                cycles += 4 + 2 + 2 + 4 + 2 + 3 + 3 + 4 + 2;
                 bool left = (target.Direction & 1) != 0;
                 cycles += left ? 2 + 6 + IntegrateX(target, true) + 3 : 3 + 6 + IntegrateX(target, false);
                 return cycles + 6 + IntegrateAndDecayY(target, player.GravityFrac) + 6;
+            }
+            if (target.Behavior == 0x08 || target.Behavior == 0x09)
+                return PickupTest(target, slotIndex, player, events, target.Behavior == 0x09);
+            if (target.Behavior == 0x2A) return Behavior2A(target, player, events);
+            if (target.Behavior == 0x0B) return Behavior0B(target);
+            if (target.Behavior == 0x21 || target.Behavior == 0x22) return Behavior21(target, player, tiles);
+            if (target.Behavior == 0x3A)
+            {
+                // $9FCB: state 0 arms the walk-in velocities and flips $0580, then every state tests
+                // $FB7B; a miss returns through BCS $A009, which crosses the $9F/$A0 page.
+                int cycles = 4 + 2;
+                cycles += (target.StateLow & 15) == 0 ? 2 + 5 + 2 + 5 + 2 + 5 + 2 + 5 + 4 + 2 + 5 + 7 : 3;
+                int touch = TouchNoHit(player.Objects, player, target, out bool hit);
+                // Contact: behaviour 5, $50=$13, $FA78 anim 9 (20), $51=$78, $F607 jump cut (18).
+                if (hit) return cycles + 6 + touch + 2 + 2 + 5 + 2 + 3 + 2 + 6 + 20 + 2 + 3 + 6 + 18 + 6;
+                return cycles + 6 + touch + 4 + 6;
             }
             if (target.Behavior == 0x1F)
             {
@@ -208,45 +238,7 @@ namespace Darkwing.Core
                 else own += 2 + 2 + (left ? 3 + 6 + 3 : 2 + 3 + 6 + 3 + 3);
                 return own + IntegrateX(target, left) + IntegrateYSubtract(target);
             }
-            if (target.Behavior == 0x0A && (target.StateLow & 15) != 0 && (target.StateLow & 2) != 0 && target.T480 != 0)
-            {
-                int cycles = 4 + 2 + 3 + 4 + 2 + 3 + 4 + 3 + 7 + 4 + 2;
-                int timer = target.T480 - 1;
-                if (timer >= 0x3C) cycles += 3;
-                else
-                {
-                    cycles += 2 + 2;
-                    cycles += (timer & 1) != 0 ? 3 + 4 + 2 + 5 : 2 + 4 + 2 + 5 + 3;
-                }
-                cycles += 4 + 2 + (target.AnimNumber < 0x22 ? 3 : 2) + 3;
-                int touch = TouchNoHit(player.Objects, player, target, out bool hit);
-                if (hit)
-                {
-                    if (target.AnimNumber != 0x23 || events == null) throw new NotSupportedException("8BCD pickup variant or queue owner");
-                    int repair = player.HitLadder >= 3 ? 4 + 2 + 2 + 2 + 4 + 6
-                        : player.HitLadder >= 2 ? 4 + 2 + 4 + 4 + 2 + 2 + 2 + 4 + 6
-                        : 4 + 2 + 4 + 4 + 2 + 3 + 4 + 2 + (player.HitLadder == 1 ? 2 + 2 + 4 : 3) + 6;
-                    return cycles + 6 + touch + 2 + 6 + 48 + 6 + 35 + 29 + 2 + 6 + events.Enqueue(0x17) + 4 + 2 + 3 + repair;
-                }
-                return cycles + 6 + touch + 3 + 6;
-            }
-            if (target.Behavior == 0x0A && (target.StateLow & 15) == 0 && target.YVelInt < 0)
-            {
-                if (events?.ReadHookLatch == null) throw new NotSupportedException("F322 actual hook latch owner absent");
-                int fraction = target.YFrac - target.YVelFrac;
-                int low = (byte)((byte)target.Y - (byte)target.YVelInt - (fraction < 0 ? 1 : 0));
-                int page = target.Y >> 8;
-                if (low >= 0xF0) { low = (low + 16) & 255; page++; }
-                int nextY = ((page & 255) << 8) | low;
-                var probe = new ActorProbeTiming(player, tiles);
-                int probeCycles = probe.MeasureProbe(target.X, nextY, 40, 3, out byte result);
-                if (result < 2) throw new NotSupportedException("8B80 initial debris non-solid landing");
-                int snap = 3 + 2 + 3 + 4 + 2 + 3 + 5 + (low >= (probe.LastPointY & 15) ? 3 : 2 + 2 + 5 + 4 + 2 + 5) + 6;
-                int fall = 3 + 3 + 4 + 3 + 4 + 3 + 4 + 3 + IntegrateAndDecayY(target, player.GravityFrac) - 3
-                    + 2 + 4 + 3 + (events.ReadHookLatch() != 0 ? 3 + 2 + 3 : 2)
-                    + 6 + probeCycles + 2 + 3 + 2 + 2 + 3 + 2 + 3 + 6 + snap + 6 + 20 + 2 + 6;
-                return 4 + 2 + 2 + 2 + 5 + 7 + 4 + 2 + 2 + 2 + 2 + 6 + fall + 3 + 2 + 7 + 6;
-            }
+            if (target.Behavior == 0x0A) return Behavior0A(target, slotIndex, player, tiles, events);
             if (target.Behavior == 0x0E && (target.StateLow & 15) == 0)
             {
                 int deltaY = (byte)player.Y - (byte)target.Y;
@@ -379,6 +371,276 @@ namespace Darkwing.Core
             }
             throw new NotSupportedException("bank6 behavior " + target.Behavior.ToString("X2") + " state " + target.StateLow.ToString("X2"));
         }
+
+        private static readonly byte[] ShotDirections = { 0x01, 0x02, 0x08, 0x04, 0x09, 0x05, 0x0A, 0x06 };
+
+        /// <summary>$8BDA straight shot: the $0580 direction picks the facing ($F24B/$F2A6) and the
+        /// X ($F4FD/$F51B) and Y ($F55E up/$F539 down) integrators; the last one is a JMP.</summary>
+        private static int Behavior0B(ObjectSystem.Slot target)
+        {
+            int index = Array.IndexOf(ShotDirections, target.Direction);
+            int cycles = 4;
+            if (index < 0) return cycles + ShotDirections.Length * (2 + 2) + 6;
+            cycles += index * (2 + 2) + 2 + Branch(0x8BDF + 4 * index, index == 0 ? 0x8BFE : 0x8C04, true);
+            const int Facing = 6 + 4 + 2 + 5 + 6;
+            bool horizontal = (target.Direction & 3) != 0, left = (target.Direction & 2) != 0;
+            bool vertical = (target.Direction & 0x0C) != 0, down = (target.Direction & 4) != 0;
+            if (horizontal) cycles += Facing + (vertical ? 6 : 3) + IntegrateX(target, left);
+            if (vertical) cycles += 3 + (down ? IntegrateYAdd(target) : IntegrateYSubtract(target));
+            return cycles;
+        }
+
+        /// <summary>$F539: Y += velocity, skipping the $F0..$FF rows of each 240-row page.</summary>
+        private static int IntegrateYAdd(ObjectSystem.Slot target)
+        {
+            int carry = (target.YFrac + target.YVelFrac) >> 8;
+            int low = ((byte)target.Y + (byte)target.YVelInt + carry) & 0xFF;
+            return 4 + 2 + 4 + 5 + 4 + 4 + 5 + 2 + (low < 0xF0 ? 3 : 2 + 2 + 5 + 4 + 2 + 5) + 6;
+        }
+
+        /// <summary>$F919: |player Y − actor Y| low bytes.</summary>
+        private static int DistanceYBody(ObjectSystem.Slot target, PlayerCore player, out byte distance)
+        {
+            int delta = (byte)player.Y - (byte)target.Y;
+            distance = delta >= 0 ? (byte)delta : (byte)-delta;
+            return 4 + 2 + 4 + (delta >= 0 ? 3 : 2 + 2 + 2 + 2) + 6;
+        }
+
+        /// <summary>$9F4C walker (21) / mirrored walker (22): state 0 wakes inside a 16×23 box; later
+        /// states fall with $F2D7, toggle touch class $95 by the vertical distance and walk with
+        /// $F200/$F254, turning on any wall class.</summary>
+        private static int Behavior21(ObjectSystem.Slot target, PlayerCore player, ITileMap tiles)
+        {
+            int cycles = 4 + 2;
+            bool initial = (target.StateLow & 15) == 0;
+            cycles += Branch(0x9F51, 0x9F75, !initial);
+            if (initial)
+            {
+                cycles += 5 + 2 + 5 + 6 + DistanceXBody(target, player, out byte dx) + 2 + Branch(0x9F60, 0x9F71, dx >= 0x10);
+                if (dx < 0x10)
+                {
+                    cycles += 6 + DistanceYBody(target, player, out byte dy) + 2 + Branch(0x9F67, 0x9F71, dy >= 0x17);
+                    if (dy < 0x17) cycles += 7 + 2 + 5;
+                }
+                return cycles + 6 + AnimRestartCycles + 6;
+            }
+            cycles += 3 + 2 + Branch(0x9F79, 0x9F74, player.State == 7);
+            if (player.State == 7) return cycles + 6;
+            var motion = ActorMotion.From(target);
+            cycles += 2 + 2 + 6 + ActorMotionTiming.MoveY(ref motion, player.GravityFrac, 6, 2, player, tiles, out _);
+            int dyAfter = (byte)player.Y - (byte)motion.Y;
+            byte distanceAfter = dyAfter >= 0 ? (byte)dyAfter : (byte)-dyAfter;
+            cycles += 6 + 4 + 2 + 4 + (dyAfter >= 0 ? 3 : 2 + 2 + 2 + 2) + 6 + 2 + Branch(0x9F87, 0x9F90, distanceAfter >= 6);
+            cycles += distanceAfter < 6 ? 2 + 5 + Branch(0x9F8E, 0x9F95, true) : 2 + 5;
+            cycles += 4 + 2 + Branch(0x9F9A, 0x9FB7, target.Behavior == 0x22);
+            bool odd = (target.Direction & 1) != 0;
+            bool right;
+            if (target.Behavior == 0x22) { cycles += 4 + 2 + Branch(0x9FBC, 0x9FA3, odd); right = odd; }
+            else { cycles += 4 + 2 + Branch(0x9FA1, 0x9FBE, odd); right = !odd; }
+            cycles += 2 + 2 + 6 + ActorMotionTiming.MoveX(ref motion, target.XVelInt, target.XVelFrac, !right, right ? 0 : 3, 2, player, tiles) + 3;
+            bool wall = motion.ProbeClass != 0;
+            if (right) cycles += Branch(0x9FAC, 0x9FB6, !wall);
+            else
+            {
+                cycles += Branch(0x9FC7, 0x9FB6, !wall);
+                if (wall) cycles += Branch(0x9FC9, 0x9FAE, true);
+            }
+            if (wall) cycles += 4 + 2 + 5;
+            return cycles + 6;
+        }
+
+        /// <summary>$8B80 dropped item: state 0 arms a $FF timer, odd states fall with $F2D7 (points
+        /// $28..$2A) until they land, even states count the timer down, blink below $3C, expire through
+        /// $FA9A, and otherwise run the $8837/$8A1A pickup test.</summary>
+        private static int Behavior0A(ObjectSystem.Slot target, int slotIndex, PlayerCore player, ITileMap tiles, ActorEventTiming events)
+        {
+            int cycles = 4 + 2;
+            bool initial = (target.StateLow & 15) == 0;
+            cycles += Branch(0x8B85, 0x8B8F, !initial);
+            if (initial) cycles += 2 + 5 + 7;
+            bool resting = !initial && (target.StateLow & 2) != 0;
+            cycles += 4 + 2 + Branch(0x8B94, 0x8BA5, resting);
+            if (!resting)
+            {
+                var motion = ActorMotion.From(target);
+                cycles += 2 + 2 + 6 + ActorMotionTiming.MoveY(ref motion, player.GravityFrac, 0x28, 2, player, tiles, out _) + 3;
+                cycles += Branch(0x8B9F, 0x8BA4, motion.ProbeClass == 0);
+                if (motion.ProbeClass != 0) cycles += 7;
+                return cycles + 6;
+            }
+            cycles += 4 + Branch(0x8BA8, 0x8BAD, target.T480 != 0);
+            if (target.T480 == 0) return cycles + 3 + ClearSlotCycles;
+            int timer = target.T480 - 1;
+            cycles += 7 + 4 + 2 + Branch(0x8BB5, 0x8BCD, timer >= 0x3C);
+            if (timer < 0x3C)
+                cycles += 2 + ((timer & 1) != 0 ? 3 + 4 + 2 + 5 : 2 + 4 + 2 + 5 + 3);
+            cycles += 4 + 2 + Branch(0x8BD2, 0x8BD7, target.AnimNumber < 0x22) + 3;
+            return cycles + PickupTest(target, slotIndex, player, events, target.AnimNumber < 0x22);
+        }
+
+        /// <summary>$8837 (anims $22+) / $8A1A (anims $1C+) from JSR $FB7B: a miss returns; a touch
+        /// marks the placement ($FC29), clears the slot ($FA9A) and jumps through the anim table.</summary>
+        private static int PickupTest(ObjectSystem.Slot target, int slotIndex, PlayerCore player, ActorEventTiming events, bool scoreTable)
+        {
+            int touch = TouchNoHit(player.Objects, player, target, out bool hit);
+            if (!hit) return 6 + touch + 3 + 6;
+            if (events == null) throw new NotSupportedException("8837 pickup queue owner absent");
+            int cycles = 6 + touch + 2 + 6 + 48 + 6 + ClearSlotCycles + 29;
+            byte anim = target.AnimNumber;
+            if (scoreTable)
+            {
+                if (anim != 0x1C && anim != 0x1D) throw new NotSupportedException("8A36 pickup anim " + anim.ToString("X2"));
+                // $8A3F / $8A4D: SFX $17, the rising icon, then add 1 / 5 to the bonus digits.
+                cycles += 2 + 6 + events.Enqueue(0x17) + 6 + PickupIcon(target, slotIndex, player.Objects) + 2 + 3;
+                if (anim == 0x1C) cycles += 3;                          // BNE $8A59
+                return cycles + BonusDigitsAdd(player.ScoreDigits, anim == 0x1C ? 1 : 5);
+            }
+            if (anim == 0x22 || anim == 0x23)
+            {
+                if (anim != 0x23) throw new NotSupportedException("89D6 full repair pickup");
+                int repair = player.HitLadder >= 3 ? 4 + 2 + 2 + 2 + 4 + 6
+                    : player.HitLadder >= 2 ? 4 + 2 + 4 + 4 + 2 + 2 + 2 + 4 + 6
+                    : 4 + 2 + 4 + 4 + 2 + 3 + 4 + 2 + (player.HitLadder == 1 ? 2 + 2 + 4 : 3) + 6;
+                return cycles + 2 + 6 + events.Enqueue(0x17) + 4 + 2 + 3 + repair;
+            }
+            if (anim >= 0x26 && anim <= 0x28)
+            {
+                // $8865/$8889/$88AD: SFX $18, icon/bracket into $05BA/$05BC, $54, +10 saved meter
+                // ($88FF), then $05C0 gates the $53 promotion and the $88CE copy ($88AD falls into it).
+                cycles += 2 + 6 + events.Enqueue(0x18) + 2 + 4 + 2 + 4 + 2 + 3 + 2 + 6
+                    + SavedMeterAddTen(player.GasEnergyHi, player.GasEnergyLo) + 4;
+                if (player.ActiveGasEnergyLo == 0) return cycles + 3 + 6;
+                return cycles + 2 + 2 + 3 + (anim == 0x28 ? 0 : 3) + 3 + 4 + 3 + 4 + 6;
+            }
+            throw new NotSupportedException("8853 pickup anim " + anim.ToString("X2"));
+        }
+
+        /// <summary>$88FF with A=$0A: $61=0 starts the meter at $70/$70; ten units keep the low digit
+        /// and raise $60, capped at $79/$79.</summary>
+        private static int SavedMeterAddTen(byte high, byte low)
+        {
+            int cycles = 3 + (low != 0 ? 3 : 2 + 2 + 3 + 3);
+            if (low == 0) high = 0x70;
+            cycles += 2 + 2 + 2 + 2 + 2 + 2 + 3 + 2 + 2 + 2 + 3 + 2;
+            return cycles + (high == 0x79 ? 3 + 2 + 3 + 3 + 6 : 2 + 5 + 3 + 6);
+        }
+
+        /// <summary>$8A59: unless every digit is 9, add <paramref name="units"/> to $05CC and carry
+        /// single units up through $05CA…$05C4 (a carry out of $05C4 is dropped).</summary>
+        private static int BonusDigitsAdd(byte[] digits, int units)
+        {
+            int cycles = 0;
+            for (int index = 0; index < 5; index++)
+            {
+                cycles += 4 + 2;
+                if (digits[index] != 0x79) { cycles += 3; break; }
+                cycles += 2;
+                if (index == 4) return cycles + 6;
+            }
+            int value = (digits[4] & 15) + units;
+            cycles += 4 + 2 + 2 + 3 + 2;
+            if (value < 10) return cycles + 2 + 2 + 2 + 4 + 6;
+            cycles += 3 + 2 + 2 + 2 + 2 + 4;
+            for (int index = 3; index >= 0; index--)
+            {
+                cycles += 4 + 2 + 2 + 2 + 2;
+                if ((digits[index] & 15) + 1 < 10) return cycles + 2 + 2 + 2 + 4 + 6;
+                if (index == 0) return cycles + 3 + 6;
+                cycles += 3 + 2 + 4;
+            }
+            return cycles;
+        }
+
+        /// <summary>$8B34 rising pickup icon. The pickup's own slot was just cleared by $FA9A, so the
+        /// $FA4C scan may reuse it.</summary>
+        private static int PickupIcon(ObjectSystem.Slot target, int ownSlot, ObjectSystem objects)
+        {
+            int cycles = 6 + FindFreeSlot(objects, out int slot, ownSlot) + Branch(0x8B37, 0x8B7C, slot < 0);
+            if (slot < 0) return cycles + 6;
+            return cycles + 3 + 4 * (4 + 5) + 4 + 2 + 2 + 2 + 4 + 3 + 6 + AnimSeedSlotYCycles
+                + 2 + 5 + 2 + 5 + 2 + 5 + 5 + 5 + 2 + 5 + 6;
+        }
+
+
+
+        private const int ClearSlotCycles = 2 + 5 + 5 + 5 + 5 + 2 + 5 + 6;   // $FA9A
+
+        /// <summary>$F928: |player X − actor X| low byte, carry set when the player is right of it.</summary>
+        private static int DistanceXBody(ObjectSystem.Slot target, PlayerCore player, out byte distance)
+        {
+            int delta = player.X - target.X;
+            distance = delta >= 0 ? (byte)delta : (byte)-(byte)delta;
+            return 4 + 2 + 4 + 3 + 4 + 4 + 4 + (delta >= 0 ? 3 : 2 + 2 + 2 + 2) + 6;
+        }
+
+        private const int AnimRestartCycles = 2 + 5 + 5 + 6;          // $F869
+        private const int AnimSeedSlotYCycles = 5 + 2 + 5 + 5 + 2 + 5 + 2 + 5 + 6; // $FA84
+
+        /// <summary>$FA4C: first free slot from 15 down to 5; −1 when every slot is live.</summary>
+        private static int FindFreeSlot(ObjectSystem objects, out int slot, int alsoFree = -1)
+        {
+            int cycles = 2;
+            for (slot = 15; slot >= 5; slot--)
+            {
+                cycles += 4;
+                if (!objects.Slots[slot].Active || slot == alsoFree) return cycles + 3 + 2 + 6;
+                cycles += 2 + 2 + 2 + (slot > 5 ? 3 : 2);
+            }
+            slot = -1;
+            return cycles + 2 + 6;
+        }
+
+        /// <summary>$9DBD turret: state 0 waits for |dx| &lt; $40, odd states face the player and hold
+        /// until anim frame $0D, even states rearm on $0400 visibility and fire at frame $16/timer 4.</summary>
+        private static int Behavior2A(ObjectSystem.Slot target, PlayerCore player, ActorEventTiming events)
+        {
+            int cycles = 4 + 2;
+            bool initial = (target.StateLow & 15) == 0;
+            cycles += Branch(0x9DC2, 0x9DDC, !initial);
+            if (initial)
+            {
+                cycles += 6 + DistanceXBody(target, player, out byte distance) + 2;
+                cycles += Branch(0x9DC9, 0x9DD8, distance >= 0x40);
+                if (distance < 0x40) cycles += 7 + 2 + 5 + 2 + 5;
+                return cycles + 6 + AnimRestartCycles + 6;
+            }
+            cycles += 6 + FaceApply(target, player) + 4 + 2;
+            bool armed = (target.StateLow & 2) != 0;
+            cycles += Branch(0x9DE4, 0x9E01, armed);
+            if (!armed)
+            {
+                cycles += 2 + 5 + 2 + 5 + 4 + 2;
+                cycles += Branch(0x9DF5, 0x9E00, target.AnimFrame != 0x0D);
+                if (target.AnimFrame == 0x0D) cycles += 7 + 4 + 5;
+                return cycles + 6;
+            }
+            cycles += 4 + 5 + 4 + 2;
+            byte flags = target.Flags;
+            cycles += Branch(0x9E0C, 0x9E00, flags == 0x50);
+            if (flags == 0x50) return cycles + 6;
+            cycles += 2 + Branch(0x9E10, 0x9E00, flags == 0x10);
+            if (flags == 0x10) return cycles + 6;
+            cycles += 4 + 2 + Branch(0x9E17, 0x9E1E, target.AnimFrame == 0x16);
+            if (target.AnimFrame == 0x16)
+            {
+                cycles += 4 + 2 + Branch(0x9E23, 0x9E00, target.AnimTimer != 4);
+                if (target.AnimTimer != 4) return cycles + 6;
+                if (events == null) throw new NotSupportedException("9E27 turret shot queue owner absent");
+                cycles += 2 + 6 + events.Enqueue(0x29) + 6;
+                cycles += 6 + FindFreeSlot(player.Objects, out int slot) + Branch(0x9E3F, 0x9E84, slot < 0);
+                if (slot >= 0)
+                    cycles += 3 + 4 + 5 + 2 + 2 + 4 + 2 + 4 + 3 + 4 + 4 + 3 + 5 + 4 + 5
+                        + 4 + 2 + 2 + 5 + 4 + 5 + 2 + 6 + AnimSeedSlotYCycles + 2 + 5 + 2 + 5
+                        + 6 + (2 + 5 + 2 + 5 + 6);
+                return cycles + 6 + 6;
+            }
+            cycles += 2 + Branch(0x9E1B, 0x9E2E, target.AnimFrame >= 0x17);
+            if (target.AnimFrame < 0x17) return cycles + 6;
+            return cycles + 2 + 5 + 2 + 5 + 7 + 6;
+        }
+
+        private static int Branch(int instruction, int target, bool taken)
+            => taken ? 3 + (((instruction + 2) & 0xFF00) == (target & 0xFF00) ? 0 : 1) : 2;
 
         public static int TouchNoHit(ObjectSystem objects, PlayerCore player, ObjectSystem.Slot target, out bool hit)
         {

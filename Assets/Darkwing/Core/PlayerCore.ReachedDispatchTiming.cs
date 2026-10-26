@@ -91,7 +91,7 @@ namespace Darkwing.Core
                     dispatch += 4 + 2 + ScrollBranch(0xD67E, 0xD69E, false) + 2 + ScrollBranch(0xD682, 0xD69E, false);
                     dispatch += 2 + ScrollBranch(0xD686, 0xD68A, false) + ScrollBranch(0xD688, 0xD6AC, true);
                     dispatch += 2 + 6 + 4 + 2 + 4 + 4 + 6;
-                    pair = ExpandedRejectedVerticalPair();
+                    pair = ExpandedRejectedVerticalPair(X, nextY);
                     dispatch += 6 + ScrollBranch(0xD6B4, 0xD709, false) + 3 + 2 + ScrollBranch(0xD6BA, 0xD6C7, true);
                     if (!(_tiles is LevelTileMap map)) throw new NotSupportedException("D6C9 grid pointer unavailable");
                     dispatch += 3 + 5 + (((map.World.GridAddress & 255) + CellIndex > 255) ? 1 : 0) + 2;
@@ -114,7 +114,7 @@ namespace Darkwing.Core
                     int integrateX = 4 + 2 + 4 + 5 + 4 + 4 + 5 + ScrollBranch(0xF52E, 0xF538, lowX >= 0);
                     if (lowX < 0) integrateX += 4 + 2 + 5;
                     integrateX += 6;
-                    int horizontalPair = TimingRejectedHorizontalPair();
+                    int horizontalPair = TimingRejectedHorizontalPair(nextX, nextY);
                     int side = ExpandedProbeSet(nextX, nextY, 2, out int sideClass, out _);
                     if (sideClass >= 3) throw new NotSupportedException("F2A3 solid side snap");
                     ExpandedPoint(nextX, nextY, 5, out _, out int extraClass, out _);
@@ -236,7 +236,7 @@ namespace Darkwing.Core
                         {
                             dispatch += 4 + 2 + ScrollBranch(0xCC2D, 0xCC34, slot.AnimNumber == 5);
                             if (slot.AnimNumber != 5) dispatch += 2 + 6 + 4 + 2 + 4 + 4 + 6;
-                            dispatch += 6 + ExpandedNormalShot(audioQueueAccepts) + 3;
+                            dispatch += 6 + ExpandedNormalShot(audioQueueAccepts, 5) + 3;
                         }
                         cycles = dispatch + 6;
                         return true;
@@ -255,7 +255,7 @@ namespace Darkwing.Core
                     {
                         dispatch += 4 + 2 + ScrollBranch(0xCC63, 0xCC6A, slot.AnimNumber == 5);
                         if (slot.AnimNumber != 5) dispatch += 2 + 6 + 4 + 2 + 4 + 4 + 6;
-                        cycles = dispatch + 6 + ExpandedNormalShot(audioQueueAccepts) + 6;
+                        cycles = dispatch + 6 + ExpandedNormalShot(audioQueueAccepts, 5) + 6;
                         return true;
                     }
                 }
@@ -352,7 +352,9 @@ namespace Darkwing.Core
             return cycles + 3 + 3 + 4 + ScrollBranch(0xCF58, 0xCF5D, !allowed) + 2 + 6;
         }
 
-        private int ExpandedNormalShot(bool? audioQueueAccepts)
+        /// <summary>$CE39 normal shot; <paramref name="pose"/> is $0420 at $CEA1 (crouch 7: Y+8,
+        /// air shots $0E/$0F: same Y, otherwise Y−3).</summary>
+        private int ExpandedNormalShot(bool? audioQueueAccepts, byte pose)
         {
             if (WeaponActive != 0) throw new NotSupportedException("CE3D non-normal projectile");
             int cycles = 3 + ScrollBranch(0xCE3B, 0xCE40, true) + 4 + 2 + ScrollBranch(0xCE45, 0xCE38, false) + 2;
@@ -368,8 +370,23 @@ namespace Darkwing.Core
             if (!audioQueueAccepts.HasValue) throw new NotSupportedException("F850 native audio queue owner unavailable");
             cycles += 2 + 5 + 4 + 5 + 3 + 2 + ScrollBranch(0xCE64, 0xCE87, false) + 2 + ScrollBranch(0xCE68, 0xCE87, false);
             cycles += 3 + 2 + 2 + 4 + 2 + 4 + 3 + 4 + 4 + 5 + 4 + 5 + 3;
-            cycles += 4 + 2 + ScrollBranch(0xCEA6, 0xCEBC, false) + 2 + ScrollBranch(0xCEAA, 0xCEC7, false);
-            cycles += 2 + ScrollBranch(0xCEAE, 0xCEC7, false) + 4 + 2 + 2 + 5 + 3;
+            cycles += 4 + 2;
+            if (pose == 7)
+            {
+                bool zero = (byte)(Y + 8) == 0;
+                cycles += ScrollBranch(0xCEA6, 0xCEBC, true) + 4 + 2 + 2 + 5 + (zero ? 2 + 4 + 5 : 3);
+            }
+            else
+            {
+                cycles += ScrollBranch(0xCEA6, 0xCEBC, false) + 2;
+                if (pose == 0x0E) cycles += ScrollBranch(0xCEAA, 0xCEC7, true) + 4 + 5;
+                else
+                {
+                    cycles += ScrollBranch(0xCEAA, 0xCEC7, false) + 2;
+                    if (pose == 0x0F) cycles += ScrollBranch(0xCEAE, 0xCEC7, true) + 4 + 5;
+                    else cycles += ScrollBranch(0xCEAE, 0xCEC7, false) + 4 + 2 + 2 + 5 + 3;
+                }
+            }
             cycles += 4 + 5 + 3 + 5 + 3 + 4 + 5 + 4 + 6 + 5 + 2 + 5 + 5 + 6;
             cycles += 4 + 6 + ExpandedQueueCycles(audioQueueAccepts.Value) + 2 + 5 + 6;
             return cycles;
@@ -388,7 +405,16 @@ namespace Darkwing.Core
             int velocity = (((byte)YVelInt << 8 | YVelFrac) - GravityFrac) & 65535;
             if ((velocity >> 8) < 0xF9) throw new NotSupportedException("F5F1 ground gravity clamp");
             int gravity = 4 + 2 + 3 + 5 + 4 + 2 + 5 + ScrollBranch(0xF5EB, 0xF5FB, false) + 2 + ScrollBranch(0xF5EF, 0xF5FB, true) + 6;
-            int pair = ExpandedRejectedVerticalPair();
+            int pair = ExpandedVerticalPair(X, nextY, out bool standing, out int push, out int scratch);
+            if (standing)
+            {
+                int landY = nextY;
+                int head = 3 + 3 + 4 + 3 + 4 + 3 + 4 + ScrollBranch(0xF2E8, 0xF2ED, true) + 6 + integrate;
+                head += 2 + ScrollBranch(0xF2F2, 0xF31F, false) + 6 + pair + ScrollBranch(0xF2F7, 0xF31F, false);
+                head += PlayerActorLandCycles(X, ref landY, scratch, push, out maximum);
+                nextY = landY;
+                return head;
+            }
             int probe = ExpandedProbeSet(X, nextY, 6, out maximum, out int lastY, 3);
             int nibble = lastY & 15;
             if (maximum == 0 || maximum == 2 || (maximum == 1 && nibble >= 8)) throw new NotSupportedException("F360 ground unlatch/hook dance");
@@ -408,8 +434,6 @@ namespace Darkwing.Core
 
         private int ExpandedHorizontalSimple(int coordinateX, int coordinateY, bool right, byte velocityFraction, byte velocityInteger, int first)
         {
-            foreach (var slot in Objects.Slots)
-                if (slot.Active && (slot.Flags & slot.BehaviorParam & 0x80) != 0) throw new NotSupportedException("F73B armed horizontal geometry");
             int fraction = right ? XFrac + velocityFraction : XFrac - velocityFraction;
             int lowX = right ? (byte)coordinateX + velocityInteger + (fraction > 255 ? 1 : 0) : (byte)coordinateX - velocityInteger - (fraction < 0 ? 1 : 0);
             int nextX = (ushort)(right ? coordinateX + velocityInteger + (fraction > 255 ? 1 : 0) : coordinateX - velocityInteger - (fraction < 0 ? 1 : 0));
@@ -417,7 +441,7 @@ namespace Darkwing.Core
             integrate += right ? ScrollBranch(0xF510, 0xF51A, lowX <= 255) : ScrollBranch(0xF52E, 0xF538, lowX >= 0);
             if (right ? lowX > 255 : lowX < 0) integrate += 4 + 2 + 5;
             integrate += 6;
-            int pair = TimingRejectedHorizontalPair();
+            int pair = TimingRejectedHorizontalPair(nextX, coordinateY);
             int probe = ExpandedProbeSet(nextX, coordinateY, first, out int maximum, out _, 3);
             int cycles = 3 + 3 + 6 + integrate + 2 + ScrollBranch(right ? 0xF209 : 0xF25D, right ? 0xF23F : 0xF29A, false) + 6 + pair;
             cycles += ScrollBranch(right ? 0xF20E : 0xF262, right ? 0xF23F : 0xF29A, true) + 6 + probe;
@@ -456,8 +480,26 @@ namespace Darkwing.Core
                 + 2 + ScrollBranch(0xEBB6, 0xEBE3, false) + 2 + ScrollBranch(0xEBBA, 0xEBDB, false) + 6;
         }
 
-        private int ExpandedRejectedVerticalPair()
+        /// <summary>$F64A for the player at (x, y): the slot-1 pair test, then the $F784 scan of
+        /// slots 2..15. A solid actor ($0400/$0570 bit 7) runs the $F7A8 geometry; a hit leaves
+        /// through $F7DE with SEC, which the callers do not price yet.</summary>
+        private int ExpandedRejectedVerticalPair(int x, int y)
         {
+            int cycles = ExpandedVerticalPair(x, y, out bool hit, out _);
+            if (hit) throw new NotSupportedException("F79E stand-on-actor contact");
+            return cycles;
+        }
+
+        /// <summary>$F64A for the player; on a $F7A8 hit it leaves through $F7DE with SEC and
+        /// <paramref name="push"/> = $11 (class height − |dy|).</summary>
+        private int ExpandedVerticalPair(int x, int y, out bool hit, out int push) => ExpandedVerticalPair(x, y, out hit, out push, out _);
+
+        /// <summary>As above; <paramref name="scratch"/> is $02/$03 after a scan hit (class | |dY|·256).</summary>
+        private int ExpandedVerticalPair(int x, int y, out bool hit, out int push, out int scratch)
+        {
+            hit = false;
+            push = 0;
+            scratch = -1;
             var partner = Objects.Slots[1];
             bool rejected = !partner.Active;
             int cycles = 2 + 2 + 2 + 4 + ScrollBranch(0xF651, 0xF695, rejected);
@@ -473,10 +515,149 @@ namespace Darkwing.Core
                 cycles += 4 + ScrollBranch(0xF789, 0xF7A1, skip);
                 if (!skip) { skip = (state.Flags & 0x80) == 0; cycles += 4 + ScrollBranch(0xF78E, 0xF7A1, skip); }
                 if (!skip) { skip = (state.BehaviorParam & 0x80) == 0; cycles += 4 + ScrollBranch(0xF793, 0xF7A1, skip); }
-                if (!skip) throw new NotSupportedException("F797 armed vertical scan geometry");
+                if (!skip)
+                {
+                    cycles += 3 + 6 + TimingStandGeometry(x, y, state, out hit, out push) + 3;
+                    if (hit)
+                    {
+                        int touchClass = state.BehaviorParam & 31;
+                        scratch = touchClass | (EnemyBehaviors.TouchYHalf[touchClass] - push) << 8;
+                        return cycles + 2 + 3 + 2 + 6;                   // BCC not taken, JMP $F7DE: SEC / RTS
+                    }
+                    cycles += ScrollBranch(0xF79C, 0xF7A1, true);
+                }
                 cycles += 2 + 2 + ScrollBranch(0xF7A4, 0xF786, slot != 15);
             }
             return cycles + 2 + 6;
+        }
+
+        /// <summary>$F699 with X = the player: $0400 bit 4 selects the 16-bit world distance.</summary>
+        private int TimingDistanceX(int x, ObjectSystem.Slot actor, out int low, out int high)
+        {
+            if ((Objects.Slots[0].Flags & 0x10) == 0) throw new NotSupportedException("F6C6 screen-relative actor distance");
+            int delta = (x - actor.X) & 0xFFFF;
+            int cycles = 4 + 2 + 2 + 4 + 2 + 4 + 3 + 4 + 4 + 3;
+            bool negative = x < actor.X;
+            if (negative) { delta = (-delta) & 0xFFFF; cycles += 2 + 3 + 2 + 2 + 3 + 3 + 2 + 2 + 3; }
+            else cycles += 3;
+            low = delta & 255; high = delta >> 8;
+            return cycles + 3 + 6;
+        }
+
+        /// <summary>$F6DF: player Y minus the actor Y moved by ±$10 across a 240-row page; the
+        /// result is folded by the sign of its LOW byte.</summary>
+        private static int TimingDistanceY(int y, ObjectSystem.Slot actor, out byte value)
+        {
+            int actorY = actor.Y;
+            int cycles = 4 + 3 + 4 + 3 + 4;
+            int actorPage = actorY >> 8, playerPage = (y >> 8) & 255;
+            if (actorPage == playerPage) cycles += 4;                    // BEQ $F70B crosses $F6/$F7
+            else if (actorPage > playerPage) { cycles += 2 + 2 + 3 + 2 + 3 + 3 + 2 + 3 + 3; actorY = (actorY - 0x10) & 0xFFFF; }
+            else { cycles += 2 + 3 + 3 + 2 + 3 + 3 + 2 + 3; actorY = (actorY + 0x10) & 0xFFFF; }
+            byte low = (byte)((y & 255) - (actorY & 255));
+            cycles += 4 + 2 + 3 + 3 + 4 + 3 + 3 + 3;
+            if (low < 0x80) cycles += 3;
+            else { cycles += 2 + 2 + 2 + 2; low = (byte)(-low); }
+            value = low;
+            return cycles + 4 + 6;
+        }
+
+        /// <summary>$F7A8 stand test: |dx| below the class width and |dy| at most the class height.</summary>
+        private int TimingStandGeometry(int x, int y, ObjectSystem.Slot actor, out bool hit, out int push)
+        {
+            hit = false;
+            push = 0;
+            int cls = actor.BehaviorParam & 31;
+            int cycles = 4 + 2 + 3 + 6 + TimingDistanceX(x, actor, out int low, out int high) + 3;
+            if (high != 0) return cycles + 3 + 2 + 6;
+            cycles += 2 + 3 + 3 + 4;
+            if (low >= EnemyBehaviors.TouchXHalf[cls]) return cycles + 3 + 2 + 6;
+            cycles += 2 + 3 + 6 + TimingDistanceY(y, actor, out byte dy) + 3 + 3 + 4 + (0xE9 + cls > 255 ? 1 : 0);
+            int height = EnemyBehaviors.TouchYHalf[cls];
+            if (dy == height) cycles += 3;
+            else
+            {
+                cycles += 2;
+                if (dy > height) return cycles + 3 + 2 + 6;
+                cycles += 2;
+            }
+            hit = true;
+            push = (byte)(height - dy);
+            return cycles + 3 + 3 + 4 + (0xE9 + cls > 255 ? 1 : 0) + 2 + 3 + 3 + 6;
+        }
+
+        /// <summary>$F2F9…$F319 then $F49C and $F347 after a stand-on-actor hit: lift by $11 (at most 4),
+        /// probe above ($09) when the lift moved the player above the pre-move Y, else below ($06);
+        /// a solid ceiling (≥3) snaps down, a floor (≥2) snaps up. Always returns SEC.</summary>
+        private int PlayerActorLandCycles(int x, ref int y, int previousY, int push, out int probeClass)
+        {
+            int cycles = 2 + 3;
+            if (push > 4) { cycles += 2 + 3; push = 4; }
+            else cycles += 4;                                              // BCS $F301 crosses $F2/$F3
+            int low = (y & 255) - push, page = y >> 8;
+            cycles += 4 + 2 + 3 + 5;
+            if (low >= 0) cycles += 3;
+            else { cycles += 2 + 2 + 5 + 4 + 2 + 5; low = (low - 0x10) & 255; page--; }
+            y = ((page & 255) << 8) | (low & 255);
+            cycles += 6 + 4 + 2 + 3 + 4 + 3;                               // JSR $F49C, Y − ($02,$03)
+            bool up = y < previousY;
+            cycles += ScrollBranch(0xF4A7, 0xF4BE, !up) + 2 + 3 + 6;
+            int probe = ExpandedProbeSet(x, y, up ? 9 : 6, out probeClass, out int lastY, 5);
+            cycles += probe + 3 + 2;
+            if (up)
+            {
+                if (probeClass < 3) cycles += 3 + 6;
+                else
+                {
+                    cycles += 2 + 6 + PlayerSnapDown(ref y, lastY & 15) + 6 + 20 + 2 + 6;
+                }
+            }
+            else
+            {
+                if (probeClass < 2) cycles += 3 + 2 + 6;
+                else cycles += 2 + (probeClass != 2 ? 3 : 2) + 6 + PlayerSnapUp(ref y, lastY & 15) + 6 + 20 + 2 + 6;
+            }
+            return cycles + 3 + 6 + 20 + 2 + 6;                           // JMP $F347: $F5FC, SEC, RTS
+        }
+
+        private static int PlayerSnapUp(ref int y, int nibble)
+        {
+            int low = (y & 255) - nibble, page = y >> 8;
+            bool borrow = low < 0;
+            if (borrow) { low = (low - 0x10) & 255; page--; }
+            y = ((page & 255) << 8) | (low & 255);
+            return 3 + 2 + 3 + 4 + 2 + 3 + 5 + (borrow ? 2 + 2 + 5 + 4 + 2 + 5 : 3) + 6;
+        }
+
+        private static int PlayerSnapDown(ref int y, int nibble)
+        {
+            int low = ((y & 255) + ((~nibble) & 15) + 1) & 255, page = y >> 8;
+            bool wrap = low >= 0xF0;
+            if (wrap) { low = (low + 0x10) & 255; page++; }
+            y = ((page & 255) << 8) | low;
+            return 3 + 2 + 2 + 2 + 4 + 5 + 2 + (wrap ? 2 + 2 + 5 + 4 + 2 + 5 : 3) + 6;
+        }
+
+        /// <summary>$F74E side test: |dx| at most the class width and |dy| below the class height.</summary>
+        private int TimingSideGeometry(int x, int y, ObjectSystem.Slot actor, out bool hit)
+        {
+            hit = false;
+            int cls = actor.BehaviorParam & 31;
+            int cycles = 4 + 2 + 3 + 6 + TimingDistanceX(x, actor, out int low, out int high) + 3;
+            if (high != 0) return cycles + 3 + 2 + 6;
+            cycles += 2 + 3 + 3 + 4;
+            int width = EnemyBehaviors.TouchXHalf[cls];
+            if (low == width) cycles += 3;
+            else
+            {
+                cycles += 2;
+                if (low > width) return cycles + 3 + 2 + 6;
+                cycles += 2;
+            }
+            cycles += 3 + 3 + 6 + TimingDistanceY(y, actor, out byte dy) + 3 + 3 + 4 + (0xE9 + cls > 255 ? 1 : 0);
+            if (dy >= EnemyBehaviors.TouchYHalf[cls]) return cycles + 3 + 2 + 6;
+            hit = true;
+            return cycles + 2 + 3 + 4 + 2 + 3 + 3 + 6;
         }
 
         private static int ExpandedQueueCycles(bool accepts)

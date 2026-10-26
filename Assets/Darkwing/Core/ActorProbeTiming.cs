@@ -6,9 +6,12 @@ namespace Darkwing.Core
     {
         private readonly PlayerCore _player;
         private readonly ITileMap _tiles;
-        private static readonly sbyte[] PointX = { 12,12,12,-12,-12,-12,-11,0,11,-11,0,11,2,2,2,-2,-2,-2,-1,1,1,-1,1,1,12,12,12,-12,-12,-12,-1,0,1,-1,0,1,9,9,-9,-9,-8,8,-8,8 };
-        private static readonly sbyte[] PointY = { -11,0,11,-11,0,11,12,12,12,-12,-12,-12,-1,1,1,-1,1,1,2,2,2,-2,-2,-2,-1,0,1,-1,0,1,2,2,2,-2,-2,-2,-7,7,-7,7,8,8,-8,-8 };
+        // $EBE8 point offsets: X at $ED19+point, Y at $ECAD+point (64 entries in the fixed bank).
+        private static readonly sbyte[] PointX = { 12,12,12,-12,-12,-12,-11,0,11,-11,0,11,2,2,2,-2,-2,-2,-1,1,1,-1,1,1,12,12,12,-12,-12,-12,-1,0,1,-1,0,1,9,9,-9,-9,-8,8,-8,8,20,20,-20,-20,-1,1,-1,1,4,4,4,-4,-4,-4,-1,0,1,-1,0,1 };
+        private static readonly sbyte[] PointY = { -11,0,11,-11,0,11,12,12,12,-12,-12,-12,-1,1,1,-1,1,1,2,2,2,-2,-2,-2,-1,0,1,-1,0,1,2,2,2,-2,-2,-2,-7,7,-7,7,8,8,-8,-8,-4,4,-4,4,2,2,-2,-2,-3,0,3,-3,0,3,-20,-20,-20,-3,-3,-3 };
         public int LastPointY { get; private set; }
+        /// <summary>X of the last evaluated point ($06 low byte after $EBE8).</summary>
+        public int LastPointX { get; private set; }
 
         public ActorProbeTiming(PlayerCore player, ITileMap tiles) { _player = player; _tiles = tiles; }
 
@@ -58,6 +61,7 @@ namespace Darkwing.Core
             int cycles = 2 + 3 + readX + Branch(0xEBEF, 0xEBF3, offsetX >= 0);
             if (offsetX < 0) cycles += 5;
             int pointX = coordinateX + offsetX;
+            LastPointX = pointX;
             cycles += 4 + 2 + readX + 3 + 4 + 3 + 3 + Branch(0xEC03, 0xEC4D, (pointX & 0x8000) != 0);
             if ((pointX & 0x8000) != 0) throw new NotSupportedException("EC03 negative X");
             cycles += 30 + 4 + 3 + readY + Branch(0xEC1E, 0xEC36, offsetY < 0);

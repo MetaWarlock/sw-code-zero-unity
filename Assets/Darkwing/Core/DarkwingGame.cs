@@ -82,6 +82,7 @@ namespace Darkwing.Core
                         PeekSfxEnqueueCycles = id => AudioQueueCanEnqueue ? 42 : 27,
                         ReadHookLatch = () => Player.HookLatchForTiming
                     };
+                    Enemies.FrameParityForTiming = () => FrameParity;
                 }
             }
         }
@@ -1247,6 +1248,13 @@ namespace Darkwing.Core
             FrameParity++;
         }
 
+        /// <summary>PPU edge/threshold of each poll from the cold power-on profile; null for
+        /// seeded fixtures and direct Core tests that do not start from RESET.</summary>
+        public PhysicalFrameClock PhysicalFrames { get; private set; }
+
+        internal void BeginPhysicalFrames(long firstEdgeMaster, int cpuOffset)
+            => PhysicalFrames = new PhysicalFrameClock(firstEdgeMaster, cpuOffset);
+
         /// <summary>The flow that owns the bank-7 phase of the frame. Set by GameFlow; a direct
         /// Core caller that supplies its own flow must use <see cref="AdvanceFrame"/> so the
         /// NMI still runs before the flow body.</summary>
@@ -1256,10 +1264,15 @@ namespace Darkwing.Core
         /// then the main-loop body. This is the host/replay entry point.</summary>
         public void AdvanceFrame(in NesButtons pad1, in NesButtons pad2 = default)
         {
+            if (Clock.Stage == MissionClock.Phase.Running) { AdvanceRunningFrame(); return; }
+            BeginClockNmi();
             BeginNmi();
+            PhysicalFrames?.CompleteFrame((Ppu.Mask & 0x18) != 0);
+            CompleteClockNmi();
             BeginNativeVramBody();
             if (Flow != null) Flow.Step(in pad1);
             StepBody(in pad1, in pad2);
+            EndClockFrame();
         }
 
         /// <summary>Advance the deterministic simulation by exactly one frame. Kept for direct
@@ -1271,8 +1284,9 @@ namespace Darkwing.Core
             StepBody(in pad1, in pad2);
         }
 
-        /// <summary>$C0A1 NMI: frame latches, CHR/palette/text uploads, then the main body.</summary>
-        private void BeginNmi()
+        /// <summary>$C0A1 NMI: frame latches, CHR/palette/text uploads, then the main body.
+        /// <paramref name="bracket"/> is $9A=1: the NMI interrupted a Running pass.</summary>
+        private void BeginNmi(bool bracket = false)
         {
             _parityStepped = false;
             _oamPublished = false;
@@ -1282,13 +1296,13 @@ namespace Darkwing.Core
                 NmiAudioTimingSupported = true;
                 return;
             }
-            Flow?.BeginResetNmiTiming(_fadeFrame, _fadeLevel, _paletteSrc);
-            PublishNativeVram(0, false);
+            if (!bracket) Flow?.BeginResetNmiTiming(_fadeFrame, _fadeLevel, _paletteSrc);
+            PublishNativeVram(bracket ? (byte)1 : (byte)0, false);
             NmiCounter++;
             // $C006: LDA $F0 / ORA $9A / BEQ $C00F / JMP $C0A1 — a blanked frame keeps the last
             // latched picture, and the $18/$19/$1A/$1B/$1C/$1D latches stay armed for the next
             // NMI that is allowed to publish.
-            if (_blankDepth == 0)
+            if (_blankDepth == 0 && !bracket)
             {
                 PublishToOamOnce();
                 NmiChrUpload();            // $C047/$C050, before $C059 palette upload
@@ -1304,7 +1318,7 @@ namespace Darkwing.Core
             if (DeferLoaderNmiAudio())
             { LastNmiAudioServiceCycles=0;NmiAudioTimingSupported=true; }
             else DrainAudioQueue();        // $C0DC/$C0F6, or $FF8C after an interrupted switch
-            Flow?.CompleteResetNmiTiming();
+            if (!bracket) Flow?.CompleteResetNmiTiming();
         }
 
         private void StepBody(in NesButtons pad1, in NesButtons pad2)
@@ -1645,7 +1659,7 @@ namespace Darkwing.Core
             {
                 if (MissionTail == null) MissionTail = new MissionPassContinuation(Oam, Player);
                 MissionTail.Begin(FrameParity);
-                MissionTail.Finish();
+                RunClockedTail();
             }
             Player.Flags = Objects.Slots[0].Flags;
             Ppu.Render(Framebuffer);

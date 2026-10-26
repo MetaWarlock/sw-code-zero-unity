@@ -27,6 +27,7 @@ namespace Darkwing.Core
         private void BeginPowerOnTiming()
         {
             PowerOn = new PowerOnContinuation(blockReached: ApplyPowerOnCheckpoint);
+            _game.BeginPhysicalFrames(PowerOn.NextNmiEdgeMaster, (int)(PowerOn.MasterClock % PowerOnContinuation.CpuMasterTicks));
             PowerOnBoundaryMaster = PowerOn.NextNmiEdgeMaster;
             PowerOn.AdvanceToMaster(PowerOnBoundaryMaster);
         }
@@ -49,26 +50,37 @@ namespace Darkwing.Core
         {
             _resetNmiPending = _resetBodyPending = false;
             if (ResetClock == null || !ResetClock.Active) return;
-            _resetIntro=Stage==Phase.Intro&&_introStage<=6;
+            _resetIntro=Stage==Phase.Intro&&_introStage<=9;
             _resetTextWalk=false;
             _resetIntroFlight=false;
             _resetIntroCard=false;
             _resetIntroCardIteration=false;
             _resetFirstFlightWalk=-1;
             _resetCardWalk=-1;
-            bool staging = Stage==Phase.Reset&&_resetStage == 9;
-            bool streaming = Stage==Phase.Reset&&_resetStage == 8 && LoaderStreaming;
-            bool loaded = Stage==Phase.Reset&&_resetStage == 8 && !LoaderStreaming;
+            bool introLoader=Stage==Phase.Intro&&_introStage==11;
+            bool staging = (Stage==Phase.Reset&&_resetStage==9)||(Stage==Phase.Intro&&_introStage==10);
+            bool loader = (Stage==Phase.Reset&&_resetStage==8)||introLoader;
+            bool streaming = loader&&LoaderStreaming;
+            bool loaded = loader&&!LoaderStreaming;
             _resetFadeStart=false;
             if (!_resetIntro&&!staging&&!streaming&&!loaded&&(Stage!=Phase.Reset||_resetStage<2||_resetStage>7))
             { ResetClock.Refuse("Resident continuation outside the priced region");return; }
-            if(_resetIntro) { } // Text reads $92 and the audio ring after this NMI.
+            if(_resetIntro)
+            {
+                // Text/card reads $92 and the audio ring after this NMI. Fade
+                // counters and the owned source palette are unchanged by that service.
+                _resetFadePalette=palette;
+                if(_introStage==8)_resetBodyWork=ResetResidentTiming.Measure(6,fadeFrame,fadeLevel,
+                    _game.Player.StateTimer,palette,_game.Bank2,(byte)_game.Oam.OamCursorBytes);
+                else if(_introStage==9)_resetBodyWork=ResetResidentTiming.Measure(7,fadeFrame,fadeLevel,
+                    _game.Player.StateTimer,palette,_game.Bank2,(byte)_game.Oam.OamCursorBytes);
+            }
             else if(loaded)
             {
                 _resetFadeStart=_game.SceneLoadStage==1;
                 _resetFadePalette=palette;
                 if(_game.SceneLoadStage==3)_resetBodyWork=ResetResidentTiming.MeasureLoaderSpawn(World.CurrentWorld);
-                else if(!_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeResume(fadeFrame,fadeLevel,palette);
+                else if(!_resetFadeStart)_resetBodyWork=ResetResidentTiming.MeasureLoaderFadeResume(fadeFrame,fadeLevel,palette,World.CurrentWorld);
             }
             else if (!staging && !streaming)
             {
@@ -127,7 +139,6 @@ namespace Darkwing.Core
                 if(_resetIntroCard)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_resetCardWalk);
                 if(_resetIntroCardIteration)_resetBodyWork=ResetResidentTiming.IncludeOam(_resetBodyWork,_resetCardWalk);
                 ResetClock.CommitBody(_resetBodyWork, _game.LastInputHookCycles, _resetBodyWork.YieldStackPointer);
-                if(_resetIntroCardIteration) ResetClock.StopAfterCommit(0xF8B1);
             }
             catch(NotSupportedException exception) { ResetClock.Refuse(exception.Message); }
         }
@@ -161,14 +172,16 @@ namespace Darkwing.Core
                         break;
                     case 4: _resetBodyWork=ResetResidentTiming.MeasureIntroTextReturn(0x0F); break;
                     case 5:
-                        _resetBodyWork=ResetResidentTiming.MeasureIntroFlight(_game.Objects.Slots[0],_game.Player.GravityFrac);
+                        _resetBodyWork=ResetResidentTiming.MeasureIntroFlight(_game.Objects.Slots[0],_game.Player.GravityFrac,_game.AudioQueueCanEnqueue);
                         _resetIntroFlight=true;
                         _resetIntroCard=_resetBodyWork.StopPc==0xC63C;
                         break;
                     case 6:
-                        _resetBodyWork=ResetResidentTiming.MeasureIntroCardIteration();
-                        _resetIntroCardIteration=true;
+                        var card=_game.Objects.Slots[0];
+                        _resetBodyWork=ResetResidentTiming.MeasureIntroCardIteration(card,World.CurrentWorld);
+                        _resetIntroCardIteration=card.AnimFrame!=0x11&&(card.AnimFrame!=0x0F||card.AnimTimer!=4);
                         break;
+                    case 7: _resetBodyWork=ResetResidentTiming.MeasureIntroCardDelay(_introDelay,_resetFadePalette); break;
                 }
             }
             catch(NotSupportedException exception)

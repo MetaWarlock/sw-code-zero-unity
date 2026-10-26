@@ -23,10 +23,12 @@ public static class ResetClockVerify
         public long Edge, LastEdge, Ordinal;
         public int CpuOff, PpuOff;
         public int Cursor;
+        public int ShadowCursor;
         public int DeferredAudio;
         public ushort Interrupted, StopPc;
         public byte State, Timer;
         public bool Commits, Streaming;
+        public bool Rendering;
         public ResetProcessClock.Phase Stage;
         public Snapshot Copy() => (Snapshot)MemberwiseClone();
     }
@@ -143,6 +145,8 @@ public static class ResetClockVerify
                 Poll = poll, Handler = clock.HandlerCycle, Resume = clock.ResumeCycle, Body = clock.BodyStartCycle,
                 Interrupted = clock.InterruptedPc, State = clock.ProcessState, Timer = clock.ProcessTimer,
                 Stage = clock.Stage, Streaming = clock.Streaming, Cursor = game.Player.StageCursor,
+                ShadowCursor=game.Oam.OamCursorBytes,
+                Rendering=clock.RenderingAt339,
                 DeferredAudio=game.LastLoaderDeferredAudioCycles,
                 Stream = clock.StreamCycle, Commit = clock.CommitCycle,
                 Budget = clock.StreamBudgetCycles,
@@ -737,11 +741,31 @@ public static class ResetClockVerify
             + negatives + "; "+exactInstructions+" exact native instructions/"+instructionNegatives+" instruction negative controls. No source-state seed. F5/F6/audio deferred and physical C12D stores connected.";
     }
 
-    private static int CompareInstructionTrace(List<string[]> native)
+    private static int CompareInstructionTrace(List<string[]> native, string sourcePath="Temp/first_loader_instruction.csv")
+        => CompareInstructionTrace(native,LoadInstructionTrace(sourcePath));
+
+    private static List<string[]> LoadInstructionTrace(string sourcePath)
     {
         var source=new List<string[]>();
-        foreach(var line in File.ReadAllLines(Root+"Temp/first_loader_instruction.csv"))
-            if(!line.StartsWith("poll,"))source.Add(line.Split(','));
+        string[] lastNmi=null;bool started=false;
+        foreach(var line in File.ReadLines(Root+sourcePath))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            if(!started)
+            {
+                if(c[2]=="C000")lastNmi=c;
+                if(c[2]!="DE86")continue;
+                Require(lastNmi!=null,"Source loader has no preceding NMI");source.Add(lastNmi);started=true;
+            }
+            source.Add(c);
+            if(c[2]=="DE93")break;
+        }
+        Require(started&&source[source.Count-1][2]=="DE93","Incomplete source loader instruction interval");
+        return source;
+    }
+
+    private static int CompareInstructionTrace(List<string[]> native,List<string[]> source)
+    {
         int index=source.FindIndex(c=>c[2]=="DE86");
         Require(index>=0,"Missing first source loader instruction");
         // The source poll tag changes at InputPolled, 1–3 cycles before NMI
@@ -981,7 +1005,7 @@ public static class ResetClockVerify
                 Require(row.Body-2==At(body),"Intro flight body "+poll);
                 string end="FF19";
                 Require(row.Finish-2==At(end),"Intro flight finish "+poll+" native="+(row.Finish-2)+" source="+At(end));
-                Require(row.Stage==(poll==490 ? ResetProcessClock.Phase.Stopped : ResetProcessClock.Phase.Waiting),"Intro flight phase "+poll);
+                Require(row.Stage==ResetProcessClock.Phase.Waiting,"Intro flight phase "+poll);
                 checks+=6;
             }
             return checks;
@@ -995,8 +1019,150 @@ public static class ResetClockVerify
         }
         var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
         var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
-        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xF8B1&&clock.ProcessState==FrameScheduler.Waiting,"Stop after first intro-card FF19");
-        return "PASS intro flight/card "+count+" exact checks on28 resumes, "+negatives+" negatives; first and next card OAM prices included; stopF8B1";
+        Require(clock.Stage==ResetProcessClock.Phase.Waiting&&clock.ProcessState==FrameScheduler.Waiting,"Retain first intro-card FF19 continuation");
+        return "PASS intro flight/card "+count+" exact checks on28 resumes, "+negatives+" negatives; first and next card OAM prices included";
+    }
+
+    public static string IntroCard()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        byte[] original=File.ReadAllBytes(Root+"Temp/human_164819_fulla/replay1/buffers.bin");
+        var rows=RunNative(input,false,out _,out var clock,688);
+        var source=new Dictionary<(int poll,string pc),string[]>();
+        foreach(var line in File.ReadAllLines(Root+"Temp/intro_card_clock.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<490||poll>688)continue;
+            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="F8B1"||c[2]=="FF02"||c[2]=="C655"||c[2]=="FF19")
+                source.Add((poll,c[2]),c);
+        }
+        int Compare(List<Snapshot> actual)
+        {
+            Require(actual.Count==688-FirstPoll+1,"Intro card missing/extra records");int checks=0;
+            for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro card skipped/duplicated poll");
+            foreach(var row in actual)
+            {
+                int poll=row.Poll;if(poll<490)continue;
+                long At(string pc)=>long.Parse(source[(poll,pc)][1],CultureInfo.InvariantCulture);
+                Require(row.Handler-2==At("C000"),"Intro card handler "+poll+" native="+(row.Handler-2)+" source="+At("C000"));
+                Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro card interrupted PC "+poll);
+                Require(row.Resume-2==At("FECF"),"Intro card resume "+poll+" native="+(row.Resume-2)+" source="+At("FECF"));
+                string body=source.ContainsKey((poll,"F8B1")) ? "F8B1" : "FF02";
+                Require(row.Body-2==At(body),"Intro card body "+poll);
+                string end="FF19";
+                Require(row.Finish-2==At(end),"Intro card finish "+poll+" native="+(row.Finish-2)+" source="+At(end));
+                Require(row.Stage==ResetProcessClock.Phase.Waiting,"Intro card phase "+poll);
+                checks+=6;
+                Require(row.ShadowCursor==original[poll*4384+0x97],"Intro card live shadow cursor "+poll);checks++;
+            }
+            return checks;
+        }
+        int count=Compare(rows),negatives=0;
+        foreach(int poll in new[]{490,564,568,628,688}) foreach(string field in new[]{"Handler","Interrupted","Resume","Body","Finish","Stage","ShadowCursor"})
+        {
+            var altered=new List<Snapshot>(rows);int index=poll-FirstPoll;altered[index]=altered[index].Copy();var row=altered[index];
+            if(field=="Handler")row.Handler++;else if(field=="Interrupted")row.Interrupted^=1;else if(field=="Resume")row.Resume++;else if(field=="Body")row.Body++;else if(field=="Finish")row.Finish++;else if(field=="ShadowCursor")row.ShadowCursor^=4;else row.Stage=ResetProcessClock.Phase.Running;
+            Reject(()=>Compare(altered));negatives++;
+        }
+        var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
+        var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
+        Require(clock.Stage==ResetProcessClock.Phase.Waiting&&clock.ProcessState==FrameScheduler.Waiting,"Both real card delays enter the next loader fade");
+        return "PASS intro card/967A/two FEFF holds: "+count+" checks (1194 clock +199 live cursor) on199 resumes, "+negatives+" negatives; C655 first fade included";
+    }
+
+    public static string IntroSceneLoader()
+    {
+        byte[] input=File.ReadAllBytes(Root+"Playthroughs/20261022T164819Z/input.bin");
+        var rows=RunNative(input,false,out _,out var clock,733);
+        var diagnostic=new System.Text.StringBuilder("poll,handler,interrupted,resume,body,finish,stream,edge,lastEdge,ordinal,rendering,shadowCursor\n");
+        foreach(var r in rows)if(r.Poll>=688)diagnostic.Append(r.Poll).Append(',').Append(r.Handler).Append(',').Append(r.Interrupted.ToString("X4"))
+            .Append(',').Append(r.Resume).Append(',').Append(r.Body).Append(',').Append(r.Finish).Append(',').Append(r.Stream)
+            .Append(',').Append(r.Edge).Append(',').Append(r.LastEdge).Append(',').Append(r.Ordinal).Append(',').Append(r.Rendering).Append(',').Append(r.ShadowCursor).Append('\n');
+        File.WriteAllText(Root+"Temp/intro_scene_loader_native_clock.csv",diagnostic.ToString());
+        var source=new Dictionary<(int poll,string pc),string[]>();
+        foreach(var line in File.ReadLines(Root+"Temp/intro_scene_loader_clock.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<688||poll>733)continue;
+            if(c[2]=="C000"||c[2]=="FECF"||c[2]=="FF02"||c[2]=="C2AA"||c[2]=="DD5A"
+                ||c[2]=="DD5D"||c[2]=="DDCE"||c[2]=="DE06"||c[2]=="C666"||c[2]=="FF19")
+                source.Add((poll,c[2]),c);
+        }
+        var ppuSource=new Dictionary<int,string[]>();
+        foreach(var line in File.ReadLines(Root+"Temp/intro_scene_loader_ppu.csv"))
+        {
+            var c=line.Split(',');if(c[0]=="poll"||c[2]!="C000")continue;
+            int poll=int.Parse(c[0],CultureInfo.InvariantCulture);if(poll<688||poll>733)continue;
+            Require(c[1]==source[(poll,"C000")][1]&&c[15]==source[(poll,"C000")][15],"PPU observer altered source clock");
+            ppuSource.Add(poll,c);
+        }
+        Require(ppuSource.Count==46,"Missing/extra source PPU NMI records");
+        int Compare(List<Snapshot> actual)
+        {
+            Require(actual.Count==733-FirstPoll+1,"Intro scene loader missing/extra records");int checks=0;
+            for(int i=0;i<actual.Count;i++)Require(actual[i].Poll==i+FirstPoll,"Intro scene loader skipped/duplicated poll");
+            long At(int poll,string pc)=>long.Parse(source[(poll,pc)][1],CultureInfo.InvariantCulture);
+            foreach(var row in actual)
+            {
+                int poll=row.Poll;if(poll<688)continue;
+                Require(row.Handler-2==At(poll,"C000"),"Intro scene loader handler "+poll+" native="+(row.Handler-2)+" source="+At(poll,"C000"));
+                Require(row.Interrupted==Convert.ToUInt16(source[(poll,"C000")][15],16),"Intro scene loader interrupted PC "+poll);checks+=2;
+                long Position(int p)=>(int.Parse(ppuSource[p][19],CultureInfo.InvariantCulture)-241)*341L+int.Parse(ppuSource[p][20],CultureInfo.InvariantCulture)-2;
+                long elapsed=(At(poll,"C000")-At(688,"C000"))*PowerOnContinuation.CpuMasterTicks
+                    -(Position(poll)-Position(688))*PowerOnContinuation.PpuMasterTicks;
+                Require(row.LastEdge-actual[688-FirstPoll].LastEdge==elapsed,"Intro scene loader physical edge progression "+poll);checks++;
+                bool running=poll>=706&&poll<=714;
+                Require(row.Stage==(running ? ResetProcessClock.Phase.Running : poll==733 ? ResetProcessClock.Phase.Stopped : ResetProcessClock.Phase.Waiting),"Intro scene loader phase "+poll);checks++;
+                Require(row.State==(running||poll==733 ? FrameScheduler.Running : FrameScheduler.Waiting),"Intro scene loader process state "+poll);checks++;
+                if(poll<707||poll>715)
+                {
+                    string body=poll==688 ? "FF02" : poll==705 ? "DD5A" : poll==706 ? "DD5D"
+                        : poll==716 ? "DDCE" : poll==717 ? "DE06" : "C2AA";
+                    Require(row.Resume-2==At(poll,"FECF"),"Intro scene loader resume "+poll);checks++;
+                    Require(row.Body-2==At(poll,body),"Intro scene loader body "+poll);checks++;
+                }
+                if(running)
+                {
+                    Require(row.Stream-2==At(poll+1,"C000")-FrameScheduler.NmiEntryCycles,"Intro scene loader NMI instruction boundary "+poll);checks++;
+                    Require(row.Budget==0,"Intro scene loader unconsumed budget "+poll);checks++;
+                }
+                else
+                {
+                    string end=poll==733 ? "C666" : "FF19";
+                    Require(row.Finish-2==At(poll,end),"Intro scene loader finish "+poll+" native="+(row.Finish-2)+" source="+At(poll,end));checks++;
+                }
+            }
+            return checks;
+        }
+        int count=Compare(rows),negatives=0;
+        foreach(int poll in new[]{688,706,707,715,733})foreach(string field in new[]{"Handler","Interrupted","Stage","State","LastEdge"})
+        {
+            var altered=new List<Snapshot>(rows);int index=poll-FirstPoll;altered[index]=altered[index].Copy();var row=altered[index];
+            if(field=="Handler")row.Handler++;else if(field=="Interrupted")row.Interrupted^=1;
+            else if(field=="State")row.State^=1;else if(field=="LastEdge")row.LastEdge++;else row.Stage=ResetProcessClock.Phase.Unsupported;
+            Reject(()=>Compare(altered));negatives++;
+        }
+        var missing=new List<Snapshot>(rows);missing.RemoveAt(missing.Count-1);Reject(()=>Compare(missing));negatives++;
+        var extra=new List<Snapshot>(rows);extra.Add(rows[rows.Count-1]);Reject(()=>Compare(extra));negatives++;
+        var instructions=new List<string[]>();
+        foreach(var line in File.ReadLines(Root+"Temp/first_loader_native.csv"))
+        {
+            var c=line.Split(',');if(c[0]!="servicePoll"&&int.Parse(c[0],CultureInfo.InvariantCulture)>=706)instructions.Add(c);
+        }
+        var instructionSource=LoadInstructionTrace("Temp/intro_scene_loader_clock.csv");
+        int exact=CompareInstructionTrace(instructions,instructionSource);
+        foreach(int column in new[]{0,1,2,3})
+        {
+            var changed=new List<string[]>(instructions);changed[0]=(string[])changed[0].Clone();
+            changed[0][column]=column==2?"DE87":(long.Parse(changed[0][column],CultureInfo.InvariantCulture)+1).ToString(CultureInfo.InvariantCulture);
+            Reject(()=>CompareInstructionTrace(changed,instructionSource));negatives++;
+        }
+        var missingInstruction=new List<string[]>(instructions);missingInstruction.RemoveAt(missingInstruction.Count-1);
+        Reject(()=>CompareInstructionTrace(missingInstruction,instructionSource));negatives++;
+        var extraInstruction=new List<string[]>(instructions);extraInstruction.Add(instructions[instructions.Count-1]);
+        Reject(()=>CompareInstructionTrace(extraInstruction,instructionSource));negatives++;
+        Require(clock.Stage==ResetProcessClock.Phase.Stopped&&clock.StopPc==0xC666,"Stop Running before first story panel");
+        return "PASS intro world9 loader: "+count+" exact clock checks on46 NMIs, "+exact+" instruction boundaries, "+negatives+" negatives; stopC666";
     }
 
     public static string IntroCardSeedProbe()

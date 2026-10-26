@@ -107,6 +107,10 @@ namespace Darkwing.Core
         /// ($97 as the ROM leaves it; 0 once the sprite page has been filled).</summary>
         public int OamCursorBytes => _oamCursor;
 
+        // Resident STA $97 before an explicit C21E wipe; hiding the page alone
+        // must not leave the previous walk's cursor as the live RAM owner.
+        internal void PrimeShadowCursor(byte cursor) => _oamCursor=cursor;
+
         /// <summary>The NMI DMA: copy the $0200 shadow the last walk composed into the live
         /// sprite buffer. Called once per frame, before the HUD is laid out.</summary>
         public void PublishToOam() => System.Array.Copy(_shadow, _ppu.Oam, 256);
@@ -172,6 +176,7 @@ namespace Darkwing.Core
                     _shadow[y + 2]  = bank2[0x16A1 + y];   // $96A1,Y
                     _shadow[y + 3]  = bank2[0x16A2 + y];   // $96A2,Y
                 }
+                _oamCursor=0xA0;                          // $969C STY $97
                 return;
             }
             int x = 0;
@@ -203,6 +208,7 @@ namespace Darkwing.Core
                 _shadow[y + 2] = bank2[0x1741 + y];         // $9663 LDA $9741,Y / STA $0202,Y
                 _shadow[y + 3] = bank2[0x1742 + y];         // $9669 LDA $9742,Y / STA $0203,Y
             }
+            _oamCursor=0xA0;                              // $9677 STY $97
         }
 
         /// <summary>One frame of the bank-5 walk at its ROM place ($CABB, after the player,

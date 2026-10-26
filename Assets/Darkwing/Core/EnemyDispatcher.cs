@@ -106,6 +106,7 @@ namespace Darkwing.Core
             BeginNativeBank1Timing();
             for (int slot = 1; slot < ObjectSystem.SlotCount; slot++)
             {
+                MeasureNativeBank1Slot(slot);
                 var state = Objects.Slots[slot];
                 if (state.Active && state.Behavior >= 0x47)
                     BossBehaviors.Dispatch(slot, state, state.Behavior, this);
@@ -117,7 +118,7 @@ namespace Darkwing.Core
             var s = Objects.Slots[slot];
             if (postProcess)
             {
-                MeasureNativePostProcess(s);
+                MeasureNativePostProcess(s, slot);
                 PostProcess(slot, s);
             }
             MeasureNativeDispatch(s, slot);

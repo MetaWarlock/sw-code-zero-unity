@@ -7,6 +7,14 @@ namespace Darkwing.Audio
         public int LastTickCycles { get; private set; }
         public int LastTaskCycles { get; private set; }
         public bool TimingSupported { get; private set; } = true;
+        /// <summary>Source line of the first unpriced branch since the last reset (diagnostic).</summary>
+        public int TimingUnsupportedLine { get; private set; }
+
+        private void Unpriced([System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+        {
+            if (TimingSupported) TimingUnsupportedLine = line;
+            TimingSupported = false;
+        }
         public System.Action<string, int> TimingObserver { get; set; }
 
         private void Cost(int cycles, [System.Runtime.CompilerServices.CallerMemberName] string routine = null)

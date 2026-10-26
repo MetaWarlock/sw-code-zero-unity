@@ -18,7 +18,13 @@ namespace Darkwing.Core
         public int ProjectileDamageTail(ObjectSystem objects, PlayerCore player, ObjectSystem.Slot target, int projectileIndex)
         {
             var projectile = objects.Slots[projectileIndex];
-            if (projectile.AnimNumber != 0x13 || projectile.Behavior != 1 || target.Behavior is 0x1E or 0x34 or 5 || target.Health >= 128)
+            if (target.Health >= 128 && target.Behavior is not (0x1E or 0x34))
+            {
+                // $808B BPL not taken: JSR $81C0 special death, then JMP $813B contact.
+                int special = 2 + 4 + 2 + 2 + 2 + 2 + 3 + 4 + 2 + 6 + SpecialDeath(projectile, target) + 3;
+                return special + ContactTail(objects, player, target);
+            }
+            if (projectile.AnimNumber != 0x13 || projectile.Behavior != 1 || target.Behavior is 0x1E or 0x34 or 5)
                 throw new NotSupportedException("806B projectile damage variant");
             int cycles = 2 + 4 + 2 + 2 + 2 + 2 + 3 + 4 + 3 + 4;
             if (target.Health != 0)
@@ -32,6 +38,28 @@ namespace Darkwing.Core
             cycles += 2 + 5 + 2 + 5 + 5 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + 5 + 2 + 6 + Enqueue(0x1E);
             var dead = new ObjectSystem.Slot { Active = true, Flags = target.Flags, Behavior = 5, BehaviorParam = 0 };
             return cycles + ContactTail(objects, player, dead);
+        }
+
+        private static readonly byte[] SpecialDeathBehaviors = { 0x0F, 0x17, 0x1D, 0x2A, 0x34, 0x30, 0x32, 0x42 };
+        private static readonly byte[] PopDirections = { 0x01, 0x02, 0x09, 0x05, 0x0A, 0x06 };
+
+        /// <summary>$81C0: only eight behaviours react. A gas/bolt shot ($14/$16) is removed ($821D);
+        /// any other live shot turns into a friendly pop ($822E mirror, $81FD speeds, SFX $1A).</summary>
+        private int SpecialDeath(ObjectSystem.Slot projectile, ObjectSystem.Slot target)
+        {
+            int index = Array.IndexOf(SpecialDeathBehaviors, target.Behavior);
+            int cycles = 4;
+            if (index < 0) return cycles + SpecialDeathBehaviors.Length * (2 + 2) + 3 + 6;
+            cycles += index * (2 + 2) + 2 + 3 + 3 + 4 + 2;
+            if (projectile.Behavior == 0x1F) return cycles + 3 + 6;
+            cycles += 2 + 4 + 2;
+            if (projectile.AnimNumber == 0x14) return cycles + 4 + 30;
+            cycles += 2 + 2;
+            if (projectile.AnimNumber == 0x16) return cycles + 4 + 30;
+            cycles += 2 + 6 + 3 + 4 + 2 + 2 + 4;               // JSR $822E: LDY / LDA / CMP #$1F / BEQ / LDA $0580,Y
+            int turn = Array.IndexOf(PopDirections, projectile.Direction);
+            cycles += turn < 0 ? PopDirections.Length * (2 + 2) + 6 : turn * (2 + 2) + 2 + 3 + 2 + 5 + 6;
+            return cycles + 2 + 5 + 5 + 2 + 5 + 5 + 2 + 5 + 2 + 5 + 2 + 6 + Enqueue(0x1A) + 6;
         }
 
         public static int ContactTail(ObjectSystem objects, PlayerCore player, ObjectSystem.Slot target)

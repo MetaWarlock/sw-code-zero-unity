@@ -72,18 +72,23 @@ namespace Darkwing.Core
 
         /// <summary>$DD5D-$DE86 runs at the resumed input hook, then $DE24's in-line
         /// $DE86/$DE91 loop never yields: slot 0 stays Running until the $DDCB yield.
-        /// $C14E blanks rendering inside the prelude, so the next edge is a whole frame.</summary>
+        /// C14E blanks rendering inside the prelude. If its mask store is after
+        /// pre-render339, the current odd-frame skip has already happened.</summary>
         public bool BeginStreaming(in ResetResidentTiming.BodyWork prelude, int inputHookCycles, ushort savedSp)
         {
             if (Stage != Phase.Body) throw new InvalidOperationException("Reset clock has no resumed body");
             if (prelude.Cycles < 0 || inputHookCycles < 0) return Reject("Reset native loader price unsupported");
+            if(prelude.RenderOffAtCycles<0||prelude.RenderOffAtCycles>prelude.Cycles)
+                return Reject("Reset loader requires its reached mask-off position");
             if (savedSp != prelude.YieldStackPointer) throw new ArgumentException("Reset loader stack owner mismatch", nameof(savedSp));
             BodyStartCycle = ResumeCycle + InputTiming.ResumeCallCycles + inputHookCycles + InputTiming.ResumeEpilogueCycles;
             _streamCycle = BodyStartCycle + prelude.Cycles;
-            PhysicalEdgeMaster = LastNmiEdgeMaster + PowerOnContinuation.FullFrameMaster;
+            RenderingAt339=(BodyStartCycle+prelude.RenderOffAtCycles)*12+CpuOffset>PreRender339Master;
+            bool oddPreRender=((LastNmiOrdinal+1)&1)!=0;
+            PhysicalEdgeMaster = LastNmiEdgeMaster + PowerOnContinuation.FullFrameMaster
+                -(RenderingAt339&&oddPreRender ? PowerOnContinuation.PpuMasterTicks : 0);
             if (_streamCycle >= NmiThreshold(PhysicalEdgeMaster))
                 return Reject("Reset loader prelude needs an NMI continuation before $DE86");
-            RenderingAt339 = false;
             // Slot 0 stays Running across the in-line $DE86 loop; the scheduler resumes
             // exactly at the loop head and NMI service leaves that state alone.
             _scheduler.BeginRunning(_streamCycle, 0xDE86);

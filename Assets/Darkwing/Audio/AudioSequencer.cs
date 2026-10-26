@@ -180,7 +180,7 @@ namespace Darkwing.Audio
         public void Tick()
         {
             int before = _executionCycles;
-            TimingSupported = true;
+            TimingSupported = true; TimingUnsupportedLine = 0;
             TickCore();
             LastTickCycles = _executionCycles - before;
         }
@@ -313,7 +313,7 @@ namespace Darkwing.Audio
         private void TaskEntry(byte id)
         {
             int before = _executionCycles;
-            TimingSupported = true;
+            TimingSupported = true; TimingUnsupportedLine = 0;
             Cost(22);
             _c0++;                                             // $80FE: INC $C0 (halt during task)
             TaskDispatch(id);
@@ -399,7 +399,7 @@ namespace Darkwing.Audio
             bool bit7 = (_c4 & 0x80) != 0;                     // $8147: ASL $C4
             _c4 = (byte)(_c4 << 1);
             _d6 = bit7 ? (byte)0x80 : (byte)0x00;              // $8149: ROR $D6 (D6 was 0)
-            if (bit7) { Cost(3); TimingSupported = false; _d7 = x; }                                 // $814B-$814D: chain source = id*2
+            if (bit7) { Cost(3); Unpriced(); _d7 = x; }                                 // $814B-$814D: chain source = id*2
             else Cost(1);
 
             Cost(_c1 == 255 ? 26 : 22);
@@ -571,7 +571,7 @@ namespace Darkwing.Audio
                     _ce = 0;                                   // $8263: STY $CE (Y = 0)
                     if ((_d7 & 0x01) != 0)                     // $8265-$8268
                     {
-                        TimingSupported = false;
+                        Unpriced();
                         TaskDispatch((byte)(_d7 >> 1));        // $826A: JSR $8118 (chain next)
                         continue;                              // $826D: JMP $825B
                     }
@@ -587,7 +587,7 @@ namespace Darkwing.Audio
                                                                //  the LSR chain tests bits 0,1,2)
                     byte b1 = (byte)(SfxReadByte() << 1);       // $8277-$827A
                     Cost(b1 == 0 ? 5 : 4);
-                    if (b1 == 0) TimingSupported = false;
+                    if (b1 == 0) Unpriced();
                     bool finished = false;
                     if (b1 != 0)                               // $827A-$827B: ASL A; BEQ $8289
                     {
@@ -616,7 +616,7 @@ namespace Darkwing.Audio
                         _d0 = b3; _d1 = b2;                    // $8290-$8292: big-endian new ptr
                         if (b2 != 0) { Cost(3); continue; }
                         Cost(2);
-                        TimingSupported = false;
+                        Unpriced();
                     }
                     int d0 = _d0 + 2;                          // $829B-$82A5: D0 += 2
                     Cost(d0 > 255 ? 17 : 13);
@@ -719,8 +719,8 @@ namespace Darkwing.Audio
                         case 2: SetVolume(x); break;           // $865A
                         case 3: Cost(14); W(x, F_SlideAmt, _c3); break;  // $86A7
                         case 4: Cost(14); W(x, F_VibRate, _c3); break;   // $86A1
-                        case 5: TimingSupported = false; W(x, F_Flags, (byte)(_c3 & 0xDF)); break;  // $8620 (unused by data)
-                        default: TimingSupported = false; break;                        // entries 6/7: ROM garbage, unreachable
+                        case 5: Unpriced(); W(x, F_Flags, (byte)(_c3 & 0xDF)); break;  // $8620 (unused by data)
+                        default: Unpriced(); break;                        // entries 6/7: ROM garbage, unreachable
                     }
                 }
                 else Cost(5);
@@ -1047,7 +1047,7 @@ namespace Darkwing.Audio
                 case 0x18:                                     // $86AD: duty
                     SetDuty(m); break;
                 default:
-                    TimingSupported = false;
+                    Unpriced();
                     break;
             }
             return false;
@@ -1059,7 +1059,7 @@ namespace Darkwing.Audio
         /// fire when the counter reaches 1 (the decrement itself is discarded).</summary>
         private void VolumeDecay(int m, int slot, bool second)
         {
-            if (slot != 0) TimingSupported = false;
+            // $851B/$851F/$8523 load the slot and branch (5 cycles); $8527 falls into $8529 (2).
             Cost(slot == 0x0C ? 21 : 24);
             Cost(second ? 1 : 0);
             int addr = 0x44 + m + slot;                        // $8529-$852F: Y = X + slot
@@ -1135,7 +1135,7 @@ namespace Darkwing.Audio
             int addr = (hi << 8) | lo;
             if (hi < 0xC0)
                 return addr < 0x8000 ? (byte)0 : _rom3[addr - 0x8000];
-            TimingSupported = false;
+            Unpriced();
             if (_rom7 == null || addr < 0xC000) return 0;
             return _rom7[addr - 0xC000];
         }

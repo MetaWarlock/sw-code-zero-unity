@@ -68,7 +68,7 @@ namespace Darkwing.Core
                     _game.StepIntroFlight();
                     RecordResetIntroFlightWalk();
                     if ((s.Y & 0xFF) < 0x5C) return;
-                    _game.PlaySfx(0x10); _game.Oam.HideShadow();
+                    _game.PlaySfx(0x10); _game.Oam.PrimeShadowCursor(4); _game.Oam.HideShadow();
                     EnemyBehaviors.SetAnim(s, 0x2B);
                     _game.Oam.MissionCardHold = true;
                     _game.ResidentWalk(); // $9609 starts its own $F89A before yielding
@@ -84,7 +84,7 @@ namespace Darkwing.Core
                     return;
                 case 7:
                     if (--_introDelay > 0) return;
-                    _game.Oam.MissionCardHold = false; _game.Oam.HideShadow();
+                    _game.Oam.MissionCardHold = false; _game.Oam.PrimeShadowCursor(4); _game.Oam.HideShadow();
                     _game.ClearObjectRamAndScroll(); World.CurrentWorld = 9;
                     _game.BeginResidentFade(false); _introStage = 8;
                     return;
@@ -95,9 +95,14 @@ namespace Darkwing.Core
                     _introStage = 10;
                     return;
                 case 10:
-                    _game.BeginSceneLoad(_decoder, World.CurrentWorld); _introStage = 11;
+                    MeasureResetStaging();
+                    _game.BeginSceneLoadStreaming(_decoder,World.CurrentWorld);
+                    if(BeginResetStreamingTiming())RunLoaderStreamFrame();
+                    else _game.FallbackSceneLoad();
+                    _introStage = 11;
                     return;
                 case 11:
+                    if(LoaderStreaming) { RunLoaderStreamFrame(); return; }
                     if (!_game.TickSceneLoad()) return;
                     _game.IntroPanel8F00Seed(); _game.ResidentWalk(); _introStage = 12;
                     return;

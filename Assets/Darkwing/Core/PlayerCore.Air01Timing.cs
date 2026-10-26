@@ -66,7 +66,6 @@ namespace Darkwing.Core
         private int Air01Service(int coordinateX, int coordinateY, int fractionY, int velocity, byte held, byte pressed, bool? audioQueueAccepts)
         {
             if ((held & 8) != 0 || AirSubState == 1) throw new NotSupportedException("CD1F up/reach pose");
-            if (_hookLatch != 0) throw new NotSupportedException("F324 hook-latched fall");
             int state = 1, substate = AirSubState;
             var player = Objects.Slots[0];
             int animation = player.AnimNumber, frame = player.AnimFrame, timer = player.AnimTimer;
@@ -74,7 +73,8 @@ namespace Darkwing.Core
             int cycles = 3 + ScrollBranch(0xCD10, 0xCD3E, false);
             int direction = held & 3;
             cycles += 3 + 2 + ScrollBranch(0xCD16, 0xCD1B, direction == 0);
-            if (direction != 0) cycles += 6 + Air01Horizontal(ref coordinateX, coordinateY, direction);
+            TimingParts[0] = direction != 0 ? Air01Horizontal(ref coordinateX, coordinateY, direction) : 0;
+            if (direction != 0) cycles += 6 + TimingParts[0];
             cycles += 3 + 2 + ScrollBranch(0xCD1F, 0xCD25, true);
             cycles += 4 + 2 + ScrollBranch(0xCD2A, 0xCD3E, false);
             bool freshShot = (pressed & 0x40) != 0;
@@ -82,14 +82,13 @@ namespace Darkwing.Core
             int newSlot = -1;
             if (freshShot)
             {
-                if (animation is 7 or 0x0E or 0x0F) throw new NotSupportedException("CEA6 air projectile offset pose");
                 cycles += 6 + ExpandedBulletBudget(out bool allowed) + ScrollBranch(0xCD35, 0xCD3E, !allowed);
                 if (allowed)
                 {
                     substate = 2;
                     for (int index = WeaponSlotPref[0]; index >= 2; index--)
                         if (!Objects.Slots[index].Active) { newSlot = index; break; }
-                    cycles += 2 + 3 + 6 + ExpandedNormalShot(audioQueueAccepts);
+                    cycles += 2 + 3 + 6 + ExpandedNormalShot(audioQueueAccepts, (byte)animation);
                 }
             }
             bool falling = (velocity & 0x8000) != 0;
@@ -108,8 +107,9 @@ namespace Darkwing.Core
                 }
             }
             cycles += 4 + 2 + 3 + 2 + 2 + 2 + 6;
-            cycles += Air01Vertical(coordinateX, ref coordinateY, fractionY, ref velocity, ref state, newSlot,
+            TimingParts[1] = Air01Vertical(coordinateX, ref coordinateY, fractionY, ref velocity, ref state, newSlot,
                 audioQueueAccepts, out int maximum, out bool landed, out bool verticalSound);
+            cycles += TimingParts[1];
             if (newSlot >= 0 && verticalSound) throw new NotSupportedException("F850 multiple enqueue owner progression");
             cycles += 4 + 3 + 3 + 4 + ScrollBranch(0xCD6D, 0xCD82, (velocity & 0x8000) == 0);
             bool selectAnimation;
@@ -197,6 +197,64 @@ namespace Darkwing.Core
             return cycles + 2 + 3 + 6;
         }
 
+        /// <summary>$F366…$F3C1 for the player: probe the head band ($3A…$3C). A class 1/2 there
+        /// catches the hook ($50=$0D, SFX $12) unless already hanging; an empty band re-probes the
+        /// feet ($06): a class-1 floor lands only at fall speed $FA or faster than $F9, ≥3 lands.</summary>
+        private int HookDanceCycles(int coordinateX, ref int coordinateY, int velocity, ref int state, bool? audioQueueAccepts,
+            out int maximum, out bool landed, out bool sound)
+        {
+            landed = sound = false;
+            int cycles = 2 + 2 + 2 + 3 + 2 + 3 + 6;
+            cycles += ExpandedProbeSet(coordinateX, coordinateY, 0x3A, out int head, out _, 5) + 2 + 3 + 2;
+            if (head >= 1)
+            {
+                cycles += 2 + 2;
+                if (head != 1)
+                {
+                    cycles += 2 + 2;
+                    if (head != 2) { maximum = head; return cycles + 2 + 3 + 6; }
+                }
+                cycles += 3 + 3 + 2;
+                maximum = head;
+                if (state == 0x0D)
+                {
+                    landed = true;
+                    return cycles + 3 + 6 + 20 + 2 + 6;
+                }
+                if (!audioQueueAccepts.HasValue) throw new NotSupportedException("F850 native audio queue owner unavailable");
+                state = 0x0D;
+                sound = true;
+                landed = head == 2;
+                return cycles + 2 + 2 + 3 + 2 + 6 + ExpandedQueueCycles(audioQueueAccepts.Value) + 2 + 3 + 3 + 2
+                    + (head != 2 ? 3 : 2) + 6 + 20 + 6;
+            }
+            cycles += 3 + 2 + 3 + 2 + 3 + 6;
+            cycles += ExpandedProbeSet(coordinateX, coordinateY, 6, out maximum, out int lastY, 5) + 2 + 3 + 2;
+            if (maximum == 0) return cycles + 3 + 6;
+            cycles += 2 + 2;
+            if (maximum == 1)
+            {
+                cycles += 3 + 4 + 2;
+                int high = velocity >> 8;
+                if (high != 0xFA)
+                {
+                    cycles += 2 + 2;
+                    if (high >= 0xF9) return cycles + 2 + 2 + 6;
+                    cycles += 3;
+                }
+                else cycles += 3;
+                cycles += 2 + 3 + 3;
+            }
+            else
+            {
+                cycles += 2 + 2;
+                if (maximum == 2) return cycles + 3 + 6;
+                cycles += 2 + 2 + 3 + 3;
+            }
+            landed = true;
+            return cycles + 6 + PlayerSnapUp(ref coordinateY, lastY & 15) + 6 + 20 + 2 + 6;
+        }
+
         private int Air01Horizontal(ref int coordinateX, int coordinateY, int direction)
         {
             bool right = (direction & 1) != 0;
@@ -249,7 +307,19 @@ namespace Darkwing.Core
                 if ((velocity >> 8) < 0xF9) { velocity = 0xF800; gravity += 2 + 5 + 2 + 5; }
             }
             gravity += 6;
-            int pair = ExpandedRejectedVerticalPair();
+            int pair = ExpandedVerticalPair(coordinateX, coordinateY, out bool standing, out int push, out int scratch);
+            if (standing)
+            {
+                if (!falling) throw new NotSupportedException("F3D7 rising actor push");
+                if (newSlot >= 0) throw new NotSupportedException("F850 multiple enqueue owner progression");
+                int previousY = scratch;
+                int head = 3 + 3 + 4 + 3 + 4 + 3 + 4 + ScrollBranch(0xF2E8, 0xF2ED, true);
+                head += 6 + integrate + 2 + ScrollBranch(0xF2F2, 0xF31F, false) + 6 + pair + ScrollBranch(0xF2F7, 0xF31F, false);
+                head += PlayerActorLandCycles(coordinateX, ref coordinateY, previousY, push, out maximum);
+                velocity = 0xFFAB;
+                landed = true;
+                return head;
+            }
             if (newSlot >= 0)
             {
                 pair += (Flags & 0x80) != 0 ? 12 : 6;
@@ -260,18 +330,36 @@ namespace Darkwing.Core
             if (falling)
             {
                 cycles += 6 + integrate + 2 + ScrollBranch(0xF2F2, 0xF31F, false) + 6 + pair + ScrollBranch(0xF2F7, 0xF31F, true);
+                if (_hookLatch != 0)
+                {
+                    // $F324 BNE $F366: a latched fall skips the $06 probe and goes straight to the dance.
+                    cycles += 6 + gravity + 3 + ScrollBranch(0xF324, 0xF366, true);
+                    return cycles + HookDanceCycles(coordinateX, ref coordinateY, velocity, ref state, audioQueueAccepts,
+                        out maximum, out landed, out sound);
+                }
                 cycles += 6 + gravity + 3 + ScrollBranch(0xF324, 0xF366, false) + 6 + probe;
                 cycles += 2 + 3 + 2 + ScrollBranch(0xF32E, 0xF34B, maximum < 1);
                 if (maximum == 0) return cycles + 6;
                 cycles += ScrollBranch(0xF330, 0xF33A, maximum != 1);
+                bool dance = false;
                 if (maximum == 1)
                 {
                     int nibble = lastY & 15;
                     cycles += 3 + 2 + 2 + ScrollBranch(0xF338, 0xF360, nibble >= 8);
-                    if (nibble >= 8) throw new NotSupportedException("F360 air pass-through hook dance");
+                    dance = nibble >= 8;
                 }
-                cycles += 2 + ScrollBranch(0xF33C, 0xF344, false) + 3 + 2 + ScrollBranch(0xF342, 0xF360, maximum == 2);
-                if (maximum == 2) throw new NotSupportedException("F360 air class2 hook dance");
+                if (!dance)
+                {
+                    cycles += 2 + ScrollBranch(0xF33C, 0xF344, false) + 3 + 2 + ScrollBranch(0xF342, 0xF360, maximum == 2);
+                    dance = maximum == 2;
+                }
+                if (dance)
+                {
+                    // $F360: CPX #1 / BCS not taken for the player, INC $5C, then $F366.
+                    cycles += 2 + 2 + 5;
+                    return cycles + HookDanceCycles(coordinateX, ref coordinateY, velocity, ref state, audioQueueAccepts,
+                        out maximum, out landed, out sound);
+                }
                 int snap = 3 + 2 + 3 + 4 + 2 + 3 + 5 + ScrollBranch(0xEDE1, 0xEDF0, low >= (lastY & 15));
                 if (low < (lastY & 15)) { snap += 2 + 5 + 4 + 2 + 5; row = (byte)(row - 1); }
                 coordinateY = row << 8 | (byte)(low - (lastY & 15) - (low < (lastY & 15) ? 0x10 : 0));

@@ -2803,7 +2803,7 @@ namespace Darkwing.Core
             }
             if (s.T480 == 0)
             {
-                if (((ctx.Objects.Parity & 1) == 0))
+                if ((ctx.Player.PressedThisFrame & 0x40) != 0)       // $A6CB LDA $14 / AND #$40
                 {
                     SetAnim(s, 0x52);
                     s.T480++;
@@ -4013,7 +4013,7 @@ namespace Darkwing.Core
             // droid picked up on the reverse scroll pass. Modelling it needs the $22 cursor
             // read, which the port's spawner does not keep; this route spawns our droid on a
             // forward pass, where the original reaches $8FA6 exactly as the code below does.
-            if ((ctx.Objects.Parity & 3) == 0) ctx.Sfx?.Invoke(0x2A);  // $8FA6 LDA $95 / AND #$03 / $8FAC
+            if ((ctx.ReadFrameParity() & 3) == 0) ctx.Sfx?.Invoke(0x2A);  // $8FA6 LDA $95 / AND #$03 / $8FAC
             if (s.AnimNumber != 0xA5 && s.AnimNumber != 0xA4) EnemyBehaviors.SetAnim(s, 0xA5); // $8FBF
             if (s.AnimNumber == 0xA5) { DroidAttack(s, ctx); return; } // $8FB6 BEQ $8FC1
             DroidHover(s, ctx);                                        // $8FBA BEQ $8FF5

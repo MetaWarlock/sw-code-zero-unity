@@ -6,16 +6,17 @@ namespace Darkwing.Core
     {
         public readonly struct BodyWork
         {
-            public readonly int Cycles, CopyrightSetupCycles, BodyPcOffset, RenderOnAtCycles;
+            public readonly int Cycles, CopyrightSetupCycles, BodyPcOffset, RenderOnAtCycles, RenderOffAtCycles;
             public readonly bool Commits;
             public readonly ushort BodyPc, YieldStackPointer, StopPc;
 
-            public BodyWork(int cycles, bool commits, int copyrightSetupCycles, ushort bodyPc, int bodyPcOffset, ushort yieldStackPointer, ushort stopPc = 0xC5F7, int renderOnAtCycles = -1)
+            public BodyWork(int cycles, bool commits, int copyrightSetupCycles, ushort bodyPc, int bodyPcOffset, ushort yieldStackPointer, ushort stopPc = 0xC5F7, int renderOnAtCycles = -1, int renderOffAtCycles = -1)
             {
                 Cycles = cycles; Commits = commits; CopyrightSetupCycles = copyrightSetupCycles;
                 BodyPc = bodyPc; BodyPcOffset = bodyPcOffset; YieldStackPointer = yieldStackPointer;
                 StopPc = stopPc;
                 RenderOnAtCycles=renderOnAtCycles;
+                RenderOffAtCycles=renderOffAtCycles;
             }
         }
 
@@ -86,10 +87,12 @@ namespace Darkwing.Core
             cycles += BackgroundPalette(world.BgPalIdx);                       // $C2F9
             cycles += 13;                                                      // $DDC0-$DDC5
             cycles += SpritePalette(world.SpPalIdx, world.Id);                 // $C319
-            cycles += 6 + 6 + 20 + 6 + ClearSlots();                           // $DDC8/$DE24/$C14E/$DE27/$C235
+            cycles += 6 + 6;                                                 // $DDC8/$DE24 JSR $C14E
+            int renderOff=cycles+14;                                         // $C154 mask store completes before $C157 RTS
+            cycles += 20 + 6 + ClearSlots();                                 // $C14E/$DE27/$C235
             cycles += 121;                                                     // $DE2A-$DE84 with $23 == 0
             if (world.StartCell != 0) cycles += 12;                            // $DE7C falls into $DE7E-$DE84
-            return new BodyWork(cycles, false, -1, 0xDD5D, 0, 0xBB, 0xDE86);
+            return new BodyWork(cycles, false, -1, 0xDD5D, 0, 0xBB, 0xDE86,renderOffAtCycles:renderOff);
         }
 
         /// <summary>$DDCB JSR $FF06 after the staging loop exits: the same 55-cycle yield
@@ -102,7 +105,7 @@ namespace Darkwing.Core
 
         public static BodyWork MeasureLoaderSpawn(byte world)
         {
-            if(world!=7)throw new NotSupportedException("Clocked first-loader spawn requires world7");
+            if(world!=7&&world!=9)throw new NotSupportedException("Clocked loader spawn requires world7/9");
             // DDCE..DDDE, FA78, DDE1..DDEC, DE09..DE13; then C158 and the DE03 yield.
             int head=2+3+3+2+4+2+5+6+20+2+5+3+2+2+3+3+2+2+2+2+3;
             return new BodyWork(head+6+20+6+49,true,-1,0xDDCE,0,LoaderYieldStack,renderOnAtCycles:head+6+14);
@@ -115,8 +118,9 @@ namespace Darkwing.Core
             return new BodyWork(prefix+Fade(palette,0x30)+3+3+6+49,true,-1,0xDE06,0,0xB8);
         }
 
-        public static BodyWork MeasureLoaderFadeResume(byte frame,byte level,byte[] palette)
+        public static BodyWork MeasureLoaderFadeResume(byte frame,byte level,byte[] palette,byte world=7)
         {
+            if(world!=7&&world!=9)throw new NotSupportedException("Clocked loader fade requires world7/9");
             bool ramp=(frame&3)==0;
             int cycles=4+2+2+Branch(0xC2AE,0xC2A6,!ramp);
             if(!ramp)return new BodyWork(cycles+3+6+49,true,-1,0xC2AA,0,0xB8);
@@ -124,8 +128,11 @@ namespace Darkwing.Core
             cycles+=3+2+3+3+2+2+3; // C2B0..C2BB, BEQ50 not taken
             bool again=(level&0x80)==0;
             cycles+=Branch(0xC2BD,0xC285,again);
-            // C2BF returns to C601: LDX #1E, JSR FEFF and its first FF06.
-            if(!again)return new BodyWork(cycles+6+2+6+6+49,true,-1,0xC2AA,0,0xB9);
+            // C2BF returns to the actual caller. World7 enters C601's FEFF;
+            // world9 reaches C666, before the still unpriced first story panel.
+            if(!again)
+                return world==7 ? new BodyWork(cycles+6+2+6+6+49,true,-1,0xC2AA,0,0xB9)
+                    : new BodyWork(cycles+6,false,-1,0xC2AA,0,0xBF,0xC666);
             return new BodyWork(cycles+Fade(palette,level)+3+3+6+49,true,-1,0xC2AA,0,0xB8);
         }
 
@@ -197,7 +204,7 @@ namespace Darkwing.Core
         {
             if(walkCycles<0)throw new NotSupportedException("Intro text OAM walk is unpriced");
             return new BodyWork(work.Cycles+walkCycles,work.Commits,work.CopyrightSetupCycles,
-                work.BodyPc,work.BodyPcOffset,work.YieldStackPointer,work.StopPc,work.RenderOnAtCycles);
+                work.BodyPc,work.BodyPcOffset,work.YieldStackPointer,work.StopPc,work.RenderOnAtCycles,work.RenderOffAtCycles);
         }
 
         public static BodyWork MeasureIntroTextReturn(int stream)
@@ -212,7 +219,7 @@ namespace Darkwing.Core
         /// <summary>C621: F5A4 radix-240 subtraction, F5DA acceleration/clamp,
         /// bank5 OAM and the height test. The caller adds this first OAM's price,
         /// even when the legacy presentation starts a second walk in the same pass.</summary>
-        public static BodyWork MeasureIntroFlight(ObjectSystem.Slot player, byte gravity)
+        public static BodyWork MeasureIntroFlight(ObjectSystem.Slot player, byte gravity, bool audioSlotFree)
         {
             if(player==null)throw new ArgumentNullException(nameof(player));
             int fraction=player.YFrac-player.YVelFrac;
@@ -225,19 +232,62 @@ namespace Darkwing.Core
             bool flying=low<0x5C;
             cycles+=4+2+Branch(0xC63A,0xC61E,flying);
             if(flying)return new BodyWork(cycles+6+49,true,-1,0xC621,0,0xBB);
-            // Terminal flight falls through C63C and immediately enters the
-            // world-7 intro card.  The fixed C63C..8000 prefix plus F8AA..FF19
-            // tail is 1682 + 11 + 49; both OAM walks are added from the live
-            // dispatcher after the body has executed.
-            const int cardFixed = 1682 + 11 + 49;
+            // C63C's F850 queue path, wipe(cursor4), bank2 and 9600/FA78;
+            // then F89A wipes from A0. Both actual OAM walks are added by the caller.
+            int cardEntry=2+6+SoundEnqueue(audioSlotFree)-3+2+3+6+Wipe(4)+2+6+55+6;
+            int cardHead=2+6+20+2+3+6;
+            int cardFixed=cardEntry+cardHead+CardWalkWithoutOam;
             return new BodyWork(cycles+cardFixed,true,-1,0xC621,0,0xB6,0xC63C);
         }
 
-        /// <summary>One ordinary $960C/$9605 iteration after the first card frame.
-        /// The live OAM walk is added after the flow body; terminal $9630 and
-        /// $967A branches remain outside this first continuation.</summary>
-        public static BodyWork MeasureIntroCardIteration()
-            => new BodyWork(571 + 11 + 49, true, -1, 0xF8B1, 0, 0xB6);
+        private static int CardWalkWithoutOam => 3+3+5+6+Wipe(0xA0)+2+6+55+6+2+3+6+49;
+
+        /// <summary>Bank2 960C/967A, from the returning F8B1 to either another
+        /// card walk/yield or the first 9630 FEFF. Uses the live animation state.</summary>
+        public static BodyWork MeasureIntroCardIteration(ObjectSystem.Slot player, byte world)
+        {
+            if(player==null)throw new ArgumentNullException(nameof(player));
+            if(world!=7)throw new NotSupportedException("Clocked intro card requires world7");
+            bool terminal=player.AnimFrame==0x11;
+            int cycles=62+4+2+Branch(0x9611,0x9630,terminal);
+            if(!terminal)
+            {
+                bool blit=player.AnimFrame==0x0F;
+                cycles+=2+Branch(0x9615,0x9605,!blit);
+                if(blit)
+                {
+                    cycles+=3+2+Branch(0x961B,0x9623,true)+6;
+                    // 40 four-byte records: LDA abs,Y has page-cross penalties;
+                    // STA abs,Y always costs5. Keep the 969A last branch separate.
+                    int copy=2;
+                    for(int y=0;y<0xA0;y+=4)
+                    {
+                        for(int plane=0;plane<4;plane++)copy+=4+((0x9F+plane+y)>255 ? 1 : 0)+5;
+                        copy+=4*2+2+Branch(0x969A,0x967C,y+4<0xA0);
+                    }
+                    cycles+=copy+3+6;
+                    terminal=player.AnimTimer==4;
+                    cycles+=4+2+Branch(0x962B,0x9630,terminal);
+                    if(!terminal)cycles+=3;
+                }
+            }
+            if(terminal)return new BodyWork(cycles+2+6+6+49,true,-1,0xF8B1,0,0xB7);
+            return new BodyWork(cycles+2+3+6+CardWalkWithoutOam,true,-1,0xF8B1,0,0xB6);
+        }
+
+        /// <summary>The 9630 and C650 FEFF calls each own 60 yields. The native
+        /// flow keeps their combined remaining count, but their stacks are distinct.
+        /// The final return enters C655's wipe and the next DD57 fade immediately.</summary>
+        public static BodyWork MeasureIntroCardDelay(int remaining, byte[] palette)
+        {
+            if(remaining<1||remaining>120)throw new ArgumentOutOfRangeException(nameof(remaining));
+            int cycles=2+Branch(0xFF03,0xFEFF,remaining!=61&&remaining!=1);
+            if(remaining==61)
+                return new BodyWork(cycles+6+6+2+6+6+49,true,-1,0xFF02,0,0xB9);
+            if(remaining==1)
+                return new BodyWork(cycles+6+2+3+6+Wipe(4)+FirstLoader(palette),true,-1,0xFF02,0,0xB4);
+            return new BodyWork(cycles+6+49,true,-1,0xFF02,0,(ushort)(remaining>61 ? 0xB7 : 0xB9));
+        }
 
         /// <summary>$DE93 LDA $31 / CMP #$7 / BCS $DEA5, then $DEA5 LDA $66 / BMI $DE99
         /// (not taken) / RTS, followed by the $DDCB JSR $FF06. Mission worlds ($31 &lt; 7)
