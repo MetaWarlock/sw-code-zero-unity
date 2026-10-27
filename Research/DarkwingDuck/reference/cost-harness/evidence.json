@@ -1,0 +1,293 @@
+{
+  "schema": 1,
+  "date": "2026-10-27",
+  "scope": "CostHarness preservation and path migration; not mission acceptance",
+  "gameRevision": "5f6d576",
+  "inheritedChanges": "See external git-state.json; no Assets/AgentScripts/Playthroughs changed by migration",
+  "originalRecovery": "Claude file history/scratchpad recovered by prior worker; original capture command and full CSV register columns unavailable; not a fresh ROM capture",
+  "canonicalSource": "Tools/DarkwingResearch/cost",
+  "sourceArchive": "Tools/DarkwingResearch/archive/cost-recovery-20261026",
+  "backups": {
+    "before": "D:\\Art\\SW Code Zero Unity - Git Backups\\20261027-tooling-before",
+    "beforeManifestSha256": "432a565bb2b909dfb2b980f7c07b7f03b480326c4dc6f1010a42b88d65218513",
+    "originalFolder": "D:/Art/SW Code Zero Unity - Git Backups/20261027-costharness-original",
+    "after": "D:/Art/SW Code Zero Unity - Git Backups/20261027-tooling-preserved",
+    "afterGate": "snapshot + verify + audit must all PASS; current command outputs are authoritative"
+  },
+  "protectedRoots": [
+    "Tools",
+    "AgentScripts",
+    ".vscode",
+    "Assets",
+    "Packages",
+    "ProjectSettings",
+    "Docs",
+    "Research",
+    "Playthroughs",
+    "Art",
+    "AGENTS.md",
+    ".gitignore"
+  ],
+  "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "cityInput": {
+    "session": "Playthroughs/20261019T212535Z",
+    "bytes": 29360,
+    "sha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100",
+    "start": "existing power-on movie/input; unchanged",
+    "pollConvention": "input byte i (zero-based) drives poll i+1; buffer record 4384 bytes; source phase tables also include poll0",
+    "sourceBuffers": [
+      {
+        "path": "Playthroughs/20261019T212535Z/replay1/buffers.bin",
+        "bytes": 128714240,
+        "sha256": "7c123d27f8f678e25fa812a8b6dbf599f49b93b2c6dbb467ca848f64a9f1cb70"
+      },
+      {
+        "path": "Playthroughs/20261019T212535Z/replay2/buffers.bin",
+        "bytes": 128714240,
+        "sha256": "c5b8169d1fc93a8922bd30a658e8c0e76bf527f1d075cc1dcb06700752747bd6"
+      }
+    ]
+  },
+  "sourceBoundary": "Migration matches restored predecessor on city polls1924..6400 (delta summary through6387) and native clock1..6420 only. Does not prove every old mode, full-ROM equality, restored missing references or no game bugs.",
+  "verification": {
+    "missing": {
+      "rejected": true,
+      "exit": 2,
+      "reason": "city_cost_compare.py: error: Missing, duplicated, reordered, extra leading or truncated poll data"
+    },
+    "duplicate": {
+      "rejected": true,
+      "exit": 2,
+      "reason": "city_cost_compare.py: error: Missing, duplicated, reordered, extra leading or truncated poll data"
+    },
+    "extra": {
+      "rejected": true,
+      "exit": 2,
+      "reason": "city_cost_compare.py: error: Missing, duplicated, reordered, extra leading or truncated poll data"
+    },
+    "mismatch": {
+      "rejected": true,
+      "exit": 1,
+      "reason": "FAIL: diagnostic summary differs from preserved baseline"
+    },
+    "roundtrip": {
+      "equal": true,
+      "idlePolls": 29361,
+      "phasePolls": 29361
+    },
+    "byteComparisons": {
+      "verification/city_after.csv": {
+        "equal": true,
+        "bytes": 657934,
+        "sha256": "ef6ade3b7ccd4cf266a377d4a0e2b121ce7d3bda62a66387ec3f75b8443a6fa8"
+      },
+      "verification/clock_after.csv": {
+        "equal": true,
+        "bytes": 444096,
+        "sha256": "f65da9f389d32a70a6b61e3ed417f8c8603735c86dfe0dda88941793c42c4f2e"
+      },
+      "verification/clock_after/buffers.bin": {
+        "equal": true,
+        "bytes": 28145280,
+        "sha256": "ac64454b4a2fdbbdb9b6a5df894fd99b1cca25060af2d4fc743599dd202a6cb0"
+      }
+    },
+    "pathSafety": {
+      "refuseOverwrite": {
+        "rejected": true,
+        "exit": 2,
+        "reason": "ERROR: System.IO.IOException: Output exists; use a new path instead of overwriting evidence: D:\\Art\\SW Code Zero Unity\\Research\\DarkwingDuck\\reference\\cost-harness\\data\\verification\\city_after.csv"
+      },
+      "refuseOutsideProject": {
+        "rejected": true,
+        "exit": 2,
+        "reason": "ERROR: System.ArgumentException: Output must be a new CSV in the assigned project"
+      },
+      "refuseUnknownClockMode": {
+        "rejected": true,
+        "exit": 2,
+        "reason": "ERROR: System.ArgumentException: clock mode must be native or oracle"
+      },
+      "missingLegacyReference": {
+        "rejected": true,
+        "exit": 2,
+        "reason": "ERROR: System.IO.FileNotFoundException: Missing preserved input; see Tools/DarkwingResearch/README.md (do not recreate a baseline silently)"
+      },
+      "otherCwdProjectRoot": {
+        "result": "PASS",
+        "csvFirstRowExact": true
+      }
+    }
+  },
+  "preservationSelftest": {
+    "positive": 1,
+    "negative": 5,
+    "result": "PASS"
+  },
+  "unchangedProtectedFilesChecked": 489,
+  "archivedHistoricalSourcesExact": 27,
+  "missing": [
+    "Historical original/port baseline exports for 24261,38886,73407 inputs lost before this task; input/movie survives. Regenerate originals twice with existing stand; historical port baseline cannot be silently recreated from current code.",
+    "Legacy m1 full_phases.csv/full_bank5.csv/actor_prefix.csv/original buffers missing at expected legacy paths; mode remains unavailable until evidence restored."
+  ],
+  "referenceData": {
+    "baseline-before/city_clock_smoke.csv": {
+      "bytes": 444096,
+      "sha256": "f65da9f389d32a70a6b61e3ed417f8c8603735c86dfe0dda88941793c42c4f2e"
+    },
+    "baseline-before/city_cost_coverage.csv": {
+      "bytes": 657934,
+      "sha256": "ef6ade3b7ccd4cf266a377d4a0e2b121ce7d3bda62a66387ec3f75b8443a6fa8"
+    },
+    "baseline-before/clock/buffers.bin": {
+      "bytes": 28145280,
+      "sha256": "ac64454b4a2fdbbdb9b6a5df894fd99b1cca25060af2d4fc743599dd202a6cb0"
+    },
+    "baseline-before/cost-summary.json": {
+      "bytes": 1542,
+      "sha256": "26884c6d6e0e6a582216ef74964d45aa9cc9deef2cb298bcbb768e6c2c75f450"
+    },
+    "baseline-before/tooling_before.csv": {
+      "bytes": 657934,
+      "sha256": "ef6ade3b7ccd4cf266a377d4a0e2b121ce7d3bda62a66387ec3f75b8443a6fa8"
+    },
+    "baseline-before/tooling_clock_before.csv": {
+      "bytes": 444096,
+      "sha256": "f65da9f389d32a70a6b61e3ed417f8c8603735c86dfe0dda88941793c42c4f2e"
+    },
+    "city_phase.pkl": {
+      "bytes": 37324464,
+      "sha256": "46e92e82ce1054f25b7bfaf1f1c31300193a2b6dd0eadb9a978a698151d135ff"
+    },
+    "phases/city_idle_phase.csv": {
+      "bytes": 13797735,
+      "sha256": "411273d09844bd3188adca1de31de368a67b4bdb2896569d48d9c40fd34ca2b6"
+    },
+    "phases/city_phases.csv": {
+      "bytes": 13749922,
+      "sha256": "34ca53697c00a3e018d15c881aa9f76437a1d67a70f8734fe2bd8545ba53dbe6"
+    },
+    "recovery/b1_8800.txt": {
+      "bytes": 2206,
+      "sha256": "843582d19d1a4170d5a69cfca8c27a0eed171b7311a938deb3d221fb3540bd63"
+    },
+    "recovery/b1_8F71.txt": {
+      "bytes": 8365,
+      "sha256": "2337c5f594c24f9c8c1227f06d849b19a63ad50f912ee9c1853c8486e9aaeb90"
+    },
+    "recovery/b1_96C9.txt": {
+      "bytes": 1294,
+      "sha256": "117f95f62c3535b77fb0ba09affe9d964be77f9a1571483654fa8a9f62c98858"
+    },
+    "recovery/b3_8500.txt": {
+      "bytes": 2947,
+      "sha256": "8c269c0b5b63be0a509f78e9ff4b3c89d74378e87143975f86e6ad7b0401b1fc"
+    },
+    "recovery/b6_8032.txt": {
+      "bytes": 11731,
+      "sha256": "b8af5b2ea85dc45d294f0be5674faf153f415304f51dbb9c36c79f5bac117b64"
+    },
+    "recovery/b6_82F0.txt": {
+      "bytes": 6115,
+      "sha256": "13967d8cfd410944f7ebdadda48b2e49662b9e2a2cc2ffee315e55e4cac8c84c"
+    },
+    "recovery/b6_86A2.txt": {
+      "bytes": 7912,
+      "sha256": "3e1e994ceb53f5bc037d5761b52b9651e6791053cac49677d1dc77d590a26c44"
+    },
+    "recovery/b6_8812.txt": {
+      "bytes": 22909,
+      "sha256": "73382454693e7976e1ba30b4c3ebaf0f83b798931623733807ebf6220bf24e48"
+    },
+    "recovery/b6_9DBD.txt": {
+      "bytes": 8422,
+      "sha256": "ac8272b774fe8ca2d044cc44066779ca1aed313160ab0e41fa384ad1ff44df3a"
+    },
+    "recovery/b6_9F4C.txt": {
+      "bytes": 2638,
+      "sha256": "494eb2418c979e02d6dbd8ff85cc0d24cb87230ec0f2415ccbb2710d44132629"
+    },
+    "recovery/b6_A6B4.txt": {
+      "bytes": 1246,
+      "sha256": "2b9355a827c6f7d6b777e47fae49790498f34f789a026035dd4c647391fab6c4"
+    },
+    "recovery/fixed_CAF0.txt": {
+      "bytes": 2572,
+      "sha256": "4a14cbbaf59a6b43da101b8f8374602383fd2f0e0b38c4dda043e3ca369572ad"
+    },
+    "recovery/fixed_CE39.txt": {
+      "bytes": 3406,
+      "sha256": "20a87bfddbc5bd93a61a05acfb1cb4867c832aa0f1c3b13a04e6a6762194eec0"
+    },
+    "recovery/fixed_CFD7.txt": {
+      "bytes": 10990,
+      "sha256": "1505d8bb5adb5efb5b27941306f8697697f56de1be27a89ba4cb49a7688d4b64"
+    },
+    "recovery/fixed_D517.txt": {
+      "bytes": 2540,
+      "sha256": "b6f585c614adfee93fbdf4002878909b08afa055db8455efb3b9e7cc0bec292e"
+    },
+    "recovery/fixed_F4D7.txt": {
+      "bytes": 1342,
+      "sha256": "c786ec10b5b06515949e877389d64310428c10a1e4ad83fedd3aa161bf7bdfd6"
+    },
+    "recovery/fixed_F5A4.txt": {
+      "bytes": 1870,
+      "sha256": "e901f0c00f242f987a40c33d22c747815335c412ef88c3055af6c2c0c06e42d9"
+    },
+    "recovery/ppu_variants.txt": {
+      "bytes": 3754,
+      "sha256": "e5b856221db2b95ffb47ee7e4dbfe63b6db7e68a5b3c0bf97da0bdf45848e6ff"
+    },
+    "verification/checks.json": {
+      "bytes": 2351,
+      "sha256": "64a2974cd075b82d91697cd71c8305d8b46898c39cdf7f1c42d68d6b0eeb83b0"
+    },
+    "verification/city_after.csv": {
+      "bytes": 657934,
+      "sha256": "ef6ade3b7ccd4cf266a377d4a0e2b121ce7d3bda62a66387ec3f75b8443a6fa8"
+    },
+    "verification/clock_after/buffers.bin": {
+      "bytes": 28145280,
+      "sha256": "ac64454b4a2fdbbdb9b6a5df894fd99b1cca25060af2d4fc743599dd202a6cb0"
+    },
+    "verification/clock_after.csv": {
+      "bytes": 444096,
+      "sha256": "f65da9f389d32a70a6b61e3ed417f8c8603735c86dfe0dda88941793c42c4f2e"
+    },
+    "verification/guard_smoke.csv": {
+      "bytes": 355,
+      "sha256": "dd68a814343ea680dc5d65f92adca496f1354e2332bc01054162d979edf60735"
+    },
+    "verification/guard_smoke_final.csv": {
+      "bytes": 355,
+      "sha256": "dd68a814343ea680dc5d65f92adca496f1354e2332bc01054162d979edf60735"
+    },
+    "verification/negative_duplicate.csv": {
+      "bytes": 658166,
+      "sha256": "334f05f9a9979832df50d4eb5def7eb5d328e1d48722aaf839f2dfc1027d01b6"
+    },
+    "verification/negative_extra.csv": {
+      "bytes": 658128,
+      "sha256": "3df76a5a0c825a2175c4b61bb63750f5e7be7631f05178590f034b565f6ed5e0"
+    },
+    "verification/negative_mismatch.csv": {
+      "bytes": 657985,
+      "sha256": "a6a207bf270de68679f8bccc249224c147b4c61a4c017a5fa2017894c9f88c0b"
+    },
+    "verification/negative_missing.csv": {
+      "bytes": 657804,
+      "sha256": "ad6b542c154b1c1cbe104b944bdd74709b936edcfb714880a4300a816b56684a"
+    },
+    "verification/roundtrip.pkl": {
+      "bytes": 37324464,
+      "sha256": "00d16a97947ca32886c80eb7197f74b23af35d5bf4999430161942070d457f28"
+    }
+  },
+  "build": {
+    "result": "PASS",
+    "errors": 0,
+    "warnings": 5,
+    "scope": "only .NET research project, no Unity build"
+  }
+}
