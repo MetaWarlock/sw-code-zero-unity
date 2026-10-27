@@ -103,17 +103,23 @@ def verify(destination):
     return manifest, errors
 
 
-def snapshot(destination):
+def snapshot(destination, includes=()):
     destination = destination.resolve()
     if destination.is_relative_to(ROOT) or ROOT.is_relative_to(destination):
         raise ValueError("Backup must be a separate NEW directory outside the checkout")
     if destination.exists():
         raise ValueError("Snapshot already exists; never overwrite the previous backup")
-    sources = files((*ROOTS, "Build/CostHarness", "Temp"))
+    roots = tuple(dict.fromkeys((*ROOTS, *includes)))
+    for name in roots:
+        if Path(name).is_absolute() or not (ROOT / name).resolve().is_relative_to(ROOT):
+            raise ValueError(f"Protected paths must stay within assigned project: {name}")
+        if name in includes and not (ROOT / name).exists():
+            raise ValueError(f"Explicitly protected input does not exist: {name}")
+    sources = files((*roots, "Build/CostHarness", "Temp"))
     destination.mkdir(parents=True)
     manifest = {"schema": 1, "complete": False, "createdUtc": datetime.now(timezone.utc).isoformat(),
                 "sourceRoot": str(ROOT), "head": git("rev-parse", "HEAD").decode().strip(),
-                "roots": list(ROOTS), "files": {}}
+                "roots": list(roots), "files": {}}
     target = destination / "manifest.json"
     target.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     for name, source in sources.items():
@@ -147,7 +153,8 @@ def snapshot(destination):
 
 def audit(destination):
     manifest, errors = verify(destination)
-    current = files(ROOTS)
+    roots = tuple(dict.fromkeys((*ROOTS, *manifest.get("roots", ()))))
+    current = files(roots)
     tracked = set(git("ls-files", "--cached", "-z").decode("utf-8").split("\0"))
     issues = list(errors)
     current_head = git("rev-parse", "HEAD").decode().strip()
@@ -165,7 +172,7 @@ def audit(destination):
         if not stored.startswith("files/"):
             continue
         name = stored[len("files/"):]
-        if any(name == r or name.startswith(r + "/") for r in ROOTS) and name not in current:
+        if any(name == r or name.startswith(r + "/") for r in roots) and name not in current:
             issues.append("MISSING CURRENT FILE " + name)
     for name, path in current.items():
         if name.startswith(("Tools/", "AgentScripts/")) and path.suffix in SOURCE_SUFFIXES:
@@ -227,7 +234,14 @@ def selftest():
             pass
         else:
             raise AssertionError("backup inside checkout accepted")
-    return {"result": "PASS", "positive": 1, "negative": 5}
+        for required in ("../outside-project", "__preservation_missing_required_path__"):
+            try:
+                snapshot(root / "required-path-check", (required,))
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("invalid required path accepted: " + required)
+    return {"result": "PASS", "positive": 1, "negative": 7}
 
 
 def main():
@@ -236,13 +250,15 @@ def main():
     for command in ("snapshot", "verify", "audit"):
         p = sub.add_parser(command)
         p.add_argument("destination", type=Path, help="external local snapshot directory")
+        if command == "snapshot":
+            p.add_argument("--include", action="append", default=[], help="extra protected project-relative path, e.g. current playable build; repeatable")
     sub.add_parser("selftest")
     args = parser.parse_args()
     try:
         if args.command == "selftest":
             result = selftest()
         elif args.command == "snapshot":
-            result = snapshot(args.destination)
+            result = snapshot(args.destination, args.include)
         elif args.command == "verify":
             manifest, errors = verify(args.destination)
             result = {"result": "FAIL" if errors else "PASS", "files": len(manifest["files"]), "issues": errors}

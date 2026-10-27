@@ -11,7 +11,7 @@
     "before": "D:\\Art\\SW Code Zero Unity - Git Backups\\20261027-tooling-before",
     "beforeManifestSha256": "432a565bb2b909dfb2b980f7c07b7f03b480326c4dc6f1010a42b88d65218513",
     "originalFolder": "D:/Art/SW Code Zero Unity - Git Backups/20261027-costharness-original",
-    "after": "D:/Art/SW Code Zero Unity - Git Backups/20261027-tooling-preserved",
+    "after": "D:/Art/SW Code Zero Unity - Git Backups/20261027-tooling-stand-preserved",
     "afterGate": "snapshot + verify + audit must all PASS; current command outputs are authoritative"
   },
   "protectedRoots": [
@@ -121,7 +121,7 @@
   },
   "preservationSelftest": {
     "positive": 1,
-    "negative": 5,
+    "negative": 7,
     "result": "PASS"
   },
   "unchangedProtectedFilesChecked": 489,
@@ -289,5 +289,15 @@
     "errors": 0,
     "warnings": 5,
     "scope": "only .NET research project, no Unity build"
+  },
+  "playableStand": {
+    "observedOnly": "2026-10-27, shortcuts read via WScript.Shell; not launched or changed",
+    "protectedPaths": [
+      "Build/UserStand",
+      "Build/DarkwingDuckMissions23"
+    ],
+    "exe": "Build/DarkwingDuckMissions23/DarkwingDuck.exe",
+    "fullOriginalReplays": "recordings and emulator already in default roots",
+    "humanAcceptance": "NOT RUN by this task"
   }
 }
