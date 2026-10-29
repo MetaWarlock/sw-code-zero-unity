@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Исторические исходники Mission 3 из рабочего Temp слота B</title>
+    <link rel="stylesheet" type="text/css" href="../../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="исторические-исходники-mission-3-из-рабочего-temp-слота-b">Исторические исходники Mission 3 из рабочего Temp слота B</h1>
+<p>Статус: <strong>ARCHIVED / HISTORICAL, non-runnable, не приёмка миссии 3</strong>. 38 исходников одноразовых проверок исследования liquidator, сохранённые байт-в-байт как найденные. Это не активные entry point и не восстановленный эксперимент: ни один probe не запускался, игровые алгоритмы не диагностировались, ссылки игры и базы не менялись. Авторство — прежнее исследование миссии 3, а не эта пассивная preservation-проверка. Актуальные инструменты и команды — в <a href="../../README.xhtml">едином каталоге</a>.</p>
+<p>Происхождение: рабочий корень слота B <code>D:/Art/SW Code Zero Unity Builds/Mission3-Liquidator</code> (ветка <code>codex/orchestration-slot-b</code>, HEAD <code>3fe92b5</code>), исходный корень <code>Temp/</code>. Эти 38 путей названы существующим <code>preserve.py audit</code> snapshot <code>20261029-zero39-slot-b-ready</code> как единственную причину его FAIL (DISPOSABLE SOURCE). Классификация только по сохранности: сравнение хешей и имён с 306 каноническими tracked-исходниками не дало ни одного эквивалента, поэтому все 38 помечены UNIQUE и сохранены целиком; ни одна копия не клонирована из уже существующего. Перед копированием сделан VERIFIED additive backup исходного слота B: <code>D:/Art/SW Code Zero Unity - Git Backups/20261029-zero42-slot-b-temp-source-backup</code> (2801 файлов, 1 281 257 405 байт, manifest SHA-256 <code>96a8e0bce5387200805f267799105c4224646d4f4c4452b16206a5bd7536d4c5</code>), verify PASS, совпадение хешей 38/38.</p>
+<p>Отображение путей: <code>Temp/путь</code> в слоте B лежит в архиве как <code>source/путь</code>. Относительные пути ниже корня <code>Temp</code> сохранены; сам элемент <code>Temp</code> не мог остаться элементом пути, потому что <code>.gitignore</code> строка 2 игнорирует любой каталог <code>[Tt]emp/</code> на любой глубине и такие байты не попали бы в Git. Ни одно правило игнорирования не ослаблено и не дополнено; исходный путь указан в таблице ниже.</p>
+<p>Сохранность в Git. <code>core.autocrlf=input</code> в этом репозитории нормализует концы строк при коммите и укорачивал бы два CRLF <code>stand.lua</code> с 7027 до 6902 байт, поэтому в каталоге архива лежит <code>.gitattributes</code> с <code>* -text</code> — только отключение eol-конверсии для этих исторических байтов, а не правило игнорирования. Проверено: blob каждого из 38 файлов побайтово равен исходному файлу слота B и хешу из таблицы.</p>
+<p>Известные входы и ограничения. Файлы зависели от рабочего <code>Temp</code> того прогона: записанных RAM-кадров и дампов, конкретного ROM-состояния/ревизии, API и версии эмулятора Mesen, порта отладки <code>10080</code>, окон процесса игры и временных файлов, которых сейчас нет рядом. <code>debug_port_10080.cs</code> и <code>refresh.cs</code> — фрагменты без проекта сборки. Оба <code>stand.lua</code> (<code>m3_original_validation/replay1</code> и <code>replay2</code>) побайтово различаются (7027 байт каждый), похожи на сгенерированные скрипты прогона, а доказанного template+config, который их воспроизводит, нет: они сохранены как исторические свидетельства с неизвестным способом получения, без любого утверждения о воспроизводимости. Их запуск, компиляция и проверка на них результатов не выполнялись и не планируются этой записью.</p>
+<p>Команда проверки сохранности (существующие инструменты, из корня проекта; сравнить вывод с таблицей):</p>
+<pre><code>C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe Art/Tools/DarkwingResearch/preserve.py verify "D:/Art/SW Code Zero Unity - Git Backups/20261029-zero42-slot-b-temp-source-backup"
+git ls-files -z -- Art/Tools/DarkwingResearch/archive/liquidator-worktree-20261029 | C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -c "import hashlib,sys; [print(hashlib.sha256(open(p,'rb').read()).hexdigest(), p) for p in sys.stdin.buffer.read().split(b'\0') if p]"</code></pre>
+<p>Полный инвентарь архива (38 файлов, 49 226 байт; SHA-256 по байтовому содержимому копии, равное содержимому слота B и backup):</p>
+<table>
+  <thead>
+    <tr><th>Исходный путь (слот B)</th><th>Сохранённый путь (архив)</th><th>Байт</th><th>SHA-256</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>Temp/check_0570.py</code></td><td><code>source/check_0570.py</code></td><td>272</td><td><code>f8ec0daca2e42bd231c97eba243ad4723a933e542ecf92890b052fd120a56531</code></td></tr>
+    <tr><td><code>Temp/check_diff.py</code></td><td><code>source/check_diff.py</code></td><td>1257</td><td><code>f60d067201109882ee6ef67d42dca50555314853de3fa8e14a3a42c645ced08f</code></td></tr>
+    <tr><td><code>Temp/check_f7705_slots.py</code></td><td><code>source/check_f7705_slots.py</code></td><td>938</td><td><code>8809750e6fa6aa45b91023d3a94e2a46e7d601a1afc7da796819e5477ffbbbed</code></td></tr>
+    <tr><td><code>Temp/check_f7706.py</code></td><td><code>source/check_f7706.py</code></td><td>931</td><td><code>ce02699a093147324a7ecc29ffe91801a935e320eacafaa99387905b002fa896</code></td></tr>
+    <tr><td><code>Temp/check_f9301_tiles.py</code></td><td><code>source/check_f9301_tiles.py</code></td><td>873</td><td><code>cfeaae52234b42667a8daf96ba0e04e8aace5cabf25df748257f869aa8a5ca81</code></td></tr>
+    <tr><td><code>Temp/check_f9303.py</code></td><td><code>source/check_f9303.py</code></td><td>969</td><td><code>5127b47342c1ff5e16ad531ed494b28488cf5e3458d7bce2f6d7d646a76bfb98</code></td></tr>
+    <tr><td><code>Temp/check_input_ram.py</code></td><td><code>source/check_input_ram.py</code></td><td>677</td><td><code>810a17dc7887adec00c2b7c3eafa2c3372521f68c63382cbfbe661b7f16b37cc</code></td></tr>
+    <tr><td><code>Temp/check_s3_birth.py</code></td><td><code>source/check_s3_birth.py</code></td><td>865</td><td><code>5c5dbda8c57e08525dd1bd34cfa752223ed67903f5257e72bee2521ee78eef89</code></td></tr>
+    <tr><td><code>Temp/check_shift.py</code></td><td><code>source/check_shift.py</code></td><td>513</td><td><code>5ed0b43fc3b1fa3361b82ad41614e6fb0bd11520a80714cc7748e0e0ab38de3f</code></td></tr>
+    <tr><td><code>Temp/check_timer.py</code></td><td><code>source/check_timer.py</code></td><td>541</td><td><code>277fee3be8401d4ee93ba6200cc6cc1c1405371bd6207a566a10b22075c78fd5</code></td></tr>
+    <tr><td><code>Temp/check_wall.py</code></td><td><code>source/check_wall.py</code></td><td>1020</td><td><code>c2dc4617e85e56b4da7210289d837aeae2358feeca602ad325c1d7d56b5cfd00</code></td></tr>
+    <tr><td><code>Temp/check_world.py</code></td><td><code>source/check_world.py</code></td><td>266</td><td><code>c3cf0d275147f48e1d038cba273b6801150192d44638299837194f9a30cb0672</code></td></tr>
+    <tr><td><code>Temp/compare_ram_frames.py</code></td><td><code>source/compare_ram_frames.py</code></td><td>1532</td><td><code>82a58b3d0e2a6ebe421938613f09fba36bed1840883e2725fafc4acf6000ab55</code></td></tr>
+    <tr><td><code>Temp/compare_scroll.py</code></td><td><code>source/compare_scroll.py</code></td><td>1051</td><td><code>4c805b89a40e9f9be8b84ba1d90812c76cf40a8f00d0376aa417087704838326</code></td></tr>
+    <tr><td><code>Temp/debug_port_10080.cs</code></td><td><code>source/debug_port_10080.cs</code></td><td>2191</td><td><code>a56a54c67cb818a4eecd95fb3db04a4edd5745d5718ffb1c003f89c5ef3d6442</code></td></tr>
+    <tr><td><code>Temp/decode_platform.py</code></td><td><code>source/decode_platform.py</code></td><td>1709</td><td><code>a37ac1563c3d56d35c3baff0242cc57f54b5e349cb74d8df9693ccd373083355</code></td></tr>
+    <tr><td><code>Temp/disasm_bank1.py</code></td><td><code>source/disasm_bank1.py</code></td><td>508</td><td><code>67cc22dfe49cb3e3151dd3b1ab18419e358494e91e57a68a662217d56d1da211</code></td></tr>
+    <tr><td><code>Temp/dump_disasm.py</code></td><td><code>source/dump_disasm.py</code></td><td>5505</td><td><code>d153766601dcf14bcce966672cf647334cd0badbf02500819d7f88c2adad28b3</code></td></tr>
+    <tr><td><code>Temp/dump_zp.py</code></td><td><code>source/dump_zp.py</code></td><td>467</td><td><code>ced30e0f162661f634da9b448738a095961f950c2645a83d34f49ba537e83de2</code></td></tr>
+    <tr><td><code>Temp/find_b1.py</code></td><td><code>source/find_b1.py</code></td><td>284</td><td><code>ad30915c484d868df32fd6f79e9ac3865505dec67ecfdc3ab6a97772ca5fdca6</code></td></tr>
+    <tr><td><code>Temp/find_jump.py</code></td><td><code>source/find_jump.py</code></td><td>470</td><td><code>5b0e04e3835839f9574e7c69e9a66aa79bde2705c4b0658ea427a2d66db4864a</code></td></tr>
+    <tr><td><code>Temp/find_state_0e.py</code></td><td><code>source/find_state_0e.py</code></td><td>416</td><td><code>9663005692f7c4476e29a754bcca79cd318c76e5c1ec83494aa5e37b138a1e59</code></td></tr>
+    <tr><td><code>Temp/inspect_div.py</code></td><td><code>source/inspect_div.py</code></td><td>586</td><td><code>49a76317d17fe918b8775a9b3cba81f8d2ff22387200578e64ef7cf138a23ade</code></td></tr>
+    <tr><td><code>Temp/inspect_frames.py</code></td><td><code>source/inspect_frames.py</code></td><td>489</td><td><code>b77d236722b464d5d9cb2de7ef3feb5dc32398a5bb298c2221ea00b141d06177</code></td></tr>
+    <tr><td><code>Temp/inspect_ram.py</code></td><td><code>source/inspect_ram.py</code></td><td>1289</td><td><code>65e11e77a733c9ccdc2f8044b4728349f6ec3b4721b28855f75d76556b0e3765</code></td></tr>
+    <tr><td><code>Temp/inspect_slots.py</code></td><td><code>source/inspect_slots.py</code></td><td>1036</td><td><code>ed8bf6208b044109bc00d8df92d2e9b5adfa5c0d5dde2ff75b7ff9f3a9dbc152</code></td></tr>
+    <tr><td><code>Temp/inspect_tile_buf.py</code></td><td><code>source/inspect_tile_buf.py</code></td><td>371</td><td><code>276732baf3eecb31b03858fa4d91bb98b85f16abfe9e6ab40a9be9f3ee08de3c</code></td></tr>
+    <tr><td><code>Temp/inspect_x.py</code></td><td><code>source/inspect_x.py</code></td><td>908</td><td><code>1901f2125159ab18ef95e8c1e671c9785a651b717321dcfa0fa1dd5b5d21ae07</code></td></tr>
+    <tr><td><code>Temp/m3_original_validation/replay1/stand.lua</code></td><td><code>source/m3_original_validation/replay1/stand.lua</code></td><td>7027</td><td><code>6f991afe551dea4075f0109e03036b12d13ce5af833dc14b53c72f49502d99fa</code></td></tr>
+    <tr><td><code>Temp/m3_original_validation/replay2/stand.lua</code></td><td><code>source/m3_original_validation/replay2/stand.lua</code></td><td>7027</td><td><code>b8ee128a874e7672e48392ef63982597236efdb3e372b12842c512bc3077007e</code></td></tr>
+    <tr><td><code>Temp/read_table.py</code></td><td><code>source/read_table.py</code></td><td>305</td><td><code>ff88b2c8db2c1735e32b16c17065ff72e5d8e8996d838f51ba2ddc9b4c7f5ab4</code></td></tr>
+    <tr><td><code>Temp/refresh.cs</code></td><td><code>source/refresh.cs</code></td><td>136</td><td><code>c399ef74a01ed56c6bbdf47da2fe6d05f147aa83816987e82eeb77869bdbbbb6</code></td></tr>
+    <tr><td><code>Temp/sample_compare.py</code></td><td><code>source/sample_compare.py</code></td><td>628</td><td><code>82a584db65d14c29410f424d86579967b14c269a00fd7f7fb9e88c9dfd3020b6</code></td></tr>
+    <tr><td><code>Temp/scan_arrows.py</code></td><td><code>source/scan_arrows.py</code></td><td>1105</td><td><code>6a40354b6b77a5dec8f242f672a31542e858fd83afd6ee8f2c43f34db40ca5f1</code></td></tr>
+    <tr><td><code>Temp/test_cap.ps1</code></td><td><code>source/test_cap.ps1</code></td><td>1757</td><td><code>72ac52ef2019d0004f129ccdddb9f6375fe57f65d7847d6453d9e764c7a2bebf</code></td></tr>
+    <tr><td><code>Temp/test_enum_windows.ps1</code></td><td><code>source/test_enum_windows.ps1</code></td><td>1324</td><td><code>02cef3a67414c0bc95af8ea553d89c8311d79a697b1757b5d651b6812eb56a06</code></td></tr>
+    <tr><td><code>Temp/trace_orig_objs.py</code></td><td><code>source/trace_orig_objs.py</code></td><td>905</td><td><code>f07baee017e869e7654572295f2c2ed47a875dc180ee8c42d16d2d4281ed196a</code></td></tr>
+    <tr><td><code>Temp/trace_orig_objs2.py</code></td><td><code>source/trace_orig_objs2.py</code></td><td>1078</td><td><code>3748113bf11e42a3b3ba76b8de030e1f1a92289b7f2a515903ce42edef404edf</code></td></tr>
+  </tbody>
+</table>
+<p>Остаточные копии в слоте B. После этого архива те же 38 файла остаются в <code>Mission3-Liquidator/Temp</code>: у <code>preserve.py audit</code> нет исключения для сохранённой канонической копии, поэтому честное закрытие — перенести только эти названные файлы (и только их) во внешний additive archive после backup и проверки хешей. Ничего не удалено, иное содержимое <code>Temp</code> не затронуто; каталог переноса <code>D:/Art/SW Code Zero Unity - Git Backups/20261029-zero42-slot-b-temp-source-relocated</code> описан в его <code>ARCHIVE-NOTE</code> и в отчёте ZERO-42.</p>
+<p>Правило дальнейшего жизненного цикла: этот архив — единственная versioned копия этих исходников; при возврате к миссии 3 читаем и дорабатываем их, а не порождаем новый вариант. Возврат в активный обиход требует доказанных входов и команды контрольного запуска; без них статус остаётся non-runnable.</p>
+</body>
+</html>
