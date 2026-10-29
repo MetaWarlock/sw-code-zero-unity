@@ -202,5 +202,66 @@
     "ancestryRecheckSnapshot": { "name": "20261030-ZERO-54d-slot-b", "manifestSha256": "0e4000ac625629c131b6883584eb4c44603a5105d59e5a2ea5a12e7ad7c2cd9e", "files": 3622, "bytes": 6256282884, "verify": "PASS, 0 issues", "audit": "PASS, 0 issues", "head": "0123df431efdac8ed44ddccda39c794aca705ff0", "snapshotHeadEqualsHead": true },
     "terminalSnapshot": "taken after the final documentation commit and named in the ZERO-54 task card, so this file never predicts its own head",
     "finalSequence": "preserve.py snapshot -> verify -> audit against D:/Art/SW Code Zero Unity - Git Backups, recorded from the actual runs"
+  },
+  "independentReviewZERO57": {
+    "reviewer": "Claude/Пельмень pel.claude@beholder.learn.su (own Beholder MCP identity a48b2e74-4bbb-4bd8-89d9-9a1409fb35bd)",
+    "slotBase": "44fe832 (contains production 12901dd and Qoder final 858dd46)",
+    "runtimeUnchanged": "7dcff07ec521647ba664e02cc89a93fbfa319a11ac5848bccb7fc21d905360b9",
+    "listingCheck": "bank7 CBB7..CBE3, CC44..CC52, FA78=20 branch-free; tail 48 + untaken BNE 2 = 50; early return before CBE6 ($14&40); 0C refusal conservative (original walks CBEF like idle)",
+    "bankedRepeat": {
+      "output": "Art/Temp/ZERO-57/ground00_source.json",
+      "sha256": "8021339d5e860f04ec25a4b6e1ec9fc61a27c2d8f668a546e2b700d25334e091",
+      "byteEqualToZERO54": true,
+      "prices": [
+        1686,
+        1722,
+        1710,
+        1734,
+        1725
+      ]
+    },
+    "gateRepeat": {
+      "command": "dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- ground00 Art/Temp/ZERO-57/ground00_source.json Art/Temp/ZERO-57/ground00_gate.csv 2543",
+      "exitCode": 0,
+      "csvSha256": "92bd699fa91059906c7556e566a6fc7ba591ffabe719fc01a642e5937b30f38f",
+      "byteEqualToZERO54": true
+    },
+    "clockRepeat": {
+      "csvSha256": "364f6f85a08510851b5019a64ef705de24afba9d4f26acd315cf51b356ce1b80",
+      "byteEqualToZERO54": true,
+      "poll2378": 6761,
+      "poll2379": 6744,
+      "timed": 462,
+      "firstRefusal": "2543 CAFC player / D77C right steering",
+      "clockPricedRoutePolls": [
+        2379
+      ]
+    },
+    "mutationProof": {
+      "command": "bash Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh Art/Temp/ZERO-57/mutation-proof Art/Temp/ZERO-57/ground00_source.json 2543",
+      "driverSha256": "58fa45686e79725c3b5f8525ec6ba5931496abe4b6943d446b92d8296012c7c2",
+      "exitCode": 0,
+      "mutants": 12,
+      "added": {
+        "mut7_downWithDirection": "synthetic=45/55 (05,06)",
+        "mut8_freshAPassed": "synthetic=50/55 (84/84)",
+        "mut9_upDownAccepted": "synthetic=50/55 (0C)",
+        "mut10_bReadBeforeCrouch": "synthetic=50/55 (44/44)",
+        "mut11_crouchNeedsQueueOwner": "crouchNeedsNoQueueOwner=0/5",
+        "mut12_stateGuardDropped": "guards=15/20"
+      },
+      "firstAttempt": "Art/Temp/ZERO-57/mutation-proof-try1: PROOF FAIL on an over-broad reviewer mutant (also unrefused 05/06, gate reported 40/55); narrowed and rerun in full"
+    },
+    "fixedVerificationDefects": [
+      "mutation proof did not cover Down+direction, fresh A, Up+Down, B order, crouch queue owner, state guard",
+      "no-side-effect stage labelled 5 route polls as priced although only 2379 is clock-priced",
+      "catalog claimed the two drivers share nothing; 50 of 176 non-comment lines are shared scaffolding"
+    ],
+    "notRun": "full 4-input port-to-port, Unity Suite/contracts (orchestrator repeats in slot A)",
+    "usageLimit": {
+      "source": "own Claude OAuth usage API",
+      "fiveHourUsedPercentAtStart": 53,
+      "remainingPercentAtStart": 47
+    }
   }
 }
