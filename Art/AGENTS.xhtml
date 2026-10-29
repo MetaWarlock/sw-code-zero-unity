@@ -144,7 +144,7 @@
 <li>Scene/prefab/settings changes in a connected Unity Editor should use Editor APIs/available Unity CLI commands. Do not hand-edit live serialized YAML.</li>
 <li>Keep research tools and emulator dependencies out of the final game runtime. Document required build dependencies and asset provenance.</li>
 <li>Full completion requires all seven missions, all bosses, secrets/bonus areas, UI/progression/final sequence, audio, acceptance evidence and a verified standalone build. A prototype or successful compilation is insufficient.</li>
-<li>Keep work local unless the user separately requests publishing or remote repository changes.</li>
+<li>По указанию пользователя 2026-10-29 после приёмки и закрытия задач отправлять принятые коммиты интеграционной ветки <code>main</code> в её настроенный <code>origin</code>. Перед push проверять состояние ветки; сохранять чужие незакоммиченные изменения, не включать их в свой коммит. Использовать обычный push без force и фиксировать результат в соответствующей задаче Beholder. Незавершённые ветки исполнителей не публиковать как принятый результат. Эта команда разрешает публикацию исходников в существующем Git remote; выгрузка записей/ROM и публикация игры на иных сервисах требуют отдельного указания.</li>
 </ul>
 <p>Use Russian for user-facing progress and handoff notes. Keep reports short and evidence-based.</p>
 <h2 id="parallel-mission-worktrees">Parallel mission worktrees</h2>
