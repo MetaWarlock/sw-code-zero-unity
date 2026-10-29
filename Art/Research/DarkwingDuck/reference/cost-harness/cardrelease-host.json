@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "date": "2026-10-29",
+  "issue": "ZERO-50",
+  "review": "ZERO-51",
+  "runtimeCommit": "6c310b7",
+  "reviewCommit": "78962df",
+  "integrationHead": "a98e74f4c5ac3192ad40c75de7a6665d261929e7",
+  "runtimeFileSha256": "2f5036aac99a1ea1faa116b4c067894f4acf2ca6ae46ae11dd58781aa1e2c77d",
+  "exporterSha256": "fb15c8038a6d49569d736850356d149b3a3ca2d0d11528765ccb8795cd58034b",
+  "nativeClock": {
+    "poll2117Prefix": 4986,
+    "poll2117Ca59Anchor": 986,
+    "ordinary2118Prefix": 6266,
+    "pricedExact": 298,
+    "firstUnsupportedPoll": 2379,
+    "unsupported": "CAFC player / CBB7 ground jump/up/down",
+    "anchors": 140,
+    "timed": 298,
+    "running": false,
+    "oracleOverrides": 0
+  },
+  "independentRecordComparison": {
+    "scope": "PORT-TO-PORT exported RAM/NT/OAM/PAL, no PCM",
+    "records": 165914,
+    "bytesPerRecord": 4384,
+    "bytesPerSide": 727366976,
+    "differingBytes": 0,
+    "source": "slot B Art/Temp/ZERO-50 buffers_before_<route>.bin and buffers_after_<route>/buffers.bin",
+    "sourceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-ZERO-50b-slot-b",
+    "routes": {
+      "m1": "fdeaee59c45d4b946212550dacc07cfdeb993cf259dca16ef45355645a181b27",
+      "human": "f92418b431b616eb61f2f5fbd02da2c3bac046e09bfc366b21b9132919396fbb",
+      "city": "ec9d566c6a13bebe8e1210e8b9287f94de92a6081d2c7b6c29f192fd9c8bcac6",
+      "m3": "f7177daff9c0b8e1f8e4863863182cb9c83ed08439fa16fe3467ef01559bdc89"
+    }
+  },
+  "unity": {
+    "project": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "sourceHead": "2a594b8",
+    "editorPid": 279708,
+    "version": "6000.6.5f1",
+    "recompileErrors": 0,
+    "suite": {
+      "result": 18,
+      "strict": 8,
+      "cases": 24,
+      "errors": 0,
+      "verdict": "FAIL",
+      "fullJsonEqualsBaseline": "state09-suite.json",
+      "reportSha256": "020ccbd953a17fbd007efcb7e0d6b48da5e05936311ea675512b8794a1538974"
+    },
+    "mission1ContractsGroupsPass": 16,
+    "contractResultSha256": "9aa6a5cd3a5d6ab8b406b9b3ba93210541c0e6bd94aa88b15bf43412da2551c1"
+  },
+  "limits": {
+    "codexRemainingPercent": 57,
+    "windowDurationMins": 300,
+    "qoder": "UNKNOWN",
+    "claude": "UNKNOWN"
+  },
+  "scope": "Technical price integration only. Seven pre-frame negative refusals are masked by stale head=-1; owner flag clearing is measured, hold routing separately proved. No new playable build. Human PASS ZERO-48 belongs only to build_9bc298e1e2e0/runtime8f3bbe1; no full mission/image/audio acceptance."
+}
