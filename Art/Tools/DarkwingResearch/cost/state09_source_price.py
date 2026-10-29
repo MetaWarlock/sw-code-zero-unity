@@ -12,6 +12,7 @@ only AFTER the walk, for comparison. Nothing here is used by the game runtime.
 usage: state09_source_price.py ROM CITY_PHASES_CSV ORIGINAL_BUFFERS FIRST LAST [--json OUT]
        state09_source_price.py --selftest ROM ORIGINAL_BUFFERS
        state09_source_price.py --dump-cases ROM ORIGINAL_BUFFERS OUT_JSON [CAP] [SEED] [POOL]
+       state09_source_price.py --ground00 ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
 
 --dump-cases (ZERO-47) writes the fixture the C# controls read: expected prices taken from
 walk() over bank-7, the class/coordinates each executed $EBE8 returned, and the branch labels
@@ -86,7 +87,9 @@ OPS = {
 }
 IMPLIED = {0xE8: 'INX', 0xA8: 'TAY', 0x8A: 'TXA', 0xAA: 'TAX', 0x98: 'TYA', 0x4A: 'LSRA',
            0x0A: 'ASLA', 0x48: 'PHA', 0x68: 'PLA', 0x38: 'SEC', 0x18: 'CLC', 0xC8: 'INY',
-           0x88: 'DEY', 0xCA: 'DEX'}
+           0x88: 'DEY', 0xCA: 'DEX', 0x08: 'PHP', 0x28: 'PLP'}
+# ZERO-53: PHP/PLP carry the $F2D7 floor carry across CD69..CDF5 in the ground vertical
+# step. Only N/Z/C are modelled; V/D/I are not, and a V branch stays an unlisted opcode.
 BRANCH = {0x10: ('n', 0), 0x30: ('n', 1), 0x90: ('c', 0), 0xB0: ('c', 1), 0xD0: ('z', 0),
           0xF0: ('z', 1)}
 
@@ -115,7 +118,7 @@ def step(cpu, pc):
     op = cpu.rd(pc)
     if op in IMPLIED:
         name = IMPLIED[op]
-        cyc = {'PHA': 3, 'PLA': 4}.get(name, 2)
+        cyc = {'PHA': 3, 'PLA': 4, 'PHP': 3, 'PLP': 4}.get(name, 2)
         if name == 'INX': cpu.x = cpu.nz(cpu.x + 1)
         elif name == 'DEX': cpu.x = cpu.nz(cpu.x - 1)
         elif name == 'INY': cpu.y = cpu.nz(cpu.y + 1)
@@ -128,6 +131,9 @@ def step(cpu, pc):
         elif name == 'ASLA': cpu.c = cpu.a >> 7; cpu.a = cpu.nz(cpu.a << 1)
         elif name == 'PHA': cpu.push(cpu.a)
         elif name == 'PLA': cpu.a = cpu.nz(cpu.pull())
+        elif name == 'PHP': cpu.push(cpu.n << 7 | 0x30 | cpu.z << 1 | cpu.c)
+        elif name == 'PLP':
+            f = cpu.pull(); cpu.n, cpu.z, cpu.c = f >> 7, (f >> 1) & 1, f & 1
         elif name == 'SEC': cpu.c = 1
         elif name == 'CLC': cpu.c = 0
         return pc + 1, cyc
@@ -602,7 +608,136 @@ def selftest(bank7, buf_path):
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------------------
+# ZERO-53 --ground00: the same walk() over CAFC for ground state 00, where the first
+# unsupported native clock price (city poll 2379) enters the crouch branch CBD7 -> CC44.
+# The pre-pass RAM record precedes the C162 input hook, so $16 (held) and $14 (pressed)
+# of the CURRENT frame are taken from the recording's input.bin (held = byte p-1,
+# pressed = held & ~byte p-2), never from original RAM; the next record's $14/$16 are
+# compared afterwards (input_equal) so an input/RAM disagreement is reported, not hidden.
+# ---------------------------------------------------------------------------
+
+GROUND_BRANCHES = (('CBBD', 'jump A pressed'), ('CC3A', 'up -> state 03'),
+                   ('CC44', 'down -> crouch state 02'), ('CC53', 'left/right walk'),
+                   ('CBEC', 'B shot idle'), ('CBEF', 'idle'))
+# Input-only variants of one CC44 poll: (name, held, pressed, expected branch). Expected
+# branches follow the listing CBB7..CBE3; the walk proves them and gives their price.
+GROUND_VARIANTS = (('down fresh', 0x04, 0x04, 'CC44'), ('down held', 0x04, 0x00, 'CC44'),
+                   ('down+B pressed', 0x44, 0x44, 'CC44'), ('down, A held', 0x84, 0x00, 'CC44'),
+                   ('down+select/start', 0x34, 0x04, 'CC44'), ('up+down', 0x0C, 0x0C, 'CBEF'),
+                   ('up', 0x08, 0x08, 'CC3A'), ('down+right', 0x05, 0x05, 'CC53'),
+                   ('down+left', 0x06, 0x06, 'CC53'), ('down+A pressed', 0x84, 0x84, 'CBBD'),
+                   ('idle', 0x00, 0x00, 'CBEF'))
+
+
+def ground_walk(ram, bank7):
+    cpu = walk(bytes(ram), bank7)
+    pcs = [pc for pc, _ in cpu.trace]
+    branch = next((name for name, _ in GROUND_BRANCHES if int(name, 16) in pcs), 'other')
+    pre = sum(c for _, c in cpu.trace[:pcs.index(0xCBE1)]) if 0xCBE1 in pcs else None
+    return cpu, branch, pre
+
+
+def ground00(rom_path, phases_path, buf_path, input_path, first, last, out):
+    rom = open(rom_path, 'rb').read()
+    if hashlib.sha256(rom).hexdigest() != ROM_SHA:
+        sys.exit('ROM SHA-256 mismatch')
+    bank7 = rom[16 + 16384 * (rom[4] - 1):16 + 16384 * rom[4]]
+    inp = open(input_path, 'rb').read()
+    if first < 2 or last >= len(inp):
+        sys.exit('range needs a previous input byte and a next RAM record')
+    pts = {}
+    with open(phases_path) as f:
+        next(f)
+        for line in f:
+            p, c, pc = line.rstrip().split(',')
+            p = int(p)
+            if first <= p <= last and pc in ('CA40', 'CA59'):
+                pts.setdefault(p, {}).setdefault(pc, int(c))
+    rows, controls = [], []
+    with open(buf_path, 'rb') as buf:
+        def rec(p):
+            buf.seek((p - 1) * RECORD)
+            r = bytearray(buf.read(2048))
+            if len(r) != 2048:
+                sys.exit('missing record for poll %d' % p)
+            return r
+        for p in range(first, last + 1):
+            ram, post = rec(p), rec(p + 1)
+            if ram[0x50] != 0x00 or not ram[0x4D0] & 0x80:
+                continue
+            held = inp[p - 1]; pressed = held & ~inp[p - 2] & 0xFF
+            ram[0x16], ram[0x14] = held, pressed
+            row = {'poll': p, 'held': '%02X' % held, 'pressed': '%02X' % pressed,
+                   'input_equal': post[0x16] == held and post[0x14] == pressed}
+            try:
+                cpu, branch, pre = ground_walk(ram, bank7)
+            except Unsupported as e:
+                row['status'] = 'UNSUPPORTED %s' % e
+                rows.append(row)
+                continue
+            row.update(source=cpu.cyc, branch=branch, pre_cbe1=pre)
+            if pre is not None:
+                row['tail_cbe1'] = cpu.cyc - pre
+            post_keys = (0x50, 0x420, 0x410, 0x490)
+            row['post_diff'] = {'%04X' % k: ['%02X' % cpu.ram[k], '%02X' % post[k]]
+                                for k in post_keys if cpu.ram[k] != post[k]}
+            m = pts.get(p, {})
+            if not row['input_equal']:
+                row['status'] = 'INPUT_MISMATCH'
+            elif 'CA40' in m and 'CA59' in m and ram[0x65] < 0x80 and ram[0x30] == 0:
+                row['oracle'] = m['CA59'] - m['CA40'] - 18
+                row['status'] = verdict(cpu.cyc, row['oracle'])
+            else:
+                row['status'] = 'NO_ORACLE'
+            rows.append(row)
+            if branch != 'CC44':
+                continue
+            for name, h, pr, want in GROUND_VARIANTS:
+                r = bytearray(ram); r[0x16], r[0x14] = h, pr
+                try:
+                    _, got, vpre = ground_walk(r, bank7)
+                    price = walk(bytes(r), bank7).cyc
+                except Unsupported as e:
+                    got, vpre, price = 'UNSUPPORTED', None, str(e)
+                controls.append({'poll': p, 'variant': name, 'held': '%02X' % h,
+                                 'pressed': '%02X' % pr, 'branch': got, 'want': want,
+                                 'source': price, 'pre_cbe1': vpre, 'ok': got == want})
+            controls.append({'poll': p, 'variant': 'comparator rejects source+1',
+                             'ok': verdict(cpu.cyc, cpu.cyc + 1) == 'MISMATCH'})
+    for r in rows:
+        print(json.dumps(r, sort_keys=True))
+    for c in controls:
+        print('control', json.dumps(c, sort_keys=True))
+    tally = {}
+    for r in rows:
+        k = (r.get('branch', '-'), r['status'].split()[0] if r['status'].startswith('UNSUPPORTED')
+             else r['status'])
+        tally['%s/%s' % k] = tally.get('%s/%s' % k, 0) + 1
+    unsupported = {}
+    for r in rows:
+        if r['status'].startswith('UNSUPPORTED'):
+            unsupported[r['status']] = unsupported.get(r['status'], 0) + 1
+    cc44 = [r for r in rows if r.get('branch') == 'CC44']
+    tails = sorted({r['tail_cbe1'] for r in cc44})
+    ok = (not any(r['status'] == 'MISMATCH' for r in rows) and cc44
+          and all(r['status'] == 'EXACT' for r in cc44) and all(c['ok'] for c in controls))
+    summary = {'tally': tally, 'unsupported': unsupported, 'cc44_polls': [r['poll'] for r in cc44],
+               'cc44_tail_cbe1': tails, 'controls': len(controls),
+               'controls_failed': sum(not c['ok'] for c in controls), 'verdict': 'PASS' if ok else 'FAIL'}
+    print('summary', json.dumps(summary, sort_keys=True))
+    if out:
+        with open(out, 'x') as f:
+            json.dump({'rows': rows, 'controls': controls, 'summary': summary}, f, indent=1,
+                      sort_keys=True)
+    return 0 if ok else 1
+
+
 def main(argv):
+    if len(argv) >= 8 and argv[1] == '--ground00':
+        # --ground00 ROM PHASES BUFFERS INPUT FIRST LAST [--json OUT]
+        out = argv[argv.index('--json') + 1] if '--json' in argv else None
+        return ground00(argv[2], argv[3], argv[4], argv[5], int(argv[6]), int(argv[7]), out)
     if len(argv) == 4 and argv[1] == '--selftest':
         rom = open(argv[2], 'rb').read()
         if hashlib.sha256(rom).hexdigest() != ROM_SHA:
