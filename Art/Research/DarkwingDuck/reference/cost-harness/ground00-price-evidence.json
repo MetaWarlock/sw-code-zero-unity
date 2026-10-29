@@ -11,7 +11,8 @@
     "ancestryMainIsAncestorOfHead": "true at the checkpoint and against origin/main; see ancestryRecheckAfterSnapshot for the later state",
     "commits": { "runtimeAndGate": "12901dd", "driverRepairs": ["01e9fe0", "f908b0c"] },
     "publishing": "not performed by the worker; accepted integrations are pushed by the orchestrator",
-    "headFinal": "fe44a7dc4f62fb99a0499f847c659ce9ac8c1f7d",
+    "headAfterCheckpointDocs": "fe44a7dc4f62fb99a0499f847c659ce9ac8c1f7d",
+    "headFinal": "0123df431efdac8ed44ddccda39c794aca705ff0",
     "ancestryRecheckAfterSnapshot": {
       "measuredOn": "2026-10-30, after the terminal snapshot 20261030-ZERO-54c-slot-b",
       "localMainNow": "ecfff7bac07ba8dfc20e7dfaa8e67249208536b6",
@@ -186,6 +187,8 @@
       "resolution": "evidence relocated and cmp-verified, snapshot verified first, then the reproducible extracted tree (the catalog allows removing it after runs) was deleted from the working tree; it stays byte-held in the verified snapshot and is reproducible with git archive 3f11db8"
     },
     "secondSnapshot": { "name": "20261030-ZERO-54b-slot-b", "manifestSha256": "66d0c863aa60aaf957844d22fee6cc8c5fec6d28336768c399784b6f8dfd6605", "verify": "PASS, 0 issues", "audit": "PASS, 0 issues", "head": "6b9a6aa1f6b9d56820e67d196d30519b929f230b", "snapshotHeadEqualsHead": true },
+    "checkpointSnapshot": { "name": "20261030-ZERO-54c-slot-b", "manifestSha256": "7ea4eaa0ac8aa25e52b6a739775524e7c03b2762407c2de301b7bb73aedb698e", "files": 3617, "verify": "PASS, 0 issues", "audit": "PASS, 0 issues", "head": "fe44a7dc4f62fb99a0499f847c659ce9ac8c1f7d", "snapshotHeadEqualsHead": true },
+    "ancestryRecheckSnapshot": { "name": "20261030-ZERO-54d-slot-b", "manifestSha256": "0e4000ac625629c131b6883584eb4c44603a5105d59e5a2ea5a12e7ad7c2cd9e", "files": 3622, "bytes": 6256282884, "verify": "PASS, 0 issues", "audit": "PASS, 0 issues", "head": "0123df431efdac8ed44ddccda39c794aca705ff0", "snapshotHeadEqualsHead": true },
     "terminalSnapshot": "taken after the final documentation commit and named in the ZERO-54 task card, so this file never predicts its own head",
     "finalSequence": "preserve.py snapshot -> verify -> audit against D:/Art/SW Code Zero Unity - Git Backups, recorded from the actual runs"
   }
