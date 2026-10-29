@@ -1,0 +1,55 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Scratch-исходники ZERO-41 (MissionClock state 09) из рабочего Temp слота A</title>
+    <link rel="stylesheet" type="text/css" href="../../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="scratch-исходники-zero-41-missionclock-state-09-из-рабочего-temp-слота-a">Scratch-исходники ZERO-41 (MissionClock state 09) из рабочего Temp слота A</h1>
+<p>Статус: <strong>ARCHIVED / HISTORICAL, non-runnable, не ACTIVE tools и не подтверждённый эксперимент</strong>. Три scratch-скрипта разового расчёта ZERO-41, сохранённые байт-в-байт как найденные в VERIFIED snapshot. Ни один не запускался, алгоритмы не переписывались, diagnostics игр и Core не менялись. Их результат уже зафиксирован отдельно и независимо от этих файлов: <a href="../../../../Research/DarkwingDuck/FACTS.xhtml#zero-41-граница-mission-clock-state09">FACTS, раздел «ZERO-41 2026-10-29: текущая граница MissionClock — CAFC state 09»</a>. Сохранность источника нужна только для того, чтобы метод 152 циклов не зависел от backup-каталога и переписки. Актуальные инструменты — в <a href="../../README.xhtml">едином каталоге</a>.</p>
+<p>Происхождение: исполнитель Claude/Пельмень (<code>pel.claude@beholder.learn.su</code>), задача ZERO-41, рабочий корень слота A <code>D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck</code> (ветка <code>codex/orchestration-slot-a</code>, HEAD <code>d485965beb39ac5ae8f426223839d8e6c1e38010</code>, Core 3fe92b5 без изменений). Файлы лежали в <code>Art/Temp/ZERO-41/</code> этого слота и были удалены исполнителем после snapshot; единственный сохранённый след — snapshot <code>D:/Art/SW Code Zero Unity - Git Backups/20261029-ZERO-41-slot-a</code> (2778 файлов, head <code>d485965…</code>, complete, manifest SHA-256 <code>0bd2726f879c61264689fc85762dd7084367749ec5a8a97f80cd6484993041eb</code>; <code>preserve.py verify</code> = PASS, files 2778, issues 0). Байты взяты из <code>files/Art/Temp/ZERO-41/</code> этого snapshot и сверены с его manifest до записи.</p>
+<p>Отображение путей: <code>Art/Temp/ZERO-41/имя</code> сохранено как <code>source/имя</code>. Элемент <code>Temp</code> не мог остаться элементом пути архива, потому что <code>.gitignore</code> строка 2 игнорирует любой каталог <code>[Tt]emp/</code> на любой глубине и такие байты не попали бы в Git. Ни одно правило игнорирования не ослаблено и не дополнено; <code>preserve.py</code> не менялся.</p>
+<p>Сохранность в Git. <code>core.autocrlf=input</code> нормализует концы строк при коммите, поэтому в каталоге архива лежит <code>.gitattributes</code> с <code>* -text</code> — только отключение eol-конверсии для этих исторических байтов. Проверено: во всех трёх файлах нет ни одного <code>CR</code> (LF-only), blob каждого файла побайтово равен файлу snapshot и хешу из таблицы ниже.</p>
+<p>Реальные входы и почему non-runnable. Все три скрипта читают только argv-пути, а сами пути указывали на <code>Art/Temp/ZERO-41/…</code> слота A, которого больше нет. Данные остались только в snapshot и в Git намеренно не коммитятся: два <code>buffers.bin</code> по 28 145 280 байта — это не тот объём, который должен лежать в каноническом историческом архиве исходников, а их идентичность уже зафиксирована manifest snapshot и (для original-окна) в <a href="../../../../Research/DarkwingDuck/reference/cost-harness/evidence.json">evidence.json</a>. Ожидаемые входы по строкам запуска:</p>
+<ul>
+<li><code>state09_branch.py CITY_PHASES_CSV ORIGINAL_BUFFERS FIRST LAST</code> — <code>city_phases.csv</code> (формат <code>poll,cycles,pc</code>, с заголовком), original <code>clock_oracle/buffers.bin</code> или <code>clock_native/buffers.bin</code> как record по 4384 байта на полл (RAM читается по <code>(poll-1)*4384</code>), диапазон поллов. В snapshot рядом лежат производные окна: <code>city_1924_2100.csv</code>, <code>clock_oracle.csv</code>, <code>clock_native.csv</code>.</li>
+<li><code>state09_residual.py CITY_CSV CITY_PHASES_CSV</code> — <code>city_full.csv</code> (native-город с колонками <code>poll,hook,head,scroll,spawn,zone,palette,bank6,bank1,tail,player</code>) и <code>city_phases.csv</code> того же окна.</li>
+<li><code>xtext.py FILE NEEDLE [CHARS]</code> — любой текстовый дамп: в слоте A применялся к <code>d_0x0AFC.txt</code>, <code>d_0x1510.txt</code>, <code>d_0x34DB.txt</code>, <code>d_f580.txt</code> (bank-7 ассемблерные листинги).</li>
+</ul>
+<p>Скрипты не содержат путей к ROM, эмулятору или игре и ничего не пишут; запускать их здесь не требуется и не планировалось. Значимость этих байтов — метод, а не результат: результат в FACTS.</p>
+<p>Инвентарь входов, оставшихся в snapshot (байты и SHA-256 из его manifest; в Git не коммитятся):</p>
+<table>
+  <thead>
+    <tr><th>Путь в snapshot</th><th>Байт</th><th>SHA-256</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>files/Art/Temp/ZERO-41/city_1924_2100.csv</code></td><td>30485</td><td><code>d3006f8d4d8be232568704a63eb902fa07bddf51eddca06d58a4411ea3947813</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/city_full.csv</code></td><td>657934</td><td><code>ef6ade3b7ccd4cf266a377d4a0e2b121ce7d3bda62a66387ec3f75b8443a6fa8</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/clock_native.csv</code></td><td>444096</td><td><code>f65da9f389d32a70a6b61e3ed417f8c8603735c86dfe0dda88941793c42c4f2e</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/clock_native/buffers.bin</code></td><td>28145280</td><td><code>ac64454b4a2fdbbdb9b6a5df894fd99b1cca25060af2d4fc743599dd202a6cb0</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/clock_oracle.csv</code></td><td>352183</td><td><code>8a1e2b11d5c1a960f442ca2f4d6dbf860e1da48dcdec26f2514993f157c59ead</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/clock_oracle/buffers.bin</code></td><td>28145280</td><td><code>f8ee8e1f6e4a567ac4dd43bcbb602f3ecf26318101da99eba997309ce6588ed1</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/d_0x0AFC.txt</code></td><td>2242</td><td><code>7f77678ac0ea99ef6cd927d7760872da74776f4067138d145167dd99ad8c5ba3</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/d_0x1510.txt</code></td><td>1102</td><td><code>9be1527c49903b9e4abe4bf9111e167144b01771f600c5f3f0b2a5932ef7f4f4</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/d_0x34DB.txt</code></td><td>286</td><td><code>eccd4264dd4d0e2451498451b01fd17913f84183b14216c89befbd2b975a21c9</code></td></tr>
+    <tr><td><code>files/Art/Temp/ZERO-41/d_f580.txt</code></td><td>2494</td><td><code>d1440a6e6e95aa7c607f1d2b86be01dfa70406b1b58de60b829d710443d12f1f</code></td></tr>
+  </tbody>
+</table>
+<p>Классификация сохранённых исходников (3 файла, 3703 байта):</p>
+<table>
+  <thead>
+    <tr><th>Сохранённый путь</th><th>Исходный путь (слот A)</th><th>Байт</th><th>SHA-256</th><th>Назначение</th><th>Почему non-runnable</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><code>source/state09_branch.py</code></td><td><code>Art/Temp/ZERO-41/state09_branch.py</code></td><td>1651</td><td><code>74d5a55af1d7a8795422e75aedf6b95607476e28eece3ad476512a3b57deb339</code></td><td>Статическая модель дешёвой ветви state 09 (bank 7): сумма 49 + 17 + 6 + 39 (+17 при row-wrap) + 3 + 38 = 152 и сверка с oracle <code>CA59−CA40−18</code>; именно этот метод стоит за фактом 23/23 в FACTS.</td><td>Нужны <code>city_phases.csv</code> окна и original RAM-<code>buffers.bin</code> с record 4384 байта; оба только в snapshot.</td></tr>
+    <tr><td><code>source/state09_residual.py</code></td><td><code>Art/Temp/ZERO-41/state09_residual.py</code></td><td>1728</td><td><code>ad97ba53cb58826e97b3a8a543369ece7c3f01e303084d840eb5094f8fbbfc11</code></td><td>Остаточная сверка: цена игрока из oracle подставляется в native-сумму частей префикса FECF→CABB и сравнивается с <code>CABB−FECF</code>; даёт гистограмму цен и число exact/mismatch.</td><td>Нужны <code>city_full.csv</code> (native, с колонками частей префикса) и <code>city_phases.csv</code>; только в snapshot.</td></tr>
+    <tr><td><code>source/xtext.py</code></td><td><code>Art/Temp/ZERO-41/xtext.py</code></td><td>324</td><td><code>c9177bdb31f7395b71a9edd1c511ccb67e605ea65bc84b72f1177219d6e16cd8</code></td><td>Одноразовый просмотрщик: печатает первый фрагмент файла после иголки без XHTML-разметки (для листингов <code>d_*.txt</code>).</td><td>Инструмент просмотра, не расчёт; вход — любой текстовый дамп, постоянных зависимостей нет.</td></tr>
+  </tbody>
+</table>
+<p>Команды проверки сохранности (существующие инструменты; из корня проекта). Первая перечитывает snapshot и подтверждает, что исходные байты всё ещё там; вторая сравнивает коммитнутые blob с таблицей:</p>
+<pre><code>C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe Art/Tools/DarkwingResearch/preserve.py verify "D:/Art/SW Code Zero Unity - Git Backups/20261029-ZERO-41-slot-a"
+git ls-files -z -- Art/Tools/DarkwingResearch/archive/zero41-clock-scratch-20261029 | C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -c "import hashlib,sys; [print(hashlib.sha256(open(p,'rb').read()).hexdigest(), p) for p in sys.stdin.buffer.read().split(b'\0') if p]"</code></pre>
+<p>Ограничения этой записи. Это пассивная preservation-проверка чужого scratch-кода, а не репродукция и не приёмка: запуск не выполнялся, выходные числа не перепроверялись по этим скриптам, новых самостоятельных подтверждений выводов ZERO-41 не заявляется. Доказанной в FACTS остаётся только дешёвая ветвь (23/23 поллов 1941–1963); ветви row-wrap и clamp данными не проверены, ветвь <code>$0560&lt;FA</code> не выведена. Имя раздела FACTS ссылается на <code>Art/Temp/ZERO-41/…</code> как на временный путь прогона — canonical копии скриптов теперь здесь, а сами CSV/buffers остаются в названном snapshot. Восстанавливать удалённый <code>Art/Temp/ZERO-41</code> в слоте A не нужно и не делалось.</p>
+</body>
+</html>
