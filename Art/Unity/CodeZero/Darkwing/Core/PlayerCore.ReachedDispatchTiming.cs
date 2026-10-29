@@ -134,6 +134,93 @@ namespace Darkwing.Core
             }
         }
 
+        /// <summary>$D517 with $04D0&amp;$0F = 0: the world-entry free fall. $D51E keeps the plain
+        /// $F5A4/$F5DA pair while the fall byte is still $FA..$FF; below $FA the $D525 slice runs
+        /// $F4D7, which integrates, applies gravity, probes the floor through $EB52 ($40=$06,
+        /// $41=$02) and then either leaves at $F4FB or snaps ($EDD2), cuts ($F5FC) and lands
+        /// ($D530/$D532/$D535). Anything outside those two branches is refused, not estimated.</summary>
+        public bool TryMeasureWorldEntryFall09Cycles(bool? audioQueueAccepts, out int cycles, out string unsupported)
+        {
+            cycles = -1;
+            unsupported = null;
+            try
+            {
+                if (State != 0x09) throw new NotSupportedException("D517 state outside 09 slice");
+                if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
+                if ((Objects.Slots[0].StateLow & 0x0F) != 0) throw new NotSupportedException("D53F state09 intro-card phase");
+                if ((Flags & 0x20) != 0) throw new NotSupportedException("EB52 pre-hook flag");
+
+                int dispatch = 4 + ScrollBranch(0xCAFF, 0xCB41, true);
+                dispatch += 2 + 2 + 5 + 2 + 5 + 3 + 2 + 2 + 4 + 3 + 4 + 3 + 5;
+                bool plain = (byte)YVelInt >= 0xFA;                                     // $D51E/$D523
+                dispatch += 4 + 2 + 2 + 4 + 2 + ScrollBranch(0xD523, 0xD539, plain);   // $D517-$D523
+
+                int fraction = YFrac - YVelFrac;                                        // $F5A4-$F5AB
+                int row = (Y >> 8) & 255, low = (Y & 255) - (YVelInt & 255) - (fraction < 0 ? 1 : 0);
+                int newLow = low & 255;
+                bool wrap = newLow >= 0xF0;                                             // $F5B7/$F5B9
+                int integrate = 4 + 2 + 4 + 5 + 4 + 4 + 5 + 2 + ScrollBranch(0xF5B9, 0xF5C8, !wrap);
+                if (wrap)
+                {
+                    integrate += 2 + 5 + 4 + 2 + 5;                                     // $F5BB-$F5C5
+                    if (newLow + 0x10 > 255) row = (row + 1) & 255;
+                    newLow = (newLow + 0x10) & 255;
+                }
+                integrate += 6;
+                int nextY = row << 8 | newLow;
+
+                int velocity = (((byte)YVelInt << 8 | YVelFrac) - GravityFrac) & 65535; // $F5DA-$F5E8
+                bool afterRising = (velocity & 0x8000) == 0;
+                int gravity = 4 + 2 + 3 + 5 + 4 + 2 + 5 + ScrollBranch(0xF5EB, 0xF5FB, afterRising);
+                int fallByte = (velocity >> 8) & 255;
+                if (!afterRising)
+                {
+                    gravity += 2 + ScrollBranch(0xF5EF, 0xF5FB, fallByte >= 0xF9);
+                    if (fallByte < 0xF9) { gravity += 2 + 5 + 2 + 5; fallByte = 0xF8; }  // $F5F1-$F5F8
+                }
+                gravity += 6;
+
+                if (plain) { cycles = dispatch + 6 + integrate + 3 + gravity; return true; }   // $D539/$D53C
+
+                dispatch += 2 + 2 + 6 + 3 + 3;                                          // $D525-$D529, $F4D7/$F4D9
+                dispatch += 6 + integrate + 6 + gravity;                                // $F4DB/$F4DE
+                int probe = ExpandedProbeSet(X, nextY, 6, out int hit, out int lastProbeY, 3);
+                dispatch += 6 + probe + 3 + 2 + ScrollBranch(0xF4E8, 0xF4FB, hit == 0);  // $F4E1, $F4E4/$F4E8
+                bool lands = false;
+                if (hit != 0)
+                {
+                    dispatch += ScrollBranch(0xF4EA, 0xF4F3, hit >= 2);                // $F4EA
+                    if (hit == 1)
+                    {
+                        dispatch += 4 + 2 + ScrollBranch(0xF4F1, 0xF4FB, fallByte >= 0xFC);   // $F4EC
+                        lands = fallByte < 0xFC;
+                    }
+                    else lands = true;
+                }
+                if (lands)
+                {
+                    int snapped = nextY;
+                    dispatch += 6 + PlayerSnapUp(ref snapped, lastProbeY & 15);          // $F4F3 JSR $EDD2
+                    dispatch += 6 + 2 + 5 + 2 + 5 + 6;                                  // $F4F6 JSR $F5FC
+                    dispatch += 2 + 6;                                                   // $F4F9 SEC / RTS
+                }
+                else dispatch += 2 + 6;                                                  // $F4FB CLC / RTS
+                dispatch += 3 + ScrollBranch(0xD52E, 0xD538, hit == 0);                  // $D52C/$D52E
+                if (hit != 0)
+                {
+                    if (!audioQueueAccepts.HasValue) throw new NotSupportedException("F850 native audio queue owner unavailable");
+                    dispatch += 2 + 6 + ExpandedQueueCycles(audioQueueAccepts.Value) + 6;   // $D530/$D532, $D535
+                }
+                cycles = dispatch + 6;                                                   // $D538 RTS
+                return true;
+            }
+            catch (NotSupportedException exception)
+            {
+                unsupported = exception.Message;
+                return false;
+            }
+        }
+
         public bool TryMeasureState04Cycles(byte held, byte pressed, out int cycles, out string unsupported)
         {
             cycles = -1;

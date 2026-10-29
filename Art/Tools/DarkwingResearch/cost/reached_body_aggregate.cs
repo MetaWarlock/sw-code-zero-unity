@@ -13,6 +13,7 @@ public static class ReachedBodyAggregate
     static string ReferenceDir;
     static string LegacyReferenceDir;
     static string OutputRoot;
+    static string RevisionOverride;
     static string Required(string path)
     {
         path = Path.GetFullPath(path, ProjectRoot);
@@ -39,11 +40,12 @@ public static class ReachedBodyAggregate
         for (int i = 0; i < args.Length; i++)
         {
             if (!args[i].StartsWith("--")) { rest.Add(args[i]); continue; }
-            if (args[i] is not ("--project-root" or "--session" or "--reference-dir" or "--legacy-reference-dir" or "--output-root"))
+            if (args[i] is not ("--project-root" or "--session" or "--reference-dir" or "--legacy-reference-dir" or "--output-root" or "--revision"))
                 throw new ArgumentException("Unknown option " + args[i]);
             if (i + 1 == args.Length || args[i + 1].StartsWith("--")) throw new ArgumentException("Missing value for " + args[i]);
             string key = args[i]; options.Add(key, args[++i]);
         }
+        RevisionOverride = options.GetValueOrDefault("--revision");
         ProjectRoot = Path.GetFullPath(options.GetValueOrDefault("--project-root", ProjectRoot));
         if (!File.Exists(Path.Combine(ProjectRoot, "AGENTS.md")) || !Directory.Exists(Path.Combine(ProjectRoot, "Art/Unity/CodeZero/Darkwing")))
             throw new ArgumentException("Use the assigned project root (cwd or --project-root)");
@@ -54,8 +56,8 @@ public static class ReachedBodyAggregate
         LegacyReferenceDir = Path.GetFullPath(options.GetValueOrDefault("--legacy-reference-dir", Path.Combine(ReferenceDir, "legacy-m1")), ProjectRoot);
         OutputRoot = Path.GetFullPath(options.GetValueOrDefault("--output-root", "Art/Temp/cost-harness"), ProjectRoot);
         if (rest.Count > 0 && mode == "m1") rest.RemoveAt(0);
-        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe"))
-            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, m1 (legacy inputs missing)");
+        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols"))
+            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, dispatch, buffers, bufdiff, bufcontrols, m1 (legacy inputs missing)");
         return rest.ToArray();
     }
     static byte[] Data(string name) => File.ReadAllBytes("Art/Unity/CodeZero/Darkwing/Data/" + name + ".bytes");
@@ -96,6 +98,11 @@ public static class ReachedBodyAggregate
         args = Configure(args);
         if (args.Length > 0 && args[0] == "city") { City(args); return; }
         if (args.Length > 0 && args[0] == "clock") { ClockRun(args); return; }
+        if (args.Length > 0 && args[0] == "state09") { State09(args); return; }
+        if (args.Length > 0 && args[0] == "dispatch") { Dispatch(args); return; }
+        if (args.Length > 0 && args[0] == "buffers") { Buffers(args); return; }
+        if (args.Length > 0 && args[0] == "bufdiff") { BufferDiff(args); return; }
+        if (args.Length > 0 && args[0] == "bufcontrols") { BufferControls(args); return; }
         if (args.Length > 0 && args[0] == "census") { Census(args); return; }
         if (args.Length > 0 && args[0] == "slots") { Slots(args); return; }
         if (args.Length > 0 && args[0] == "audiodiff") { AudioDiff(args); return; }
@@ -395,6 +402,257 @@ public static class ReachedBodyAggregate
         }
         Console.WriteLine($"clock {mode} written {output}; overrides prefix={prefixOverrides} audio={audioOverrides} publication={pubOverrides}");
     }
+
+    /// <summary>Bound through reflection so this single exporter file compiles on both the baseline
+    /// revision (no state-09 measure yet) and the after revision. A missing measure is an error, never
+    /// a silent pass.</summary>
+    static readonly MethodInfo Measure09Method = typeof(PlayerCore).GetMethod("TryMeasureWorldEntryFall09Cycles");
+
+    static bool Measure09(PlayerCore player, bool? queueAccepts, out int cycles, out string unsupported)
+    {
+        if (Measure09Method == null) throw new InvalidOperationException("TryMeasureWorldEntryFall09Cycles is absent from this revision");
+        var argv = new object[] { queueAccepts, 0, null };
+        bool accepted = (bool)Measure09Method.Invoke(player, argv);
+        cycles = (int)argv[1]; unsupported = (string)argv[2];
+        return accepted;
+    }
+
+    /// <summary>ZERO-43 focused gate for $D517 (city route, polls 1941..1977). Positive: the native
+    /// price equals the original CA59−CA40−18, and the same pre-frame call reproduces the price the
+    /// frame itself charged (the measure is read-only). Negative: state, slot activity, landing nibble
+    /// and hook bit are perturbed and restored before the frame runs, so every condition outside the
+    /// slice must refuse. A shifted expectation must not pass, otherwise the gate is vacuous.</summary>
+    static void State09(string[] args)
+    {
+        string output = Output(args.Length > 1 ? args[1] : Path.Combine(OutputRoot, "state09_gate.csv"));
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != 29360 || Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant() != "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100")
+            throw new Exception("Unexpected city input");
+        var source = SourcePoints(ReferenceFile("phases/city_phases.csv"));
+        var player = game.Player;
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("poll,state,fallByte,native,oracle,verdict,shifted,reproducible,negative,refused");
+        int exact = 0, reproduced = 0, refused = 0, shiftedMiss = 0, priced = 0, queueRefusals = 0;
+        for (int poll = 1; poll <= 1977; poll++)
+        {
+            bool gate = poll >= 1941;
+            byte savedState = player.State, savedFlags = player.Flags, savedLow = player.Objects.Slots[0].StateLow;
+            bool savedActive = player.Objects.Slots[0].Active;
+            var slot = player.Objects.Slots[0];
+            long oracle = gate ? source[poll]["CA59"][0] - source[poll]["CA40"][0] - 18 : -1;
+            int preFrame = -1;
+            var negatives = new List<string>();
+            if (gate)
+            {
+                preFrame = Measure09(player, true, out int measured, out _) ? measured : -1;
+                void Control(string name, Action perturb)
+                {
+                    perturb();
+                    bool accepted = Measure09(player, true, out _, out string why);
+                    player.State = savedState; player.Flags = savedFlags; slot.StateLow = savedLow; slot.Active = savedActive;
+                    negatives.Add(name + "=" + (accepted ? "ACCEPTED" : Safe(why)));
+                    if (!accepted && why != null) refused++;
+                }
+                Control("state0B", () => player.State = 0x0B);
+                Control("inactive", () => slot.Active = false);
+                Control("landed", () => slot.StateLow = (byte)(savedLow | 0x01));
+                Control("hookbit", () => player.Flags = (byte)(savedFlags | 0x20));
+                if (Measure09(player, null, out _, out string noQueue)) negatives.Add("noQueueOwner=ACCEPTED");
+                else { negatives.Add("noQueueOwner=" + Safe(noQueue)); queueRefusals++; }
+            }
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            if (!gate) continue;
+            int native = player.LastPlayerDispatchCycles;
+            bool ok = native == oracle && native >= 0;
+            if (ok) { exact++; if (preFrame == native) reproduced++; }
+            if (oracle + 1 != native) shiftedMiss++;
+            if (native >= 0) priced++;
+            rows.WriteLine(string.Join(",", poll, savedState.ToString("X2"), ((byte)player.YVelInt).ToString("X2"), native, oracle,
+                ok ? "exact" : "MISMATCH", oracle + 1 == native ? "PASS-AS-TRUE" : "rejected", preFrame == native ? 1 : 0,
+                Safe(string.Join(";", negatives))));
+        }
+        Console.WriteLine($"state09 gate: priced={priced}/37 exact={exact}/37 reproducible={reproduced}/37 shiftedRejected={shiftedMiss}/37 " +
+            $"negativeRefusals={refused}/148 landingOwnerRefusals={queueRefusals} output={output}");
+        if (exact != 37 || reproduced != 37 || shiftedMiss != 37 || refused != 148 || queueRefusals != 1)
+        { Console.Error.WriteLine("state09 gate FAIL"); Environment.ExitCode = 1; }
+        else Console.WriteLine("state09 gate PASS");
+    }
+
+    /// <summary>ZERO-46 full-record exporter. Replays any available route input from reset and writes,
+    /// for every poll, the same 4384-byte record the existing stand comparator reads
+    /// (RAM 2048 + NT 2048 + OAM 256 + PAL 32) through the existing WriteStandRecord, using the same
+    /// pre-frame convention as "clock". Port-to-port regression only: no original bytes are read here,
+    /// and the record carries zero-page audio state, not synthesised PCM.</summary>
+    static void Buffers(string[] args)
+    {
+        int frames = args.Length > 1 ? int.Parse(args[1]) : throw new ArgumentException("buffers needs <frames> <out.csv>");
+        string output = Output(args.Length > 2 ? args[2] : Path.Combine(OutputRoot, "buffers_column.csv"));
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != frames) throw new Exception("Session input is " + input.Length + " bytes, requested " + frames + " frames");
+        string inputSha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant();
+        string directory = Path.ChangeExtension(output, null);
+        if (Directory.Exists(directory)) throw new IOException("Buffer directory exists; use a new output path: " + directory);
+        Directory.CreateDirectory(directory);
+        string records = Path.Combine(directory, "buffers.bin");
+        using (var file = new BinaryWriter(File.Create(records)))
+        {
+            var ram = new byte[2048];
+            for (int poll = 1; poll <= frames; poll++)
+            {
+                WriteStandRecord(game, flow, ram, file);
+                game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            }
+        }
+        long bytes = new FileInfo(records).Length;
+        if (bytes != (long)frames * 4384) throw new Exception("Record size " + bytes + " != frames*4384");
+        string sha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(records))).ToLowerInvariant();
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("frames,recordBytes,bytes,sha256,inputSha256,input,revision");
+        rows.WriteLine(string.Join(",", frames, 4384, bytes, sha, inputSha, Safe(Session), Safe(Revision())));
+        Console.WriteLine("buffers " + records + " frames=" + frames + " bytes=" + bytes + " sha256=" + sha);
+    }
+
+    /// <summary>Revision stamped by <c>--revision</c>; a generated baseline copy has no Git metadata of
+    /// its own, so the caller must name the revision it was extracted from. Only a tree that really is
+    /// a checkout falls back to <c>git rev-parse</c>, and an override always wins.</summary>
+    static string Revision()
+    {
+        if (!string.IsNullOrEmpty(RevisionOverride)) return RevisionOverride;
+        try
+        {
+            var info = new System.Diagnostics.ProcessStartInfo("git", "rev-parse HEAD")
+            { WorkingDirectory = ProjectRoot, RedirectStandardOutput = true, UseShellExecute = false };
+            using var process = System.Diagnostics.Process.Start(info);
+            string text = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+            return text.Length == 40 ? text : "";
+        }
+        catch { return ""; }
+    }
+
+    /// <summary>Strict record comparison over any two streams: rejects a missing file, a length that is
+    /// not a whole number of 4384-byte records and unequal record counts; otherwise reports the first
+    /// mismatch (poll, byte offset, section, before/after value) plus per-section diff counts.</summary>
+    static (long records, long diffRecords, long diffBytes, string first) CompareRecords(
+        Stream before, Stream after, long length, StreamWriter report)
+    {
+        if (length % 4384 != 0) throw new Exception("Truncated record stream: " + length + " bytes is not a multiple of 4384");
+        const int ram = 2048, nt = 2048, oam = 256, pal = 32;
+        long records = length / 4384, diffRecords = 0, diffBytes = 0;
+        string first = "";
+        var left = new byte[4384]; var right = new byte[4384];
+        for (long index = 0; index < records; index++)
+        {
+            before.Position = index * 4384; after.Position = index * 4384;
+            before.ReadExactly(left); after.ReadExactly(right);
+            if (left.AsSpan().SequenceEqual(right)) continue;
+            diffRecords++;
+            for (int offset = 0; offset < 4384; offset++)
+            {
+                if (left[offset] == right[offset]) continue;
+                diffBytes++;
+                string section = offset < ram ? "RAM" : offset < ram + nt ? "NT" : offset < ram + nt + oam ? "OAM" : "PAL";
+                if (first == "") first = "poll" + (index + 1) + " offset" + offset + " " + section + " " +
+                    left[offset].ToString("X2") + "->" + right[offset].ToString("X2");
+                report?.WriteLine((index + 1) + "," + offset + "," + section + "," + left[offset].ToString("X2") + "," + right[offset].ToString("X2"));
+            }
+        }
+        return (records, diffRecords, diffBytes, first);
+    }
+
+    static void BufferDiff(string[] args)
+    {
+        if (args.Length < 3) throw new ArgumentException("bufdiff needs <before.bin> <after.bin> [out.csv]");
+        string beforePath = Path.GetFullPath(args[1]), afterPath = Path.GetFullPath(args[2]);
+        if (!File.Exists(beforePath)) throw new FileNotFoundException("Missing baseline record file", beforePath);
+        if (!File.Exists(afterPath)) throw new FileNotFoundException("Missing after record file", afterPath);
+        long beforeLength = new FileInfo(beforePath).Length, afterLength = new FileInfo(afterPath).Length;
+        if (beforeLength != afterLength) throw new Exception("Record length differs: " + beforeLength + " vs " + afterLength);
+        string output = args.Length > 3 ? Output(args[3]) : null;
+        using var report = output == null ? null : new StreamWriter(output);
+        if (report != null) report.WriteLine("poll,offset,section,before,after");
+        using var a = File.OpenRead(beforePath); using var b = File.OpenRead(afterPath);
+        var result = CompareRecords(a, b, beforeLength, report);
+        string shaA = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(beforePath))).ToLowerInvariant();
+        string shaB = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(afterPath))).ToLowerInvariant();
+        Console.WriteLine($"bufdiff records={result.records} diffRecords={result.diffRecords} diffBytes={result.diffBytes} " +
+            $"first={result.first} beforeSha={shaA} afterSha={shaB} bytes={beforeLength}");
+        if (result.diffRecords != 0) { Console.Error.WriteLine("bufdiff FAIL: port-to-port records differ"); Environment.ExitCode = 1; }
+        else Console.WriteLine("bufdiff PASS: every exported byte identical");
+    }
+
+    /// <summary>Detector controls for the record comparator. Derived in memory from one real record
+    /// file so no stray mutated evidence is left behind: a missing file, a truncated stream, a changed
+    /// OAM byte and a changed PAL byte must be rejected/named, and the file against itself must pass.</summary>
+    static void BufferControls(string[] args)
+    {
+        if (args.Length < 2) throw new ArgumentException("bufcontrols needs <records.bin>");
+        string path = Path.GetFullPath(args[1]);
+        byte[] data = File.ReadAllBytes(path);
+        int failures = 0;
+        void Check(string name, bool ok, string detail)
+        {
+            Console.WriteLine("control " + name + ": " + (ok ? "OK" : "FAIL") + " " + detail);
+            if (!ok) failures++;
+        }
+        using (var self = new MemoryStream(data))
+        using (var same = new MemoryStream((byte[])data.Clone()))
+        {
+            var ok = CompareRecords(self, same, data.Length, null);
+            Check("identical-must-pass", ok.diffRecords == 0 && ok.diffBytes == 0, "records=" + ok.records + " diffBytes=" + ok.diffBytes);
+        }
+        bool missingRejected = false; string missingDetail = "opened";
+        try { using var missing = File.OpenRead(path + ".absent"); missing.Close(); }
+        catch (FileNotFoundException) { missingRejected = true; missingDetail = "FileNotFound"; }
+        catch (Exception error) { missingRejected = true; missingDetail = error.GetType().Name; }
+        Check("missing-file", missingRejected, missingDetail);
+        Check("nonempty-input", data.Length > 0 && data.Length % 4384 == 0, "length=" + data.Length);
+        var truncated = new byte[data.Length - 1];
+        Array.Copy(data, truncated, truncated.Length);
+        bool truncatedRejected = false; string truncatedDetail = "accepted";
+        try { using var a = new MemoryStream(truncated); using var b = new MemoryStream(truncated); CompareRecords(a, b, truncated.Length, null); }
+        catch (Exception error) { truncatedRejected = true; truncatedDetail = error.Message.Substring(0, Math.Min(52, error.Message.Length)); }
+        Check("truncated-record", truncatedRejected, truncatedDetail);
+        foreach (var (name, offset) in new[] { ("changed-oam-byte", 2048 + 2048 + 8), ("changed-pal-byte", 2048 + 2048 + 256 + 1), ("changed-nt-byte", 2048 + 5), ("changed-ram-byte", 0x4D0) })
+        {
+            var mutated = (byte[])data.Clone();
+            mutated[offset] ^= 0xFF;
+            using var a = new MemoryStream(data); using var b = new MemoryStream(mutated);
+            var result = CompareRecords(a, b, data.Length, null);
+            Check(name, result.diffRecords == 1 && result.diffBytes == 1 && result.first.Contains("poll1 offset" + offset), result.first);
+        }
+        Console.WriteLine(failures == 0 ? "bufcontrols PASS" : "bufcontrols FAIL " + failures);
+        if (failures != 0) Environment.ExitCode = 1;
+    }
+
+    /// <summary>Shared-timing regression column: replays any available route input from reset and writes
+    /// the native player-dispatch price and refusal per poll. Diffing two columns is the preservation check.</summary>
+    static void Dispatch(string[] args)
+    {
+        int frames = args.Length > 1 ? int.Parse(args[1]) : throw new ArgumentException("dispatch needs <frames> <out.csv>");
+        string output = Output(args.Length > 2 ? args[2] : Path.Combine(OutputRoot, "dispatch_column.csv"));
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != frames) throw new Exception("Session input is " + input.Length + " bytes, requested " + frames + " frames");
+        Console.WriteLine("dispatch session=" + Session + " bytes=" + input.Length +
+            " sha256=" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant());
+        var head = Metric(game, "LastMissionHeadCycles");
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("poll,ran,state,player,playerWhy");
+        for (int poll = 1; poll <= frames; poll++)
+        {
+            head.SetValue(game, int.MinValue);
+            byte state = game.Player.State;
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            rows.WriteLine(string.Join(",", poll, game.LastMissionHeadCycles != int.MinValue ? 1 : 0, state.ToString("X2"),
+                game.Player.LastPlayerDispatchCycles, Safe(game.Player.PlayerDispatchTimingUnsupported)));
+        }
+        Console.WriteLine("dispatch column written " + output + " frames=" + frames);
+    }
+
+    static string Safe(string s) => s == null ? "" : s.Replace(',', ';');
 
     /// <summary>Reached actor behaviours/states and player states per poll window (pre-frame).</summary>
     static void Census(string[] args)
