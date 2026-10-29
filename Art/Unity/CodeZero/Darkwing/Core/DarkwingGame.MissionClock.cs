@@ -65,22 +65,31 @@ namespace Darkwing.Core
         private int MeasureClockBodyPrefix(out string unsupported)
         {
             unsupported = null;
+            // The frame on which $D53F releases the intro card ($9600 exit → $D554-$D567 → RTS from
+            // $CAFC into $CA43) does not enter $CAE2: neither the mission head nor the $CB41 state
+            // table runs, so the released CardPassContinuation owns their span. Only that owner is
+            // taken here - a hold frame (_cardWait > 1) never reaches this method, because
+            // Player.IntroCardPhase routes it to Oam.RunFrame, and it stays untimed.
+            bool cardRelease = Player.LastCardContinuationReleased;
             int[] parts =
             {
-                LastInputHookCycles, LastMissionHeadCycles, Player.LastPlayerDispatchCycles,
+                LastInputHookCycles, cardRelease ? Player.LastCardContinuationCycles : LastMissionHeadCycles,
+                cardRelease ? 0 : Player.LastPlayerDispatchCycles,
                 Player.LastScrollServiceCycles, Objects.LastPlacementSpawnCycles, LastZoneServiceCycles,
                 Enemies?.LastBank6ScriptCycles ?? -1, Enemies?.LastBank1ScriptCycles ?? -1
             };
-            string[] names = { "C162 input hook", "CAE2 head", "CAFC player", "DA70 scroll", "8090 spawn", "EDF1 zone", "bank6 script", "bank1 script" };
+            string[] names = { "C162 input hook", cardRelease ? "D554 card continuation" : "CAE2 head", "CAFC player", "DA70 scroll", "8090 spawn", "EDF1 zone", "bank6 script", "bank1 script" };
             for (int index = 0; index < parts.Length; index++)
                 if (parts[index] < 0) { unsupported = names[index]; return -1; }
             if (!TryMeasurePaletteServiceCycles(0, 0, out int palette, out unsupported)) return -1;
             int tail = TileMap == null ? -1 : ActorTailTiming.MeasureEnvironmentTail(Player.CellGridByte,
                 TileMap.World.GridAddress, Player.CellIndex, 0, out unsupported);
             if (tail < 0) return -1;
-            // FECF JSR → C162 hook → FED2..FED6 return, then CAE2…CABB in source order.
+            // FECF JSR → C162 hook → FED2..FED6 return, then CAE2…CABB in source order. The
+            // common 6 + hook + 18 is counted once for either owner, so the card pass must not
+            // reuse LastCardResumeCycles (that property already folds the common prefix in).
             return 6 + parts[0] + 18
-                + parts[1] + 6 + parts[2] + 3 + 3 + 3 + 3 + parts[3]
+                + parts[1] + (cardRelease ? 0 : 6 + parts[2]) + 3 + 3 + 3 + 3 + parts[3]
                 + 6 + parts[4] + 3 + 3 + 3 + 2 + parts[5] + palette
                 + 6 + parts[6] + 2 + 6 + 55 + parts[7] + tail;
         }

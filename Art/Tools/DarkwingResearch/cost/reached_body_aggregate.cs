@@ -56,8 +56,8 @@ public static class ReachedBodyAggregate
         LegacyReferenceDir = Path.GetFullPath(options.GetValueOrDefault("--legacy-reference-dir", Path.Combine(ReferenceDir, "legacy-m1")), ProjectRoot);
         OutputRoot = Path.GetFullPath(options.GetValueOrDefault("--output-root", "Art/Temp/cost-harness"), ProjectRoot);
         if (rest.Count > 0 && mode == "m1") rest.RemoveAt(0);
-        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols" or "paletteprofile"))
-            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, dispatch, buffers, bufdiff, bufcontrols, paletteprofile, m1 (legacy inputs missing)");
+        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "cardrelease" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols" or "paletteprofile"))
+            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, cardrelease, dispatch, buffers, bufdiff, bufcontrols, paletteprofile, m1 (legacy inputs missing)");
         return rest.ToArray();
     }
     static byte[] Data(string name) => File.ReadAllBytes("Art/Unity/CodeZero/Darkwing/Data/" + name + ".bytes");
@@ -100,6 +100,7 @@ public static class ReachedBodyAggregate
         if (args.Length > 0 && args[0] == "clock") { ClockRun(args); return; }
         if (args.Length > 0 && args[0] == "state09") { State09(args); return; }
         if (args.Length > 0 && args[0] == "state09cases") { State09Cases(args); return; }
+        if (args.Length > 0 && args[0] == "cardrelease") { CardRelease(args); return; }
         if (args.Length > 0 && args[0] == "dispatch") { Dispatch(args); return; }
         if (args.Length > 0 && args[0] == "buffers") { Buffers(args); return; }
         if (args.Length > 0 && args[0] == "bufdiff") { BufferDiff(args); return; }
@@ -956,6 +957,203 @@ public static class ReachedBodyAggregate
         }
         Console.WriteLine(failures == 0 ? "bufcontrols PASS" : "bufcontrols FAIL " + failures);
         if (failures != 0) Environment.ExitCode = 1;
+    }
+
+    /// <summary>Bound through reflection for the same reason as Measure09: a revision that does not
+    /// have the card-release owner or the prefix assembler must fail loudly, not pass quietly.</summary>
+    static readonly MethodInfo PrefixMethod =
+        typeof(DarkwingGame).GetMethod("MeasureClockBodyPrefix", BindingFlags.Instance | BindingFlags.NonPublic);
+    static readonly MethodInfo CardOwnerMethod =
+        typeof(PlayerCore).GetMethod("BeginCardContinuationTiming", BindingFlags.Instance | BindingFlags.NonPublic);
+    static readonly FieldInfo CardWaitField = typeof(PlayerCore).GetField("_cardWait", BindingFlags.Instance | BindingFlags.NonPublic);
+    static readonly FieldInfo CardPhaseField = typeof(PlayerCore).GetField("_cardPhase", BindingFlags.Instance | BindingFlags.NonPublic);
+
+    static (int price, string why) MeasurePrefix(DarkwingGame game)
+    {
+        if (PrefixMethod == null) throw new InvalidOperationException("MeasureClockBodyPrefix is absent from this revision");
+        var argv = new object[] { null };
+        return ((int)PrefixMethod.Invoke(game, argv), (string)argv[0]);
+    }
+
+    static void MeasureCardOwner(PlayerCore player)
+    {
+        if (CardOwnerMethod == null) throw new InvalidOperationException("BeginCardContinuationTiming is absent from this revision");
+        CardOwnerMethod.Invoke(player, null);
+    }
+
+    /// <summary>The native prices the body-prefix assembler adds, after the common 6 + hook + 18 and
+    /// the owner span: [0] DA70 scroll, [1] 8090 spawn, [2] EDF1 zone, [3] palette service,
+    /// [4] bank 6 script, [5] bank 1 script, [6] environment tail.</summary>
+    static int[] PrefixParts(DarkwingGame game, PlayerCore player)
+    {
+        var enemies = game.Enemies;
+        return new[]
+        {
+            player.LastScrollServiceCycles, game.Objects.LastPlacementSpawnCycles, game.LastZoneServiceCycles,
+            game.TryMeasurePaletteServiceCycles(0, 0, out int palette, out _) ? palette : -1,
+            enemies?.LastBank6ScriptCycles ?? -1, enemies?.LastBank1ScriptCycles ?? -1,
+            game.TileMap == null ? -1 : EnvironmentTail(game, out _)
+        };
+    }
+
+    static string PartsText(string label, int[] parts) => label + " scroll=" + parts[0] + " spawn=" + parts[1] +
+        " zone=" + parts[2] + " palette=" + parts[3] + " bank6=" + parts[4] + " bank1=" + parts[5] + " tail=" + parts[6];
+
+    /// <summary>ZERO-50 focused controls for the owner of the body prefix on the frame the mission
+    /// intro card releases. Positive: on that frame the assembled C# prefix equals the original
+    /// $CABB−$FECF, and $LastCardResumeCycles + 12 equals the original $CA59−$FECF — the common
+    /// 6 + hook + 18 appears once, because a doubled prefix would miss 4986 by 549. Negative: the
+    /// untouched pre-frame state of the same poll is perturbed in the ways that must not be priced
+    /// (a longer hold, a refused release context, no wait, no card, another state) and every one of
+    /// them has to refuse; and in the running replay a hold frame must never add a timed pass.
+    /// Control: the next poll is ordinary, still priced by head + 6 + player, and still equals the
+    /// original. No source price is fed to the game and no poll number selects a branch.</summary>
+    static void CardRelease(string[] args)
+    {
+        string output = Output(args.Length > 1 ? args[1] : Path.Combine(OutputRoot, "card_release_controls.csv"));
+        int replayTo = args.Length > 2 ? int.Parse(args[2]) : 2125;
+        int first = args.Length > 3 ? int.Parse(args[3]) : 2110;
+        int last = args.Length > 4 ? int.Parse(args[4]) : 2125;
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != 29360 || Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant() != "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100")
+            throw new Exception("Unexpected city input");
+        var player = game.Player;
+        var source = SourcePoints(ReferenceFile("phases/city_phases.csv"));
+        long Point(int poll, string pc) => source.TryGetValue(poll, out var map) && map.TryGetValue(pc, out var list) ? list[0] : -1;
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("poll,preWait,preState,preCardPhase,world,weapon,continuation,cardWhy,released,resume,hook,head,player," +
+            "prefixPre,prefixWhyPre,prefixFrame,origCa59,verdictCa59,origCabb,verdictCabb,tailPre,tailFrame,timedThisFrame,controls");
+        int releaseFrames = 0, releaseFramesPriced = 0, releaseCa59Exact = 0, releaseCabbExact = 0, releaseNoPhase = 0;
+        int ordinaryPolls = 0, ordinaryExact = 0, holdUntimed = 0, holdViolations = 0, negativeRefusals = 0, negativesExpected = 0;
+        int ownerSpans = 0, anchorExact = 0, frameCabbExact = 0, preFrameDeltaExact = 0, preFrameDeltaOther = 0;
+        string ownerNote = "";
+        var releaseLog = new List<string>();
+        for (int poll = 1; poll <= replayTo; poll++)
+        {
+            bool gate = poll >= first && poll <= last;
+            byte waitBefore = (byte)CardWaitField.GetValue(player);
+            byte stateBefore = player.State, worldBefore = player.WorldId, weaponBefore = player.WeaponSelected;
+            bool phaseBefore = (bool)CardPhaseField.GetValue(player);
+            int timedBefore = game.Clock.TimedPasses;
+            var negatives = new List<string>();
+            int prefixPre = -1, resume = -1, tailPre = -1; string prefixWhyPre = null;
+            void Restore()
+            {
+                CardWaitField.SetValue(player, waitBefore);
+                player.State = stateBefore; player.WorldId = worldBefore; player.WeaponSelected = weaponBefore;
+                CardPhaseField.SetValue(player, phaseBefore);
+            }
+            bool ownerPre = false;
+            int[] preParts = null;
+            if (gate)
+            {
+                MeasureCardOwner(player);
+                (prefixPre, prefixWhyPre) = MeasurePrefix(game);
+                resume = game.LastCardResumeCycles;
+                tailPre = game.TileMap == null ? -1 : EnvironmentTail(game, out _);
+                preParts = PrefixParts(game, player);
+                // The negatives only mean something where the untouched owner is actually released:
+                // on an ordinary poll withdrawing the card owner legitimately leaves the head + 6 +
+                // player span, so a refusal there would be an artefact of the probe, not a control.
+                ownerPre = player.LastCardContinuationReleased;
+                void Control(string name, Action perturb)
+                {
+                    if (!ownerPre) return;
+                    negativesExpected++;
+                    perturb();
+                    MeasureCardOwner(player);
+                    var (price, why) = MeasurePrefix(game);
+                    bool released = player.LastCardContinuationReleased;
+                    Restore();
+                    negatives.Add(name + "=" + (released || price >= 0
+                        ? "PRICED(" + price + ",released=" + released + ")"
+                        : "refused(" + Safe(player.CardTimingUnsupported ?? why) + ")"));
+                    if (!released && price < 0) negativeRefusals++;
+                }
+                Control("holdWait2", () => CardWaitField.SetValue(player, (byte)2));
+                Control("holdWait20", () => CardWaitField.SetValue(player, (byte)0x14));
+                Control("worldId7", () => player.WorldId = 7);
+                Control("weapon4", () => player.WeaponSelected = 4);
+                Control("wait0", () => CardWaitField.SetValue(player, (byte)0));
+                Control("state0B", () => player.State = 0x0B);
+                Control("cardPhaseOff", () => CardPhaseField.SetValue(player, false));
+                MeasureCardOwner(player);
+            }
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            bool releasedFrame = player.LastCardContinuationReleased;
+            bool timed = game.Clock.TimedPasses > timedBefore;
+            if (releasedFrame)
+            {
+                releaseFrames++;
+                if (game.LastClockBodyPrefixCycles >= 0) releaseFramesPriced++;
+                long ca59 = Point(poll, "FECF") >= 0 && Point(poll, "CA59") >= 0 ? Point(poll, "CA59") - Point(poll, "FECF") : -1;
+                long cabb = Point(poll, "FECF") >= 0 && Point(poll, "CABB") >= 0 ? Point(poll, "CABB") - Point(poll, "FECF") : -1;
+                if (ca59 < 0 && cabb < 0) releaseNoPhase++;
+                else
+                {
+                    if (ca59 >= 0 && Verdict(game.LastCardResumeCycles + 12, (int)ca59) == "exact") releaseCa59Exact++;
+                    if (cabb >= 0 && Verdict(game.LastClockBodyPrefixCycles, (int)cabb) == "exact") releaseCabbExact++;
+                }
+                releaseLog.Add(poll + ":prefix=" + game.LastClockBodyPrefixCycles + "/" + cabb +
+                    " anchor=" + (game.LastCardResumeCycles < 0 ? -1 : game.LastCardResumeCycles + 12) + "/" + ca59);
+            }
+            if (gate)
+            {
+                int[] frameParts = PrefixParts(game, player);
+                int tailFrame = frameParts[6];
+                long origCa59 = Point(poll, "FECF") >= 0 && Point(poll, "CA59") >= 0 ? Point(poll, "CA59") - Point(poll, "FECF") : -1;
+                long origCabb = Point(poll, "FECF") >= 0 && Point(poll, "CABB") >= 0 ? Point(poll, "CABB") - Point(poll, "FECF") : -1;
+                if (ownerPre)
+                {
+                    ownerSpans++;
+                    // resume already holds 6 + hook + 18 and the 12 is CA43..CA57, so a prefix that
+                    // counted the common part twice would miss this anchor by exactly 549.
+                    if (origCa59 >= 0 && Verdict(resume + 12, (int)origCa59) == "exact") anchorExact++;
+                    if (origCabb >= 0 && Verdict(game.LastClockBodyPrefixCycles, (int)origCabb) == "exact") frameCabbExact++;
+                    // The assembler runs mid-frame, so a pre-frame probe legitimately lags by exactly
+                    // the two actor scripts this frame's own dispatch produces (bank 6 at $CE39 and
+                    // the bank 1 tail). Everything else must be equal and substituting just those two
+                    // must close the gap: that names the deviation instead of tolerating it.
+                    bool othersEqual = preParts[0] == frameParts[0] && preParts[1] == frameParts[1]
+                        && preParts[2] == frameParts[2] && preParts[3] == frameParts[3] && preParts[6] == frameParts[6];
+                    if (origCabb >= 0 && othersEqual && Verdict(
+                            prefixPre + frameParts[4] - preParts[4] + frameParts[5] - preParts[5], (int)origCabb) == "exact")
+                        preFrameDeltaExact++;
+                    else preFrameDeltaOther++;
+                    ownerNote = "prefixPre=" + prefixPre + " charged=" + game.LastClockBodyPrefixCycles +
+                        " original=" + origCabb + " othersEqual=" + othersEqual + " | " +
+                        PartsText("pre", preParts) + " | " + PartsText("frame", frameParts);
+                }
+                if (!ownerPre && timed)
+                {
+                    ordinaryPolls++;
+                    if (origCabb >= 0 && Verdict(game.LastClockBodyPrefixCycles, (int)origCabb) == "exact") ordinaryExact++;
+                }
+                if (!releasedFrame && waitBefore > 1) { holdUntimed++; if (timed) holdViolations++; }
+                string verdictCa59 = origCa59 < 0 ? "NO PHASE" : ownerPre ? Verdict(resume + 12, (int)origCa59) : "NO OWNER";
+                string verdictCabb = origCabb < 0 ? "NO PHASE" : Verdict(game.LastClockBodyPrefixCycles, (int)origCabb);
+                rows.WriteLine(string.Join(",", poll, waitBefore.ToString("X2"), stateBefore.ToString("X2"), phaseBefore ? 1 : 0,
+                    worldBefore, weaponBefore, player.LastCardContinuationCycles, Safe(player.CardTimingUnsupported), releasedFrame ? 1 : 0,
+                    resume, game.LastInputHookCycles, game.LastMissionHeadCycles, player.LastPlayerDispatchCycles,
+                    prefixPre, Safe(prefixWhyPre), game.LastClockBodyPrefixCycles, origCa59, verdictCa59, origCabb, verdictCabb,
+                    tailPre, tailFrame, timed ? 1 : 0, Safe(string.Join(";", negatives))));
+            }
+        }
+        Console.WriteLine($"card-release owner spans={ownerSpans} anchorExact(6+hook+18+cont+12)={anchorExact}/{ownerSpans} " +
+            $"framePrefixExact={frameCabbExact}/{ownerSpans} preFrameDeltaClosed={preFrameDeltaExact}/{ownerSpans} " +
+            $"preFrameDeltaUnexplained={preFrameDeltaOther} [{ownerNote}]");
+        Console.WriteLine($"card-release frames in replay: releaseFrames={releaseFrames} priced={releaseFramesPriced} " +
+            $"ca59Exact={releaseCa59Exact} cabbExact={releaseCabbExact} noPhase={releaseNoPhase} [{string.Join(" ", releaseLog)}]");
+        Console.WriteLine($"card-release ordinary control: pricedPolls={ordinaryPolls} exact={ordinaryExact}/{ordinaryPolls} " +
+            $"holdUntimed={holdUntimed} holdTimedViolations={holdViolations} negativeRefusals={negativeRefusals}/{negativesExpected} output={output}");
+        if (ownerSpans == 0 || anchorExact != ownerSpans || frameCabbExact != ownerSpans
+            || preFrameDeltaExact != ownerSpans || preFrameDeltaOther != 0
+            || releaseFrames != ownerSpans || releaseCabbExact != releaseFrames || releaseCa59Exact != releaseFrames
+            || releaseFramesPriced != releaseFrames || ordinaryPolls == 0 || ordinaryExact != ordinaryPolls
+            || holdViolations != 0 || negativesExpected != ownerSpans * 7 || negativeRefusals != negativesExpected)
+        { Console.Error.WriteLine("cardrelease gate FAIL"); Environment.ExitCode = 1; }
+        else Console.WriteLine("cardrelease gate PASS");
     }
 
     /// <summary>Shared-timing regression column: replays any available route input from reset and writes
