@@ -286,7 +286,12 @@ namespace Darkwing.Core
             {
                 if (State != 0) throw new NotSupportedException("CB8B state outside00 slice");
                 if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
-                if ((held & 12) != 0 || (pressed & 0x80) != 0) throw new NotSupportedException("CBB7 ground jump/up/down");
+                // $CBDF compares $16&0F with #04, so only an exact Down without a horizontal bit
+                // reaches $CC44. Up (#08 at $CBD7), Up+Down and Down with a direction walk other
+                // branches whose price is not derived here; a fresh $14&80 belongs to the jump wrapper.
+                bool down = (held & 0x0F) == 0x04 && (held & 3) == 0;
+                if ((pressed & 0x80) != 0 || ((held & 0x0C) != 0 && !down))
+                    throw new NotSupportedException("CBB7 ground jump/up/down");
                 if (Objects.Slots[0].AnimNumber is 0x0E or 0x0F) throw new NotSupportedException("CDD5 ground shot-air pose");
                 int vertical = ExpandedGroundVertical(out int nextY, out int floor);
                 int airDispatch = 3 + ScrollBranch(0xCD10, 0xCD3E, true);
@@ -309,7 +314,14 @@ namespace Darkwing.Core
                 int frame = slot.AnimFrame, timer = slot.AnimTimer;
                 if (direction == 0)
                 {
-                    dispatch += 3 + 2 + 2 + ScrollBranch(0xCBDD, 0xCC3A, false) + 2 + ScrollBranch(0xCBE1, 0xCBE6, true);
+                    dispatch += 3 + 2 + 2 + ScrollBranch(0xCBDD, 0xCC3A, false) + 2 + ScrollBranch(0xCBE1, 0xCBE6, !down);
+                    if (down)
+                    {
+                        // $CBE3 JMP $CC44 → $CC52 RTS: LDA #$06 / JSR $FA78, $50=2, $0490=0. Reached
+                        // before $CBE6, so $14&40 (B) is never tested on this path.
+                        cycles = dispatch + 3 + 2 + 6 + 20 + 2 + 3 + 2 + 4 + 6;
+                        return true;
+                    }
                     bool shot = (pressed & 0x40) != 0;
                     dispatch += 3 + 2 + ScrollBranch(0xCBEA, 0xCBEF, !shot);
                     if (shot)
