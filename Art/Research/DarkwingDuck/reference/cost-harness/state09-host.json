@@ -1,0 +1,107 @@
+{
+  "schema": 1,
+  "date": "2026-10-29",
+  "issue": "ZERO-43",
+  "humanIssue": "ZERO-48",
+  "humanResult": "AWAITING HUMAN",
+  "sourceHead": "27f6f9d996675c53da7803c78db105fbca67e838",
+  "runtimeCommit": "8f3bbe197e5d44102b8aea1ba46f20eb526c7650",
+  "sourceScope": "slot A build; only generated .vscode/settings.json dirty; source hashes unchanged during build; primary pre-existing ProjectSettings change preserved",
+  "build": {
+    "id": "build_9bc298e1e2e0",
+    "result": "Succeeded",
+    "errors": 0,
+    "warnings": 1,
+    "files": 354,
+    "exe": "Art/Build/State09/DarkwingDuck.exe",
+    "scene": "Packages/su.learn.codezero/Scenes/DarkwingMain.unity",
+    "sourceManifest": "state09-source-manifest.json",
+    "binaryManifest": "state09-binary-manifest.json"
+  },
+  "automated": {
+    "dispatchExact": 37,
+    "dispatchRefusals": 148,
+    "missingQueueOwnerRefusals": 1,
+    "nextUnsupportedPoll": 2117,
+    "nextUnsupported": "CAE2 head",
+    "fullRecordRegression": {
+      "issue": "ZERO-46",
+      "frames": 165914,
+      "bytesPerFrame": 4384,
+      "bytesPerSide": 727366976,
+      "differingBytes": 0,
+      "scope": "PORT-TO-PORT exported RAM/NT/OAM/PAL; no PCM or full original-game equality"
+    },
+    "suite": {
+      "result": 18,
+      "strict": 8,
+      "cases": 24,
+      "errors": 0,
+      "verdict": "FAIL",
+      "fullJsonEqualsPreviousLayoutBaseline": true,
+      "report": "state09-suite.json"
+    },
+    "mission1ContractGroups": 16,
+    "deliveredSmoke": {
+      "scope": "standalone boot/render/clean exit only; no playthrough or ROM comparison",
+      "exe": "D:/Art/SW Code Zero Unity/Art/Build/State09/DarkwingDuck.exe",
+      "startedUtc": "2026-10-29T14:48:41.3357588Z",
+      "success": true,
+      "arguments": "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -logFile \"D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-43-delivered\\Player.log\"",
+      "pid": 437620,
+      "captureA": {
+        "path": "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-43-delivered\\window_a.png",
+        "width": 784,
+        "height": 759,
+        "clientWidth": 768,
+        "clientHeight": 720,
+        "clientLeft": 8,
+        "clientTop": 31,
+        "samples": 34560,
+        "nonBlack": 26934,
+        "colors": 26,
+        "sha256": "E74C58D7D223CCEBAADD1133E92A22CCDC33701EA6A61983F2C843B452CC0AA5"
+      },
+      "captureB": {
+        "path": "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-43-delivered\\window_b.png",
+        "width": 784,
+        "height": 759,
+        "clientWidth": 768,
+        "clientHeight": 720,
+        "clientLeft": 8,
+        "clientTop": 31,
+        "samples": 34560,
+        "nonBlack": 26864,
+        "colors": 37,
+        "sha256": "74E1397B62991B18E52011030070588B13AE2DA4D66302265F8226ED3C608FCA"
+      },
+      "framesDiffer": true,
+      "playerExitCode": 0,
+      "cleanExit": true,
+      "log": "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-43-delivered\\Player.log",
+      "exceptions": [],
+      "bloomWarnings": 17,
+      "finishedUtc": "2026-10-29T14:49:32.1306925Z",
+      "exitCode": 0
+    }
+  },
+  "preUpdateSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-state09-before-stand-update",
+  "recovery": {
+    "initialBuild": "build_666bd01e071d",
+    "initialBuildResult": "Rejected: Succeeded with 2 errors for old Assets/Scenes/DarkwingMain.unity",
+    "observed": "Local package registered correctly but no loaded Darkwing assemblies; disk build-scene path correct while live EditorBuildSettings retained old path",
+    "actions": [
+      "unity command package resolve --project-path <slot A> --format json",
+      "Wait for domain reload and confirm recompile/readiness",
+      "Update only stale live EditorBuildSettings path using Editor API; serialized asset already matched",
+      "Open Packages/su.learn.codezero/Scenes/DarkwingMain.unity via EditorSceneManager"
+    ],
+    "serializedSourceChanged": false
+  },
+  "limits": {
+    "codexLastRemainingPercent": 58,
+    "windowDurationMins": 300,
+    "qoder": "UNKNOWN",
+    "claude": "UNKNOWN"
+  }
+}

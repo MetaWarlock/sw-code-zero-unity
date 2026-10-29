@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "cases": 24,
+  "resultPassed": 18,
+  "strictPassed": 8,
+  "errors": 0,
+  "verdict": "FAIL",
+  "scope": "Selected fields only; seeded fixtures, not full playthrough or full-frame equivalence.",
+  "results": [
+    {
+      "name": "walk",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_walk.txt",
+      "error": null
+    },
+    {
+      "name": "jump",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_jump.txt",
+      "error": null
+    },
+    {
+      "name": "b_attack",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_b_attack.txt",
+      "error": null
+    },
+    {
+      "name": "hook",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_hook.txt",
+      "error": null
+    },
+    {
+      "name": "traverse",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_traverse.txt",
+      "error": null
+    },
+    {
+      "name": "contact",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_contact.txt",
+      "error": null
+    },
+    {
+      "name": "m1route",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_m1route.txt",
+      "error": null
+    },
+    {
+      "name": "hurt",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_hurt.txt",
+      "error": null
+    },
+    {
+      "name": "door",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_door.txt",
+      "error": null
+    },
+    {
+      "name": "worldseeds",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_worldseeds.txt",
+      "error": null
+    },
+    {
+      "name": "w00_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w00_fall.txt",
+      "error": null
+    },
+    {
+      "name": "w01_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w01_fall.txt",
+      "error": null
+    },
+    {
+      "name": "w02_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w02_fall.txt",
+      "error": null
+    },
+    {
+      "name": "w03_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w03_fall.txt",
+      "error": null
+    },
+    {
+      "name": "w04_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w04_fall.txt",
+      "error": null
+    },
+    {
+      "name": "w05_fall",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w05_fall.txt",
+      "error": null
+    },
+    {
+      "name": "w06_fall",
+      "result": "PASS",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_w06_fall.txt",
+      "error": null
+    },
+    {
+      "name": "longroute",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_longroute.txt",
+      "error": null
+    },
+    {
+      "name": "m2",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_m2.txt",
+      "error": null
+    },
+    {
+      "name": "m3",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_m3.txt",
+      "error": null
+    },
+    {
+      "name": "m4",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_m4.txt",
+      "error": null
+    },
+    {
+      "name": "m5",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_m5.txt",
+      "error": null
+    },
+    {
+      "name": "m6",
+      "result": "FAIL",
+      "strict": "FAIL",
+      "details": "Art/Temp/suite_m6.txt",
+      "error": null
+    },
+    {
+      "name": "m7",
+      "result": "PASS",
+      "strict": "PASS",
+      "details": "Art/Temp/suite_m7.txt",
+      "error": null
+    }
+  ]
+}

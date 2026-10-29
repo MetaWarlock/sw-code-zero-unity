@@ -1,0 +1,1418 @@
+{
+  "DarkwingDuck.exe": {
+    "bytes": 667136,
+    "sha256": "b70442f90f50cd91f7af7bf2272602645fc5d02c4d3156fb221fc27c328d2436"
+  },
+  "dstorage.dll": {
+    "bytes": 206904,
+    "sha256": "cae65787f61514bec6f012f44546e68b19e39d8854a9ab52af813370d44b272a"
+  },
+  "dstoragecore.dll": {
+    "bytes": 1482784,
+    "sha256": "cf85b19a92a8276f8baca0db9bbcd60735bad50768deb303d310e84d5f4fdd11"
+  },
+  "UnityCrashHandler64.exe": {
+    "bytes": 1843120,
+    "sha256": "843e928916edacd4f13c1910e0c132ffe2c42eed48f8c92432ddf9040f7fb457"
+  },
+  "UnityPlayer.dll": {
+    "bytes": 91430824,
+    "sha256": "3af47db95147e714455a0e9727f12a0279132b4ac69bb0a6c029d5d0466ac1fd"
+  },
+  "WinPixEventRuntime.dll": {
+    "bytes": 58368,
+    "sha256": "81adcfd8253c3489be720da7e30f16004dc9a1f02a8b418c6c3aef4993032e6d"
+  },
+  "D3D12/D3D12Core.dll": {
+    "bytes": 4725304,
+    "sha256": "625bd40005b1c3708695d5256ecf230d278e6b8edba5a88af70f3d91324f3052"
+  },
+  "D3D12/d3d12SDKLayers.dll": {
+    "bytes": 4930104,
+    "sha256": "c0730cc70d3250d3de19c04c17845ba9e70eecaf502d684d1409195ebc5b5959"
+  },
+  "DarkwingDuck_Data/app.info": {
+    "bytes": 33,
+    "sha256": "aff44bf5c033c15cf086b952be41f8ed883694645653269dce1ef597957c27aa"
+  },
+  "DarkwingDuck_Data/boot.config": {
+    "bytes": 464,
+    "sha256": "b534390c79ee12529d3a6deb649065f5def39e7faabdc1df288807f4e049ad3e"
+  },
+  "DarkwingDuck_Data/globalgamemanagers": {
+    "bytes": 128996,
+    "sha256": "1396e5da92e6c026eb3ef27c5c3c7f8eadcd92e0805f6c2f1b87d34946f91a2c"
+  },
+  "DarkwingDuck_Data/globalgamemanagers.assets": {
+    "bytes": 1011684,
+    "sha256": "3d6a04637b80e5f3e4fed2b882a13308b2041ca63cef8ab382e061475e0af37e"
+  },
+  "DarkwingDuck_Data/globalgamemanagers.assets.resS": {
+    "bytes": 3094752,
+    "sha256": "7119117ced695768bc8febf118107b55c0ea319d7e7be34292cfd53c955c3de2"
+  },
+  "DarkwingDuck_Data/level0": {
+    "bytes": 2892,
+    "sha256": "b6c5fb076f6e85680f5d4fb967a664ef5eb26c9674a91af70619b38a72d2246e"
+  },
+  "DarkwingDuck_Data/resources.assets": {
+    "bytes": 3736,
+    "sha256": "996a208ef32570cd66453cf5ee9878225e91f3dca275b007fb6d4bd6520f5e33"
+  },
+  "DarkwingDuck_Data/RuntimeInitializeOnLoads.json": {
+    "bytes": 7036,
+    "sha256": "66813156ba90fe11ced6bd320b796ed34d068ac2e410caf5df68e16a4328ae20"
+  },
+  "DarkwingDuck_Data/ScriptingAssemblies.json": {
+    "bytes": 5658,
+    "sha256": "f3a1d125134c8094e785259c42765225e194d3da154a771ad28bce56c54e9387"
+  },
+  "DarkwingDuck_Data/sharedassets0.assets": {
+    "bytes": 341312,
+    "sha256": "17bb672e40f148c2ea405670c8f0107de86f864eb6b8bb76995500068a0c6bb9"
+  },
+  "DarkwingDuck_Data/sharedassets0.assets.resS": {
+    "bytes": 524288,
+    "sha256": "393efe6399536384aa91bdfc4e64f244b4d3e1fbb6a4ff145c483ffee64ccb36"
+  },
+  "MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll": {
+    "bytes": 7834536,
+    "sha256": "b111b6ebe42243b95c827758c1fc10e0d8c517d3040a7a598fd1cb71afd25c5e"
+  },
+  "MonoBleedingEdge/EmbedRuntime/MonoPosixHelper.dll": {
+    "bytes": 611240,
+    "sha256": "2cac1a76552d769947e8a5d84bd69ddb5d0b128d7a50714386f8a133379cd6dc"
+  },
+  "MonoBleedingEdge/etc/mono/browscap.ini": {
+    "bytes": 311984,
+    "sha256": "4ddd50f31fb968f30bedefc253a46dc3f2890192d05cdaa9e0a64a056eee807e"
+  },
+  "MonoBleedingEdge/etc/mono/config": {
+    "bytes": 3815,
+    "sha256": "5776169973a26a387b8b3e5c0f2301a7ab9a6dd7c7d3efa22a96abc47fbf8662"
+  },
+  "MonoBleedingEdge/etc/mono/2.0/DefaultWsdlHelpGenerator.aspx": {
+    "bytes": 60575,
+    "sha256": "751861040b69ea63a3827507b7c8da9c7f549dc181c1c8af4b7ca78cc97d710a"
+  },
+  "MonoBleedingEdge/etc/mono/2.0/machine.config": {
+    "bytes": 29066,
+    "sha256": "e91782a27fa39fc6c1d6ee8b08529f5d35052310d0006034b878eb04b8f2af30"
+  },
+  "MonoBleedingEdge/etc/mono/2.0/settings.map": {
+    "bytes": 2622,
+    "sha256": "49c6160f9d54af4270a3b4e997fc4a8301f79b9e2070118fa46ddbcbbc44f9a2"
+  },
+  "MonoBleedingEdge/etc/mono/2.0/web.config": {
+    "bytes": 11635,
+    "sha256": "cf2b54339e069b9e42f7d6795eecbf562c50c1011f4ca8f65f578fe52d97ff92"
+  },
+  "MonoBleedingEdge/etc/mono/4.0/DefaultWsdlHelpGenerator.aspx": {
+    "bytes": 60575,
+    "sha256": "751861040b69ea63a3827507b7c8da9c7f549dc181c1c8af4b7ca78cc97d710a"
+  },
+  "MonoBleedingEdge/etc/mono/4.0/machine.config": {
+    "bytes": 33598,
+    "sha256": "e60aec2c5115d65b3acb3c55ea21576dbd770f579166c017125571e46ae560ed"
+  },
+  "MonoBleedingEdge/etc/mono/4.0/settings.map": {
+    "bytes": 2622,
+    "sha256": "ce1db1ad8a9512073164e3eccdc193f7eda036e1a9733caec4635de21b2865c8"
+  },
+  "MonoBleedingEdge/etc/mono/4.0/web.config": {
+    "bytes": 18802,
+    "sha256": "e38bb8cc68fe5b4edecdfd288d094b9e8ced7629039b2a347682aba0d8bd7492"
+  },
+  "MonoBleedingEdge/etc/mono/4.5/DefaultWsdlHelpGenerator.aspx": {
+    "bytes": 60575,
+    "sha256": "751861040b69ea63a3827507b7c8da9c7f549dc181c1c8af4b7ca78cc97d710a"
+  },
+  "MonoBleedingEdge/etc/mono/4.5/machine.config": {
+    "bytes": 34056,
+    "sha256": "ee950004b576fb28dc85f4b0435ed04bf96612de2e8b53be84d07afe85a0de6c"
+  },
+  "MonoBleedingEdge/etc/mono/4.5/settings.map": {
+    "bytes": 2622,
+    "sha256": "ce1db1ad8a9512073164e3eccdc193f7eda036e1a9733caec4635de21b2865c8"
+  },
+  "MonoBleedingEdge/etc/mono/4.5/web.config": {
+    "bytes": 18811,
+    "sha256": "c4cbddd4fd9347b58cc5a72b36dc4ba1ad2bb699e65869d05cd3fb9865f0d824"
+  },
+  "MonoBleedingEdge/etc/mono/mconfig/config.xml": {
+    "bytes": 25817,
+    "sha256": "0c56e34c69124510fa8c19e7b4c2ca6c1c4ff460ae19f798dd0ca035809e396d"
+  },
+  "MonoBleedingEdge/etc/mono/4.5/Browsers/Compat.browser": {
+    "bytes": 1605,
+    "sha256": "8a1082057ac5681dcd4e9c227ed7fb8eb42ac1618963b5de3b65739dd77e2741"
+  },
+  "MonoBleedingEdge/etc/mono/4.0/Browsers/Compat.browser": {
+    "bytes": 1605,
+    "sha256": "8a1082057ac5681dcd4e9c227ed7fb8eb42ac1618963b5de3b65739dd77e2741"
+  },
+  "MonoBleedingEdge/etc/mono/2.0/Browsers/Compat.browser": {
+    "bytes": 1605,
+    "sha256": "8a1082057ac5681dcd4e9c227ed7fb8eb42ac1618963b5de3b65739dd77e2741"
+  },
+  "DarkwingDuck_Data/Managed/Darkwing.Audio.dll": {
+    "bytes": 30720,
+    "sha256": "abede6adc70d8f06f4496ba364315efaa8b123e5656000b62907d38e5096bbe0"
+  },
+  "DarkwingDuck_Data/Managed/Darkwing.Audio.pdb": {
+    "bytes": 24648,
+    "sha256": "7ac7c5a0efd4cf010359b70e8cb875fc17096243dbbd33f68694198aa2ef7828"
+  },
+  "DarkwingDuck_Data/Managed/Darkwing.Core.dll": {
+    "bytes": 367104,
+    "sha256": "86d33956da797574932402d86750c14bb3776f2508060e0cff48751c9f0aa418"
+  },
+  "DarkwingDuck_Data/Managed/Darkwing.Core.pdb": {
+    "bytes": 171112,
+    "sha256": "bfa869ef07e0435f5ca804f6d27393202519fe7b4c56ff72e059855e857684be"
+  },
+  "DarkwingDuck_Data/Managed/Darkwing.UnityApp.dll": {
+    "bytes": 14848,
+    "sha256": "2a4f4314ebe7fd110bf5cd4a5453899039865ea9991891d2cec715ad3407aa62"
+  },
+  "DarkwingDuck_Data/Managed/Darkwing.UnityApp.pdb": {
+    "bytes": 19800,
+    "sha256": "f3732259fea9144952b2dc5c8555358fdc6b9ca7fe4fa41c72ffc855423c785e"
+  },
+  "DarkwingDuck_Data/Managed/Mono.Security.dll": {
+    "bytes": 241152,
+    "sha256": "a7128a85c5ce748cfcc64be97b7fab4119f4636c917a0303bfa2582f86282ed8"
+  },
+  "DarkwingDuck_Data/Managed/mscorlib.dll": {
+    "bytes": 4632064,
+    "sha256": "acbfa8295da5b5e5a2c68c7b2dbc9cd7a5829c0ae031af22be4f6a49fd626f8f"
+  },
+  "DarkwingDuck_Data/Managed/netstandard.dll": {
+    "bytes": 90112,
+    "sha256": "6ae62e082dc494a2433984177f60ca4db5fae69b1f360a8b33754172b310b8c5"
+  },
+  "DarkwingDuck_Data/Managed/Newtonsoft.Json.dll": {
+    "bytes": 691712,
+    "sha256": "a56146202232958f46bd6a28b5a7da166aea123ee0d646735a46e5c341dfbf1f"
+  },
+  "DarkwingDuck_Data/Managed/Newtonsoft.Json.pdb": {
+    "bytes": 2174464,
+    "sha256": "17cbab4d4207187ed94173c0d59d7a39fabed7c9035b73634c1f02188dd60168"
+  },
+  "DarkwingDuck_Data/Managed/System.Buffers.dll": {
+    "bytes": 4608,
+    "sha256": "762f8fdbe975e05b76be5fe996c53ce7c75e4a2830f2f50b02a5948ef6ba0aeb"
+  },
+  "DarkwingDuck_Data/Managed/System.Collections.Immutable.dll": {
+    "bytes": 252680,
+    "sha256": "5b1b1c83ba3d135c2fdfe425842fbe9c7432878b7e468623acb554c69b4c130f"
+  },
+  "DarkwingDuck_Data/Managed/System.ComponentModel.Composition.dll": {
+    "bytes": 257024,
+    "sha256": "d949bd6214c26b38a190e66fe976038e3845aea6c6980d3eb58e78b75edf98a5"
+  },
+  "DarkwingDuck_Data/Managed/System.Configuration.dll": {
+    "bytes": 124928,
+    "sha256": "7170a8fa3363a8ebd59e8b9931509f595df009f11e1885707a3c3bc0a3ff5648"
+  },
+  "DarkwingDuck_Data/Managed/System.Core.dll": {
+    "bytes": 1113088,
+    "sha256": "15081eac9f71fd7817a7d42a963651c89c666a4c21499f2076fb3ab7aacd9b9a"
+  },
+  "DarkwingDuck_Data/Managed/System.Data.DataSetExtensions.dll": {
+    "bytes": 29696,
+    "sha256": "da75ceebbef879968aaa721090df162e7a6fe1c7ba32f4bb5d05523385c53e8c"
+  },
+  "DarkwingDuck_Data/Managed/System.Data.dll": {
+    "bytes": 2125312,
+    "sha256": "557bd378caa400c4de52bd73225a948f1a1e41586c52e307aaa042f77b33d648"
+  },
+  "DarkwingDuck_Data/Managed/System.dll": {
+    "bytes": 2641920,
+    "sha256": "0c49d192fc91f2eade9c12c3960d8b90161560507d96ebcc9d878a2390a2cac6"
+  },
+  "DarkwingDuck_Data/Managed/System.Drawing.dll": {
+    "bytes": 489984,
+    "sha256": "1657e6eb247364cd232fc6c80df1ab6804732b6644639f18c80e48af1174fd63"
+  },
+  "DarkwingDuck_Data/Managed/System.EnterpriseServices.dll": {
+    "bytes": 44544,
+    "sha256": "7fcc7078f244ab3a5e8549a8acd2905b71aa8a31dda917ab60817c5b13924d64"
+  },
+  "DarkwingDuck_Data/Managed/System.IO.Compression.dll": {
+    "bytes": 114688,
+    "sha256": "35242ddc40f673d10767e3ab3381718864170cffbc710501374e911df700fda0"
+  },
+  "DarkwingDuck_Data/Managed/System.IO.Compression.FileSystem.dll": {
+    "bytes": 18432,
+    "sha256": "e7f2784c57088326f8de52a79426102a2250c2f31922030e9fed0cb64740e242"
+  },
+  "DarkwingDuck_Data/Managed/System.Memory.dll": {
+    "bytes": 4608,
+    "sha256": "c4f030a2cba7da7cdcf493257c24560e203d355904aee490d645a935842f834a"
+  },
+  "DarkwingDuck_Data/Managed/System.Net.Http.dll": {
+    "bytes": 122880,
+    "sha256": "a6227de2834bc7019a10e69a7ca0bb0908d5092b8bc279ed428b27ecf583a681"
+  },
+  "DarkwingDuck_Data/Managed/System.Numerics.dll": {
+    "bytes": 119296,
+    "sha256": "711616207139cfbf471f4f344a32ade842077314f03c19a0846a98ecace3fc5d"
+  },
+  "DarkwingDuck_Data/Managed/System.Reflection.Metadata.dll": {
+    "bytes": 487584,
+    "sha256": "afcfd6c166fe0d59f45cc6363082806f6a7ea8ceed9dc6c75eec9fd79ccb5717"
+  },
+  "DarkwingDuck_Data/Managed/System.Runtime.CompilerServices.Unsafe.dll": {
+    "bytes": 19256,
+    "sha256": "fd67abc4c4af10affbcd42fd68a2a7bc361b26714afe6965d4d0d139459d8297"
+  },
+  "DarkwingDuck_Data/Managed/System.Runtime.Serialization.dll": {
+    "bytes": 934400,
+    "sha256": "aa96283b3009b39c4ed8dfcde146b0e0bcafa09f9be24a959d0c16dd6f54ae8a"
+  },
+  "DarkwingDuck_Data/Managed/System.Security.dll": {
+    "bytes": 320000,
+    "sha256": "21c2cc73f1cecc8b5bfc42171a22412dfd8e04ac42978de90c00ecb507583d62"
+  },
+  "DarkwingDuck_Data/Managed/System.ServiceModel.Internals.dll": {
+    "bytes": 215040,
+    "sha256": "c90168f6f28b2355c6c11d38ee39fa18f44ea839c877ccce8934bee50e7fb479"
+  },
+  "DarkwingDuck_Data/Managed/System.Text.Encoding.CodePages.dll": {
+    "bytes": 5120,
+    "sha256": "5982a26bdd3d682332e71001eb39fae5c29fc571cc0a4f6be3cfe37c43c6f7e0"
+  },
+  "DarkwingDuck_Data/Managed/System.Threading.Tasks.Extensions.dll": {
+    "bytes": 5120,
+    "sha256": "96150abdca5df4446b376560e069d59b3550212deda8cbdd316272f6b834f597"
+  },
+  "DarkwingDuck_Data/Managed/System.Transactions.dll": {
+    "bytes": 35328,
+    "sha256": "e5ff61cc9163810aa4c1fd9a00e929070e6733eca6d6669b7ece5169ec3739ef"
+  },
+  "DarkwingDuck_Data/Managed/System.Xml.dll": {
+    "bytes": 3160064,
+    "sha256": "ee620f038a3a2589a118f0e7a030fe398b082015fbf83ac1474fb55b521d0bd7"
+  },
+  "DarkwingDuck_Data/Managed/System.Xml.Linq.dll": {
+    "bytes": 136704,
+    "sha256": "638f8c5f44aab1fd5755fdf2873683f3ca0f0fb0a3aaecfdbf1d2c2280c5983e"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Animation.Profiler.dll": {
+    "bytes": 7168,
+    "sha256": "2a1dde5a2ac7dc1c080ab565b9b385acfcd501878d0c879d70405bf634f77c36"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Animation.Profiler.pdb": {
+    "bytes": 17628,
+    "sha256": "59db46eeb2fac2819b64b6bc8bffcc3a36a5f6753a6fa7dd98a2e347b56a22a9"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Animation.Runtime.dll": {
+    "bytes": 91648,
+    "sha256": "434b33add95f37cb85ab93fae7baec8fb94dea638ca6690ecb01edf71ec71fe1"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Animation.Runtime.pdb": {
+    "bytes": 52232,
+    "sha256": "34a2a940f5bd9d874b3cc8b941d1d47e79aff0a8a868221eea99864464fd07d8"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Common.Runtime.dll": {
+    "bytes": 55808,
+    "sha256": "4bbf196e9462958ba271dd6aa4b88d04d4709aba1df1e36cf1c471f8a0b0f9ff"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Common.Runtime.pdb": {
+    "bytes": 44012,
+    "sha256": "4d07d84120c0e164db7dadb8bfb808b8cf8c7b5e56ba6a9e05b95cbe6964aef8"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.IK.Runtime.dll": {
+    "bytes": 38912,
+    "sha256": "a060a8e53491491ded3be9b1ade7cf2a1956577c5065b156698501f1769e4695"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.IK.Runtime.pdb": {
+    "bytes": 32416,
+    "sha256": "184f0807a768938f95af604718fb108c5193721c365f8a556c0afa9ac834ee21"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.SpriteShape.Runtime.dll": {
+    "bytes": 110592,
+    "sha256": "bf2ed357adb7e582500f659473bd62a464254e123156cfb391a8078be2faaf81"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.SpriteShape.Runtime.pdb": {
+    "bytes": 66348,
+    "sha256": "488fd4235efdd123ff080c5c189d901089ce354d0793b6cd7d5457897acd6305"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Tilemap.Extras.dll": {
+    "bytes": 37888,
+    "sha256": "e6d452c91e7b224685be3459c5b5123f77d983d222b26f1cd7bde0b96bd50653"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Tilemap.Extras.pdb": {
+    "bytes": 29416,
+    "sha256": "61a832fe9751964ce5765ab60803a476ed08e55ee83d4d35ae9f4b58d629b9ee"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Welcome.dll": {
+    "bytes": 3584,
+    "sha256": "4e65788466ed3bd2f547647a2ce5dbf19277fff9d19140621abcf3b4a4bad59f"
+  },
+  "DarkwingDuck_Data/Managed/Unity.2D.Welcome.pdb": {
+    "bytes": 17228,
+    "sha256": "bb51d788f3f7bc93193c4ceb9c10bb075c1ce67e8fb133038924a70bd9042ae4"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Burst.dll": {
+    "bytes": 5120,
+    "sha256": "9399f351cf6f73bc174ba9ebdf6fba76adb1022a5568641e0f86de8990a70c0e"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Burst.pdb": {
+    "bytes": 17156,
+    "sha256": "e50728bd368cf8a9fdbf90701862fbdda6511258b8794f31254a19220461a659"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.dll": {
+    "bytes": 442880,
+    "sha256": "7c68b4ee81dbc43c3ca532f9718cc1821da34a41e20866a4d702734743b0526a"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.LowLevel.ILSupport.dll": {
+    "bytes": 5120,
+    "sha256": "ff50383f807f9692e4913b97e47d86fefcb8faa33d6d48cd3e3fd6fc7ffb448d"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.pdb": {
+    "bytes": 233520,
+    "sha256": "ebf77b9c6e33995c53db857d4036d8c4cc4acd5a40a0a0d040c66e9a8a38ddef"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll": {
+    "bytes": 4608,
+    "sha256": "247c302dc978638b193d58915d71ca5ec569af018db6ee57da472c41a57ca396"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.pdb": {
+    "bytes": 17440,
+    "sha256": "08fcf2af16bc7528961ba4700ba1b5a8ca45ed3cfff6733282fc40264bc9ab2a"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll": {
+    "bytes": 4096,
+    "sha256": "6538b16287ddc68de5c0935f39e61ed7820e16a026330ea59f2e8dafa893ce77"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PrivateJobNested.pdb": {
+    "bytes": 17424,
+    "sha256": "ee823e5d741f9af9d1ff369377023e68704d664f53685d056b73715345cb9746"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll": {
+    "bytes": 4096,
+    "sha256": "9ba729201c5d6b2c3033e628f38c99d6b3b9ab694203a67fdff1dff743e19894"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.pdb": {
+    "bytes": 17428,
+    "sha256": "2c04b8035f6f2437b9be949a57289ac6730911005eceaf941342326dc11d0cc2"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll": {
+    "bytes": 4608,
+    "sha256": "cab150af491d6a6816b6d6ecafabd3968852900113dc60572422fd31ffc9fc28"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.pdb": {
+    "bytes": 17548,
+    "sha256": "85beab58d2a0cdee73aeabf9c57c14ef66bf36e9b9604d2dcbb8a72f6768e6ee"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InputSystem.dll": {
+    "bytes": 1132544,
+    "sha256": "b757412862c0824760d50027c6356052bf36808c70b8ed24f1c6e5eda4a8daf8"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InputSystem.ForUI.dll": {
+    "bytes": 15360,
+    "sha256": "e2c828be04f55fd649c6e8d4e45f9e439266ba87d98fcc11dd5dfa4918b87fda"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InputSystem.ForUI.pdb": {
+    "bytes": 20748,
+    "sha256": "5d3f9bb9f0592e7d94952cf2a508510d49eca4abd799a6cd8d5a349608231e07"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InputSystem.pdb": {
+    "bytes": 429236,
+    "sha256": "518e9f7f89de7ec8385e37c0415e966824290c42d17b3f23e4bbbbaafae000a9"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.001.dll": {
+    "bytes": 5632,
+    "sha256": "7e9c2cb2a97de89f3403a230e16bab6ea69eced36e74d9346b2e112a3fc77714"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.001.pdb": {
+    "bytes": 17864,
+    "sha256": "f01071c9ce6f7c605536a423b173b686ebea7641f6c2469c8a5c4e9dfe6edddf"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.004.dll": {
+    "bytes": 4096,
+    "sha256": "18ffb507481d9625bf19872108d36f78a653f1a4a3fb01e5b81baa750dcffa08"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.004.pdb": {
+    "bytes": 17436,
+    "sha256": "77243ea22352da2daab55d71cbc0a062d0622bda655070ce537b7cb9602362cf"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.ObjectDispatcher.Runtime.dll": {
+    "bytes": 5632,
+    "sha256": "42ba22967724c9de4913c6499df41f438eb13e537cdf2701ad85ff461ef37492"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.ObjectDispatcher.Runtime.pdb": {
+    "bytes": 17784,
+    "sha256": "a376f1c0c050f3222b2b446eced7a2b7ad547d3514a3dd9aa98a44d9cf5fee91"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.dll": {
+    "bytes": 3584,
+    "sha256": "36dfea4681a974d233749f84c100039ac26233e148636beb015c04ec805028b1"
+  },
+  "DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.pdb": {
+    "bytes": 17268,
+    "sha256": "df27ee0020ea47ebfd2cf32df3ce8744b9f7bdf72d98cc869877fde02dd3e674"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Mathematics.dll": {
+    "bytes": 5632,
+    "sha256": "ced30e26017b1f07389996399c7b0a8a5a058ed9adb8366ae3bf2258435ff1ea"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Mathematics.pdb": {
+    "bytes": 17168,
+    "sha256": "40aa2e90ec0976d851913d197dda5a3dc120b6a7bf68cb3d1ce25878c8268d73"
+  },
+  "DarkwingDuck_Data/Managed/Unity.PathTracing.Runtime.dll": {
+    "bytes": 159744,
+    "sha256": "c2c90afdf6d310e97cb99d641f1eeebe176a9c01de471266351b4496e2878d41"
+  },
+  "DarkwingDuck_Data/Managed/Unity.PathTracing.Runtime.pdb": {
+    "bytes": 67332,
+    "sha256": "5447d2a36ae9d0d14586e263bd709db8518513a89fd9f789ac230c751f33231f"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Pipeline.Attributes.dll": {
+    "bytes": 6144,
+    "sha256": "2b06af4bffe9455c2875fad4bdad724ffdbe11a97e0b4d32e382ea412b3accd3"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Pipeline.Attributes.pdb": {
+    "bytes": 18120,
+    "sha256": "d2a5a74b8e8abe8efe286bab6412bfb46d89d0ab82e7e985c85e80793e4ba738"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Pipeline.dll": {
+    "bytes": 329216,
+    "sha256": "9f1df11091f8f37b62419cbf6b9110bbcfaa694c218c312bef0894152ec9f6c8"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Pipeline.IlInterpreter.dll": {
+    "bytes": 350720,
+    "sha256": "f198a47263ee3f024544c0815ccfbd74d144fbf1a082c6907c4c6fa3d420801b"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Pipeline.IlInterpreter.pdb": {
+    "bytes": 150784,
+    "sha256": "9b653986370d085f0e59b61cb1d2a8b793b130ef5cdca648ba0800bb934f7b81"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Pipeline.pdb": {
+    "bytes": 109792,
+    "sha256": "65e4bf9129de38605f71fd4709f4de2f1ed188846f943423d36db7a118d5f00d"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Profiling.Core.dll": {
+    "bytes": 10240,
+    "sha256": "8ae936ab1906b8cd8e64268d891ff4bc6ea5937fc1609576b942bdd8d683eee2"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Profiling.Core.pdb": {
+    "bytes": 20000,
+    "sha256": "795fbd3bec8f4c76f429dac6f7e031505b6148f57d0bd62f43c4069aa9227b03"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipeline.Universal.ShaderLibrary.dll": {
+    "bytes": 7680,
+    "sha256": "a6cfcc480c6ce9627e0c5f7c662680729de4132266e61bc3520577bb5997367f"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipeline.Universal.ShaderLibrary.pdb": {
+    "bytes": 17500,
+    "sha256": "b4550a229fd9f84d55c27e7f2b19f7866d8ab195b99c2badfac2820e2f2747ad"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.dll": {
+    "bytes": 1093632,
+    "sha256": "acd51433882e00b36fa412ade34d6edcf9cd46f915cda66269557d34697f3c3b"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.pdb": {
+    "bytes": 325104,
+    "sha256": "a671b9a7854b5638039fd2cadf718d3191bc34f346da22a81a40519e51d5d2aa"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.Shared.dll": {
+    "bytes": 11264,
+    "sha256": "ed7ac0c38d7a3d71dc3ebf05c4e7074b058e4b1b4fece7fff00c8aad91c2fb05"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.Shared.pdb": {
+    "bytes": 19692,
+    "sha256": "9c1ed5313a0092570054847781c9c29aa44d5fb2e2cd576bb6a1a878c539e93c"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.ShaderLibrary.dll": {
+    "bytes": 3584,
+    "sha256": "b3a1b681c51ece056b7d7e6040443cf8d82bfd8b6c07fba26f69f86bd24de618"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.ShaderLibrary.pdb": {
+    "bytes": 17196,
+    "sha256": "b3bc54de2aa66099ac4bde758d29580217758ac506152b1e7ea4f50a38e75e26"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.GPUDriven.Runtime.dll": {
+    "bytes": 299520,
+    "sha256": "c2cef860cd699d9f6bb8f8bdfafee6adc981f6cc61322dbdb443dfba0d3b90a4"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.GPUDriven.Runtime.pdb": {
+    "bytes": 118148,
+    "sha256": "b1edaaa63c3cd5e881d28329e59328ae8cae16bd2a94f003deefdd7c287c98e4"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll": {
+    "bytes": 3584,
+    "sha256": "438cdb74e3924de04ebe29738c6ebec7e187ca077503d2dec2f72ea053b6cff4"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.pdb": {
+    "bytes": 17196,
+    "sha256": "5c51ca3bb9e92eb772e4a29c64068bea41bba5e46f8eb5d8d2623014317114e7"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.2D.Runtime.dll": {
+    "bytes": 221184,
+    "sha256": "d53d1548c1357bc6bae608d6b0a692c8fe0c8c864c5ebe3dc456814941a9c8b7"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.2D.Runtime.pdb": {
+    "bytes": 111284,
+    "sha256": "222a583c9e399756b3f97cd2292a6d9ae78219e458ec8af14c6700116074714d"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Config.Runtime.dll": {
+    "bytes": 4096,
+    "sha256": "c6e57d588cde68c201abb1f24adf2fce9e711fe56fe7bd17c65291d705670ef9"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Config.Runtime.pdb": {
+    "bytes": 17280,
+    "sha256": "a88f8a0ba1dce0b9d1e900f101bf7714064f705ad6a0f68eeef683024567eefa"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Runtime.dll": {
+    "bytes": 759296,
+    "sha256": "e5d0c821d9eb081f3bfea9cdbfea6965f0ed40b32dca1819e6f07b9f2d05dc94"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Runtime.pdb": {
+    "bytes": 255436,
+    "sha256": "8f9e4a77a1e2a4a34a40297b2b62e9a895988a30ab646fa8fb608fe1e7c93f1a"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Shaders.dll": {
+    "bytes": 3584,
+    "sha256": "b8e5bcc9e3251bb185412d59fc9138954fbe38095b67eeedf083be16f3b3df53"
+  },
+  "DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Shaders.pdb": {
+    "bytes": 17184,
+    "sha256": "3af5f6a5a8171cdb754339e1ec91615ab518818ac891293d2526eee8d67c454e"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Scripting.dll": {
+    "bytes": 70568,
+    "sha256": "3a3706946f93113aeafbed6058eb38d35c2531ec7dc1f5425c85b748b40d20e0"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Scripting.pdb": {
+    "bytes": 29032,
+    "sha256": "0894f44c0cd7bd5020748ba99652d7c9cd279396e3571b3d28c16f856542ce8b"
+  },
+  "DarkwingDuck_Data/Managed/Unity.SurfaceCache.Runtime.dll": {
+    "bytes": 36864,
+    "sha256": "87277bec301f61eae127451b3e71c8d8c736ca3f7e2cab8ea1563960b30f3e2f"
+  },
+  "DarkwingDuck_Data/Managed/Unity.SurfaceCache.Runtime.pdb": {
+    "bytes": 27016,
+    "sha256": "5d2e376d67f6745cc6ad121c4712087bab863a618ab3b022abad091853a3fcc9"
+  },
+  "DarkwingDuck_Data/Managed/Unity.TextMeshPro.dll": {
+    "bytes": 443904,
+    "sha256": "3386c6e0ffc5c2d7cba1a225840285e63ee6d8a560c25d46831f03f718b3bd19"
+  },
+  "DarkwingDuck_Data/Managed/Unity.TextMeshPro.pdb": {
+    "bytes": 184340,
+    "sha256": "c52846dfc0f60da970a9c9e2ba567e7f087c42791ef03c01eab23c6b51107085"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Timeline.dll": {
+    "bytes": 121344,
+    "sha256": "d0ca19b8c52fabef2b1fb50722cf1f2fe6c1a5420f600b526ef38a6cdeb9cd59"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Timeline.pdb": {
+    "bytes": 67588,
+    "sha256": "f59d4a21fad8fafe756cfd3d88a258a1216584580db8512a2a8f2de323e90a36"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Tutorials.dll": {
+    "bytes": 5632,
+    "sha256": "a7b83e005ebe40305fcd8ee95be56a4b1aaf3d9446f5cbb269980b1d253f5e3e"
+  },
+  "DarkwingDuck_Data/Managed/Unity.Tutorials.pdb": {
+    "bytes": 18028,
+    "sha256": "fe2fc2718b2170487c8a7e1800cece570f57cfd418b79d94c7c12b1f08594abf"
+  },
+  "DarkwingDuck_Data/Managed/Unity.UnifiedRayTracing.Runtime.dll": {
+    "bytes": 105984,
+    "sha256": "f0345610b92d2a8887c2f68ce57418e9d388df9c0846d19c1abb7628ff3721a5"
+  },
+  "DarkwingDuck_Data/Managed/Unity.UnifiedRayTracing.Runtime.pdb": {
+    "bytes": 52188,
+    "sha256": "062c09880db4ee7bd2d69e0193140fef7a868396d711f7be250b7b89fb01be64"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.Antlr3.Runtime.dll": {
+    "bytes": 86016,
+    "sha256": "ed7ce205f66eafe39bbb5d084d42e7fe11cb4b386ff208e5d5110891be0b7b37"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.Core.dll": {
+    "bytes": 550400,
+    "sha256": "591c648ebcfe2cff49359358b71f870edf1c455b11d2bb3e1d831f504fde8998"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.Core.pdb": {
+    "bytes": 247288,
+    "sha256": "7693f71b5531dc70e5787da5c3d5b370f42f75ef8a2d788005e6e1f0192861b3"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.DocCodeExamples.dll": {
+    "bytes": 6144,
+    "sha256": "03c7ae77562e04151554d606ea38bf4422711249b7a2ca6b03770a63c54db3c1"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.DocCodeExamples.pdb": {
+    "bytes": 17304,
+    "sha256": "ace3c6971777508ef9e543071ebca4b19273de51cb8bd39b5b4253e4026cd59b"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.Flow.dll": {
+    "bytes": 335872,
+    "sha256": "6e9136a3f2372f8be13ca504f6d1b1784230f3d464c3c8b217e731f829280205"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.Flow.pdb": {
+    "bytes": 168004,
+    "sha256": "9a2c56f289865afd80028efd04970ed31e8e32c0b9b698bb69f6a6a3bf00075f"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.State.dll": {
+    "bytes": 27136,
+    "sha256": "6feace004dc76dfcccc52dd16826632dfb7ac1494fb4b7df076a7c2151233be8"
+  },
+  "DarkwingDuck_Data/Managed/Unity.VisualScripting.State.pdb": {
+    "bytes": 26872,
+    "sha256": "fe1c59fe0e692582c58efe663b7e34444373ed6ec06d4d6804ca09e28305fb74"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AccessibilityModule.dll": {
+    "bytes": 49584,
+    "sha256": "4288d493bbf9e04a8fc28840af2c98c51bf1a28d1ceee4bbbaf967fa2888f2fb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AccessibilityModule.pdb": {
+    "bytes": 20772,
+    "sha256": "4662d6b807066ceb7bf70577b1cd881df75f0bc97d36800d773da9b8d5439930"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AdaptivePerformanceModule.dll": {
+    "bytes": 122288,
+    "sha256": "a25dcaeb076ac26321cfb374896abcc888634090d775d86d48812ab42e58bddd"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AdaptivePerformanceModule.pdb": {
+    "bytes": 48720,
+    "sha256": "de197ceaa79462623464e94bb5846f09a6c3124845905f5624473f2b6298d8e9"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AIModule.dll": {
+    "bytes": 87472,
+    "sha256": "4f939f1d8ea83ba67324afcee2c7208a4edd6cb6b585c3cd2d451ea9ad936455"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AIModule.pdb": {
+    "bytes": 23060,
+    "sha256": "b91a2e937348cefbcd2bd3d952cc6ffc66752f758de5dda9a64a8114b540973c"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AMDModule.dll": {
+    "bytes": 21936,
+    "sha256": "e0162a0422c045c8605e00253d8207c5904fd74eeb31c0829e8f8f385fe7331a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AMDModule.pdb": {
+    "bytes": 12376,
+    "sha256": "89edbb7515146df0554da785016593ea9e0d678f7f71a9e9658935510d9fb339"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AndroidJNIModule.dll": {
+    "bytes": 121256,
+    "sha256": "99485c14aefa2d23da00252691c1af8501f87f1eeaa5cbe7d6504706bee7dcac"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AndroidJNIModule.pdb": {
+    "bytes": 40944,
+    "sha256": "aa40a3dfc15292898b4bf0ed2f7e605aa87f372ae51708bc208cd3f9e2edbbaa"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AnimationModule.dll": {
+    "bytes": 218024,
+    "sha256": "0302f993c0b09ae1f56583851b81016004ef53c4db3a08735bfe9e70444c9f7b"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AnimationModule.pdb": {
+    "bytes": 49452,
+    "sha256": "9cab7f0e7c12d6f2143c8fde08b96025a8a884612ebbd3ff26df53235ce40f86"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ARModule.dll": {
+    "bytes": 27568,
+    "sha256": "c7cf9a4f750f8cc7f74e0f9cf3e1d8a8564869b1519a480d0ed963fc75f3b6c4"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ARModule.pdb": {
+    "bytes": 10812,
+    "sha256": "543c001c2ef585b5d0869230fb51f8bb9df5edecaa7434bf2979e39c3c64eb66"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AssetBundleModule.dll": {
+    "bytes": 42928,
+    "sha256": "47b3c3781358fe56e99006dad55dc56ec465c7f8039b7d5c227fedeb8e5827cb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AssetBundleModule.pdb": {
+    "bytes": 13948,
+    "sha256": "1eec67ff273f704700abc614e33752cb91625a5e7afebd32d2a6e2bedc1e3e5a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AudioModule.dll": {
+    "bytes": 142256,
+    "sha256": "9372dad3a83e08562f28a7561ec6847167fcf6c8773e0ce61f4746bb6ec70bcc"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.AudioModule.pdb": {
+    "bytes": 31032,
+    "sha256": "32d25c020db6b1a136a5a9113aec3a322539a064822754c2a2f6db5589390c63"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.BurstModule.dll": {
+    "bytes": 337840,
+    "sha256": "6efea2b4288a2e5f7fe96f701a654ff8da77f43e8aa6938aef25ee20645ef397"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.BurstModule.pdb": {
+    "bytes": 170492,
+    "sha256": "c255c8a6bc522acc28b5395d1cc7cc584111adcaf04a29f81b75b18ea7e465fd"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ClothModule.dll": {
+    "bytes": 38320,
+    "sha256": "e7a4f1507a31cac7141a3b905843e2e302e632b9978e74116795bacfbb2c3cc6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ClothModule.pdb": {
+    "bytes": 11392,
+    "sha256": "7fbbc68172127b81d074238b2527b3bd2b0b7606fcd85a3c4747874b20ecafac"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ClusterInputModule.dll": {
+    "bytes": 30128,
+    "sha256": "67943811446b8c098635f9ffbca6698ddea1af13d4f4a737d56ce069ed3f26dd"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ClusterInputModule.pdb": {
+    "bytes": 10260,
+    "sha256": "d80a3da96a30033f83a29c8b5b6fa06994f924f838e75121f12295e2da2814af"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ClusterRendererModule.dll": {
+    "bytes": 28592,
+    "sha256": "10bbc8e41a8af3f39d76f1b9156094b8838697df1416199dbf08c7fa25d19d1f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ClusterRendererModule.pdb": {
+    "bytes": 10728,
+    "sha256": "aa8f167eaf5163ef964c810dddf8519e38363dfba71b9cf3b6530ab65daad22f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ContentLoadModule.dll": {
+    "bytes": 56232,
+    "sha256": "0beb31ac67a588c3e55ceae422a38f7e5964e750b5d828d0d1f92bd37e463f8d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ContentLoadModule.pdb": {
+    "bytes": 18096,
+    "sha256": "9565f466becdb411d30bb0aa21c1671e7cce862cbb8879bcfa91eb73fb3d6ad2"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.CoreModule.dll": {
+    "bytes": 2030504,
+    "sha256": "65f31f2076a46cec35712898748d12fc1cd65ecddf84db88d5eccb378292ecb9"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.CoreModule.pdb": {
+    "bytes": 499932,
+    "sha256": "0a28d9af808edbdfc05d37cdb5e1a9e2796615b03ba16e0c6749a4cd68b4316a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.CrashReportingModule.dll": {
+    "bytes": 28584,
+    "sha256": "5fb0f91747797572eb6b9cc2056c7df43061ff9ab3d366cd76c726ab3b7c7fb6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.CrashReportingModule.pdb": {
+    "bytes": 10892,
+    "sha256": "7dead507e42ecdc3475f7d8f22ee9fbd26b8d428ca20ba0202a0d5dedfe25803"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.DirectorModule.dll": {
+    "bytes": 42928,
+    "sha256": "257703447f26aa8d4332261591fbb1e8876d066fac3a96294d9808a0bc5eceeb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.DirectorModule.pdb": {
+    "bytes": 13808,
+    "sha256": "70b9646cac7987a27eace102418d6153f643cf5bc8e2383c830df7bc039efeef"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.dll": {
+    "bytes": 226224,
+    "sha256": "a29238e56cfc7fd59243dc0d6d02c8e55ba9687e7ae2edfb976bf17dbaf7be1a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.DSPGraphModule.dll": {
+    "bytes": 33704,
+    "sha256": "b2c43d1d6c5423ee7aa58df531b5c2437acd26f8184b5ad089f565e478f81a12"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.DSPGraphModule.pdb": {
+    "bytes": 10472,
+    "sha256": "7a1eee9235db74b460f96dcd24345ba80128082ab9597a0ec9118b4edcd80b4e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GameCenterModule.dll": {
+    "bytes": 46512,
+    "sha256": "93df0cac6f6da9c3ea1f7e2f059b1d7c415e877510537a9f88c068bed722c2e5"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GameCenterModule.pdb": {
+    "bytes": 16572,
+    "sha256": "e150529857d51c5c70113e8f10e6c3c42d418c50e5a7d220abd50f5f57d30773"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GIModule.dll": {
+    "bytes": 26024,
+    "sha256": "6522b595ac749d06e987c8ca2ebc6270e11c82df06e907c8b19b91b3bfa5afe6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GIModule.pdb": {
+    "bytes": 10132,
+    "sha256": "2e531763e4a336ecf172455f6edd22f6148db7e9718ed57c51bd8778de6b89c4"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.dll": {
+    "bytes": 14256,
+    "sha256": "d3863c590ccfe0ee84ad8c5176fd18482792d1f45584d64da41510dc3e5526bb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.pdb": {
+    "bytes": 10164,
+    "sha256": "33401feea15f5161f0d2414f98f38a8e49e64da5007f26a5b15daaac4c5fecbc"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GridModule.dll": {
+    "bytes": 32680,
+    "sha256": "1a2bdfea96f1b57321c8c16827fd54e618253de8ae55a667aac6d7983d40503f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.GridModule.pdb": {
+    "bytes": 10912,
+    "sha256": "4ed73c7db017e84accc2c6e069000b72e53f93f9705bbfc3dc9fe9612b30ea21"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.HierarchyCoreModule.dll": {
+    "bytes": 113584,
+    "sha256": "f9660a2636395df5b38c50b5c069076ba4ada71149ce8ad1151e642ba46099e6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.HierarchyCoreModule.pdb": {
+    "bytes": 35260,
+    "sha256": "22cb23d1445240037fdb53a95dc6daf85a8453c25506b1281ef5b99dc0dc697a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.HierarchyModule.dll": {
+    "bytes": 115120,
+    "sha256": "221689b7abecaaa217b3daf25c7d6cc83fb41419a0f5b0a2eede0507426e956f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.HierarchyModule.pdb": {
+    "bytes": 46656,
+    "sha256": "32156856312eecaa1cbbaed07d33b1d13bc380aa6bc4b5ef52a28f0b44af4081"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.HotReloadModule.dll": {
+    "bytes": 26024,
+    "sha256": "0171d5192ccaee9ab37a5f34339a8d304136fec3e0781801837cfebe8b8cee4e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.HotReloadModule.pdb": {
+    "bytes": 10132,
+    "sha256": "452d6a4e28958bf5fb328b9f5fbd7e74d53a9828183d92bd6739eed056da30de"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.IdentifiersModule.dll": {
+    "bytes": 16816,
+    "sha256": "9bd465e35ef75f9595e6ecee9d30001da51933fa0e3ff5c54b293383d00c8416"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.IdentifiersModule.pdb": {
+    "bytes": 10564,
+    "sha256": "2ba73d9055b349fc25249456aa91836ab3b3dca079ffd34519da6ef913d77a60"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ImageConversionModule.dll": {
+    "bytes": 34216,
+    "sha256": "d8f1529f511848756d41737f8bccaa4c0585a3c399ef9976ecdb6dcf2b574721"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ImageConversionModule.pdb": {
+    "bytes": 11344,
+    "sha256": "90742392dc32171b97840f6a590d3953788da76401fdc1f9a02f990662933c4d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.IMGUIModule.dll": {
+    "bytes": 191920,
+    "sha256": "f0319a9316157d87aa3c085b6a3bf1141884cf3fdd07f95989e3fd79f7442ed4"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.IMGUIModule.pdb": {
+    "bytes": 65780,
+    "sha256": "28de19cd8ef4b25972cc2ff803d06eb07c5e6508026738afd8ff78098d05cdd6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InputForUIModule.dll": {
+    "bytes": 56744,
+    "sha256": "358c70d4363e547a6ebeb589205647b2959279bd681e781a7196465501ef7a39"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InputForUIModule.pdb": {
+    "bytes": 24260,
+    "sha256": "e9233593398f6a43ef4261caad56ab272e44556b53c108817abf00d2861e7a50"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InputLegacyModule.dll": {
+    "bytes": 42928,
+    "sha256": "03fdf9591b60072e58b3359dbe9b4f837d69219fbc526fa5fbb256359afb9c52"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InputLegacyModule.pdb": {
+    "bytes": 14284,
+    "sha256": "073c8ca82f18d409da6792cc4886c5ef0d6a53ee6a6fa2c061c0500aeb222a75"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InputModule.dll": {
+    "bytes": 32688,
+    "sha256": "1dfb88c68d3c2a399a8cee3bbb971ada4e8238b2fcaae0098c34e828f3d8df16"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InputModule.pdb": {
+    "bytes": 13440,
+    "sha256": "c7385bc1e7bfcbccb510c641d02e31abd10e00dd69b6ee218e1456888b55d109"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InsightsModule.dll": {
+    "bytes": 15792,
+    "sha256": "fc65f05af151e36db204ca1150d37c4ac8385c64cd0dbb3fdefc73f4bb9c53bf"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.InsightsModule.pdb": {
+    "bytes": 10924,
+    "sha256": "b9a68305c58b22f845b769a9373ab83be94f595a0c5081249a2ea844978d6eec"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.JSONSerializeModule.dll": {
+    "bytes": 29096,
+    "sha256": "f45ab4f397b6e76822acbeac85c21a5afcff6d328223feaff55b20dcce14f090"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.JSONSerializeModule.pdb": {
+    "bytes": 10620,
+    "sha256": "14a2bdde235fac6858158837ccaef439fcb70bab219fc4c82ff4c8e9df3d7fa0"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.LocalizationModule.dll": {
+    "bytes": 29096,
+    "sha256": "c442036fb4e48d27931214c4ff7005e9ef829bf68003c4b9415bfca486564c6d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.LocalizationModule.pdb": {
+    "bytes": 10560,
+    "sha256": "8683abce6de0a7990e74aa761f63476c73464f6d190296876cdce25667c98d50"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ManagedKernelModule.dll": {
+    "bytes": 14256,
+    "sha256": "3dd265d0e90b30b85a3e0be70d1912f8742d997c852630b44132edcb2e7f5c92"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ManagedKernelModule.pdb": {
+    "bytes": 10164,
+    "sha256": "0ac957c444446462cd9e2c8a9c84a763ca99c45f81ac257f831aeafc1581235d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.MarshallingModule.dll": {
+    "bytes": 100784,
+    "sha256": "c6ee04460a8a0dfb1ee8cfb88eabce3284a4b368b0baa57d61aac6318c4bd422"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.MarshallingModule.pdb": {
+    "bytes": 17104,
+    "sha256": "6565912c951e80916ba6e8092c1defa3a90d4d7c2a8760aff35c4114a449f261"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.MathematicsModule.dll": {
+    "bytes": 740776,
+    "sha256": "90fbb7f615feace08ed4e0d4b867e1fb2cf2f0282ad506a601c214e23e7c7663"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.MathematicsModule.pdb": {
+    "bytes": 324472,
+    "sha256": "12a78fb1ce4fbb2184e1aab8a6c9cf3d632c3f0ad7d721647edb836f565b5fcd"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.MultiplayerModule.dll": {
+    "bytes": 18344,
+    "sha256": "f8fb69a016f8f01589448cef8024c0c1a9329d85ad3e641810dacf345e757b8c"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.MultiplayerModule.pdb": {
+    "bytes": 11320,
+    "sha256": "740970be7d412749fac5164f0defa9e33f2a6e53852b001e565b8e7ab5bf62c5"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.NVIDIAModule.dll": {
+    "bytes": 41384,
+    "sha256": "cceed34c83031a20d2d5f3318aa726cb07f231c26b45612298190a6cac5bdf05"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.NVIDIAModule.pdb": {
+    "bytes": 15572,
+    "sha256": "80d25b71b89d11b8391eec13184f29311b8f3e441403269f6d508aaf367fa878"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ParticleSystemModule.dll": {
+    "bytes": 169392,
+    "sha256": "e405346366a594ab27d52eb75860174281abcc9b58ff1f49252371e978dfe235"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ParticleSystemModule.pdb": {
+    "bytes": 36116,
+    "sha256": "5d6f0a97bf2a1b37b56cfff379b0d31f1c5c8b107e1024e79c9691b2da19521c"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.pdb": {
+    "bytes": 13180,
+    "sha256": "48347dbb550a2b8486a901f412ff0c592776f0fc70fd0667e29d1c691f2c4f39"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PerformanceReportingModule.dll": {
+    "bytes": 27048,
+    "sha256": "441f88274973b15592789d82ced9711e768b7a2e6e485c2b101ca3cc0b52ebd5"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PerformanceReportingModule.pdb": {
+    "bytes": 10380,
+    "sha256": "61131aab625d913f5fd27385350b4a72a5635e36b7659ccc0d19156f393b291b"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.Physics2DModule.dll": {
+    "bytes": 222640,
+    "sha256": "ecc0fdd8b6077957f4cee3e15991cd253a845ad8874919cefd49d57ddffd44e3"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.Physics2DModule.pdb": {
+    "bytes": 43444,
+    "sha256": "7b42437bdaf838336f5f149ae4d86031a20eb244dec70364b70b08ebc204f2bb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.dll": {
+    "bytes": 14256,
+    "sha256": "291ef8aff4a6c65298666936e64cd60026f8669bb36b0ef5b212ff1e564a20f4"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.pdb": {
+    "bytes": 10156,
+    "sha256": "4e25b258fbee437f5f7a868f81a8e6399eb1a98b00c116c663a558ba0854d695"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PhysicsCore2DModule.dll": {
+    "bytes": 482728,
+    "sha256": "d3916749ae229b80f4ae5dc2fa2ac497d90444b703af1c0b0523eab6dd23cb72"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PhysicsCore2DModule.pdb": {
+    "bytes": 115088,
+    "sha256": "9f3017389ec947456bfac6c1a7d4af0b2c03b3ee5349c81348fe2b45bace2b66"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PhysicsModule.dll": {
+    "bytes": 181680,
+    "sha256": "b4efe48820d9d36bd71787b56fd4dadc69864e11c169253959164d411c78427b"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PhysicsModule.pdb": {
+    "bytes": 39968,
+    "sha256": "81ec815e1d98666984cad4f5acef4a77108cf3c701b6ea19cecb9bcfbdec6ec2"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PropertiesModule.dll": {
+    "bytes": 124848,
+    "sha256": "428dd1419f4848e6addc8fcb6779d335eb1a733ea56fa3a1d5ffbb0834604beb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.PropertiesModule.pdb": {
+    "bytes": 51876,
+    "sha256": "2e9e5492bf363e9760dd55d6eed60a9c4d070116677ffcd20181dc2ac9f436db"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.RenderAs2DModule.dll": {
+    "bytes": 27568,
+    "sha256": "c1d6e97a3817b550d207c9cb8f3b485b0200943c5e25daef678083fde49cbe8d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.RenderAs2DModule.pdb": {
+    "bytes": 10192,
+    "sha256": "4fc24e29e43937e721105b287665dd21d29519094d78347cfe16703dc3e3263e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll": {
+    "bytes": 26024,
+    "sha256": "4303986bd4e0e84ee35cf52617b20529d8933a4642fb9e287a0742b5f72a5005"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.pdb": {
+    "bytes": 10200,
+    "sha256": "3a485580046e9186255483d0db1e8ffacc1380a1c6b970a327f664f8ba053fe2"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ScreenCaptureModule.dll": {
+    "bytes": 28080,
+    "sha256": "dbfac5eb3d098db8223be80ab706a448d5315c52a515e042f0510068d414c58e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ScreenCaptureModule.pdb": {
+    "bytes": 10664,
+    "sha256": "29fd4edc070dd846cbfb24e512f0671c3c4e388248e0f53520f9296762ec78e6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ScriptingModule.dll": {
+    "bytes": 65968,
+    "sha256": "e61e45e836a128257159e98c1d165255149ddc0abcd839571c697a8b6b1c11bb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ScriptingModule.pdb": {
+    "bytes": 24592,
+    "sha256": "6b4b6aa5651b97722e269570aac9f6671b16292b076ef1b81cf2fbbcfc058562"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.dll": {
+    "bytes": 26024,
+    "sha256": "706ee6f2d2f8cf27bd0fe26aa91bf788a80b29836827a2d6692e82980bd10a02"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.pdb": {
+    "bytes": 10264,
+    "sha256": "995dcccc0e5232ff1efcd3b1e016c17e0f84c17fbdb0464b6cf99c3c99bdadb5"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SpriteMaskModule.dll": {
+    "bytes": 30632,
+    "sha256": "712dd50dce3a0f4aeaca4827be8a096dd3e61769f4293a54043e9a8cae14d70f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SpriteMaskModule.pdb": {
+    "bytes": 10480,
+    "sha256": "a674ea975524fd7bff040f3c3da56b0ee96d5b5d1121fa35d37c4faaa2f3d4f6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SpriteShapeModule.dll": {
+    "bytes": 34216,
+    "sha256": "3cdce47ae7609630805bd5b72b4edae11f98b9a7e4f6c1afea79a6f88e977b7d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SpriteShapeModule.pdb": {
+    "bytes": 11528,
+    "sha256": "8fb1a97baa0055de4b71578f0cce3aebf8d52d08d53ccc56366abee39c7f49eb"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.StreamingModule.dll": {
+    "bytes": 28080,
+    "sha256": "e8a82a115bc37ae619ca5939159f3803b5bf200c1c712f6110bc4adaff55143f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.StreamingModule.pdb": {
+    "bytes": 10220,
+    "sha256": "d23bec900045e42d054634bf7aac749a2b2d1732dfa8123762f09bccd9217929"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SubstanceModule.dll": {
+    "bytes": 31152,
+    "sha256": "5922edf5c3968b50e641bd06bc31ce269dcdfd6210fc47e2a4537f0d0c47e30a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SubstanceModule.pdb": {
+    "bytes": 12088,
+    "sha256": "af790a4640eb6b892eca091559d2e918d6bf94258ef83e57c65e8de4fdae4cf6"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SubsystemsModule.dll": {
+    "bytes": 42920,
+    "sha256": "192da294e7430aa0b3fb25205dd940657e9e38526ce13253f1c97f306fd5ed2e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.SubsystemsModule.pdb": {
+    "bytes": 16104,
+    "sha256": "892510e5431f02de96efe3f0965e75a9f11a7e702d498ab17dabb8bc16b9b649"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TerrainModule.dll": {
+    "bytes": 132528,
+    "sha256": "24260b97586835a6489a2129dde75f3d4256d5d4b36781639de1eeaa27f33cdd"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TerrainModule.pdb": {
+    "bytes": 29136,
+    "sha256": "09265ecb2582c0f349c961b715088b05265a0c0a032e0cd5cedd209726e354e4"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TerrainPhysicsModule.dll": {
+    "bytes": 27568,
+    "sha256": "784060eba0f234b0a3c300c0c7cf907787b1d63cc4cd38536075fd0789ce12cd"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TerrainPhysicsModule.pdb": {
+    "bytes": 10580,
+    "sha256": "0bacbe1adfddb58f89832b5ba14d1de124d3ba487ac4db4fae9de9a09209f460"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TetgenModule.dll": {
+    "bytes": 26032,
+    "sha256": "198ad6a73dcd2a9e8089ca893bf00f6e912a4501d11a0b59cd666c1f38de41de"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TetgenModule.pdb": {
+    "bytes": 10132,
+    "sha256": "51ff3eb5df0e4347ef023306ed3d63e475a1bd8ba5a4489385d1a0cebb952013"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll": {
+    "bytes": 86440,
+    "sha256": "c83e99cdb63b29b67fce89e2440eaa80907f56da3d436c23a4513b008c0de483"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TextCoreFontEngineModule.pdb": {
+    "bytes": 26484,
+    "sha256": "4c1845de714767fdaf96e4aa487e8aed720efbe1c81576aefc927fd92c10d906"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TextCoreTextEngineModule.dll": {
+    "bytes": 314792,
+    "sha256": "f3c43a7aa04573c8f00ff70806225e71378eb1c7e8aca63eb96f742114cd7376"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TextCoreTextEngineModule.pdb": {
+    "bytes": 117020,
+    "sha256": "f64bf599c8112395361cb41edd44a5684cb6a4ce007ac5f4b827822757d82730"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TextRenderingModule.dll": {
+    "bytes": 39336,
+    "sha256": "48918af4370c6d6f6a5062fa3df10936d8fd7130ef6d22dc5b9092ad0b4a0515"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TextRenderingModule.pdb": {
+    "bytes": 14660,
+    "sha256": "a085442f71ade2ea01f383a71dbc9db2e09087978dd9fbdd76f7c986997e4612"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TilemapModule.dll": {
+    "bytes": 75688,
+    "sha256": "ea96f44f98e4bdf43baa39cad7f01cef6677a0a557ccf9acbd7ffd27bf30f593"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TilemapModule.pdb": {
+    "bytes": 22984,
+    "sha256": "c3debe94477cbdbf3b75d8af71c833a8aaebaed519bb2da4c7d2814bdcc42d31"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TimelineFoundationModule.dll": {
+    "bytes": 167336,
+    "sha256": "544b1eab2d14b895d85604060a045344034fbe68f9507fe66a87192b113ef0e3"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TimelineFoundationModule.pdb": {
+    "bytes": 81040,
+    "sha256": "fcdb3a4eb096ce8e090f18211a9c6c2ecf86992fb32b1eeb34b0cab176ec771a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TLSModule.dll": {
+    "bytes": 34224,
+    "sha256": "3b61d20b9971ccfaa563a449418c4139ff103a5d9985f504d1a28e1e4026c23a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.TLSModule.pdb": {
+    "bytes": 10320,
+    "sha256": "361479af14d7eaed95639ccce4f0b3f695dfd363a51722a8bf1989ee1b7cbad5"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.U2DRuntimeModule.dll": {
+    "bytes": 73648,
+    "sha256": "9b585a00d2a01c0dde0047780bc356b2de1586694dd23d0806ac6dfd7f893206"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.U2DRuntimeModule.pdb": {
+    "bytes": 34080,
+    "sha256": "7c5addb79b7b2f7723e516f1e07b962b7defebca519b25223ac18fa8fd55c123"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UI.dll": {
+    "bytes": 269824,
+    "sha256": "ffc7dcc2197603a9e6ee97400778f36ac6b8c7f1307998a0fa712521e8da7806"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UI.pdb": {
+    "bytes": 139744,
+    "sha256": "92087f887f05a7e9da41fa209bc9a6da37c003710ea82572b969ad9f5da5a68a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UIElementsModule.dll": {
+    "bytes": 2545064,
+    "sha256": "d9af54209d4264f7696333a3fa5e65eaa10522999d7e197ecbf655e0cd01a90a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UIElementsModule.pdb": {
+    "bytes": 1009504,
+    "sha256": "a08a27dea3c1a5fd17e1876fc2c1ada56071b3012e80276eafbcf8d2d7e4e3c8"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UIModule.dll": {
+    "bytes": 57256,
+    "sha256": "d5fff86e52bdeb4b3ba44d1e3e35f095ef53a8afa1cabb042049ad810815924e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UIModule.pdb": {
+    "bytes": 15704,
+    "sha256": "0ddde9e1d9e819e64617682765da13705d5cdb04ba1b38d141e4465e609674de"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UmbraModule.dll": {
+    "bytes": 26024,
+    "sha256": "9da8bd35a22fd296f4adbd122118128bcd09cafe9329d21f1ea0796d103bee1e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UmbraModule.pdb": {
+    "bytes": 10132,
+    "sha256": "6c2afd57466888db6dbff0747d1853b7d3ef7f9a1a6f7424ba14977793152cd7"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.dll": {
+    "bytes": 36776,
+    "sha256": "d3a791bfdd96ead6f59efc8dfd6f8fd76a54e3833a0a5b18a63c5b2db07c0d1e"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.pdb": {
+    "bytes": 13908,
+    "sha256": "866c2ad008051c8ee26e3191dcac53f113cae34949099b2a4a42862d32a6a4e7"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsModule.dll": {
+    "bytes": 61872,
+    "sha256": "1b37bc7eec19a7e3760a6406143be94a42a0ee21435aa77a1f82423078243414"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsModule.pdb": {
+    "bytes": 18588,
+    "sha256": "752397f2e93bbe17cdbc844696956c20f858c44111eaf6205abdfbeda848923a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityConnectModule.dll": {
+    "bytes": 29616,
+    "sha256": "4124e8a53d17edcf12bb7be7b5bac7f5ab10cc213cc8d11bd331f03b143d2d13"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityConnectModule.pdb": {
+    "bytes": 10700,
+    "sha256": "117e341606a43aca7bc31d10621f4c36518ac44a805faafa42893695a4d34a13"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityConsentModule.dll": {
+    "bytes": 16296,
+    "sha256": "82541b1999e87e5c1c93a97bb7091bf5b7da16dc6c2b035c514574f26bac178f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityConsentModule.pdb": {
+    "bytes": 10704,
+    "sha256": "1c890f9db38a2034a17c977a3379a62dbceda6f05d1f69dfd7b7538776210f62"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityCurlModule.dll": {
+    "bytes": 28080,
+    "sha256": "b78090c68e5db9f3b41f90e863391821b21ee038122ce6acef05974cbfdaf630"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityCurlModule.pdb": {
+    "bytes": 10528,
+    "sha256": "a779431c5ac6d51ecdfcd283caa3f70104f4b477f483aa9f61d484e2a0866055"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.dll": {
+    "bytes": 30632,
+    "sha256": "fb594d87ece1ea7854923c3fe6adcc56e0aeff2777277c063c1ca7f7e9ec251a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.pdb": {
+    "bytes": 11420,
+    "sha256": "5ef70a342e65796c3c4fab00574ec480b3d60f99f4185ff91323d95d524ba664"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAudioModule.dll": {
+    "bytes": 30632,
+    "sha256": "4d05e355b3503f9dbdfe80132cc2c7ba8a79187f35800310eb5ac333eaa60154"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAudioModule.pdb": {
+    "bytes": 11472,
+    "sha256": "7cebde4338750dedd16c208b74470d17f64237fa4ce8048609856d2b62e449f1"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestModule.dll": {
+    "bytes": 81320,
+    "sha256": "af264bc2656e3b3ff1d25741b8dce6c70a0bde27b858bcd4d0e6c8308f7de839"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestModule.pdb": {
+    "bytes": 27880,
+    "sha256": "702c7833e3e1e94b7c3894f877dc58b5df3965e601bf8b42727f0b7d2bcef046"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestTextureModule.dll": {
+    "bytes": 29616,
+    "sha256": "55a2c741287949b450f4a5e74259b9dec6c45b80983b61c2b3840b135dd8ce14"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestTextureModule.pdb": {
+    "bytes": 11476,
+    "sha256": "0d1599149cbfe6d3feec59dd6dfd68481161e0e5fd34af120a2461f273b3115c"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestWWWModule.dll": {
+    "bytes": 35240,
+    "sha256": "1bed8e10c3518ad2d069b3105be78e910271f2c5876883bc0234b4cd9e85699d"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestWWWModule.pdb": {
+    "bytes": 13112,
+    "sha256": "d0982ecdf82f8e888e0db7d875b4a8b3ed22ad484a07ec578f813384947e3362"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VectorGraphicsModule.dll": {
+    "bytes": 231336,
+    "sha256": "b8920eb946e89f09a6fc0329a8c69df54fb3665c757c25a42326681cda5bf455"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VectorGraphicsModule.pdb": {
+    "bytes": 104812,
+    "sha256": "d23be030b5d9c7a4ef17ac9af492c760f48c48d910a51efc4d9b8f99ca8bd535"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VehiclesModule.dll": {
+    "bytes": 33200,
+    "sha256": "4cd42f969901539a6fdba19032f334f6af0e7007339e68644412e0822e808c9a"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VehiclesModule.pdb": {
+    "bytes": 11200,
+    "sha256": "1fc72c62d2c1c3404b64f23599864834484735cdfa2e936765a180c452f5eb35"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VFXModule.dll": {
+    "bytes": 82352,
+    "sha256": "ae342249b5be5b8a0a3b48723f4ff2f0d3559850c8a15e502748d7540a20f924"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VFXModule.pdb": {
+    "bytes": 18680,
+    "sha256": "8568ff9d0c6a6fd0371e171676177526778cf0a195549b0ce79ee2c5d504c3a2"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VideoModule.dll": {
+    "bytes": 48552,
+    "sha256": "a33add02ea506e62b75a630d99ff81dc262b8b8d5fc3564deac6728751f51557"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VideoModule.pdb": {
+    "bytes": 14416,
+    "sha256": "9727e50cc4839e9878eee4c25b5711ca1853b77d93001b35661aa7a4cf8e46f8"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VirtualTexturingModule.dll": {
+    "bytes": 43944,
+    "sha256": "fe2da6222030123bf05c494e2f92542e831fc03374fb37947d693c72ba7f5800"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.VirtualTexturingModule.pdb": {
+    "bytes": 13288,
+    "sha256": "204dee6f781866dda0b22d898d90d35e7c41905a9e6baf61a3c8b3bb53b1d2d9"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.WindModule.dll": {
+    "bytes": 28584,
+    "sha256": "4d2cc53b917356115bac69d3bc0f795dca91a4a64981f6fea092ea397d19562c"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.WindModule.pdb": {
+    "bytes": 10276,
+    "sha256": "82de1e66f086e5f9c968e3f8d1b25910a5ffc9309d1c4f53f5ded56313cdfab4"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.XRModule.dll": {
+    "bytes": 96168,
+    "sha256": "0e34a02864d6a9f7ab0d6478d0109333bf7f40a979293c1928c63a33b3c3ff0f"
+  },
+  "DarkwingDuck_Data/Managed/UnityEngine.XRModule.pdb": {
+    "bytes": 23548,
+    "sha256": "8a10a2b4b0749f5c39260329bf32deab3c2d708505aee92e0c3a7e886a2ff0ac"
+  },
+  "DarkwingDuck_Data/Managed/UnityPipeline.Microsoft.CodeAnalysis.CSharp.dll": {
+    "bytes": 5758464,
+    "sha256": "6ca7115fb0256a4d415a73fe7e264d23c89d6d4019ac463fe519bc9097fbdf9b"
+  },
+  "DarkwingDuck_Data/Managed/UnityPipeline.Microsoft.CodeAnalysis.dll": {
+    "bytes": 2589696,
+    "sha256": "83836addf8d51df5d6d8cff3c43c1663655bdd85eb539b44a56dcd96ff2297a0"
+  },
+  "DarkwingDuck_Data/Managed/UnityPipeline.System.Collections.Immutable.dll": {
+    "bytes": 243712,
+    "sha256": "fb05543596e537d7a4383c7330b181cf31151e985578c57a8b5eef00c6c8a460"
+  },
+  "DarkwingDuck_Data/Managed/UnityPipeline.System.Reflection.Metadata.dll": {
+    "bytes": 517120,
+    "sha256": "3de473fbc3e3e01eef020cb82cb6a3eb288959e24e65175182a818c9d09dbe01"
+  },
+  "DarkwingDuck_Data/Managed/UnityPipeline.System.Runtime.CompilerServices.Unsafe.dll": {
+    "bytes": 6656,
+    "sha256": "6f2becafbd15867d52bfad08f77a23d26c818e55473d6347aef41130572f14f7"
+  },
+  "DarkwingDuck_Data/Resources/unity default resources": {
+    "bytes": 5919584,
+    "sha256": "696b9afaee02b5d45978634f1450ef18423c19177933b997fd8ee364d70cdd61"
+  },
+  "DarkwingDuck_Data/Resources/unity_builtin_extra": {
+    "bytes": 527988,
+    "sha256": "ad068a4704fb8d26fb07a431534d36be1264369a3e32eb732d3b276015484970"
+  },
+  "DarkwingDuck_Data/Plugins/x86_64/libonigwrap.dll": {
+    "bytes": 551336,
+    "sha256": "c22db1e7be04c50eb47e67362bf705830bb95df30c02c22dd7add835ee777583"
+  },
+  "DarkwingDuck_Data/Plugins/x86_64/lib_burst_generated.dll": {
+    "bytes": 806912,
+    "sha256": "99b0e3e916379de91e6979532d9c684806768905bcbd3f087d5ac1001ceb1c9a"
+  },
+  "DarkwingDuck_Data/Plugins/x86_64/lib_burst_generated.pdb": {
+    "bytes": 4489216,
+    "sha256": "2e4e620504425b6ffe1073efb526353cc1e7242958c3ae845eaeb1498f3ac03e"
+  },
+  "DarkwingDuck_BackUpThisFolder_ButDontShipItWithYourGame/x86_64/lib_burst_generated.txt": {
+    "bytes": 280392,
+    "sha256": "2c1cdc6a1ed5fb4498c510eef4c8a9adbc6435fd0a1afef03589510e754d7625"
+  }
+}
