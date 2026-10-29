@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "date": "2026-10-29",
+  "issue": "ZERO-52",
+  "parent": "ZERO-50",
+  "qoderCommits": [
+    "7eca9e8",
+    "21f91a3",
+    "10a7ea9"
+  ],
+  "integrationCommit": "76003e1",
+  "driverFixCommit": "6b25b78",
+  "verificationSha256": "e7e3e00266d843e87379ac7826cd665feec79c99fb4e3f8af597bfec9baf9056",
+  "driverSha256": "42dc2bd357df03abe55fffbb63d3c307ad0a88f03f202cb83cd87003f38bfec5",
+  "executionRoot": "D:\\Art\\SW Code Zero Unity Builds\\Mission3-Liquidator",
+  "sourceHead": "6b25b78",
+  "runtimeChanged": false,
+  "driverCommand": "bash Art/Tools/DarkwingResearch/cost/cardrelease_mutation_proof.sh Art/Temp/ZERO-52-orchestrator-proof",
+  "driverExit": 0,
+  "newGate": {
+    "baselineExit": 0,
+    "mutants": {
+      "wholeGuard": 2,
+      "worldGuard": 1,
+      "reason": 1,
+      "holdSpan": 1,
+      "ownerSelection": 1
+    },
+    "namedDiagnosticsRequired": true
+  },
+  "oldGate": {
+    "ref": "49998cc",
+    "reasonMutantExit": 0,
+    "holdSpanMutantExit": 0
+  },
+  "observations": {
+    "releaseFlagReasonSpanEach": "7/7",
+    "validOwnerSelection": "7/7",
+    "validNegativesEach": "49/49",
+    "holdSpanExcluded": "14/14",
+    "probeFreeWindowRows": 16,
+    "probeFreeMismatches": 0,
+    "oracleOverrides": 0,
+    "firstUnsupportedPoll": 2379,
+    "anchors": 140,
+    "timed": 298,
+    "running": false
+  },
+  "driverNegativeControls": {
+    "existingOutputExit": 1,
+    "dirtySourceExit": 1,
+    "dirtySourceBytesPreserved": true,
+    "wrongOldGateCommand": "bash Art/Tools/DarkwingResearch/cost/cardrelease_mutation_proof.sh Art/Temp/ZERO-52-wrong-old-gate HEAD",
+    "wrongOldGateExit": 1,
+    "wrongOldGateDiagnostic": "PROOF FAIL: mut2_reasonDropped/old expected exit=0 and diagnostic=cardrelease gate PASS",
+    "sourcesRestored": true
+  },
+  "evidence": {
+    "Art/Temp/ZERO-52-orchestrator-proof/baseline_pristine_new.csv": "6502266a1b5410e236637ad95800892aa939d2ebe4a21551b79a705127e85e81",
+    "Art/Temp/ZERO-52-orchestrator-proof/baseline_pristine_new.txt": "8776c6a4967d7ee2076e8d75e295f385677f3f9ab9c3ed481543fa62bdd343fa",
+    "Art/Temp/ZERO-52-orchestrator-proof/cardrelease_probed.csv": "6502266a1b5410e236637ad95800892aa939d2ebe4a21551b79a705127e85e81",
+    "Art/Temp/ZERO-52-orchestrator-proof/cardrelease_probed.txt": "107c03230dd45e1b2a4a1c67db09b893ef32b7841abdd688cc94e6363dc300b7",
+    "Art/Temp/ZERO-52-orchestrator-proof/clock_probe_free.csv": "e6b35cf47925f8ad625b5e7f805490b42ae9ad984db9a16a1615db842c78687d",
+    "Art/Temp/ZERO-52-orchestrator-proof/clock_probe_free.txt": "d933a4568b8b67d2a28321a3b461ce4c544794f2d3ab81270ab043dbbaffa56e",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut1_guardDroppedWhole_new.csv": "670882f3970e3157c4b0beec4a5621fc3a8837e655de8aa2c1b1d1be9424d81e",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut1_guardDroppedWhole_new.txt": "20cbd13bd2f45692359457176f336081ca595f1c09e60cf6b13d001356ba53ac",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut1b_worldGuardDropped_new.csv": "be0591d4bf07e79db291133f867e9aa9779d946e60dd4c77714c0cea667464bc",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut1b_worldGuardDropped_new.txt": "269919f511821cb9bbd82c493e24ae450f4d21e9d8f467aa87d4368848afb2a5",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut2_reasonDropped.expect.txt": "31fdc1b268b26b49b28fdf6f4a534ab1dda634d435f45dcb02508cf8edece38f",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut2_reasonDropped_new.csv": "28607ad2c230d6aa211817904bc59e8bb740afd4b98948d62ca1f546409a3df2",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut2_reasonDropped_new.txt": "893b1795bc62b43e2d8d9323642d920aa20b9c9e01e3172e392c582a82bc7120",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut2_reasonDropped_old.csv": "760f0b2e5832eebe38fe4b345f16ac0863c168cdfda55760bc48f42c40670445",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut2_reasonDropped_old.txt": "fe2773a0142d873be828fbda06c051afc1e336318e557138a096f60d0249deac",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut3_holdSpanDropped.expect.txt": "9761784a1794021962275faba164a6dffef75126f3c53bf6a68f600916655d24",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut3_holdSpanDropped_new.csv": "3e8f293b1a50daf4c67b39d833df46b3ab478d424157d8454572766a7c4da1d1",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut3_holdSpanDropped_new.txt": "0e4d1992a9aae5e858af684c978fa66863f5473be2e9c1251ef6060cffa64f7d",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut3_holdSpanDropped_old.csv": "228627305fea160eb8b9684d0c3dd94c984cd8b7f2519694516e3453c6f03e44",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut3_holdSpanDropped_old.txt": "c005fbcc40bd7be40eaff543c5afbfafc527f67618c8656b7d9685e94bbd42b0",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut4_flagAgnosticOwner_new.csv": "64690b99ccb8bdb0be379b0232a8c6ac43098fd325e86eeb80402fb93ce43ca2",
+    "Art/Temp/ZERO-52-orchestrator-proof/mut4_flagAgnosticOwner_new.txt": "23d0c6e8ed3ffda195202c2452ebbc6be05cb4be3dd152c4dda5810cc68b3cf9"
+  },
+  "scope": "Verification only; runtime unchanged. Synthetic relative owner selection is not an original-game price. Original release price still only city WorldId1 weapon0; no new playable/human/mission/image/PCM acceptance."
+}
