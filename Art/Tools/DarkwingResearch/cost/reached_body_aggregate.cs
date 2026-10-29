@@ -999,13 +999,24 @@ public static class ReachedBodyAggregate
     static string PartsText(string label, int[] parts) => label + " scroll=" + parts[0] + " spawn=" + parts[1] +
         " zone=" + parts[2] + " palette=" + parts[3] + " bank6=" + parts[4] + " bank1=" + parts[5] + " tail=" + parts[6];
 
-    /// <summary>ZERO-50 focused controls for the owner of the body prefix on the frame the mission
+    /// <summary>ZERO-52 focused controls for the owner of the body prefix on the frame the mission
     /// intro card releases. Positive: on that frame the assembled C# prefix equals the original
     /// $CABB−$FECF, and $LastCardResumeCycles + 12 equals the original $CA59−$FECF — the common
-    /// 6 + hook + 18 appears once, because a doubled prefix would miss 4986 by 549. Negative: the
-    /// untouched pre-frame state of the same poll is perturbed in the ways that must not be priced
-    /// (a longer hold, a refused release context, no wait, no card, another state) and every one of
-    /// them has to refuse; and in the running replay a hold frame must never add a timed pass.
+    /// 6 + hook + 18 appears once, because a doubled prefix would miss 4986 by 549.
+    ///
+    /// The negatives are asserted as three separate things, because ZERO-51 showed that bundling them
+    /// into one "refused" verdict proves nothing: on the release frame the pre-frame probe always
+    /// refuses with a foreign reason (the mission head never ran on the previous hold frame, so
+    /// $LastMissionHeadCycles is still −1), which masked any price or cause a broken guard produced.
+    /// Family A (the real release frame) therefore asserts the continuation flag, the guard's own
+    /// refusal text and the continuation span the owner computed, per shape, and records the assembler
+    /// refusal as the known stale-head mask instead of counting it as evidence.
+    /// Family B (an ordinary pre-frame whose untouched head branch the assembler priced without any
+    /// refusal, i.e. every component it consumed is valid) asserts the choice itself: with a
+    /// release-shaped owner the assembler must move off head + 6 + player onto the continuation span,
+    /// and for each withdrawn shape it must charge exactly the untouched head price. Here the ordinary
+    /// branch is not a failure — per contract it legitimately owns the frame — so the expectation is a
+    /// specific number, and a hold span that leaked into the body would change that number.
     /// Control: the next poll is ordinary, still priced by head + 6 + player, and still equals the
     /// original. No source price is fed to the game and no poll number selects a branch.</summary>
     static void CardRelease(string[] args)
@@ -1023,10 +1034,17 @@ public static class ReachedBodyAggregate
         long Point(int poll, string pc) => source.TryGetValue(poll, out var map) && map.TryGetValue(pc, out var list) ? list[0] : -1;
         using var rows = new StreamWriter(output);
         rows.WriteLine("poll,preWait,preState,preCardPhase,world,weapon,continuation,cardWhy,released,resume,hook,head,player," +
-            "prefixPre,prefixWhyPre,prefixFrame,origCa59,verdictCa59,origCabb,verdictCabb,tailPre,tailFrame,timedThisFrame,controls");
+            "prefixPre,prefixWhyPre,prefixFrame,origCa59,verdictCa59,origCabb,verdictCabb,tailPre,tailFrame,timedThisFrame," +
+            "controls,ownerSelection,validContextControls");
         int releaseFrames = 0, releaseFramesPriced = 0, releaseCa59Exact = 0, releaseCabbExact = 0, releaseNoPhase = 0;
         int ordinaryPolls = 0, ordinaryExact = 0, holdUntimed = 0, holdViolations = 0, negativeRefusals = 0, negativesExpected = 0;
         int ownerSpans = 0, anchorExact = 0, frameCabbExact = 0, preFrameDeltaExact = 0, preFrameDeltaOther = 0;
+        // Family A on the release frame: three separate assertions per shape, plus the mask record.
+        int negativeFlags = 0, negativeReasons = 0, negativeSpans = 0, negativeMasked = 0;
+        // Family B on a poll whose untouched head branch is fully priced by the assembler itself.
+        int validPolls = 0, validSelected = 0, validNegatives = 0, validFlags = 0, validReasons = 0, validSpans = 0,
+            validPrices = 0, validLeaks = 0, validLeaksExpected = 0;
+        var controlProblems = new List<string>();
         string ownerNote = "";
         var releaseLog = new List<string>();
         for (int poll = 1; poll <= replayTo; poll++)
@@ -1037,7 +1055,9 @@ public static class ReachedBodyAggregate
             bool phaseBefore = (bool)CardPhaseField.GetValue(player);
             int timedBefore = game.Clock.TimedPasses;
             var negatives = new List<string>();
+            var validRows = new List<string>();
             int prefixPre = -1, resume = -1, tailPre = -1; string prefixWhyPre = null;
+            string ownerSelection = "skip";
             void Restore()
             {
                 CardWaitField.SetValue(player, waitBefore);
@@ -1057,7 +1077,22 @@ public static class ReachedBodyAggregate
                 // on an ordinary poll withdrawing the card owner legitimately leaves the head + 6 +
                 // player span, so a refusal there would be an artefact of the probe, not a control.
                 ownerPre = player.LastCardContinuationReleased;
-                void Control(string name, Action perturb)
+                int headSpan = game.LastMissionHeadCycles, playerSpan = player.LastPlayerDispatchCycles;
+                const string ReleaseContextRefusal = "D554 mission release context";
+                // name, perturbation, and what the real source contract owes for it: the guard's own
+                // refusal text and the continuation span the owner leaves behind (61 = 2+4+6+49 is the
+                // measured hold span, which must stay out of the body; −1 means nothing was priced).
+                var shapes = new (string name, Action perturb, string guardReason, int span)[]
+                {
+                    ("holdWait2", () => CardWaitField.SetValue(player, (byte)2), null, 61),
+                    ("holdWait20", () => CardWaitField.SetValue(player, (byte)0x14), null, 61),
+                    ("worldId7", () => player.WorldId = 7, ReleaseContextRefusal, -1),
+                    ("weapon4", () => player.WeaponSelected = 4, ReleaseContextRefusal, -1),
+                    ("wait0", () => CardWaitField.SetValue(player, (byte)0), null, -1),
+                    ("state0B", () => player.State = 0x0B, null, -1),
+                    ("cardPhaseOff", () => CardPhaseField.SetValue(player, false), null, -1),
+                };
+                void ReleaseFrameControl(string name, Action perturb, string guardReason, int span)
                 {
                     if (!ownerPre) return;
                     negativesExpected++;
@@ -1065,19 +1100,93 @@ public static class ReachedBodyAggregate
                     MeasureCardOwner(player);
                     var (price, why) = MeasurePrefix(game);
                     bool released = player.LastCardContinuationReleased;
+                    string actualReason = player.CardTimingUnsupported;
+                    int actualSpan = player.LastCardContinuationCycles;
                     Restore();
-                    negatives.Add(name + "=" + (released || price >= 0
-                        ? "PRICED(" + price + ",released=" + released + ")"
-                        : "refused(" + Safe(player.CardTimingUnsupported ?? why) + ")"));
-                    if (!released && price < 0) negativeRefusals++;
+                    bool flagOk = !released, reasonOk = actualReason == guardReason, spanOk = actualSpan == span;
+                    if (flagOk) negativeFlags++;
+                    if (reasonOk) negativeReasons++;
+                    if (spanOk) negativeSpans++;
+                    if (flagOk && reasonOk && spanOk) negativeRefusals++;
+                    else controlProblems.Add("release-frame@" + poll + " " + name + " flag=" + released +
+                        " reason=" + (actualReason ?? "-") + " span=" + actualSpan);
+                    // ZERO-51: on this frame the assembler refuses for a foreign reason - the previous
+                    // frame was a hold, so the head it would fall back to is still −1. Recorded, never
+                    // counted as proof; the price proof lives in the fully valid poll below.
+                    if (price < 0 && why == "CAE2 head") negativeMasked++;
+                    negatives.Add(name + "=flag:" + (flagOk ? "ok" : "BAD(" + released + ")") +
+                        ",reason:" + (reasonOk ? "ok" : "BAD(" + (actualReason ?? "-") + ")") +
+                        ",span:" + (spanOk ? span : "BAD(" + actualSpan + ")") +
+                        ",assembler=" + price + "(" + (why ?? "-") + ")");
                 }
-                Control("holdWait2", () => CardWaitField.SetValue(player, (byte)2));
-                Control("holdWait20", () => CardWaitField.SetValue(player, (byte)0x14));
-                Control("worldId7", () => player.WorldId = 7);
-                Control("weapon4", () => player.WeaponSelected = 4);
-                Control("wait0", () => CardWaitField.SetValue(player, (byte)0));
-                Control("state0B", () => player.State = 0x0B);
-                Control("cardPhaseOff", () => CardPhaseField.SetValue(player, false));
+                // The assembler's own head branch priced this pre-frame without naming any refusal, which
+                // is its attestation that every component it consumed is valid. Only the owner it selects
+                // can move the price, so each shape below is decided by the guard or by the owner choice.
+                bool fullyValid = !ownerPre && prefixPre >= 0 && prefixWhyPre == null
+                    && headSpan >= 0 && playerSpan >= 0 && worldBefore <= 6 && weaponBefore <= 3;
+                if (fullyValid)
+                {
+                    validPolls++;
+                    void ReleaseShape(byte wait)
+                    {
+                        player.State = 0x09; CardPhaseField.SetValue(player, true); CardWaitField.SetValue(player, wait);
+                    }
+                    ReleaseShape(1);
+                    MeasureCardOwner(player);
+                    var (contPrice, contWhy) = MeasurePrefix(game);
+                    int contSpan = player.LastCardContinuationCycles;
+                    bool contReleased = player.LastCardContinuationReleased;
+                    Restore();
+                    int expected = prefixPre - headSpan - 6 - playerSpan + contSpan;
+                    bool stable = game.LastMissionHeadCycles == headSpan && player.LastPlayerDispatchCycles == playerSpan;
+                    bool selected = contReleased && contSpan > 0 && contWhy == null && contPrice == expected
+                        && contPrice != prefixPre && stable;
+                    if (selected) validSelected++;
+                    else controlProblems.Add("owner-selection@" + poll + " price=" + contPrice + " expected=" + expected +
+                        " headPrice=" + prefixPre + " span=" + contSpan + " released=" + contReleased +
+                        " why=" + (contWhy ?? "-") + " stable=" + stable);
+                    ownerSelection = (selected ? "ok" : "BAD") + "(" + prefixPre + "->" + contPrice + "==" + expected + ",span=" + contSpan + ")";
+                    void ValidControl(string name, Action perturb, string guardReason, int span)
+                    {
+                        validNegatives++;
+                        ReleaseShape(1);
+                        perturb();
+                        MeasureCardOwner(player);
+                        var (price, why) = MeasurePrefix(game);
+                        bool released = player.LastCardContinuationReleased;
+                        string actualReason = player.CardTimingUnsupported;
+                        int actualSpan = player.LastCardContinuationCycles;
+                        Restore();
+                        bool flagOk = !released, reasonOk = actualReason == guardReason, spanOk = actualSpan == span;
+                        // Withdrawing the owner must land the assembler on exactly the untouched head
+                        // price: the ordinary branch is legitimately valid here, so a refusal would be
+                        // a defect, and a different number would mean the card span leaked into the body.
+                        bool priceOk = price == prefixPre && why == null;
+                        bool leakOk = true;
+                        if (actualSpan >= 0)
+                        {
+                            validLeaksExpected++;
+                            int leak = prefixPre - headSpan - 6 - playerSpan + actualSpan;
+                            leakOk = leak != prefixPre && price == prefixPre;
+                            if (leakOk) validLeaks++;
+                        }
+                        if (flagOk) validFlags++;
+                        if (reasonOk) validReasons++;
+                        if (spanOk) validSpans++;
+                        if (priceOk) validPrices++;
+                        if (!flagOk || !reasonOk || !spanOk || !priceOk || !leakOk)
+                            controlProblems.Add("valid-context@" + poll + " " + name + " flag=" + released +
+                                " reason=" + (actualReason ?? "-") + " span=" + actualSpan + " price=" + price +
+                                " headPrice=" + prefixPre + " why=" + (why ?? "-") + " leakOk=" + leakOk);
+                        validRows.Add(name + "=flag:" + (flagOk ? "ok" : "BAD(" + released + ")") +
+                            ",reason:" + (reasonOk ? "ok" : "BAD(" + (actualReason ?? "-") + ")") +
+                            ",span:" + (spanOk ? span : "BAD(" + actualSpan + ")") +
+                            ",price:" + (priceOk ? prefixPre : "BAD(" + price + "!=" + prefixPre + ")") +
+                            ",leak:" + (leakOk ? (actualSpan >= 0 ? "excluded" : "n/a") : "BAD"));
+                    }
+                    foreach (var shape in shapes) ValidControl(shape.name, shape.perturb, shape.guardReason, shape.span);
+                }
+                foreach (var shape in shapes) ReleaseFrameControl(shape.name, shape.perturb, shape.guardReason, shape.span);
                 MeasureCardOwner(player);
             }
             game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
@@ -1137,7 +1246,8 @@ public static class ReachedBodyAggregate
                     worldBefore, weaponBefore, player.LastCardContinuationCycles, Safe(player.CardTimingUnsupported), releasedFrame ? 1 : 0,
                     resume, game.LastInputHookCycles, game.LastMissionHeadCycles, player.LastPlayerDispatchCycles,
                     prefixPre, Safe(prefixWhyPre), game.LastClockBodyPrefixCycles, origCa59, verdictCa59, origCabb, verdictCabb,
-                    tailPre, tailFrame, timed ? 1 : 0, Safe(string.Join(";", negatives))));
+                    tailPre, tailFrame, timed ? 1 : 0, Safe(string.Join(";", negatives)),
+                    Safe(ownerSelection), Safe(string.Join(";", validRows))));
             }
         }
         Console.WriteLine($"card-release owner spans={ownerSpans} anchorExact(6+hook+18+cont+12)={anchorExact}/{ownerSpans} " +
@@ -1147,11 +1257,24 @@ public static class ReachedBodyAggregate
             $"ca59Exact={releaseCa59Exact} cabbExact={releaseCabbExact} noPhase={releaseNoPhase} [{string.Join(" ", releaseLog)}]");
         Console.WriteLine($"card-release ordinary control: pricedPolls={ordinaryPolls} exact={ordinaryExact}/{ordinaryPolls} " +
             $"holdUntimed={holdUntimed} holdTimedViolations={holdViolations} negativeRefusals={negativeRefusals}/{negativesExpected} output={output}");
+        Console.WriteLine($"card-release release-frame negatives (real context): flag={negativeFlags}/{negativesExpected} " +
+            $"reason={negativeReasons}/{negativesExpected} span={negativeSpans}/{negativesExpected} " +
+            $"assemblerRefusalMaskedByStaleHead={negativeMasked}/{negativesExpected}");
+        Console.WriteLine($"card-release valid-context assembler controls: polls={validPolls} " +
+            $"ownerSelection={validSelected}/{validPolls} negatives={validNegatives}/{validPolls * 7} " +
+            $"flag={validFlags}/{validNegatives} reason={validReasons}/{validNegatives} span={validSpans}/{validNegatives} " +
+            $"headPrice={validPrices}/{validNegatives} holdSpanExcludedFromBody={validLeaks}/{validLeaksExpected}");
+        foreach (string problem in controlProblems.Take(12)) Console.Error.WriteLine("CONTROL FAIL: " + problem);
         if (ownerSpans == 0 || anchorExact != ownerSpans || frameCabbExact != ownerSpans
             || preFrameDeltaExact != ownerSpans || preFrameDeltaOther != 0
             || releaseFrames != ownerSpans || releaseCabbExact != releaseFrames || releaseCa59Exact != releaseFrames
             || releaseFramesPriced != releaseFrames || ordinaryPolls == 0 || ordinaryExact != ordinaryPolls
-            || holdViolations != 0 || negativesExpected != ownerSpans * 7 || negativeRefusals != negativesExpected)
+            || holdViolations != 0 || negativesExpected != ownerSpans * 7 || negativeRefusals != negativesExpected
+            || negativeFlags != negativesExpected || negativeReasons != negativesExpected || negativeSpans != negativesExpected
+            || validPolls == 0 || validSelected != validPolls || validNegatives != validPolls * 7
+            || validFlags != validNegatives || validReasons != validNegatives || validSpans != validNegatives
+            || validPrices != validNegatives || validLeaksExpected != validPolls * 2 || validLeaks != validLeaksExpected
+            || controlProblems.Count != 0)
         { Console.Error.WriteLine("cardrelease gate FAIL"); Environment.ExitCode = 1; }
         else Console.WriteLine("cardrelease gate PASS");
     }
