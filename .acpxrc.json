@@ -1,0 +1,12 @@
+{
+  "agents": {
+    "qoder": {
+      "argv": [
+        "qodercli",
+        "--acp",
+        "--allowed-mcp-server-names",
+        "beholder"
+      ]
+    }
+  }
+}
