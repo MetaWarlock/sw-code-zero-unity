@@ -1,0 +1,30 @@
+{
+  "schema": 1,
+  "date": "2026-10-30",
+  "issue": "ZERO-55",
+  "cliVersion": "2.4.0",
+  "acpStatusModel": "kimi-code/k3.1-pro",
+  "session": "ZERO-55-trusted",
+  "identityConfirmedByOwnMcp": {
+    "email": "kit.kimi@beholder.learn.su",
+    "person": "6ae32f4a86ab307f5ef5fce9",
+    "uuid": "8b19dab4-3f78-4d4d-9f40-45f55d4a14fb",
+    "active": true
+  },
+  "successfulOwnCalls": [
+    "get_user_profile",
+    "list_employees",
+    "get_issue ZERO-55",
+    "get_issue ZERO-12"
+  ],
+  "usageRemaining": "UNKNOWN",
+  "runtimeChanges": false,
+  "globalProfileChanged": false,
+  "projectLoader": ".kimi-code/mcp.json",
+  "processEnv": {
+    "KIMI_CODE_TRUST_WORKSPACE": "1"
+  },
+  "failure": "400 tools.function.parameters schema exceeds maximum allowed size; empty ACP end_turn",
+  "recovery": "Disable project rea/godai entries, trust workspace only for launch process, retain native Kimi Beholder identity; fresh ACP session",
+  "officialConfigurationDocumentation": "https://moonshotai.github.io/kimi-code/en/customization/mcp.html"
+}
