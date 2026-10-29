@@ -32,6 +32,8 @@ namespace Darkwing.Core
                 supported = TryMeasureLookUp03Cycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
             else if (State == 0x13)
                 supported = TryMeasureCarried13Cycles(held, pressed, TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
+            else if (State == 0x09)
+                supported = TryMeasureWorldEntryFall09Cycles(TimingAudioQueueAccepts?.Invoke(), out cycles, out reason);
             else
             {
                 supported = false;
