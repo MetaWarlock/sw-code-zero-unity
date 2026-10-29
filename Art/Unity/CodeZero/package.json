@@ -1,0 +1,7 @@
+{
+  "name": "su.learn.codezero",
+  "version": "0.1.0",
+  "displayName": "SW Code Zero — Native Darkwing Port",
+  "description": "Project-owned native gameplay, data and Unity scene. Canonical sources live in Art/Unity/CodeZero.",
+  "unity": "6000.6"
+}

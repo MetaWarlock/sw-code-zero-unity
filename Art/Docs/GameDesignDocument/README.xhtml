@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>GDD — инструменты и происхождение</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css" />
+  </head>
+  <body>
+<h1 id="gdd-инструменты-и-происхождение">GDD — инструменты и происхождение</h1>
+<p><a href="index.xhtml">Главная GDD</a> · <a href="character.xhtml">Персонаж</a> · <a href="instructions.xhtml">Правила</a></p>
+<p>Проверенные материалы описывают Darkwing Duck NES → нативный Unity-порт. Данные анимаций, PRG/CHR и направления катсцен — в <a href="../../Research/DarkwingDuck/FACTS.xhtml">FACTS</a>. Статья и экспортированные спрайты не означают полной приёмки механики.</p>
+<h2 id="экспортёр">Экспортёр</h2>
+<p>Канонический исходник — <a href="export_sprites.py">export_sprites.py</a>. Зависимости: существующий Python/Pillow, проверенный ROM в Art/ и Art/Research/DarkwingDuck/extracted/chr/tiles_index2.bin. Выход — sprites/ рядом с документами. Параметры и контроль: <code>python Art/Docs/GameDesignDocument/export_sprites.py --help</code>. Команда выполняется из корня назначенного проекта. XML/DTD/ссылки проверяет общий project_layout.py validate.</p>
+<p>ZERO-34 оказалась копией справки, а не новой задачей; сведения возвращены в документацию. Актуальная работа — в <a href="https://beholder.learn.su/workbench/beholder/tracker/6ae2823cf8f3281e9196c7ab/issues">трекере</a>. Общий каталог — <a href="../../Tools/DarkwingResearch/README.xhtml">README инструментов</a>.</p>
+</body>
+</html>

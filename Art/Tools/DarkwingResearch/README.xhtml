@@ -1,0 +1,130 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>Каталог исследовательских инструментов</title>
+    <link rel="stylesheet" type="text/css" href="../../Docs/documentation.css" />
+  </head>
+  <body><h1 id="каталог-исследовательских-инструментов">Каталог исследовательских инструментов</h1>
+<p>Единая точка входа для всех агентов. Проверено по исходникам 2026-10-27; это каталог возможностей и команд, не заявление о прохождении игры. Правила владения, хранения и резервирования — <a href="../../AGENTS.xhtml">AGENTS.md</a>, урок о потере Temp — <a href="../../Docs/GameReconstruction/KNOWLEDGE_RU.xhtml#n03-%D1%80%D0%B0%D0%B1%D0%BE%D1%87%D0%B8%D0%B9-%D0%BA%D0%B0%D1%82%D0%B0%D0%BB%D0%BE%D0%B3-%D1%81%D1%80%D0%B5%D0%B4%D1%8B-%D0%B8%D1%81%D0%BF%D0%BE%D0%BB%D0%BD%D0%B5%D0%BD%D0%B8%D1%8F-%D1%83%D0%BD%D0%B8%D1%87%D1%82%D0%BE%D0%B6%D0%B0%D0%B5%D1%82-%D0%BD%D0%B5%D0%B2%D0%BE%D1%81%D1%81%D1%82%D0%B0%D0%BD%D0%BE%D0%B2%D0%B8%D0%BC%D1%8B%D0%B5-%D0%B0%D1%80%D1%82%D0%B5%D1%84%D0%B0%D0%BA%D1%82%D1%8B">N03</a>.</p>
+<h2 id="перед-написанием-скрипта">Перед написанием скрипта</h2>
+<ol>
+<li>Найти нужную возможность в таблице и поиском по исходникам этого каталога и <code>Art/AgentScripts/</code>. Прочитать текущие параметры/пример; не устанавливать инструмент заново ради нового диалога.</li>
+<li>Доработать подходящий entry point: входная запись, диапазон, поля, банк/адрес и выход — параметры, а не копия под новый кадр/смену. Переиспользовать существующий запуск Mesen/Unity.</li>
+<li>Если расширение не подходит, сначала записать конкретный пробел и причину в текущем STATUS, затем добавить один канонический инструмент и строку сюда. Узкий source-specific probe допустим, новый универсальный движок не требуется.</li>
+<li>До передачи выполнить preservation gate AGENTS: исходники в Git/подготовленном source-коммите, необходимые ignored-данные с проверенным backup, полная команда не зависит от утрачиваемого кода в Temp. Размещение файла под Tools само по себе не означает, что файл сохранён в Git.</li>
+</ol>
+<h2 id="поддерживаемые-точки-входа">Поддерживаемые точки входа</h2>
+<p>Команды ниже выполняются из корня <strong>назначенного проекта/worktree</strong>, не из этого каталога. <code>python</code>, <code>dotnet</code> и Unity CLI обозначают уже настроенные локальные runtime; не устанавливать новые зависимости без конкретной ошибки. Перед использованием старого инструмента в worktree проверить hard-coded пути. Таблица перечисляет основные entry points; отсутствие другого уже существующего файла здесь не разрешает его переписывать.</p>
+<table>
+<thead>
+<tr>
+<th>Задача / область</th>
+<th>Канонические исходники и зависимости</th>
+<th>Интерфейс / выход / проверка и границы</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Запись человека и обычное воспроизведение оригинала</td>
+<td><a href="stand/Start-Playthrough.ps1">stand/Start-Playthrough.ps1</a>, <a href="stand/stand.py">stand/stand.py</a>, существующий Mesen GUI</td>
+<td>Запуск без параметров записывает в <code>Art/Playthroughs/&lt;session&gt;</code>: <code>.mmo</code>, <code>input.bin</code>, meta/movie JSON. <code>-ReplayMovie</code> использует IPC/SingleInstance; запрещён в private parallel copies. Ключи и ограничения — исходник launcher/stand. Проверка: независимое встроенное movie-воспроизведение и сравнение с декодированным вводом; один запуск не доказывает валидность всей цепочки.</td>
+</tr>
+<tr>
+<td>Оригинальный headless replay и детерминизм</td>
+<td><a href="stand/stand.py">stand/stand.py</a>, <a href="stand/stand.lua.in">stand/stand.lua.in</a>, установленный vendor/mesen-agent, ROM и session</td>
+<td><code>replay SESSION --runs 2 --output OUT</code>. Выход: replay1/2 с <code>buffers.bin</code>, trace, PNG по <code>--png</code> и replay-метаданными. Проверять обе длины, bytes/SHA, старт и исключения, не только exit. <code>selftest SESSION</code> — проверки чувствительности стенда; прочитать параметры до запуска, не направлять на единственные сохраняемые результаты.</td>
+</tr>
+<tr>
+<td>Core-повтор того же ввода</td>
+<td><a href="stand/stand.py">stand/stand.py</a>, <a href="../../AgentScripts/StandRoute.cs">Art/AgentScripts/StandRoute.cs</a>, действующий Editor/Unity CLI</td>
+<td><code>unity SESSION --output OUT [--png FRAMES] [--audio-state]</code>. Выход: mapped trace, buffers, изображения и спецификация replay. Поля и формат — stand/StandRoute; не называть Core-запуск проверкой интерактивного Player.</td>
+</tr>
+<tr>
+<td>Сопоставление оригинала и порта / двух версий порта</td>
+<td><a href="stand/stand.py">stand/stand.py</a></td>
+<td><code>states --original A/buffers.bin --port B/buffers.bin --start N [--end N] [--audio]</code>; <code>buffers --original A/buffers.bin --port B/buffers.bin --start N</code>; <code>scene --session SESSION --core CORE --route ROUTE_JSON</code>. Явно указывать стороны, диапазон и scope; port-to-port PASS не равен original-to-port. <code>diff SESSION</code> помогает локализовать первое расхождение.</td>
+</tr>
+<tr>
+<td>Suite, контракты и существующие C# probes</td>
+<td><a href="run_check.py">run_check.py</a>, <a href="../../AgentScripts/PhysCompare.cs">Art/AgentScripts/PhysCompare.cs</a>, другие существующие AgentScripts, действующий Editor</td>
+<td><code>--entry ENTRY --out OUT</code>, либо <code>--file PATH --entry ENTRY --args JSON --out OUT</code>. <code>--suite</code> проверяет стандартную Suite: exit0 PASS,1 behavioral FAIL,2 ERROR. Без <code>--suite</code> успешный запуск не означает PASS возвращённого контракта. Сохраняет execution/stdout/stderr/returned; сверять scope и отрицательные контроли.</td>
+</tr>
+<tr>
+<td>Сборка через действующий Editor</td>
+<td><a href="build_player.py">build_player.py</a>, Unity CLI</td>
+<td><code>--out EXE --evidence OUT [--development]</code>. BuildReport, commands, source/binary hashes. Для аргумента <code>-darkwing-replay</code> нужна сборка с включённым диагностическим replay-кодом; читать актуальные preprocessor guards. Проверка: build result/errors, затем короткий observable replay перед полным. Сборка не доказывает проходимость.</td>
+</tr>
+<tr>
+<td>Standalone smoke и существующий route replay</td>
+<td><a href="verify_player.ps1">verify_player.ps1</a>, готовый EXE, при replay — существующая spec</td>
+<td><code>-Exe EXE -PngA PNG -PngB PNG -Report JSON [-Replay SPEC -ReplayTimeoutSec N -CompletedMission]</code>. Report <code>success</code>, final/exit и PNG. Smoke доказывает boot/render/exit; <code>CompletedMission</code> содержит проектные ожидания м1, не универсальную приёмку всех миров. Не повторять timeout вслепую: сначала доказать старт/прогресс и режим сборки.</td>
+</tr>
+<tr>
+<td>Исследовательский запуск оригинала по расписанию кнопок</td>
+<td><a href="probe_run.py">probe_run.py</a>, <a href="runtime_capture.lua.in">runtime_capture.lua.in</a>, mesen-agent/ROM; узкий ранее существующий вариант <a href="record_reference.py">record_reference.py</a></td>
+<td><code>probe_run.py --out NEW_OUT --frames N --input 0:right@FIRST-LAST</code>; параметры capture/load-state смотрим в исходнике. Выход — существующий runtime capture/метаданные, без перезаписи NEW_OUT. RAM patches разрешены лишь как явно помеченные исследовательские fixtures, не доказательство непрерывного прохождения. Для задачи сначала выбрать один подходящий entry point, не копировать запуск.</td>
+</tr>
+<tr>
+<td>Разбор измеренных фаз и OAM-cost</td>
+<td><a href="analyze_frame_timing.py">analyze_frame_timing.py</a>, <a href="frame_timing.lua">frame_timing.lua</a>, <a href="oam_timing.lua">oam_timing.lua</a>, <a href="../../AgentScripts/OamTimingVerify.cs">Art/AgentScripts/OamTimingVerify.cs</a>, <a href="../../AgentScripts/SchedulerVerify.cs">Art/AgentScripts/SchedulerVerify.cs</a></td>
+<td>Анализ CSV: <code>TRACE --oam OAM_CSV --dependencies --focus FIRST LAST</code>. Контракты запускать через run_check. Измеренные исходные цены/commit clocks — oracle evidence; они не должны становиться runtime-входом. Форматы/ограничения — исходники, FACTS и handoff §8.</td>
+</tr>
+<tr>
+<td>Аудиоисследование и сравнение</td>
+<td><a href="audio_timing.lua">audio_timing.lua</a>, <a href="audio_probe.lua.in">audio_probe.lua.in</a>, <a href="compare_audio_port.py">compare_audio_port.py</a>, существующие AudioPort entry points</td>
+<td>До выбора прочитать исходник и <a href="../../Research/DarkwingDuck/docs/audio_engine.xhtml">audio_engine</a>: различать driver-state/register comparison, PCM, порядок каналов и ручное прослушивание. Не подменять один verdict другим.</td>
+</tr>
+</tbody></table>
+<h2 id="примеры-команд">Примеры команд</h2>
+<p>Пути <code>OUT</code> выбирает исполнитель в назначенном worktree. В примерах <code>Art/Temp/check</code> — <strong>воспроизводимый промежуточный вывод</strong>, не место единственного эталона или окончательной приёмки; до передачи нужные результаты сохраняются по правилам AGENTS.</p>
+<pre><code># Уже существующие human recordings; новую запись не требуется создавать ради примера.
+python Art/Tools/DarkwingResearch/stand/stand.py replay Art/Playthroughs/20261019T212535Z --runs 2 --output Art/Temp/check/original
+python Art/Tools/DarkwingResearch/stand/stand.py unity Art/Playthroughs/20261019T212535Z --output Art/Temp/check/core
+python Art/Tools/DarkwingResearch/stand/stand.py states --original Art/Temp/check/original/replay1/buffers.bin --port Art/Temp/check/core/buffers.bin --start 8
+python Art/Tools/DarkwingResearch/stand/stand.py buffers --original Art/Temp/check/original/replay1/buffers.bin --port Art/Temp/check/core/buffers.bin --start 8
+python Art/Tools/DarkwingResearch/run_check.py --suite --out Art/Temp/check/suite
+python Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Contracts --out Art/Temp/check/contracts
+python Art/Tools/DarkwingResearch/build_player.py --out Art/Build/DarkwingDuck/DarkwingDuck.exe --evidence Art/Temp/check/build --development
+</code></pre>
+<p>Это примеры синтаксиса по текущим исходникам, не команды, выполненные при создании каталога, и не ожидаемый PASS города. Включение <code>--start 8</code> явно исключает исторически известное окно power-on именно этой записи; для другой записи границу надо установить отдельно. Перед параллельным запуском проверить владельца Editor и выхода. Существующий пользовательский стенд <code>Art/Build/UserStand</code>/shortcuts обновляется на месте согласно AGENTS; этот каталог не создаёт новый стенд.</p>
+<h2 id="active-измерение-цен-и-городских-фаз">ACTIVE: измерение цен и городских фаз</h2>
+<p>Канонические исходники: <a href="cost/reached_body_aggregate.cs">cost/reached_body_aggregate.cs</a>, <a href="cost/reached_body_aggregate.csproj">проект .NET 10</a>, <a href="cost/city_cost_compare.py">cost/city_cost_compare.py</a>, <a href="cost/city_phase_load.py">упаковщик</a>, <a href="cost/city_phase_dump.py">экспортёр</a>. Это доработанные восстановленные инструменты, не новый агрегатор. Проект <code>.csproj</code> явно разрешён в Git; <code>bin/obj</code> остаются игнорируемыми.</p>
+<p>Входы: игровые Core/Audio и <code>Art/Unity/CodeZero/Darkwing/Data</code>, <code>Art/Playthroughs/20261019T212535Z/input.bin</code> (29 360 bytes, SHA проверяется кодом), original <code>replay1/buffers.bin</code>; сохранённые данные в <code>Art/Research/DarkwingDuck/reference/cost-harness/data/</code>. <code>city_phase.pkl</code> — доверенный локальный pickle (не загружать произвольные чужие pickle). Данные и история восстановления идентифицированы в <a href="../../Research/DarkwingDuck/reference/cost-harness/evidence.json">evidence.json</a>. Выход всегда новый CSV внутри назначенного проекта; существующие CSV/buffer-каталоги не перезаписываются. Выход city — CSV цен по poll; clock — CSV часов и sibling <code>buffers.bin</code> (4384 bytes/poll); compare — диагностические дельты и опциональный JSON.</p>
+<pre><code># Из корня назначенного проекта. --project-root, --session, --reference-dir,
+# --legacy-reference-dir, --output-root доступны у C# entry point; --reference у Python.
+dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- city 1924 6400 Art/Temp/cost-harness/city.csv
+python Art/Tools/DarkwingResearch/cost/city_cost_compare.py Art/Temp/cost-harness/city.csv --expect-json Art/Research/DarkwingDuck/reference/cost-harness/data/baseline-before/cost-summary.json
+dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- clock native 6420 Art/Temp/cost-harness/clock.csv
+# Только если reduced CSV отсутствуют: новый выход, без перезаписи существующего.
+python Art/Tools/DarkwingResearch/cost/city_phase_dump.py Art/Research/DarkwingDuck/reference/cost-harness/data/phases
+# Обратная упаковка существующих full/reduced CSV в НОВЫЙ файл:
+python Art/Tools/DarkwingResearch/cost/city_phase_load.py Art/Temp/cost-harness/repacked.pkl --idle Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_idle_phase.csv --phases Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv
+</code></pre>
+<p><code>city_cost_compare.py</code>: exit0 без <code>--expect-json</code> означает только успешный разбор; с ним — равенство диагностической сводки сохранённой, <strong>не ROM MATCH</strong>. Полный ожидаемый диапазон задают <code>--first/--last</code> (1924/6400); позиционный limit (6387) ограничивает расчёт дельт. Пропущенные/лишние/дублированные строки отклоняются. При смене диапазона указывать все границы. Сводку без усечения сохранять через <code>--json NEW_FILE</code>. Известные ненулевые дельты остаются в выводе.</p>
+<p>Проверено при переносе: city CSV, native clock CSV и все 6420 buffer records побайтово равны запуску исходного восстановленного инструмента; pickle→CSV→pickle сохраняет обе структуры. Четыре отрицательных контроля отвергают пропуск/дубликат/лишнюю строку/изменённую цену. Проверки путей дополнительно отвергают перезапись, выход вне назначенного проекта, неверный clock mode и отсутствие legacy-эталона с exit2; запуск из другого cwd с явным --project-root даёт тот же первый CSV-record. Ошибки перехватываются CLI, а не оставляются аварийному завершению .NET. Native clock по-прежнему отказывает с poll1942 (<code>CAFC player</code>); f6388 <strong>не исправлен</strong>. <code>clock oracle</code> подставляет измеренные исходные цены только как fixture и не считается runtime/приёмкой. <code>census/slots/audiodiff/probe</code> сохранены, но в этой миграции отдельно <strong>NOT RUN</strong>. Режим <code>m1</code> требует утраченные <code>full_phases.csv</code>, <code>full_bank5.csv</code>, <code>actor_prefix.csv</code>, original buffers в <code>--legacy-reference-dir</code>: он выдаёт явную ошибку, не заменяет их новыми эталонами.</p>
+<h2 id="archived-исторические-варианты">ARCHIVED: исторические варианты</h2>
+<p><a href="archive/cost-recovery-20261026/README.xhtml">archive/cost-recovery-20261026</a> — 27 сохранённых исходников старых probes/patch-процедур и исходный <code>.orig.cs</code>. Это исторические варианты с отмеченными отсутствующими зависимостями; активный городской блокер остаётся открытым. Полный прежний <code>Art/Build/CostHarness</code> после проверки перенесён в существующий внешний backup-root как <code>20261027-costharness-original</code>; рабочих копий исходников в Build больше нет.</p>
+<p>После полного закрытия блокера его узкие инструменты <strong>архивируем, не удаляем</strong>. Общие инструменты оставляем ACTIVE. Для записи ARCHIVED нужны причина, закрывшая ревизия/evidence, сохранённые зависимости и команда контрольного запуска; обновляем вызывающие пути. Вернувшийся блокер продолжает этот инструмент, а не порождает новый. Архив не используется как оправдание хранения единственных копий вне Git.</p>
+<h2 id="active-проверяемая-сохранность">ACTIVE: проверяемая сохранность</h2>
+<p><a href="preserve.py">preserve.py</a> — один локальный snapshot/verify/audit entry point, Python stdlib + Git. Создан для отсутствовавшей возможности; запуск игры, сборка и сравнение не дублируются. Из корня проекта:</p>
+<pre><code>python Art/Tools/DarkwingResearch/preserve.py selftest
+python Art/Tools/DarkwingResearch/preserve.py snapshot "D:/Art/SW Code Zero Unity - Git Backups/NEW_UNIQUE_NAME" --include Art/Build/UserStand --include Art/Build/DarkwingDuckMissions23
+python Art/Tools/DarkwingResearch/preserve.py verify "D:/Art/SW Code Zero Unity - Git Backups/NEW_UNIQUE_NAME"
+python Art/Tools/DarkwingResearch/preserve.py audit "D:/Art/SW Code Zero Unity - Git Backups/NEW_UNIQUE_NAME"
+</code></pre>
+<p>Snapshot сохраняет .vscode, Tools, AgentScripts, Assets, Packages/ProjectSettings, Art/Docs/Research, Playthroughs, Art, AGENTS/.gitignore, текущий Temp и legacy Art/Build/CostHarness при наличии; Git bundle <code>--all</code>, состояние индекса/патчи и dirty-исходники. Не копирует <code>.git</code>, caches, <code>bin/obj</code>, <code>node_modules</code>, UnityLockfile; дополнительные пути задаются повторяемым --include и затем проверяются audit; не является архивом всех Unity builds или всего компьютера. Новый каталог вне checkout, без перезаписи/удаления/публикации; при ошибке остаётся явно незавершённый снимок. Выход <code>manifest.json</code> — список путей, размеров и SHA-256, версия/время; verify заново читает файлы. Exit0 PASS /1 найденные нарушения /2 ошибка. Для восстановления сначала проверить snapshot, клонировать bundle в НОВОЙ папке и восстановить дерево <code>files/</code> с сохранением относительных путей; dirty/staged различия дополнительно записаны в git-state.json. Не накладывать восстановление на живой checkout без отдельного решения. Snapshot содержит локальные ROM/данные и приватную историю: не публиковать его.</p>
+<p>Audit проверяет хеши текущих долговечных файлов против снимка, пропажи, ignored/untracked исходники Art/Tools/AgentScripts, скрипты в disposable-каталогах. <code>Library/PackageCache</code> отдельно учитывается как UPM-cache из версионируемых Packages/manifest+lock; произвольные другие скрипты Library не исключены. Сгенерированные исключения нельзя объявлять вручную без источника/процедуры. Проверка не доказывает работоспособность всех режимов, не восстанавливает утерянные данные и не защищает от отказа диска с обеими копиями. Самотест отвергает modified/missing/extra/incomplete backup и размещение backup внутри checkout, выход protected path за проект и отсутствие явно требуемого пути. Snapshot до переноса: <code>20261027-tooling-before</code>; после переноса: <code>20261027-tooling-preserved</code>; окончательный снимок с фактическим пользовательским Player: <code>20261027-tooling-stand-preserved</code>. Проверенные без изменения ярлыки Darkwing Port ведут в Art/Build/DarkwingDuckMissions23/DarkwingDuck.exe; оба Art/Build/UserStand и этот каталог дополнительно защищены через --include. При смене ярлыков снова проверить цель, не копировать этот путь по привычке. Новая правка долговечных файлов требует нового снимка для чистого audit; старые снимки не заменять.</p>
+<h2 id="сохранность-и-формат-записи-инструмента">Сохранность и формат записи инструмента</h2>
+<p>Для нового или изменённого инструмента обновить одну строку/секцию здесь: <strong>назначение и scope; canonical path/entry point; входы и зависимости; команда и cwd; выход/схема и смысл exit/verdict; ограничения; короткий контроль</strong>. Не повторять весь исходник или журнал сессии.</p>
+<p>Канонические исходники/шаблоны → Art/Tools/AgentScripts и source commit. Оригинальный ввод → существующий Playthroughs. Нужные captures/phase tables/baselines → установленное Art/Research/reference-хранилище. Бинарники, obj/bin, scratch PNG/CSV → disposable output. Для ignored необходимых данных отдельно проверяются backup и компактные metadata: ROM/input hashes, settings/граница кадра, producer revision/command, размеры/количество записей и SHA-256. Сам факт Git-ignore ничего не резервирует. Внешнюю выгрузку без разрешения не выполнять.</p>
+<h2 id="project-layout">ACTIVE: размещение проекта и строгая документация</h2><p>Состояние 2026-10-29: собственные материалы находятся в Art; Unity импортирует игровой контент через локальный пакет su.learn.codezero → Art/Unity/CodeZero. Все собственные временные результаты — Art/Temp. Текущие задачи и человеческие проверки — только Beholder ZERO; плейтесты назначаются warlock (dima@iqseo.ru).</p><p>Канонический entry point project_layout.py: проверка XHTML 1.0 Strict DTD, class/style, ссылок и якорей; verify-layout сверяет перенос с проверенным внешним snapshot. Команды relocate/paths/policy/convert/repair-links/shortcuts — явно ограниченные одноразовые операции ZERO-2, не регулярный workflow. policy отказывается повторно перезаписывать правила. finalize_layout.py сохраняет компактные свидетельства/обновляет каталог; не выполняет игру.</p><p>Зависимости: обычный Python stdlib для переносов, установленный Git и существующий PowerShell/WScript для ярлыков; bundled Python с lxml для XHTML и finalize; bundled Node/marked только для разовой конверсии. Пути bundled runtime получать через load_workspace_dependencies. Локальная DTD и три entity-файла W3C сохранены в vendor/xhtml1 без изменений. Сырые captures/CSV/JSON/логи/лицензии и исходный shared_dialogue.html — данные, не поддерживаемая HTML-документация.</p><pre># cwd: D:/Art/SW Code Zero Unity (или назначенный worktree)
+# BUNDLED_PYTHON — Python из load_workspace_dependencies, без новой установки.
+&amp; $BUNDLED_PYTHON Art/Tools/DarkwingResearch/project_layout.py validate
+&amp; $BUNDLED_PYTHON Art/Tools/DarkwingResearch/project_layout.py selftest
+python Art/Tools/DarkwingResearch/project_layout.py verify-layout --snapshot "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-before"
+python Art/Tools/DarkwingResearch/preserve.py selftest
+python Art/Tools/DarkwingResearch/preserve.py snapshot "D:/Art/SW Code Zero Unity - Git Backups/NEW_UNIQUE_NAME" --include Art/Build/UserStand --include Art/Build/ArtLayout --include Art/Build/DarkwingDuckMissions23
+python Art/Tools/DarkwingResearch/preserve.py verify "D:/Art/SW Code Zero Unity - Git Backups/NEW_UNIQUE_NAME"
+python Art/Tools/DarkwingResearch/preserve.py audit "D:/Art/SW Code Zero Unity - Git Backups/NEW_UNIQUE_NAME"</pre><p>validate выводит JSON result/documents/issues; exit0 означает только XML/DTD/локальные ссылки и отсутствие custom classes, exit1 — конкретные нарушения. selftest: один положительный и пять отрицательных контролей. verify-layout не разрешает пропажу файлов и изменение immutable payload, перечисляет документные/исходные изменения отдельно; это не игровая эквивалентность. Полные точные команды игр сохраняются в существующих stand/build/run_check, их копии не создаются.</p><p>Текущий стенд: Art/Build/UserStand; ярлыки Darkwing Port ведут на Art/Build/ArtLayout/DarkwingDuck.exe (build_a9780eeca272). Прежний Art/Build/DarkwingDuckMissions23 сохранён без изменения. Все ярлыки проверены по фактическим целям. Playtest2 сохраняет прежний ввод, новый output — Art/Temp/user-playtest2-layout. Старый GDD XSD архивирован как исторический: archive/gdd-markup-20261029/gdd.xsd; он не валидирует новый формат. validate.ps1 делегирует текущему общему validator.</p><p>Проверка SOURCE/COST: .NET build и 7 city-строк 1924–1930 точны сохранённому до переноса tooling_before.csv. Проверка PORT-TO-PORT: полный ввод миссии1 24261, пять mapped-групп f2033–24261 по 22229 exact; источник сравнения — прежний PORT unity/buffers.bin, не оригинальная ROM. Suite остаётся прежним FAIL18/24 RESULT,8/24 STRICT,errors0, полный JSON byte-equivalent baseline. Известные отказы не ослаблены.</p><p id="source-document-references">project_layout.py references — идемпотентная проверяемая замена ссылок на реально преобразованные документы в поддерживаемых исходниках. Корневой AGENTS.md, архивы, vendor и сырой provenance не меняются; runtime-изменения разрешены только в строках комментариев. Из корня: python Art/Tools/DarkwingResearch/project_layout.py references. JSON changes хранит before/after SHA-256; runtimeBehaviorChanged=false означает проверку ограничения комментариями, не игровую приёмку. Повторный контроль: второй запуск даёт пустой changes. Итоговое свидетельство reference/project-layout/reference-audit.json.</p><p id="accepted-migration-preservation">29.10.2026: preserve.py включает Art/index.xhtml явно среди protected roots — главная страница документации требует той же сохранности, что и Art/AGENTS.xhtml. project_layout.py finalize после humanResult=PASS отказывается выполнять одноразовый шаблон, чтобы не перезаписать принятое свидетельство состоянием AWAITING HUMAN. Проверка отказа вызывает существующий finalize main, сравнивает хеши правил/evidence до и после; отказ не меняет файлы. Повторная миграция для уже принятого checkpoint не требуется.</p></body>
+</html>

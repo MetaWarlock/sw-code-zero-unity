@@ -1,0 +1,1240 @@
+{
+  "schema": 1,
+  "capturedDate": "2026-10-29",
+  "project": "ZERO",
+  "scope": "Exact Backlog status at audit start; human request to classify and clean all issues",
+  "issues": [
+    {
+      "issueId": "6ae29b62e5dbb5b6ddb771de",
+      "identifier": "ZERO-3",
+      "title": "M0 — источник и эталон",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nчастично\n\nSHA-256 ROM верен; сохранённая пара det_a/b совпадает по всем трём потокам с f7. Для каждого нового сценария нужны полный исходный snapshot/RNG, ввод, фаза и повторяемость\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235810370,
+      "createdOn": 1793235810370,
+      "comments": [],
+      "descriptionSha256": "0cbd638717a299dd576c0a42825e1971afcf230fcd417c4c53669d262b6048ff"
+    },
+    {
+      "issueId": "6ae29b62e5dbb5b6ddb771e1",
+      "identifier": "ZERO-4",
+      "title": "M1 — ресурсы",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nчастично\n\nизвлечённые банки, manifest, декодер и provenance существуют; семантическая полнота секретов, всех динамических объектов и звука не доказана\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235810504,
+      "createdOn": 1793235810504,
+      "comments": [],
+      "descriptionSha256": "795e921b82f4402dfa8aabde0d0e262a70dcde578b2a517ea630494b8e3561d6"
+    },
+    {
+      "issueId": "6ae29b62e5dbb5b6ddb771e4",
+      "identifier": "ZERO-5",
+      "title": "M2 — время и сравнение",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nчастично\n\nфиксированный Core.Step, RESULT/STRICT и подробные трассы; gate исправлен. Есть расхождения масок/планировщика, полная эквивалентность состояния не доказана\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235810669,
+      "createdOn": 1793235810669,
+      "comments": [],
+      "descriptionSha256": "a711050e547a38297b1e65ee3fba3993bda0da1d162215672716ad4deecf324e"
+    },
+    {
+      "issueId": "6ae29b62e5dbb5b6ddb771e7",
+      "identifier": "ZERO-6",
+      "title": "M3 — вертикальный срез",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nчастично\n\nдвижения/контакт/дверь/урон имеют точные выбранные поля; OAM неполон; EnemySweep оказался map-fixture и теперь совпадает, покрытие bank6 отдельно\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.\n\n### Финальный перенос остатка GAPS: 3 / G92 поддержка объектами\n\nВыход $D709 исправлен; $F7D3 читает $FBE9 (высоту), не $FC09. В обычную физику добавлен $F2F4. Целевая проверка PhysCompare.G92Exit и естественная посадка на опору выполнены\n\nСм. FACTS; остальные вызывающие/down-ветки проверять при достижимом расхождении. Общую полноту всех ветвей не заявляем\n\nЭтот фрагмент содержит историческое свидетельство и границы его применимости; не считать узкую закрытую проверку полной приёмкой подсистемы. Перенесён 2026-10-29 при финальном аудите ZERO-2.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793237839313,
+      "createdOn": 1793235810808,
+      "comments": [],
+      "descriptionSha256": "d80e463911e873c49d69cdfe4fbc4c0b11dcc6469168b777be548aa3e8109ed8"
+    },
+    {
+      "issueId": "6ae29b62e5dbb5b6ddb771ea",
+      "identifier": "ZERO-7",
+      "title": "M4 — общие механики",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nчастично\n\nширокая реализация; нет полного набора пограничных эталонов четырёх оружий, предметов, RNG, continue\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235810952,
+      "createdOn": 1793235810952,
+      "comments": [],
+      "descriptionSha256": "de58c5aac935cc27d2c644f6a09b391defe4e1d7193971fe16d62ecbc463e904"
+    },
+    {
+      "issueId": "6ae29b63e5dbb5b6ddb771ed",
+      "identifier": "ZERO-8",
+      "title": "M5 — звук",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nоткрыт\n\nсеквенсор и экспорт работают; исправленная метрика выявляет несовпадения, APU writes/время/совместные SFX/WAV не приняты\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235811103,
+      "createdOn": 1793235811103,
+      "comments": [],
+      "descriptionSha256": "0f8e01f3a561b3744d7d8a428f482fc2885a6efbe3fc3e67779e961027a7d726"
+    },
+    {
+      "issueId": "6ae29b63e5dbb5b6ddb771f0",
+      "identifier": "ZERO-9",
+      "title": "M6 — 7 миссий и боссы",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nоткрыт\n\nмиссия1: полный человеческий маршрут через Quackerjack/победу/карту принят по игровым полям в Core/Editor/Player; остальные6 естественных побед, секреты/бонусы не приняты\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235811245,
+      "createdOn": 1793235811245,
+      "comments": [],
+      "descriptionSha256": "e295e54ee2fd36809680a0770a8a75e8934952e769fdfb1421bab5295dd40f5d"
+    },
+    {
+      "issueId": "6ae29b63e5dbb5b6ddb771f3",
+      "identifier": "ZERO-10",
+      "title": "M7 — полный маршрут",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nоткрыт\n\nмиссия1 пройдена 24261 кадр от reset до count/mask1/1 в Editor/Player; изображение/звук, полный attract и финал игры не приняты\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235811403,
+      "createdOn": 1793235811403,
+      "comments": [],
+      "descriptionSha256": "621c3152707937d386726939b7a5fba1b4d671f474bb37fe47cb7a675ddc7b50"
+    },
+    {
+      "issueId": "6ae29b63e5dbb5b6ddb771f6",
+      "identifier": "ZERO-11",
+      "title": "M8 — выпуск и приёмка",
+      "description": "Импорт незавершённого критерия из Docs/DarkwingPort/MILESTONES.md, 2026-10-29. Актуальное состояние приёмки уточнять по evidence, не по старому имени этапа.\n\nчастично\n\nсвежий Development Player завершил миссию1/exit0; 22 снимка совпали с Editor. Полный release, остальные критерии и provenance остаются\n\nКритерии и зависимости: Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml, §9–11. Проверки и ограничения — Art/Research/DarkwingDuck/FACTS.xhtml и COVERAGE.csv. Проект ещё не принят целиком.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235811547,
+      "createdOn": 1793235811547,
+      "comments": [],
+      "descriptionSha256": "5ac9dac9ab1d239904dfdd6caa472ff9dd3c515ded8a3ac865f1c9b254570d65"
+    },
+    {
+      "issueId": "6ae29b63e5dbb5b6ddb771f9",
+      "identifier": "ZERO-12",
+      "title": "Непрерывный native clock: loader, AA00 и реальные NMI/yield",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / K1 Card-anchor множества фаз\n\nK1 PASS 237/237 resume, min slack19560 (poll4502), R_max−H=150; анкер на NMI после Card FF17 даёт полный idle-инвентарь без часов предшествующих экранов. Сдвиг poll↔логический кадр на входе в Card K1 не сертифицирует.\n\nЗависимости в порядке: xref-проверка писателей `$84/$88/$8C` (slots1–3 сейчас ASSUMED); перенос `Temp/NativePhysicalClock.cs` в Core с заменой `AtProvenCardWaiting` на K1; теневое распространение от анкера до первого Unsupported после14297. Первый недостающий переход для сдвига — кадры state09 14111–14157 и вход `CA40→D53F` (64 cycles не подключены).\n\n### 1 / native clock: оставшийся минимум\n\nRESETfirstFF17 runtime-owned, component16671reads/48alignments/15negatives; actualschedulerfirstC000/C5A5/nextyield exact вTemp. Scopecanonicalmovie2.1.1, неgenericNES. Productionpause/reverseprices сохранены. Firstactorunknown15520ContactTail. DE86/E698 уже потоковый: loader calls275+streamingpolls281–289 со stopна`$DDCB`, курсор наstore`$E790`.\n\nПослеfirst loader: f17234 partialOAMpass/continuation (главный), затем intro/title/dialog/map/briefing/world0load/reload толькоreachedprices/soundbounds, CA40→D53F/live95. Далее15520F9C2, player06/hook/armedprobe, actors0B/11/12/projectileDamage. Native30writer/liveness,physicalNTstaging иliveF5/F6 нужны; arbitraryFF55cross требуетFF77deferredaudio, wholeprefixno-cross можетисключить. C0BFclear — нет. UnknownRunning неотбрасывать. Copyright49cycle дефект воспроизведён доузкойправки; еёfullregression/hosts ещёpending.\n\n### 1–3 / фаза loader и AA00\n\nPASS native clock6–489: E698/EA36/C115/F5/F6/FF77, singleRTI; FEFF63/61/10, AA00 queues и последний blip; actual input Running gate.\n\nДалее C63C→9600 world7. Для игрового partial snapshot сохранить различие InputPolled/NMI-accept (1–3cycles); observer подписываетservicePoll. Не seedCardWaiting.\n\n### 3 / G66, G37/G42, G62\n\nЗагрузчик inline $DE86…$DE91, «15 за кадр» — приближение. $80=02 означает Running, $C2DE безусловен, $F850 — аудиоочередь, не ожидание. Доступны source-derived OAM-cost и фазы NMI; на обычном f6385 важен commit $FF17, не достижение $CADF. D0 (2026-10-22): NMI принимается на границе инструкций (40 фаз); f6385 accept phase36, но произвольный сдвиг на slot0 FE98 теряет запас 2 cycles. Источник фазы закрыт: anchor = последний commit $FF19 + 17, 29 255/29 255 poll без расхождений; f6385 выводится из commit-цепочки f1924, свободного phase seed нет. D0-core FrameScheduler реализован и проверен (SchedulerVerify PASS); D1 seam (`BeginNmi → Flow.Step → StepBody`) и D2 audio queue/tick реализованы (полный city 29360 state-equal `Temp/shift109_city`, Suite baseline без изменений); остаются native cycle clock/deadline, continuation после NMI и `$F5` skip. Stream не полностью эквивалентен; визуальные результаты смены109 сохраняются в FACTS/COVERAGE.\n\nГородской блокер: план D0–D5 в RESEARCH_HANDOFF_RU.md §8. Сначала доказать фазу одного процесса, затем NMI/ввод/continuation и исполняемые стоимости. Loader уточнять при доказанной необходимости его фазы маршруту; не расширять все7 миссий без измеренной необходимости. Контракт OAM-cost не равен прохождению.\n\n### Финальный перенос остатка GAPS: 1 / audio meter: достигнутый минимум закрыт\n\nc9ddc88 production обычныйCore4372–17233:12862/12862 Tick+NMI-service/147fields exact,1890714bytes/7negatives; reached orderedAPU5645/5645 иearly2629frame-lists exact. Исправлены CF XOR/gate>>2/достигнутые loop/triangle/vibrato/decay costs; прежние13false/57unsupported устранены.\n\nДальше не расширять весь audio engine без достигнутой необходимости. Подключить эти реальные стоимости кclock; PCM/end-to-end onset и intro audio остаются отдельными открытыми gates, не выводятся из RAM/APU-write PASS.\n\nЭтот фрагмент содержит историческое свидетельство и границы его применимости; не считать узкую закрытую проверку полной приёмкой подсистемы. Перенесён 2026-10-29 при финальном аудите ZERO-2.\n\n### Финальный перенос остатка GAPS: 2 / G89\n\n$B454 очищает кэш проб; нативный запрос вычисляется напрямую. Отдельное копирование кэша для семантики не требуется.\n\nЗакрыта поведенческая гипотеза, не цена этой процедуры для непрерывного clock.\n\nЭтот фрагмент содержит историческое свидетельство и границы его применимости; не считать узкую закрытую проверку полной приёмкой подсистемы. Перенесён 2026-10-29 при финальном аудите ZERO-2.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793237838299,
+      "createdOn": 1793235811688,
+      "comments": [],
+      "descriptionSha256": "b40406495112c1c08a49ed062f4ab8ba6c1134419bcc59584e92e8d645b48b15"
+    },
+    {
+      "issueId": "6ae29b63e5dbb5b6ddb771fc",
+      "identifier": "ZERO-13",
+      "title": "Воспроизвести NMI/OAM→RNG на независимом вводе f17234 и городе f6388",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / текущий NMI/OAM f17234\n\nCore096fbf9: continuousclock доведён отreset черезC5F7/DE86 дочестного `$DDCB` yield (calls275+8streamingpolls281–289), лоадер больше не ~15passes/frame; Game всёщёFinish безмиссионногоdeadline. Full38886 unchanged17234 E4B4/68,043F04/03; no newboss/map/world1; loaderfix этого не касается (f17234 new/old равны).\n\nСледующая операция — f17234: NMI внутрь незавершённого bank5 OAM pass (interruptedPC81E5, slot0E, cursor80, parity18, `$9A`=01) с корректным частичным исполнением и продолжением послеRTI; RNG C2DE уже послеRTI. Затем CA40→D53F/live95-owner=Oam.WalkParity. Не seed16502. AdvanceFrame suspend/resume бездубляinput/Flow/player/INC95, Busy publication/staging. All12citybrackets/соседи сintegrated deadline NOT RUN.\n\n### 1 / новый ввод164819Z, первый gameplay blocker\n\nCore83d9b32/tool69fe7c6: horizontal F200/F254→F612/F724 и pause04D0 Active исправлены; contracts47/16, export-owner15 PASS. Full38886: пять групп exact12862 кадра f4372–17233, RGB12295=0. Теперь first RNG17234 E468/B4 иslot15timer043F03/04; player17235/HUD17626/progress27694. Босс/карта/newworld1 пока не достигнуты. Read-only original NMI17234: bank5 return81E5, slot0E,9A01, RNG лишь послеRTI.\n\nЭто второе независимое проявление незавершённого OAM-прохода, не новый collision bug. OAM-cost75/75 exact17225–17300; engine5719/NMI3002. Минимум: computed prefix+NMI/self-clock отreset, bank5 slot/part continuation→RNG→commit и отсутствие повторного pad/flow/player/engine. §8 D0–D5 и FACTS, Temp/human_rng17234. Не ограничиваться задержкой RNG или таблицей кадров. Thunder остаётся отдельным source-derived fixture, не сквозным PASS.\n\n### 1 / город (Wolfduck), запись 20261019T212535Z\n\nПосле полного свежего replay29360 первый миссионный RNG-дефект всё ещё f6388 E4 CC/E6; Wolfduck/подсчёт/карта1/2 не достигнуты. D0 измеряет фазу по original commit, structural AdvanceFrame/D2 queue есть, но self clock/deadline/continuation не подключены. Исправлены реальные audio-предпосылки; первый persistent audio остаток теперь f490, не282.\n\nRESEARCH_HANDOFF_RU.md §8, последний checkpoint1c1dde2: проверить AA00/AB57→C61E/первый intro-flight step по source F85010/C63E f489 против native490, затем computed NMI/audio/исполненный префикс и timed OAM/RNG/yield. Независимый технический review минимального D1–D3 запрошен. Не подставлять costs3587/24401, original RAM/clock или frame rules. Пять port-to-port групп не равны original PASS.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235811954,
+      "createdOn": 1793235811954,
+      "comments": [],
+      "descriptionSha256": "8467b79366c0b758a0de36cb2e53c5123679ab56465905599ff1aa27072e06e0"
+    },
+    {
+      "issueId": "6ae29b64e5dbb5b6ddb771ff",
+      "identifier": "ZERO-14",
+      "title": "Intro, attract и камера A000: довести визуальное и временное соответствие",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / Intro после attract и камеры A000 (незакоммичено, стенд build_06f50facbcf3)\n\nИсправлены проход в конце шага attract (stage 33) и `$6E/$6F` на входе в A000: `CardGameVerify` целиком PASS, `$95` совпадает до 17235, shadow точен на 17160/17293 poll, RGB 2000–2400 точны, 1700 = 281. Остаток полёта: флаг палитры спрайтов `$A049 STY $18` (Y=`$FF`, натив 0x00) — RGB 1800/1900 = 2331/2487; атрибуты NT `$27C0` с 1483; строки и колонки NT на кадр раньше (1057–1067, 1249, 1860–1883); одиночные кадры 1929/2645 на загрузке экранов. FACTS «attract stage 33 и камера полёта A000».\n\n(1) `SetPaletteUploadFlag(0xFF)` в `IntroEntryA000` по `$A049`; (2) атрибуты NT в A000; (3) время строк/колонок NT; (4) 1929/2645. Затем — сборка, Player и ручная проверка Intro.\n\n### 1 / Intro после исправления панелей (история, build_46de61865b68)\n\nПанели и переходы теперь в тех же poll, что у оригинала; shadow точен 8–1668, `$95` — до1910. Вскрыты три старых дефекта (FACTS «исправление intro-панелей»): камера `A000` на 1 px позади с1484 — полёт кончается на 2 кадра раньше, RGB 1800/1900/2000/2100 хуже прежнего; строки NT settle 9100/9000 на кадр раньше; проход при выходе из attract по Start (2628) оставляет обратную чётность `$95` на Title/Map — CardGameVerify поля FAIL.\n\nПо порядку: (1) проход в конце шага attract stage 33 (ROM `$C733–$C790`: логика и проверка Start, затем `$C721` wipe/`$8000` проход и `$C730` yield; при Start прохода нет); (2) камера `$DA70` в полёте `A000` (ROM `$C6B9–$C705`), первый кадр 1484; (3) время строк NT при settle. После каждого — `CardGameVerify`, полные Core, RGB 1400–2400. Ручная проверка Intro — AWAITING HUMAN.\n\n### 1 / дефицит `$95` в Intro → поля Card (история)\n\n`CardGameVerify` FAIL на HEAD9cf913d: первое `4426 $0239 127/108`, 477/477 проверок — только tile/attr/X скрытых спрайтов. Источник — Intro: дефицит `$95` к Title равен1 (у 096fbf9 был2, поэтому прежний PASS случаен). Из-за обратной чётности обход OAM идёт в другую сторону, и на Title/Map (2646–4352) shadow расходится с оригиналом на всех1707 poll. Остаток после скрытия спрайтов на4353 доживает до Card. Shadow двух Core впервые расходится на 462 — там прав 28e19a0. FACTS 2026-10-24 K1.\n\nПричина установлена (FACTS «Intro — почему…»): (1) нативные шаги панелей делают проход в начале кадра, а не после движения — лишний проход при выходе и спрайты на шаг позади; (2) после выхода из панели нативный yield откладывает `$C95C`/`$DD57`-фейд на кадр, +1 кадр на каждом из трёх переходов. Следующее изменение (игровой код, пока не разрешено): перенести проход в конец шага `IntroPanel8F00Step`/`9000Step`/gate `9100Step`, а очистку, мир и первую ступень фейда выполнять в кадре выхода. Затем — полные Core 24261/38886/29360, Suite, сцена/Player и ручной gate. После этого проверить −2 кадра на полёте A000 (1483→1929) и раннее скрытие спрайтов карты (4353 вместо4369). Не подгонять `$95`.\n\n### 4 / G73–G75, intro integration\n\nRESET/copyright/вступление/карта интегрированы; NT/OAM/PAL f8–281 равны, ранний Start не обходит RESET. Полный idle attract не принят\n\nG62/тайминг панелей; короткий титульный fixture не доказывает весь power-on/attract\n\n### Финальный перенос остатка GAPS: 1 / HUD до входа в миссию (закрыто сменой 99)\n\nПорт сей $70/$79 в ScoreDigits/EnergyCol* при конструировании, оба эталона держат $00 до кадра $C92A (м1 f1865, город f1942)\n\nИсправлено переносом времени заполнения в InitializeNewGamePanel(). Не объяснённым остаётся только f1…f4 (мусор power-on в $05B0…$05C1, порт моделирует очищенную RAM)\n\nЭтот фрагмент содержит историческое свидетельство и границы его применимости; не считать узкую закрытую проверку полной приёмкой подсистемы. Перенесён 2026-10-29 при финальном аудите ZERO-2.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793237839752,
+      "createdOn": 1793235812132,
+      "comments": [],
+      "descriptionSha256": "c6f64558eb27aaa64f4ef3b7d9363fb4540380066df9f3e97e4ac81e23cda31d"
+    },
+    {
+      "issueId": "6ae29b64e5dbb5b6ddb77202",
+      "identifier": "ZERO-15",
+      "title": "Ручные дефекты portrait/title/pause/death и исчезновение кадра",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / HUMAN0bb1: portrait/title/pause/death\n\nИсправлено8359e15: лишняя NT-перерисовка; PPUMASK/opaque-priority; pause CHR+FE requests; death C21E и resident-NMI OAM/scroll. Actual DarkwingMain даёт8 selected wholeRGB exact original и точную правую ROI portrait1800. Три полных Core inputs сохраняют все5 прежних gameplay-групп; свежие Player/scene6041048 PASS в указанном в STATUS составе.\n\nUserStand build_d7e9e3908257, короткие заставка/пауза→возврат/смерть→повтор запрошены: AWAITING HUMAN. Intro1800/2200/2300/2400 residual624/960/480/480 открыт, не full-image acceptance. Timing17234/6388 и Thunder не закрыты; audio/latency не перепроверены этим image PASS.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235812273,
+      "createdOn": 1793235812273,
+      "comments": [],
+      "descriptionSha256": "0a71c88521ec9f750a78e41a5233b7fcc27161b167626d905a3a49ac55dfb71b"
+    },
+    {
+      "issueId": "6ae29b64e5dbb5b6ddb77205",
+      "identifier": "ZERO-16",
+      "title": "Летучая мышь, hook и кажущаяся мгновенная смерть: исходный человеческий отчёт",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### HUMAN2026-10-24 / bat-hook apparent instant death\n\nУскоренный viewer скрывал hurt-blink; real-time build9d3c проверен Editor/Player. Пользователь теперь подтвердил, что расхождение начинается позже, а смерть «вроде всё ок».\n\nHUMAN_PRELIMINARY_PASS только этого эпизода; повторно не запрашивать без новой причины. Fullimage/звук/маршрут открыты; f17234 остаётся отдельным блокером.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235812422,
+      "createdOn": 1793235812422,
+      "comments": [],
+      "descriptionSha256": "5561cfaa80fa41ca4152da3cabe6f0e33892b5aa1f2a3bdbd59567ba60c1dec5"
+    },
+    {
+      "issueId": "6ae29b64e5dbb5b6ddb77208",
+      "identifier": "ZERO-17",
+      "title": "Измерить и устранить end-to-end задержку SFX без опережения кадра",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### HUMAN2026-10-24 / audio latency\n\nПользователь подтвердил задержку звуков после прыжка, захвата и выстрела в текущем UserStand (build2f0 по контексту). Human FAIL; инструментальная причина ещё не установлена.\n\nПо прямому указанию пользователя сейчас не исправлять. Только ярлык полного второго повтора подготовлен; ускоренный replay не является проверкой задержки звука. F5 остаётся отдельным отложенным тестом.\n\n### 1 / HUMAN build8d531: остаточный лаг SFX\n\nЧеловек ощущает минимальный лаг приземления/зацепа и подтвердил, что уже сравнивал Port с Mesen; повтор не нужен. На164819Z все65 pending10/12 совпадают по poll4373–11637; после9Bfix147 content bytes exact4372–16492. Не APU/PCM/end-to-end PASS. Editor normal45s software queue median1005samples/20.94ms при48k/DSP256x4, с underrun/late; не измерение Player/динамиков.\n\nNormal-speed standalone и оригинал: PCM-onset относительно показанного события. Не сдвигать запросы на кадр и не подбирать DSP без измерения причины. Данные Temp/audio_output_timing.json; death25/11638 уже исправлен, cache77D16493 иlatency остаются отдельными пробелами. F5 — только удобство нового стенда, не causal fix.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235812581,
+      "createdOn": 1793235812581,
+      "comments": [],
+      "descriptionSha256": "07a9a103f6b3494913043d8ddad83da3eb60bca5e420227486a986e9c690f732"
+    },
+    {
+      "issueId": "6ae29b64e5dbb5b6ddb7720b",
+      "identifier": "ZERO-18",
+      "title": "Звук intro/музыки/выстрелов: оригинальные APU/PCM и незакрытые ручные проверки",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / HUMAN e7eb: intro stop hum и двойной герой\n\nЧеловек больше не обнаружил прочих прежних звуковых/графических дефектов обычной м1, но прерывание intro оставляет гудение до карты; презентация даёт двойного героя. Source81EF loop падает в81F1 silence; D545–D549 скрывает старую OAM до9605/A0. Native пропускал оба хвоста.\n\nSource1e7a90e/build8d5314c3caaa: stopFAIL18/32→PASS32/32, cardentryFAIL→PASS. Original-to-Core иactualEditor RGB4430/4450=0; CoreOAM25671/71 f4430–4500 exact. Fulloldm1/Core22229x5 иPlayer23snapshots/15RGB→реальныйбосс/карта1/1 PASS. **AWAITING HUMAN** короткий stop/card/start check, запрошен сразу послеfreshsmoke; e7eb PASS не перенесён автоматически.\n\n### 1 / HUMAN audio FAIL: музыка/выстрел/приземление\n\nSustain/dotted/SFX loop и9B death gate исправлены; contracts10/16/7,signal34,death12 PASS. Full38886 content147bytes точны f4372–16492, первый остаток16493–16501 толькоcache77D FF/01. Intro489/490 иqueue offset4 остаются.\n\nПроверить source writer77D/порядок period cache без повторного изменения SFX parser; затем normal-speed PCM-onset/display против оригинала. State/accelerated replay не audio/latency PASS. Human fresh gates отложены пользователем.\n\n### 1 / синтез первой музыки и печати,8930286\n\nПользователь уточнил ранний дефект: уже первая заставка, музыка кажется медленной, буквы шипят вместо писка. Измерено: original печатает с400E84; native терял short mode и делил шумовой clock на4. Triangle делился на2 лишний раз (октава вниз). Исправлено8930286; contract FAIL33/34→PASS34/34, исходные APU writes через native синтез дают пик печати301.39Hz vsoriginal300.66Hz. Это APU-only, не интегрированный waveform PASS. Editor normal60.155fps/один AudioSource, FIFO129–152ms; разница end-to-end latency с оригиналом не измерена.\n\nПолучен HUMAN FAIL: лучше, но музыка неполная и приземление запаздывает; текущая версия по контексту a430, не подтверждена файлом. Старый gate636 не считать приёмкой. Не менять темп по субъективному «замедлено»: сначала длительности нот отдельно от высоты/тембра и момент оригинального landing-event отдельно от FIFO. APU frame-counter/envelope/resampling ещё не приняты; не расширять без первого остатка. Город f6388 открыт.\n\n### 1 / audio: jump21, world tasks, period tail; audio-event остаток\n\n671c83e убрал ложный SFX21;54f08df исправил DF04/DF13 и F84E/F850/общую очередь;1c1dde2 восстановил863E–8659. Integrated city audio158 bytes точен f8–489 вместо f8–281, не PCM. Первый остаток490 DA02/01: intro SFX10 запаздывает на1 проход. Ранний дефект музыки/печати и8930286 рассматриваются отдельно строкой выше; исправление синтеза не устраняет этот event-сдвиг.\n\nSource AA00/AB57→C61E/первый flight-step, probe Temp/audio_queue_490; не добавлять frame-delay/лишний SFX. CPU-phase review остаётся запрошен. Свежийprefix6600 подтверждает прежний первый остаток490, миссионный RNG6388; не полный новый город. Стенд пользователя Build/UserStand, не Desktop.\n\n### 4 / audio\n\nИсторическая WAV-метрика33/51,44/59,26/34 и corr0,4367/−87f не является проверкой текущего1c1dde2. Исправлены ложный jump21, DF04/DF13, очередь/F850 и period-tail; persistent state теперь original-exact f8–489, первый остаток490 DA02/01. F5 skip/cycle costs/APU writes/PCM ещё не приняты.\n\nСначала source/native порядок AA00/AB57→C61E/flight и SFX10/C63E на489 против490; затем computed NMI cost и текущие APU/PCM проверки без подбора допуска. Ручное прослушивание новой сборки7e05397023dc AWAITING HUMAN; оно не заменяет waveform-contract.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235812718,
+      "createdOn": 1793235812718,
+      "comments": [],
+      "descriptionSha256": "13e8ae69665d52bfdbeac5756b06ca8d3fb382a5ad90f3b94dd179186aef8cad"
+    },
+    {
+      "issueId": "6ae29b64e5dbb5b6ddb7720e",
+      "identifier": "ZERO-19",
+      "title": "F5: проверить отключение звука на текущем интерактивном checkpoint",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### Gate / F5 output mute\n\nHost-only sourcef1639a5 сохранён в build_0bb1f0cb15b9/production2f94bcc: F5 в активном окне выключает весь звук и возвращает текущую музыку; PCM/секвенсор/APU продолжаются. Contract120/120, старый м1 Player24261→реальныйбосс/карта1-1/23snapshots15RGB, actualEditor prefix16000/15snapshots9RGB и normal25s smoke PASS.\n\n**DEFERRED AT USER REQUEST:** пользователь проверит F5/короткую регрессию позже вместе с другими вещами. Не повторять тот же запрос сейчас; физическая клавиша/слух не PASS. Stop/card/минимальный лаг остаются отдельными gates.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235812891,
+      "createdOn": 1793235812891,
+      "comments": [],
+      "descriptionSha256": "d1031318e31fd0645cf2f6b5a46edb993ba691393c5cfc55943e43034080013a"
+    },
+    {
+      "issueId": "6ae29b65e5dbb5b6ddb77211",
+      "identifier": "ZERO-20",
+      "title": "Изображение: края подъёма, NT stream, полосы и полное RGB соответствие",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / HUMAN e7eb: края подъёма и intro images\n\nВерхние/нижние полоски при подъёме на83af9cf2/3ceafbb1/384d6fe1: человек не уверен в оригинале. На original9800 тоже видны узкие мостовые полосы сверху/снизу; native содержит их же, но wholeRGB1524differences.0b940499/3ee45123 сохраняют intro/title corruption.\n\nНе считать все присланные артефакты оригинальными: точное сопоставление ещё NOT ESTABLISHED. Исходные buffers/запись164819Z уже есть; sourceRGB9685/11000 показывает остаток публикации скролла. Сопоставить соседние poll/NMI/PPU scroll без нового полного прохождения и input offset.\n\n### 1 / HUMAN image FAIL: две полосы/card/intro\n\nЧеловек уточнил чёрную и жёлто-вставочную вертикальные полосы. Actual old Playera430 reproduces black f10700. Cache lifetime + E954 соседние две колонки: ROIx144–159 RGB3120→166, не full RGB PASS. Card раньше1846 differences, теперь4510/4540 и9700 whole RGB0. Полная0C/0A/attract цепочка восстановлена, но intro world-phase2–3frames и scroll/publication остатки открыты.\n\nFresh Player/actual scene и human обе полосы + полная заставка/надпись pending. Сначала AA00/AB57→C61E для первого489/490 intro-event; отдельно NMI scroll publication для9685/11000. Не принимать full image по невидимым NT-byte reductions и не сдвигать сравнение.\n\n### 1 / смена 112: вертикальный NT-заворот и E7C6\n\nDdd776a исправил same-page wrap/строковый сервис; прежние PNG/buffer меры в FACTS сохранены. Текущий1c1dde2: м1 Core22229x5 vsoriginal; новый Player15 snapshots/7 RGB равны Core, карта1/1. Город NT/OAM/PAL29360/29360 равны предыдущему порту ddd776a; это не original image PASS.\n\nAWAITING HUMAN: короткая вертикальная поездка м1 на build7e05397023dc; Player уже пересобран и автоматический маршрут прошёл. Actual DarkwingMain Editor проверен2200 frames, не полный Editor route. Полная приёмка изображения/звука остаётся открыта.\n\n### 1 / точность изображения\n\nПолный маршрут миссии1 совпал по отображённым игровым полям. Физические NT/OAM расходятся; late PNG f22739/f23000 имеют 5745/6841 отличий после pagefix (f23000 до фикса 3072 — случайный page 0; теперь page 1 совпадает с оригиналом по $FF=$90/$FD=1, остаток — NT-текст ending). Final map RGB exact в Core, viewport — 1542/61440 отличия (134 >1, включая watermark). Метрика `stand buffers` — это **число байт-точных кадров** (`matchingFrames`): NT точен в 4699/29360 кадрах города и 1729/24261 м1 (смена 109; до неё — 1661 и 274)\n\nФизический NT-stream и атрибуты вместо полного окна; Unity RGB-квантизация отдельно. Смена 88 измерила дельты между кадрами: оригинал дописывает **одну полосу** (8 тайлов на 57 % кадров с изменением, атрибуты ≤4 байта в 97 %), порт меняет целую страницу на 27…29 кадрах и между ними статичен ⇒ расхождение структурное (непростреленная страница устаревает в оригинале), а не фазовое: поворот кольца (лучшее k=0) и сдвиг на 12 кадров опровергнуты. Смена 95 убрала лишнюю перекраску окна у входа в сцену (`$DD57` миры `$31<=6` публикуют только скролл; псевдо-сцены 7+ сохраняют перекраску, пока их blit не смоделирован): по обеим страницам name, `Temp/win_diff.py`, среднее отличий на plateau-окне города f2140–2600 **473,3 → 61,0**, атрибуты 27,4 → 4,6; на м1 874,0 → 60,0 и 62,0 → 13,0; общие средние 1345,1 → 1331,5 (город) и 396,1 → 316,8 (м1); диалог f289–400 удержан 1,0 (77 байт-точных кадров). Число байт-точных кадров по той же метрике не изменилось: город 3504, м1 7003. Смена 96 сняла ещё одну структурную причину: `$E7C6` страницу не перекрашивает (`$E7D4–$E7DB` выходят при ходе камеры < 8 пикселей, остальное только ставит в очередь строки комнаты `$23`), а порт в `ReloadRow` (`DarkwingGame.cs:134`) красил всё окно и затирал заднюю страницу следующим рядом сетки — на м1 f12248…13269 `$2400` лежала в `$00` 1022 кадра подряд против 10 изменённых байт имени у оригинала. После правки all-zero задней страницы в f12000…13500 нет, среднее отличий имени: город f6000–8000 **607,8 → 245,3**, f12000–14000 **885,2 → 641,3**; канонические счётчики (`buffers`) не изменились в обе стороны: город NT 1 661 / OAM 797 / PAL 6 935, м1 NT 274 / OAM 5 466 / PAL 24 099. Открытые остаток-причины (уточнены сменой 108): сервис строк `$E7C6` не был перенесён до смены 112 (его единственный вход — хвостовой `JMP $E7C6` из `$DC6E`/`$DCD8` в кадре оборота `$FA` через `$F0`, смена 106; вычитатель очереди, формат и арифметика записей сняты сменой 107, подробности — строка G62 ниже), **но plateau он не объясняет**: по `Temp/row_paints.py` целая строка имени красится в эталоне м1 лишь в 19 кадрах из 24 251 (порт — 11), а 24 110 кадров меняют <4 байт. Остаток localized по колонкам и сводится к одной полосе: на городе страница `$2000` на plateau побайтово точна (0 отличий/кадр) и 98 % остатка страницы `$2400` дают колонки 30/31 (по 13 830 из 28 120 в окне f2140–2600) с постоянным `$11`; на м1 после двери те же колонки держат `$10` во всех 26 400 отсчётах при **0** изменённых пар колонок за окно на обеих сторонах ⇒ однократный выбор содержимого при стейджинге. Причина: `LevelTileMap.TryGetRoom` подставляет нулевой chunk (`new byte[64]`) по модели «комната 0 = хвост `$7FC0–$7FFF`», а пробой смены 108 измерено, что хвост пуст и не пишется (0 записей в `$6000–$7FFF` за 1500 кадров от загруженного состояния м1, MMC1/NES 2.0 с PRG-RAM 0, `home/Saves` пуст) ⇒ версия смены 98 «живая SRAM» опровергнута, а правой полосе нужен реальный номер комнаты из `$EB27` с blank-заполнением (uniform `$10`/`$11` = индексы `$0E/$36/$37`). Плюс `LevelTileMap.StreamColumns` берёт `cell = scrollX>>8` и `_row + page`; шаг сетки `$2E = $11`/`$2C = $10` подтверждён, версия о завороте индекса ячейки опровергнута. Смена 97 сняла ту же структурную причину у третьего писателя: `$E388` (переход через дверь, `DarkwingGame.LoadSection`) публиковал `StreamColumns` — обе страницы и источник `scrollX>>8` + `_row + page`, — хотя nametable принадлежит кольцу `$E698` (на эталоне м1 f1847 задняя страница = 840 неизменённых байтов имени и две полосы курсоров, неподвижные до f2600). После правки, по 2×960 байт имени: страница 0 после двери f18621…19500 **759,0 → 60,0**, f18535…18620 **627,1 → 66,3**, задняя там же **42,2 → 1,3**; окно поездки f12000…12400 без изменений. Остаток впервые локализован по колонкам: расходятся ровно **две** — 30/31 после двери и 0/1 на поездке, т.е. одна группа курсора `(attrCol, halfCol)` из восьми за секцию не окрашивается ни разу; две неразличённые причины — ранний выход `StreamBand`→`TryGetRoom` по индексу сетки (считать пропуски) и старт кольца с `$F8` (`StageCursor = StageTarget\\\n\n0x70`) против ROM-овских `$0F\\\n\n$70`, что меняет страницу полного оборота. Канонические `buffers`без изменений (м1 NT 274 / OAM 5 466 / PAL 24 099, город NT 1 661 / OAM 797 / PAL 6 935; городские буферы побайтово равны захвату смены 96), регрессий нет (м1`states`22229/22229, Suite 18/24, STRICT 8/24, errors 0, Contracts 13/13, trench 619/619, cling 199/199, climb 399/399).  Смена 98 (комната 0): версия «порт ни разу не красит группу полос» опровергнута — счётчик пропусков в`StreamBand`дал`SKIP = 0`на всём м1, а множество групп`(page, inRoomCol)`у оригинала и порта совпадает. Истинный механизм — арифметика`$EB27` (`LDX #0 / STX $00 / LDA ($32),Y`+ шесть`ASL A / ROL $00`): адрес полосы = `$7FC0 + room·64`, то есть `room ≥ 1`= PRG-смещение`(room−1)·64`(порт был прав), а комната 0 = хвост 8 KiB рабочего ОЗУ`$7FC0–$7FFF`; порт подменял её пустой страницей (`!= 0`в`LoadRow`/`TryGetRoom`/`TypeAt`). После переноса (комната 0 декодируется как chunk из `$00`) м1 f12250 правая пара колонок 30/31 страницы 0 совпадает 60/60 байт в байт; канонические счётчики: м1 NT 274→276, OAM 5 466→5 467, PAL 24 099, город NT 1 661 / OAM 797 / PAL 6 935 без изменений; `$23`источника полосы совпадает с эталоном на 24 253/24 261 кадрах. Открытый остаток назван точно: на м1 f18552…20000 оригинал держит на этих колонках ровно`$10`на 30 строках, а макротайл 0 даёт`$11/$7B/$8A/$8B`, и uniform `$10`в PRG-комнатах имеют только`$0E/$36/$37`— значит хвост`$7FC0–$7FFF`там живая SRAM, и следующий шаг — найти её писателя, а не подгонять содержимое. Регрессий нет (м1`states`22229/22229, Suite 18/24 RESULT, STRICT 8/24, errors 0). **Смена 109 закрыла механизм правой полосы**:`$EB27`для комнаты 0 даёт`$26/$27 = $C0/$7F`, `$EA36`открывается`LDA $27 / BMI $EA3B / RTS`и выходит до сборки блока, поэтому`$0140…$014F`/`$11/$12`сохраняются и полоса красит остаток предыдущего refresh (по эталону прямо: м1 f18540…18551 —`$23 = $32`, `Grid[$32] = $00`, `$26/$27 = $C0/$7F`, блок = uniform `$10`все 12 кадров в двух независимых повторах; с f18552 при`$27 = $84`блок меняется каждый кадр). Версия смены 108 «нужен реальный номер PRG-комнаты с blank-заполнением» снята — при комнате 0 chunk не читается. Перенесено в`LevelTileMap` (`_bandTable`/`_bandPalettes`, `roomId != 0`, покраска оставшегося блока вместо `return`, половина атрибута по `$33`/`$CC`): м1 NT 274→**1 729**, колонки 30/31 страницы `$2000`133 486→**14 477** расходящихся строк, окно двери f18621…19500 **60,0→0,0** отличий/кадр (880/880 байт-точное), мера смены 98 (f12250 = 60/60, атрибут`$55`) сохранена; город NT 1 661→**4 699**, plateau f2140…2600 по странице `$2000`колонки 30/31 — 0 расходящихся строк. **Цена измерена и не скрыта**: м1 колонки 30/31 страницы`$2400`121 498→140 754 (+19 256; в окне f1…1900 — 63 кадра «эталон`$11`/ порт`$00`»), тот же остаток даёт городские 13 830 строк plateau. Открытая часть названа и измерена: остаток `$11`пишет кольцо`$E698`на предмиссионных идах —`Temp/band_block_trace.py`на обоих эталонах даёт идентичный эпизод f707…f716 при`$31 = $09`(курсор`$0F → $19 → $28 → $37 → $45 → $53 → $61 → $70 → $7E`, `$26/$27 = $C0/$A6`⟹ chunk`$A6C0`⟹ комната`$A2`из таблицы`$32/$33` мира 9, блок меняется каждый кадр), а с f716 guard (`$23 = $01`, `$25 = $88`, `$26/$27 = $C0/$7F`) замораживает его на uniform `$11`до входа в миссию (м1 f1838, город f1915). Порт для`$31 ≥ 7` полосу не гоняет (`DarkwingGame.cs:188`, `DarkwingGame.Boot.cs:186`зовут`StreamColumns`), поэтому его `_bandTable`остаётся`$00`. Следующая операция — пропускать псевдо-сцены через `StageBand`/`StreamBand`с таблицей мира 9. Регрессий нет (м1`states` 22 229/22 229, Suite 18/24, STRICT 8/24, errors 0, Contracts 13/13, trench 619/619, cling 199/199, climb 399/399; OAM/PAL без изменений). Критерии не ослаблены\n\n### Финальный перенос остатка GAPS: 1 / постбоссовый графический FAIL build636 →00578b0\n\nЗапись уже содержала дефект; без новых скриншотов подтверждены лишний repaint world8/clear-scroll, неверный zero-pixel color и пропущенный C319/C33C–C35C tail. f23000 RGB6841→3072→0/61440 original-to-port в Core и новом Player. Вокне22500–23254 PAL755/755, OAM754/755, NT13/755; f23000 остаток8 NT attributes на невидимой странице, не полное NT равенство.\n\nbuilda43000271432 full24261/реальный Quackerjack/счёт/карта1/1/exit0 PASS;21 snapshots/13RGB равны Core. Core22229x5/Suite18/24 STRICT8/24 errors0/contracts13 и3 маршрута сохранены;3 новых focused contracts PASS. AWAITING HUMAN оценка показанных исправленных кадров и начала м1/звука нового Player в Build/UserStand; повтор босса/новые скриншоты не требуются. Полная image/audio приёмка открыта.\n\nЭтот фрагмент содержит историческое свидетельство и границы его применимости; не считать узкую закрытую проверку полной приёмкой подсистемы. Перенесён 2026-10-29 при финальном аудите ZERO-2.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793237837943,
+      "createdOn": 1793235813146,
+      "comments": [],
+      "descriptionSha256": "aff0f5a0fb8ec3685590e2f906c38ef78692163e4e2f6932863340e1e301c6e6"
+    },
+    {
+      "issueId": "6ae29b65e5dbb5b6ddb77214",
+      "identifier": "ZERO-21",
+      "title": "Thunder в world1 и исходный отчёт о трёх молниях",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / новое оружие world1, Thunder\n\nОбъединён перенос841C–85BB, включая bit7, анимацию14→17, пробы, режим2B, парный bolt иJMP-хвосты8483/84A8. Срез оригинала poll34291–34600, seedlocal21=poll34312.\n\nНовый fixture использует правильный PRE-input контракт; после корректного PRE-input ENEMIESfirst204 вместо63; player RESULTfirst284 вместо61, полныйSTRICT FAIL22 поscratch10. Сквозное world1 по новому вводу пока недоступно из-за17234. Оба направления/боевые попадания/расход/звук требуют дальнейшего покрытия и human.\n\n### 2 / перепроверить старый ручной баг-репорт: спецоружие с тремя молниями (сообщён 2026-10-22)\n\nТест пользователя выполнен **до последних 30 часов работы Qoder над городом**; при новой ручной проверке 2026-10-22 пользователь подтвердил тот же дефект первого оружия. Точный запущенный билд/Editor ещё уточняется; повторная проверка оружия в городе пока не заявлена. На мосту м1 первое подобранное оружие выбиралось через Select: вместо ожидаемых трёх молний (вперёд и две под 45°) появлялись три символа со смещением, летящие назад относительно игрока. Такое же оружие в городе на момент того теста вело себя идентично м1. В записанном прохождении оригинала м1 оружие подбиралось, но не применялось. Точная версия старого билда, направление взгляда и причина не установлены; агентом не воспроизведено.\n\nАктуальность дефекта м1 подтверждена пользователем; после приоритетного блокера начала уровня — агентское воспроизведение и целевая запись подбора → Select → выстрел в оригинале и порту с обоими направлениями взгляда, затем проверка общего поведения на м1 и в городе. Раздельно сверить вид снарядов, точку появления, направления/скорости, попадания и расход боезапаса. Использовать существующий стенд и сохранить исходные записи; полное перепрохождение нужно только при доказанной необходимости. Даже при исправленном дефекте успешный маршрут без стрельбы не доказывает покрытие использования оружия.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235813360,
+      "createdOn": 1793235813360,
+      "comments": [],
+      "descriptionSha256": "7d3fe0d5d4be92983f2ebd04078ceb70825b3c260d4225c133b767deb19ae5e4"
+    },
+    {
+      "issueId": "6ae29b65e5dbb5b6ddb77217",
+      "identifier": "ZERO-22",
+      "title": "Независимые записи и полное покрытие действий всех четырёх оружий",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 1 / weapon coverage\n\nНовый непрерывный ввод впервые проверяет применение split weapon; child animation/dirs/velocity исправлены, native contract34/34 в обе стороны. Это не покрытие всех видов оружия/попаданий/аммо/секретов.\n\nКороткий human fresh check Select/применить первое оружие в обе стороны; остальные пробелы остаются в COVERAGE. Старый successful route pickup не считался применением.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235813507,
+      "createdOn": 1793235813507,
+      "comments": [],
+      "descriptionSha256": "d364f5b557106b1a968afd6c04c2651d08640b66ff74566ed25e9dfb1c888411"
+    },
+    {
+      "issueId": "6ae29b65e5dbb5b6ddb7721a",
+      "identifier": "ZERO-23",
+      "title": "Палитра D1: порядок shadow/upload на f18607–18614",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 2 / D1 palette phase (новое, 2026-10-22)\n\nПосле перевода NMI перед flow полный city `buffers` даёт NT/OAM 29360/29360, PAL 29357/29360; первое отличие f18610 offset1: старый baseline 54, новый 19. Это один кадр задержки shadow-palette upload при новом порядке, а не state-расхождение. Оригинал на f18610 offset7 = 17, оба порта 6, т.е. исходная палитра в этом окне всё равно расходится и служить аргументом за старый порядок не может.\n\nСверить оригинальный `$0300` shadow и момент `$C059` upload на f18607–18614; не откатывать NMI-before-flow без доказательства. Отдельная проверка PAL, не смешивать с f6388 state.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235813668,
+      "createdOn": 1793235813668,
+      "comments": [],
+      "descriptionSha256": "504248510ae54e8dd72dd6bcfe4b2f33d7ac08e29e11c961e7773218e3bb7bef"
+    },
+    {
+      "issueId": "6ae29b65e5dbb5b6ddb7721d",
+      "identifier": "ZERO-24",
+      "title": "Черепаха в панцире: проверить ручной отчёт на оригинале",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 2 / проверить по оригиналу: черепаха в панцире (ручной отчёт 2026-10-22)\n\nПользователь после подтверждения исправления графики сообщил: в порту черепаха получает урон в закрытом панцире; по памяти в оригинале пули отлетали. Оригинальное поведение пока не подтверждено, тип выстрела и снижение HP агентом не проверены. Скриншот участка м1: C:/Users/Warlock/AppData/Local/Temp/codex-clipboard-c8dd2ad7-6218-4ffc-8a01-e08d9623b58b.png.\n\nЗапросить короткую независимую запись оригинала: обычный выстрел по полностью закрытому панцирю и по открытой черепахе; различить отскок/исчезновение пули, вспышку и реальную потерю HP/смерть. Затем повторить ввод в порту. До оригинального контроля не менять уязвимость по памяти. Это следующая проверка покрытия врагов; текущий этап D0-D5 города не прерывать.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235813814,
+      "createdOn": 1793235813814,
+      "comments": [],
+      "descriptionSha256": "582e3eebc8dedac3ab107b034dc1c670bb33dcd4a309c389d816d32a1c1d93ec"
+    },
+    {
+      "issueId": "6ae29b65e5dbb5b6ddb77220",
+      "identifier": "ZERO-25",
+      "title": "Wolfduck и осколки behavior0B: естественный бой и удаление slot0A",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 2 / G86\n\nСтарый f38 был дефектом посева fixture: отсутствовал $EF, блокировался отсчёт $ED. Теперь WolfDefeat ENEMIES399/399; полный STRICT всё ещё FAIL373 на смене сцены без GameFlow.\n\nНе бой по натуральному маршруту; $0400/$0570 и полный RGB/звук отдельно не приняты.\n\n### 2 / G90\n\nПеренесены падение/прицел/бег ребёнка55 и4осколка; оригинал pilot15 дважды byte-equal. Throw fixture first ENEMIES311: slot0A active1/0 при контакте осколка с полом.\n\nСледующая операция: write-watch удаления этого слота в оригинале, затем перенос соответствующей ветви behavior0B; бой/карта в обычном flow OPEN.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235813953,
+      "createdOn": 1793235813953,
+      "comments": [],
+      "descriptionSha256": "4ecee22b4e1a2bc15ad495eb8954f3287e8a2752506a9ea788fe93b2a52b277a"
+    },
+    {
+      "issueId": "6ae29b66e5dbb5b6ddb77223",
+      "identifier": "ZERO-26",
+      "title": "Естественные маршруты остальных миссий и настоящие боссы",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 3 / G51/G52 и маршруты\n\nСтарые короткие m3 RESULT f1314; m4 f198; m5 f507; m6 f330. Человеческий маршрут миссии1 теперь завершён отдельно\n\nИсправлять первый причинный дефект остальных маршрутов; отдельные доказательства реальных боссов и выхода",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235814081,
+      "createdOn": 1793235814081,
+      "comments": [],
+      "descriptionSha256": "ebc2f7ccd28d553bd0c626effe81a770d57a9e2674d21d73b52ab4fc62157527"
+    },
+    {
+      "issueId": "6ae29b66e5dbb5b6ddb77226",
+      "identifier": "ZERO-27",
+      "title": "Карта и пауза: OAM, NMI/shadow и полная приёмка",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 4 / G32, G71, pause\n\nкарта: динамический OAM расходится; титул OAM/палитра 59/60; пауза OAM f1\n\nРазделить синтетический paired-map тест и обычный поток; для паузы проверить NMI/shadow seed. Не убирать f1 без доказательства фазы",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235814215,
+      "createdOn": 1793235814215,
+      "comments": [],
+      "descriptionSha256": "3f69a73822e08c5e2fcbdad1117d26391c24bb33f69b566928b3e8a49854ef7c"
+    },
+    {
+      "issueId": "6ae29b66e5dbb5b6ddb77229",
+      "identifier": "ZERO-28",
+      "title": "Естественный финал игры и оригинальный golden",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 4 / G69/G70\n\nпринудительный финал до EndingStage6/$65=FF выполнен, оригинального финального golden нет\n\nПриродный финал, полёт $F51B и читатели $65 после $D8D0; принудительные 7 побед только проверка ветвления",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235814349,
+      "createdOn": 1793235814349,
+      "comments": [],
+      "descriptionSha256": "a6c1301fb480d0e4a7c716d43776f6f6d78bfbdc5c27572caf1ce46895b7952d"
+    },
+    {
+      "issueId": "6ae29b66e5dbb5b6ddb7722c",
+      "identifier": "ZERO-29",
+      "title": "Секреты и бонусы: инвентарь, вход, награда и выход",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 4 / secrets/bonus\n\nкод pickups частично есть, сценариев вход/награда/выход нет\n\nИнвентарь достижимых секретов и бонусов; types 20/22 NEVER_PLACED не добавлять вручную",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235814582,
+      "createdOn": 1793235814582,
+      "comments": [],
+      "descriptionSha256": "3fb780c111a3ee79280916f90e4d9df17a008df4050b8b2912a1f7adde7a8f54"
+    },
+    {
+      "issueId": "6ae29b66e5dbb5b6ddb7722f",
+      "identifier": "ZERO-30",
+      "title": "Standalone: pixel/audio equivalence и полный release",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 5 / standalone\n\nПолный buttons-only маршрут миссии1 выполнен свежим Development Player: count/mask1/1, 8600 очков, exit0 без исключений. 22 снимка равны Editor/Core\n\nPixel/audio equivalence, остальные миссии и окончательный release остаются открыты; build/evidence в ACCEPTANCE_REPORT\n\n### Финальный перенос остатка GAPS: 1 / G91 естественный проход м1\n\nЗакрыт для записанного маршрута: все 24261 кадр от reset, реальный Quackerjack, победа/счёт/карта в Core, штатной сцене и свежем Player. f2033–24261 все пять групп полей 22229/22229; count/mask1/1\n\nИсточник неизменён: Playthroughs/20261019T050329Z. Это не полная сертификация изображения/звука/всех маршрутов\n\nЭтот фрагмент содержит историческое свидетельство и границы его применимости; не считать узкую закрытую проверку полной приёмкой подсистемы. Перенесён 2026-10-29 при финальном аудите ZERO-2.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793237838753,
+      "createdOn": 1793235814816,
+      "comments": [],
+      "descriptionSha256": "9945e45989311d6a230f0926c46066544bf72557f814fa623767ba2e2d649823"
+    },
+    {
+      "issueId": "6ae29b66e5dbb5b6ddb77232",
+      "identifier": "ZERO-31",
+      "title": "Provenance, THIRD_PARTY_NOTICES и состав окончательного release",
+      "description": "Перенесено из Research/DarkwingDuck/GAPS.md, 2026-10-29. Ниже исходные свидетельства и проверяемые действия; исторический частичный PASS не закрывает оставшийся объём. Хеш и сохранённый оригинал — внешний снимок 20261029-art-layout-before. Требования действуют из Art/AGENTS.xhtml; ссылки в старом тексте обозначают пути до переноса в Art.\n\n### 5 / provenance\n\nbuild dependencies и hash ресурсов зафиксированы, лицензии инструментов лежат раздельно\n\nСвести окончательный THIRD_PARTY_NOTICES/provenance и проверить состав release. Нет основания считать это закрытым только по отсутствию .nes",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235814957,
+      "createdOn": 1793235814957,
+      "comments": [],
+      "descriptionSha256": "426bfb57dc8cc269d5ef25fd6d00b18fcec4a952fa2035b13646308a8ae405fd"
+    },
+    {
+      "issueId": "6ae29c01e5dbb5b6ddb77235",
+      "identifier": "ZERO-32",
+      "title": "Техническая передача непрерывного clock: актуализировать гипотезы по текущему checkpoint",
+      "description": "Полный исходный технический план и уточнения, перенесённые из handoff §8. Это сохранение незавершённой очереди без утраты деталей, а не подтверждение всех исторических гипотез. Основная реализация ведётся в ZERO-12/ZERO-13. Проверять актуальность каждой операции по фактам и текущему исходнику; не повторять выполненное.\n\n### Подключение времени к игровому выполнению: следующий этап для DeepSeek (2026-10-22)\n\n**Актуальная граница 2026-10-25:** native clock от power-on проходит первый loader с реальным NMI/RTI/F5/F6, FEFF и оба текста AA00, затем проходит полёт и явно останавливается Running перед C63C (презентация героя). Нет seed Waiting/clock, таблицы кадров или исполнения ROM. Проверены75702 инструкции loader,90 продолженных checkpoint-проверок,150 FEFF и625 AA00/return и162 flight-проверки,202 descriptor bytes; actual input hook на Running loader устранён и проверен ненулевой кнопкой. MissionTail/Card/FAAE уже production, но миссионный deadline ещё не вычисляется: human17234, city6388, M3 active/RNG10060 остаются открыты. Версия стенда и свежие gates — STATUS; не использовать исторические builds ниже как текущие.\n\n**Минимальный оставшийся план для DeepSeek / следующего исполнителя:** MissionTail5135648 соединён, ноFinish; Card/FAAE и0C costs ужеproduction.0C352source/525actualBank6exact/0false; full3Core inputs preserveold22229×5 иfirst17234/6388, records/PNG exactpriorCore, Suitebaseline unchanged. Это не новыйroutePASS; playable6041048/gates — STATUS.\n\n1. **Card соединён; фазу не подставлять.** Core59fab2e/cf1da54 исполняет D53F→9605/F89A и F8B1→960C/9636→FEFF/FF17 в Game:240actualcalls/99840end/98592entry mappedbytes/237resumeprices PASS. Pureyield177/release3, pause699prefix/698commit иreverse2238×2 ужеproduction. Не повторять их перенос. `_cardWait>1`, emitFF17 и Finish сами не доказывают timely commit; terminalwait сохраняет60/59 и input-offset при разных первых edges. Native CA40→D53F prefix ещёнужен (исходные инструкции64; D53F→F89A1154; source3entries1218 post-hoc). Дляpartial95 owner=Oam.WalkParity, не ранний Game.FrameParity++.\n2. **Cold bootstrap выполнен9f784aa:** hardware/shadowPPUMASK, CtrlNMIoff gate, typedRESET/statuspoll/init/NewProcess/firstFF17 подключеныGameFlow. Component16671reads/4success/6blocks/48alignments(3suppression)/15negatives/20splits; full3Core f8–endbyteequalcf1da54,old22229×5/PNG15-62/Suitebaseline preserved. ПрофильCPU0/PPU1 заданнеизменённойmovie2.1.1/randomize=false; невыбранпоclock инеуниверсальныйNESpoweron. ActualPowerOn-derived FrameScheduler даётsourceC000176306/FE98→C5A5178648→FF19179934,48variants/9negatives (`poweron_first_nmi_verified.json`). Attractrestart явноinvalidatescoldclock иостаётсяuntimed; sourcepoweron1–7 excluded. Не возвращатьсякподборуanchorпоCardWait/Waiting16502.\n3. **Следующая операция — C63C→9600, не повторять reset/loader/AA00/flight.** Native flight162checks/8negatives PASS, первый OAM сохранён перед вторым на выходе. Source Temp/intro_card_clock.csv и intro_flight_checks/card_static.json:127checks; C63C→9600=1158 при принятом F850;9600→F89A=39; blit967A=2033 (5вызовов); две60-yield FEFF holds дают61cycles×118, переходмеждуними79, выходкC65510. Это source-only: подключить фактическую доступность audio queue/actual второй OAM; текущий CardPass разрешает0..6, а world7 использует967A. ПослеC655 нужны достигнутые intro/title/dialog/map/briefing/world-load/state09 пути, их реальные VRAM/CHR/palette/audio producers и InputPolled↔NMI seam. Неизвестная цена не разрешает сбросить Running/выбрать фазу; exact либо доказанный sound bound для всех continuations. K1 не сертифицирует ранний poll↔логический сдвиг; не считать `_cardWait` доказанным Waiting. Не рассчитывать заранее все7миров/AI.\n4. ПослеCard пока отсутствуют reached contact15520 (813B→FB7B→F85015→F9C2, actualqueue/State/Checkpoint/ladder доступны), player06/hook F324/F360/D77C/armed F73B/F797, actors0B/11/12/projectileDamage, native30writer/liveness ифактическийbank1/environment tail. Сначала exactprice либо доказанныйbound конкретнойдостигнутойветви; неценаизsourceclock/номераpoll/числаобъектов.\n5. Связатьactual NMI publication/Busy/PPU339 сGame AdvanceFrame иMissionTail/CardPass.AdvanceTo/Resume безповторныхinput/Flow/player/INC95. NativephysicalNTstaging покаlegacy. Затемfull38886→реальныйQuackerjack/счёт/карта1/1/world1/Thunder,12citybrackets+ordinary6385/6388neighbors ивсестарыеinputs;freshEditor/Player/human gates. Условный732probe объясняетOAM17234/NMI3002, ноfirstanchor покаNOT RUN; новаязаписьполностьюнепройдена.\n\n**Базовое timing-продолжение 2026-10-23 / Core2f94bcc:** production `OamDispatcher.RunFrame` исполняет native resumable walk. `BeginWalk/AdvanceWalkTo/FinishWalk` сохраняют slot/part/carry/указатели и исходный порядок мутаций; source full164819Z даёт30682 exact costs/406-byte endings и15 exact partial NMI/resume. Invulnerability decrement после player-cull. Это закрывает bank5 механизм D4, но не автоматический выбор deadline: `DarkwingGame` пока вызывает Finish целиком. Новый full38886 всё ещё first17234 E468/B4,043F03/04, без Quackerjack/карты/world1; старыйгород29360 first6388CC/E6. Не заменять недостающие native prefix/NMI/phase средними ценами. 9B death gate закрыт отдельно, audio content first11638→16493 (cache77D). Прежние build0bb1 и Editor/Player gates сохранены в FACTS; актуальная графическая версия указана выше.\n\n**Независимый контроль 2026-10-23, Core83d9b32/tooling69fe7c6:** новый человеческий ввод164819Z после исправлений horizontal object-push и pause Active достигает исходного состояния по пяти группам f4372–17233 (12862 кадра). Его первое расхождение теперь тоже временное: source bank5 `$8000` начинается на poll17233/cycle513230043; poll17234 принимает NMI из `$81E5` (slot `$96=0E`, OAM cursor `$97=80`, parity `$95=18`, `$9A=01`). Это середина записи parts слота14; slot15 timer043F ещё03, native уже04. RNG `$C2DE` выполняется лишь после RTI на513238772, поэтому на poll17234 E4=68/B4. `Temp/human_rng17234` prefix17300 byte-identical source fulla f8–17300, 0 Lua errors. Это дополнительный контрпример «м1 всегда один логический шаг на poll», не основание откладывать только RNG. Новый маршрут пока не достигает Quackerjack/карты/world1; старый м1 сохраняет22229x5. Полный свежий город `Temp/city_object_pause_full`29360 byte-identical прежнему порту, first6388 не устранён.\n\n**Проверенные компоненты уже в коде:** FrameScheduler instruction continuation248; InputTiming30681sourcehooks/196608combinations; NmiTiming publication/timers38879fixtures; resumable bank5 OAM30682calls/15partials. d08cdd8 actual eight-prefix counters8×732 иcomputed input+head resume732, audio12862cost+147fields, typed0360 queues208/flags732/attr93696. Полный наборисходныхпроверок/исключений — FACTS. NativeVram работаеткакmetadataowner времени; legacydirectNT иBeginNmi busy0 ещё не исправляют9A-публикацию.\n\n**Остаток для DeepSeek, в порядке зависимостей (не весь каталог игры):**\n**Audio minimum уже в production c9ddc88:** прежние13false-supported/57unknown устранены. NormalCore12862/12862 costs+147livefields и732-window5645/5645 orderedAPUwrites exact source,7strictcontrols; early2629APUlists также exact. Не тратить следующий этап на перенос старого Temp3diff или общий audio engine: переиспользовать LastNmiAudioServiceCycles. Не переносить source arrival/clock. PCM/latency инепопавшиевroute команды не приняты. Данные/команда `Temp/audio_actual_audit/verify_production_whole.py`; исходные offsets/ветви — FACTS.\n\n1. **Не переносить старые Temp meters повторно:** production CAFC уже00/01/04/0B ивсе732actualcalls exact (424/185/57/66), включая7freshjumps/19queue-dependent paths. Scroll/spawn/zone/palette/bank6/bank1/head также732/732 каждый; `Temp/prefix_production_audit_final.txt`. Source script/body границы сохранять: CAFC не включаетCA40wrapper; bank6/1script не включаетcaller/switch; palette metric — script. Alias/scratch fixture не fullRAM PASS.\n2. **Следующая точная операция — ordinary prefix assembler перед OAM:** связать реальные CAFC/scroll/spawn/zone/palette/bank6/bank1/head prices сCA40return/30, CA6B→CA79 guards иCA8C→CABB environment-tail (`ActorTailTiming.MeasureBank1AndTail` уже существует). `$65` имеетactualowner Player.LevelActive; `$30` пока нет: directwriter толькоCA57clear, отсутствиеindexed/indirect producer не доказано. Source732×30=0 не seed. FF55 normal55 допустим после доказательства uninterrupted atomic prefix; иначе нуженреальный F5/F6 continuation/context, неSource0. Не вставлять суммарную цену17233/количество объектов/номерframe.\n3. **0360/19 producer иcostadapter ужеproduction:** queue795controls и208sourcequeues/732flags/93696attrs/9negativecontrols exact. Модельсчитаетпубликацию при данномhandlerCycle, не генерируетего. Пропущенные зависимостиstep→macro10, bottompalettes иduplicate RowService закрыты. Приbusy/blank standalonequeue API сохраняетpending, ноGame.BeginNmiещёпередаётbusy0 иNTфункциональнопишетсяlegacyпутём. Подключитьactual9A/coroutine истейджингприинтеграции; непереносимые1C/1D/emptyrow/multigroups явноunsupported, не молчаливыйноль.\n4. **Физическаяфаза, затемdeadline:** PPU89342/89341 отrender/oddskip, CPUmod3 иDMAparity; неoffsetпоpoll. Полныйнаборidlecontinuations допустим тольконаобоснованном native semantic Waiting/yield (card FEFF/FF06 — кандидат, неготовыйanchor). Проверитьего9A/input/return иMask-at-prerender; сливатьтолькоэквивалентныесостояния, не выбиратьоднуфазу. СтарыйSource-fixture16500→16992 с93phases иsource-offset0 использовал измеренныеbody/arrival; он НЕruntime. Еслиphase-setнеуникален, сохранятьвсеварианты/unsupported, азатем исследовать конкретнуюнедостающуюMask/wait/interrupt-sampling операцию, невесьintro.\n5. Подключить `BeginWalk/AdvanceWalkTo` к computed budget: один INC95, исходный caller C21E/wipe до walk; при NMI продолжить тот же slot/part без flow/player/controller повторно. Затем безусловный RNG84/85 +caller95/96 и commit55cycles с правильной границей FF17→FF19. На target все15 short crossings внутри bank5 OAM, внутреннее дробление RNG пока не требуется; bank4/loader не расширять до реального нового блокера. Верхняя граница может доказать отсутствие crossing, но не заменяет точную фазу следующего commit (старый city6385 запас2cycles).\n\nПосле замыкания clock повторить весь38886 до Quackerjack→счёт→карта1/1→world1, затем исходный29360 до Wolfduck→карта1/2; сохранить старый24261, Suite/focused, real scene/fresh Player. Не объявлять маршрут или timing исправленными по отдельным counters. Pending human gates остаются отложены пользователем, не PASS.\n\n**Минимальность и новые измерения.** Ниже номера кадров — тестовые точки оригинала, не условия runtime.\n\n- Достаточен один главный процесс с явными нативными продолжениями: после f2033 слоты процессов `$84/$88/$8C` нулевые во всех 27 328 городских и 22 229 отсчётах м1. Это граница доказанного на этих маршрутах, не утверждение обо всех миссиях.\n- В обычном проходе f6385 `$CADF` достигнут за57 cycles до следующего poll, а запись waiting (`$FF17 STA $80,X`, следующий PC `$FF19`) — лишь за**2 cycles**. Хвост `$CADF→$FF19` занимает **55 cycles**, также **20 389/20 389** в новом чистом повторе оригинала м1. Преждевременный yield или усреднение фазы может создать ложный пропуск на обычном соседе.\n- f6387 выполняет 24 401 cycles тела; scroll8750, player2559, behaviors2159, environment1999, spawn1180, zone495, palette82, head31, OAM7050, RNG96. NMI до него: publish1158, queue/timers162, audio3587, остаток до тела736. Это декомпозиция измерения, **не допустимые runtime-константы**.\n- Алгебраическое исключение одной составляющей при сохранении остальных точными убирает первое пересечение для player, scroll, spawn, zone, behaviors, environment, OAM, NMI publish/audio/resume. На всех12 событиях исключение audio убирает12 пересечений, scroll/behaviors — по10, player/environment — по8. Следовательно, OAM-only недостаточен; это **не доказательство необходимости детализировать все ветви всех подсистем**. Нужна стоимость реально исполненного префикса; безопасные границы допустимы только если они однозначно сохраняют порядок событий.\n- В новом полном оригинальном повторе м1 **20 388** окон тела и **0 коротких игровых пересечений NMI**. Ближайший обычный проход f7154 заканчивает тело за270 cycles до poll, waiting — за215. Длинные loader/resident-окна не объявляются игровыми пропусками.\n- `$F850` — постановка аудиозадания в кольцо8 (`$DA`, `$DC…$E3`, свободно=`$88`), **не ожидание на A кадров**. Все12 bracket имеют `$9A=1/$F0=0/$80=2`; f7180 не исключение: совпавшее держание RNG порта там относится к уже другой траектории/состоянию09 вместо0B.\n\n**Порядок реализации и зависимости (не общий аудит).** Имена новых классов ниже — предлагаемый интерфейс, а не уже существующее API.\n\n1. **D0 — часы, один процесс и точка yield.** Добавить в Core небольшой source-specific `FrameScheduler`: Running/Waiting/Ready, countdown `$81`, continuation, положение idle-сканирования и сохранённые локальные значения. Источник — fixed bank7 `$FE8F…$FF1E`; waiting публикуется только в конце `$FF17`, не на `$CADF`. Для idle-цикла без готовых слотов из исходника получается93 cycles, но это ещё нужно проверить контрактом; учесть NMI между загрузкой `$80,X` и проверкой, `$90` и повторный scan через `$FEAA`. Это конечный автомат известных путей, не CPU/универсальные coroutine-процессы. Часы хранить целыми PPU ticks: обычные периоды89342/89341 при соответствующей фазе rendering, CPU/DMA parity513/514 и принятие NMI между инструкциями. **Первый тест — диапазон допустимых начальных фаз idle, их сходимость и near-miss f6385.** Если независимость от входной фазы не доказана, восстановить её через фактический предшествующий loader/yield; нельзя засевать clock из golden, сбрасывать фазу каждый NMI или подбирать offset. Точная начальная фаза пока не установлена.\n2. **D1 — единый физический кадр и ввод.** Связать scheduler с `DarkwingGame.Step`, `GameFlow.Step`, `DarkwingLauncher.AdvanceFrame`, `AgentScripts/StandRoute.cs`. Один physical input byte потребляется каждый poll; новый логический `$C162`/pressed-edge/flow/player вызывается только при реальном возобновлении главного процесса после waiting. При Running NMI обслуживается, затем старое continuation продолжается без нового pad-read, повторного player/engine/parity и без второго flow tick. Structural seam уже сделан: `DarkwingGame.AdvanceFrame` выполняет `BeginNmi → Flow.Step → StepBody`, `GameFlow` привязывается к `_game.Flow`, а Launcher/StandRoute используют этот вход. Остаётся подключить `FrameScheduler` и реальный deadline: пока нет native cycle clock, остановки/продолжения процесса после NMI и проверки, что flow/player/engine не получают второй логический тик; `Game.Frame` всё равно растёт раз за физический кадр. Сохранить семантику существующих resident/section/reload ветвей, не заменять их все средним бюджетом.\n3. **D2 — NMI, влияющий на бюджет и состояние.** Реализовать вычисляемые пути fixed bank7 `$C000…$C114`: gate `$F0 | $9A`, OAM DMA, CHR/palette/VRAM очереди, таймеры, audio, RTI. При незавершённом проходе9A=1 нельзя публиковать OAM/палитру/CHR/NT и сбрасывать их dirty flags; нынешний `_blankDepth == 0` этого не обеспечивает. Для расчёта очереди нужны её настоящие дескрипторы и источники (в частности `$E7C6`/`$19`); это зависимость времени, не повод для общего визуального рефакторинга. Аудио-время в Core уже объединено структурно: `PlaySound/PlaySfx/PlayMusic` кладут id в кольцо `$DC…$E3`, `BeginNmi` делает drain `$C0DC` и один `Audio.Tick`; `EnemyDispatcher.Sfx` идёт через тот же `PlaySound`. `AudioSequencer.RenderSamples` отделён от Tick, `AudioOutFeed` при переполнении теряет только samples. Остались `$F5`/PRG-switch skip, точная стоимость NMI/audio и сравнение аудиосостояния/волны; offline `RenderFrame` API сохранён. Сначала проверить стоимость Tick на RAM-входах `$C0F6/$C0F9`, затем воспроизведение аудиосостояния от reset; микрофикстуры не подаются игре. В обоих полных исходных захватах после2033 нет NMI без `$C0F6`: deferred bank-switch `$F5/$F6` не расширять до появления исполняемого пути, но явно диагностировать неподдержанный случай.\n4. **D3 — только исполняемый префикс тела.** Восстановить вычисляемые стоимости порядка `$CAE2→$CA40`/player → `$CA59` scroll `$DA70` (включая реально вызванные `$E7C6/$EA36`) → bank4 spawner `$8090` → `$EDF1` zone → `$EFBE` palette → bank6 behaviors → bank1 environment `$8800` → выбор движка. В существующем C# эти действия частично объединены в `PlayerCore.Step`, `DarkwingGame.Step/RunWorldServices`, `LevelTileMap` и `EnemyDispatcher`; фиксировать source-ветви в месте выполнения, а не вычислять цену по уже изменённому состоянию или количеству объектов. Сначала городской первый путь и соседние состояния player0B/04, затем реально встреченные пути остальных bracket/м1; не реализовывать весь каталог7 миссий заранее. Head/palette малы, но их нельзя молча обнулить при запасе2 cycles. Если доказанная верхняя граница этапа заканчивается до NMI, этап можно исполнить атомарно; уточнять стоимость/продолжение только при пересечении либо неоднозначной границе. Все12 измеренных коротких пересечений находятся **после** префикса, в OAM/RNG: необходимость дробить каждый player/AI метод пока не установлена. MMC1 switch/служебный код входит в соответствующие стоимости, CPU/MMC1-эмулятор не нужен.\n5. **D4 — временные записи OAM/RNG, не только итоговая цена.** Превратить существующий `OamDispatcher` в возобновляемый native-walk с slot/part cursor, parity и живыми локальными значениями; переиспользовать ветви из `.Timing.cs`. Операции cull/anim/parts должны становиться видимыми в исходном порядке до границы: f6398/$8042 пересекает cull, а invulnerability исходник уменьшает при достижении player-slot (`$80E5`), не перед всем walk, как нынешний RunFrame. Выполнить целый OAM и отложить лишь RNG нельзя. `$95` увеличить один раз на входе движка; после RTI продолжить прежний slot/part. Вызов `$C2DE` безусловен: feedback вычисляется один раз, затем четыре ROR `$E4…$E7` с продолжением; routine84/85 cycles, `$CAD8→$CADF`95/96. Далее55 cycles до commit waiting. Для позднего bank4-события нужна **сама** engine4-семантика/таблицы, а не bank4-цена при bank5-мутациях: сейчас `SectionUsesInternalEngine` записывается, но runtime зовёт только bank5 `RunFrame`. Подключать bank4 после достижения этой секции интегрированным повтором.\n6. **D5 — интегрированный повтор и первый следующий блокер.** Сначала неизменённый city input от reset через f6402, затем все29 360; диагностировать первый отличающийся event/store/clock, а не компенсировать поздний симптом. Для loader/resident-переходов сохранить физическую фазу; только если D0 докажет её необходимость, заменить относящиеся к маршруту приближения (например15 проходов загрузчика) source-derived continuation. Новый cost-path без покрытия должен явно сообщать неподдержанную ветвь в исследовательском прогоне, не молча принимать среднее/ноль. Это критерий остановки и следующей конкретной работы, не разрешение пропускать игровые объекты.\n\n**Приёмка интеграции.** До её выполнения ни cost-contract, ни точные 12 классификаций не являются исправлением города.\n\n- f6385: завершённый `$FF17` до poll (измеренный запас2 cycles), без ложного игрового пропуска. Проверить и обычные близкие проходы f18639/6575/18125/19455, не обучать на них правило.\n- poll f6388: `$E4=CC`, `$9A=1`, процесс Running/type2, начатый OAM-проход не завершён; NMI не публикует грязные буферы. Затем хвост старого прохода даёт `$E4=E6` к f6389, `$95` не растёт повторно, нет нового `$C162`/pressed-edge/player/engine на f6388. Добавить диагностические scheduler/bracket/input/bank поля в существующий replay snapshot, не сравнивать только итог RNG.\n- Все12 исходных bracket, включая7180, и обычные соседи; исходные PC/clocks выше — проверка, не runtime lookup. М1 не должна получить ложные короткие игровые пересечения. Полный м1 `states --start 2033`: отдельно player, RNG_boss, HUD_score_lives, progress, active_objects (27 полей активных слотов1…15), 22 229 отсчётов каждой; это не вся RAM/image/audio. Suite RESULT18/24, STRICT8/24, errors0; Contracts13/13, trench619/619, cling199/199, climb399/399 — не ухудшить, существующие отказы не скрывать.\n- Реальный Wolfduck → завершение → подсчёт → карта count1/mask2. Только затем штатная DarkwingMain и свежий standalone через работающий Editor/Unity CLI с явным `D:/Art/SW Code Zero Unity`; не удалять lockfile/не закрывать Editor. До этого новый build не заявлять доказательством победы.\n\n**Данные/команды без нового общего аудита:**\n\n```\npython Tools/DarkwingResearch/analyze_frame_timing.py Temp/city_phases.csv --oam Temp/oam_tail.csv --dependencies --focus 6383 6387\npython Tools/DarkwingResearch/analyze_frame_timing.py Temp/m1_frame_timing.csv --dependencies --focus 7152 7154\npython Tools/DarkwingResearch/analyze_frame_timing.py Temp/city_timing.csv --dependencies --focus 6383 6387\n```\n\n`Temp/city_phases.csv` — полный чистый источник; `Temp/city_timing.csv` — инструкции только до terminal6403 (ошибка закрытого файла после него, не полный успешный прогон). `Temp/m1_frame_timing.csv` — новый полный источник, `m1_frame_timing_run.txt`: emulation_stopped/0 Lua errors. Настройка без редактирования инструмента: `TIMING_SESSION`, `TIMING_OUTPUT` перед `dofile(frame_timing.lua)`; рабочая обёртка `Temp/m1_frame_timing.lua`. `--dependencies` делает измеренную декомпозицию/анализ исключения составляющих, **не предсказывает native replay**. Полные нативные регрессии предыдущего этапа — `Temp/native_work_m1*` и `Temp/city_timing_suite`; runtime в текущем этапе не менялся. Первая следующая операция DeepSeek: **D0 — проверить idle/yield-фазу и commit waiting на f6385/6388, без подстановки измеренного бюджета; затем D1**, прежде чем расширять cost всех служб.\n\n**D0 core (2026-10-22):** полный city capture `Temp/city_idle_phase.csv` закрыл природу NMI-фазы: `$C000` — это +7 cycles после принятия, фактическое принятие 1–3 cycles после poll; все 29 254 idle-NMI приняты на 40 границах инструкций. f6385 accept phase36 (`FE9E`), body 190152970, waiting store 190175890, poll 190175892 — 2 cycles; f6388 NMI внутри body, RNG/yield продолжаются. **Источник фазы доказан:** anchor = последний commit `$FF19` + 17; 29 255/29 255 poll с anchor, 0 расхождений; f6385 выводится из commit-цепочки f1924; свободного phase seed нет. Реализованы `Assets/Darkwing/Core/FrameScheduler.cs` и проверка `AgentScripts/SchedulerVerify.cs`: `RESULT PASS polls=29255 nmi=29254 mismatches=0 specific=f6385,f6387,f6389 slot=pass` (`Temp/scheduler_verify`). D0-core в `DarkwingGame.Step` ещё не подключён; D1 structural seam (`AdvanceFrame`/`BeginNmi`/`StepBody`) и D2 queue/tick уже внесены и state-neutral на полном городе, но native clock/deadline и continuation/body остаются. Golden seed и сброс фазы на NMI запрещены. Детали — `FACTS.md`, смена 110; `STATUS.md`; COVERAGE `timing,city,scheduler_nmi_acceptance`.\n\n### Передача после остановки DeepSeek по лимиту (2026-10-22)\n\nКонтрольная точка: `main`, HEAD `ddd776a`, локальная `origin/main` совпадает (fetch не выполнялся). DeepSeek/OpenCode остановлен; продолжает Codex. Код при этой передаче не менялся. Старые формулировки выше «начать D0/D1» и «runtime не менялся» относятся к предыдущим этапам; актуальное состояние ниже.\n\n- Коммиты: `768be82` — D0-контракт; `ae31da9` — общий `AdvanceFrame/BeginNmi/StepBody`, flow/launcher/replay и audio queue/Tick; `ddd776a` — вертикальный wrap PPU и сервис строк `$E7C6`. Первое городское расхождение по STATUS всё ещё f6388; самостоятельные clock/deadline/FrameScheduler/continuation не подключены. D1 структурно начат, D2 частичен, D3–D5 открыты; 0/6 в todo OpenCode устарело.\n- Незакоммиченная игровая правка: `PlayerCore.cs` удаляет ложный `Sfx(0x21)` при прыжке; `DarkwingGame.cs` переименовывает константу в `SfxMapLaunch`. Соответствующие записи смены113 — в FACTS/STATUS/COVERAGE/audio_engine.md. Сохранить и проверить до коммита. `AgentScripts/OamCostProbe.cs` — существовавший отдельный неотслеживаемый диагностический инструмент; не удалять и не присваивать без проверки происхождения. AGENTS и Docs/GameReconstruction — изменения координирующего чата; не включать автоматически в игровой коммит.\n- Последнее действие из истории OpenCode: полный standalone-повтор м1 `Temp/stand_m1_audiofix/spec.json` не создал route.json за900s; `player_route.json` имеет success=false, forcedCleanup=true. Это FAIL/не выполненная приёмка, не доказательство медленного Core или проходимости. `Temp/build_jumpsfx_clean/player_smoke.json` — PASS только boot/render/exit. BuildReport `build_d311473a527c` Succeeded/0errors, source/binary manifests в том же каталоге.\n- **Первым проверить вероятную причину тайм-аута:** `Temp/build_jumpsfx_clean/commands.json` не содержит `--options [\"Development\"]`; вызов build_player.py был без `--development`. В DarkwingLauncher загрузка `-darkwing-replay` и весь replay-код закрыты `#if UNITY_EDITOR || DEVELOPMENT_BUILD`. Гипотеза: обычный Player проигнорировал аргумент и ждал ручного ввода. Проверить фактический тип/состав binary и короткий replay с наблюдаемым прогрессом, затем только полный. Не начинать новый900s прогон без доказанного старта replay; не исправлять предполагаемую медленную APU без измерения.\n- Проверки по сохранённым отчётам: `Temp/jumpsfx_suite` RESULT18/24 STRICT8/24 errors0 (общий verdict FAIL), `Temp/jumpsfx_contracts`, `Temp/jumpsfx_m1reg`; `Temp/m1_seam`, `Temp/city_seam_full`, `Temp/m1_vert_port*`, оригинал `Temp/stand_m1_orig_shift79/replay1`. Равенство нового порта старому порту не равно равенству оригиналу: проверить стороны сравнения и диапазон. Новых проверок на этой передаче не запускали.\n- Ручные gates ожидают: исчезновение ложного звука при прыжке/непрерывность музыки, корректность вертикального участка м1 после ddd776a, короткий регресс начала м1/города после общих изменений. Горизонтальный pagefix f63cf7a ранее подтверждён пользователем, но эта проверка не сертифицирует последующие изменения. Черепаха и спецоружие остаются в очереди, существующие записи проверить до запроса новой.\n- После восстановления проверяемой сборки и обработки ожидающих gates продолжать D1–D5 по текущему коду, не начинать общий аудит/повторную установку. Самостоятельно вычислять время из выполнения, не брать commit clocks/RAM из goldens. При застое эскалировать по AGENTS; цель — настоящий Wolfduck/count1/mask2/карта с сохранением м1 и требуемыми интерактивными проверками.\n\n### Проверенный checkpoint Codex после этой передачи (2026-10-22)\n\n**Текущий checkpoint00578b0 / tooling e17bbee:** человеческий графический FAIL в нашем м1 replay после босса разобран по существующим захватам, без новых скриншотов. Три причины: лишний repaint world8-loader/clear-scroll поверх штатного E698; zero-bg-pixel брал подпалитру вместо3F00; пропущенный C319/C33C–C35C world-tail. Source23000 RGB **6841→3072→0/61440**, отдельно Core и fresh Player. Source NT/OAM/PAL всего окна не идентичны; f23000 —8 attributes невидимойpage0. Core full24261/CLI exit0/22229x5; Suite18/24 STRICT8/24 errors0/общий FAIL, contracts13/13 и3 маршрута PASS, audio34/34 сохранён. **Playerbuilda43000271432**, production source00578, full24261→Quackerjack→счёт→карта1/1→exit0/exceptions0,21 snapshots/13RGB равны Core. Actual DarkwingMain Editor2200/snapshot2033 равен Player, штатно остановлен. Один post-input Player-spec был отвергнут comparator; флаг captureAtStart=true исправлен при неизменённом input, e17bbee теперь экспортирует его штатно,8 Python tests PASS. Данные `Temp/m1_clear_final`, `stand_clear_aligned`, `build_clear_bg`, `clear_final_*`; подробности/остатки — последний FACTS. UserStand/Darkwing Port.lnk обновлён, human review показанных кадров/начала м1/audio запрошен без повторного босса, AWAITING HUMAN. Audio8930286 сохранён, но слуховая приёмка ещё открыта. Новый city replay00578 NOT RUN; последний измеренный blocker6388E4CC/E6, Wolfduck/карта1/2 не достигнуты, native clock/continuation не подключены. Следующая техническая операция после human feedback — первый flight-step/AA00/AB57→C61E и review D1–D3, не новый графический аудит. Ниже — исторические checkpoints.\n\n**Уточнение8930286/8b6f3b1:** ручной A/B локализовал ранний audio FAIL на первой заставке: музыка кажется медленной, печать шипит вместо писка. Исправлены измеренные ошибки синтеза:400E84 short-noise/tap6 раньше игнорировался и clock делился на4; triangle CPU/2 понижал бас на октаву, теперь CPU/1. SignalContract FAIL33/34→PASS34/34 (последняя версия проверяет каждый cycle). Исходные APU writes через native синтез дают301.39Hz vsoriginal300.66Hz на печати, не full waveform PASS. Editor normal60.155fps/один AudioSource/output48k, FIFO129–152ms не равен end-to-end latency. Подробные границы/источники — последний раздел FACTS. Core м1 снова22229x5; wrapper240s timeout, но24261 records дописаны и независимо сравнены, CLI gate не PASS. Suite18/24 STRICT8/24 errors0, contracts13/13 и3 фокусных маршрута сохранены. Новый город толькоprefix6600, f490/f6388 прежние; selfclock/continuation не подключены. Текущий Player **build636e99f98b20**, production source8930286, полный24261/реальный Quackerjack/счёт/карта1/1/exit0/exceptions0 PASS;15 snapshots/final+7PNG равны предыдущему Player, не original audio. Новый человеческий A/B запрошен, AWAITING HUMAN; стенд **Build/UserStand**: стабильный Darkwing Port.lnk и Darkwing Original Mesen.lnk, не Desktop. Следующая операция — сверить остаток первой музыки/печати/задержки по этому A/B; при отсутствии нового остатка вернуться к AA00/AB57→C61E/первому flight-step. Полная приёмка audio/города не заявлена. Дальнейшие пункты — история checkpoint1c1dde2, не актуальная версия Player.\n\n- Игровой код **1c1dde2**:671c83e подтвердил/закоммитил унаследованное удаление ложного jump21;54f08df исправил DF04/DF13, входной D9, разницу F84E/F850 и enemy NMI queue;1c1dde2 восстановил bank3 period tail863E–8659 (до правки воспроизведён FAIL, после6/6 contracts). 585e992 добавил Mono replay-capability preflight;1e6a126 — read-only persistent audio export/comparison. Подачи original RAM/clock в игру нет.\n- **Первый шаг передачи завершён:** старый Player был **без Development/replay**, а не «слишком медленная APU». Новые development Player прошли2200 и полный м1; нынешний **build7e05397023dc**, `Build/DarkwingDuckAudio/DarkwingDuck.exe`, production source hashes равны1c1dde2. `Temp/stand_audio_tail`: реальный Quackerjack → счёт → карта1/1, exit0/exceptions0,15 snapshots/7 RGB равны новому Core. Actual Editor DarkwingMain:2200 frames, snapshot2033 равен Player; не новый полный Editor route. Manifest/build evidence — `Temp/build_audio_tail`. Старые900s FAIL остаются невалидной приёмкой, не замерять их заново.\n- **Измеримое продвижение integrated audio:** полный город29360 выполнен заново.158 persistent bytes (не scratch/APU/PCM) original-to-port совпадают подряд **f8–489** вместо f8–281; всего751 точный кадр в8–29360. Новые инструменты: `stand.py unity --audio-state`, `states --audio`; fail controls missing/extra/truncated/CA mismatch/non-audio capture проверены. Данные: `Temp/city_audio_tail*`; промежуточные `city_audio_state`, `city_audio_tasks_fix`, `city_audio_queue_fix` не являются goldens.\n- **Главный блокер остаётся:** f6388 E4 CC/E6, Wolfduck/count1/mask2/map не достигнуты. Self-computed clock/deadline/FrameScheduler/continuation **не подключены**. D0-contract питается измеренными commit clocks. Предыдущие формулировки «фаза закрыта» не доказывают end-to-end time. NMI cost нельзя брать из трассы при расходящемся native audio state; правки выше устранили конкретные предпосылки, не весь D2.\n- **Точная следующая операция:** исследовать первый audio-event сдвиг: source F850#10 в fixed bank7 **C63E на f489**, native — f490; poll490 source DA02/DB01, port01/01. `Temp/audio_queue_490.csv`/`_run.txt` — новый узкий cold-boot source probe,0 Lua errors,21 poll clocks/E4/DA/DB равны полному источнику. Source/native flight Y и parity уже на один проход разнесены перед порогом5C. Сопоставить возврат AA00/AB57, yield C61E и первый StepIntroFlight; не добавлять frame rule/лишний SFX. Затем проверять computed NMI/audio cost и D1–D3. Независимый технический review минимальной границы подключения запрошен; до него не начинать очередной спекулятивный цикл. Обычный плейтест не отвечает на CPU-phase вопрос.\n- **Минимально отсутствует:** native физический clock и scheduler resumption; publish/VRAM queue descriptors+costs/DMA parity; exact audio-state/task timing+Tick cost; фактически исполненные player/scroll/E7C6/EA36/spawn/zone/palette/AI/environment costs; timed OAM/RNG mutation cursor и55-cycle wait commit. Не требуется заранее считать все ветви7 миссий или универсальный CPU; обоснование и атомарные безопасные границы — D0–D5 выше.3587/24401 — измерения, не runtime constants.\n- **Сохранность:** свежий м1 Core vsoriginal f2033–24261 —22229x5 (player/RNG_boss/HUD_score_lives/progress/27-field active objects), Suite18/24 STRICT8/24 errors0 (общий FAIL сохранён), contracts13/13, trench619/619/cling199/199/climb399/399. Город vs **предыдущий порт** `city_render_fix`:5 групп/NT/OAM/PAL29360/29360; не original PASS. Артефакты `Temp/m1_audio_tail*`, `audio_tail_suite/contracts/regressions`, `city_audio_tail_vs_ddd_*`.\n- **HUMAN FAIL audio:** ответ2026-10-22 на запрос7e05397023dc: «самолёта» нет, но слышится наложение второй музыки и запаздывание прыжка/выстрела. Точный файл/первый экран пока не названы; агентом latency/наложение не измерены. Подготовлены Desktop-ярлыки текущего Player и оригинала Mesen+ROM без replay/state load, адреса проверены. Следующий ручной шаг — поочерёдный A/B начала м1 (музыка без действий, отдельные выстрелы, прыжок), затем узкое сравнение APU-writes/real-time AudioOutFeed; persistent158-byte PASS не подтверждает PCM/latency. Вертикальная поездка м1/начало города AWAITING HUMAN. Полная приёмка м1 открыта (второй независимый original input, required mechanics/weapon/secret/image/audio и полная ручная проверка NOT RUN). Оружейный баг/черепаха в GAPS не закрыты. AGENTS/неотслеживаемая Docs/GameReconstruction — координация; U05/U07/U08 дополнены новыми уроками, но база не присвоена игровому коммиту. OamCostProbe происхождение не выяснено, сохранён вне коммитов. ROM/input/goldens неизменны.",
+      "status": "Backlog",
+      "priority": "high",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235969646,
+      "createdOn": 1793235969646,
+      "comments": [],
+      "descriptionSha256": "5c03b5bae659ade235e1c968bb4bf3e4c35a4866c54c63de15e31a89651f258f"
+    },
+    {
+      "issueId": "6ae29c01e5dbb5b6ddb77238",
+      "identifier": "ZERO-33",
+      "title": "Сверить текущие gates с перенесённым журналом STATUS",
+      "description": "Исходный STATUS перенесён в трекер для сохранения всех непогашенных обязательств и версий. Не повторять уже выполненные проверки. Из этого журнала исполнять только актуальные gates по текущему исходнику; семантика PASS/FAIL/DEFERRED сохраняется. Основные тематические задачи ZERO-12…ZERO-31.\n\n# STATUS — Darkwing Duck\n\n**2026-10-27, реорганизация и сохранность инструментария; игровой код не менялся.** Восстановленные источники перенесены в `Tools/DarkwingResearch/cost/`, `.csproj` разрешён в Git, пути к session/project/reference/output параметризованы. Данные отделены в локальный `Research/DarkwingDuck/reference/cost-harness/data/`; происхождение/хеши/границы/backup — `evidence.json` рядом. 27 исторических исходников scratchpad сохранены без изменения в `Tools/DarkwingResearch/archive/cost-recovery-20261026/`; это не закрытие городского блокера. Полный прежний Build/CostHarness перенесён без удаления в существующий внешний backup-root как `20261027-costharness-original`; рабочие команды — единый `Tools/DarkwingResearch/README.md`. **PASS:** до/после city CSV657934 bytes и native-clock CSV444096/buffers28145280 bytes побайтово равны; phase pickle→CSV→pickle обе структуры равны (29361 polls); comparator отклоняет missing/duplicate/extra/mutated price. Native clock всё ещё unsupported poll1942/CAFC player; f6388 открыт. Добавлен один `preserve.py` для ранее отсутствовавшего snapshot/verify/audit (без дублирования stand/build/compare); selftest1positive/7negative PASS. Внешний исходный снимок `20261027-tooling-before`:3167 files/1846569540 bytes, hashes verified; окончательный снимок — `20261027-tooling-stand-preserved` (также Build/UserStand и фактический Player Build/DarkwingDuckMissions23 из ярлыков), команды verify/audit обязательны перед handoff. Assets/AgentScripts/input/movie не менялись; новых gameplay/Suite/interactive/build/human PASS не заявлено. Потерянные старые exports не восстановлены этой миграцией; сохранившиеся исходные записи защищены, прежние acceptance gates остаются открыты. Это корректирует следующую историческую запись: Build не является постоянным хранилищем, совпадение счётчиков не доказывает всех режимов.\n\n**2026-10-27, восстановление cost-харнесса после стирания `Temp/`; игровой код не менялся.** Стартовший в 05:46 2026-10-26 Editor удалил весь `Temp/` (Unity пересоздаёт его при запуске), вместе с ним пропали `reached_body_aggregate.{cs,csproj}`, `city_cost_compare.py`, `city_phase_load.py`, `city_phase.pkl`, `city_phases.csv`, `city_idle_phase.csv` — единственные копии, git их игнорирует. Игровой коммит `5f6d576` цел. Мастера перенесены в постоянный `Build/CostHarness/`: агрегатор восстановлен из журнальной истории версий Claude (последняя запись 04:22, 31057 байт), `city_phase.pkl` (37 МБ эталонных фаз) и compare/load-скрипты — из scratchpad той же сессии, дамп ROM `$D517/$F4D7/$F5A4/$CFD7/$CE39/$CAF0` и patch-скрипты правок логики сохранены в `Build/CostHarness/scratchpad-20261026/`. `csproj` пересобран заново (`net10.0`, glob `Assets/Darkwing/Core|Audio`), сборка 0 ошибок. **Провалидировано воспроизведение цифр передачи 2026-10-26 на неизменном HEAD и том же pkl:** pub 4463 ok + 1 bad (якорный 1925 = 641/640 против 739), audio 4464/4464, player {18: 3997, unsup: 310}, scroll/zone/palette {0}, spawn {17}, bank6 {69}, bank1tail 4306 — все счётки и разбивка `playerWhy` (EB52 83, CCEA 46, 09 37, 06 32, EC65 29, 10 20, 0D 16, D1C2 14) совпали; значит восстановленный агрегатор эквивалентен утерянному. Рабочие команды: `dotnet run --project Build/CostHarness/reached_body_aggregate.csproj -c Release -- city 1924 6400 Temp/city_cost_coverage.csv`, `python Build/CostHarness/city_cost_compare.py Temp/city_cost_coverage.csv`, `python Build/CostHarness/city_phase_dump.py Temp` (пересоздаёт `city_phases.csv`/`city_idle_phase.csv` из pkl для режима `clock`). Smoke `-- clock native 6420` проходит без исключений и честно отказывает с poll 1942 «Body prefix price unsupported», компонент `CAFC player`; f6388 E6/CC сохраняется. Урок сохранён как N03 (KNOWLEDGE_RU), прежний N03 про изображение стал N04. ROM, input.bin, goldens, критерии не тронуты. Следующая операция без изменений: цена состояния 09 по `$D517`.\n\n**2026-10-26, аудит анимаций GDD: исправлен экспорт, gameplay не менялся.** HEAD `5f6d576` + изменения только `AgentScripts/PhysCompare.cs` (новый диагностический контракт), `Docs/GameDesignDocument/` и этих записей. Человек уточнил: диагноз «PlayerCore превращает героя в предмет» получен другим агентом при экспорте, в игре не наблюдался. Он смешал PRG 4/5 и проигнорировал исходное направление катсцен. `HurtAnim/$FA29` соответствует ROM; CHR `$8E` = банк14, не25. PNG `anim_1c/1d/2b/2d`, атлас и подписи пересобраны существующим экспортёром; контексты в `sprites/manifest.json`. **PASS:** 123 проверки `PhysCompare.PlayerAnimationContextContract`, все19 полос/98 кадров RGBA exact к нативным OAM/PPU, 10 отрицательных контролей, 16 Mission1Contracts, mission-card7×160 bytes, XHTML3/3. Сохранённые original OAM подтверждают 2B frames174/175/176 и 2D bank4 frames44/45 (FACTS). **FAIL baseline:** свежая Suite RESULT18/24 STRICT8/24 errors0; критерии не менялись. Editor6000.6.5f1, headless, только fixtures; интерактивный Editor/standalone/full4-input regression — **NOT RUN**, для этой правки экспортёра новый игровой milestone/build не заявлен. UserStand не обновлялся, прежние игровые/human gates ниже остаются открыты. Команды: `run_check.py --entry PhysCompare.PlayerAnimationContextContract --out Temp/oam_context_contract`; `python Docs/GameDesignDocument/export_sprites.py --check-native Temp/player_animation_context`. Далее: визуально сверить обновлённые PNG в GDD; прежнюю задачу игрового clock эта проверка не закрывает.\n\n**Claude 2026-10-26, передача другому агенту (лимит); блокер f6388 в production НЕ устранён.** Gates этого WIP: mapped-состояния/4 inputs/Suite/контракты/Editor/standalone/human — NOT RUN; UserStand не обновлялся. Причина каждого «без цены» — колонка `playerWhy`; нативный прогон часов: `-- clock native 29360` (oracle-режим только для исследования). Поверх HEAD08a4977+WIP Codex (не откатывался, не коммитилось). Механизм прежний: якорь фазы у конца загрузчика миссии (полное idle-множество схлопывается $90/DMA-паритетом, без часов заставки), порог NMI ⌊(E−CpuOffset+1)/12⌋, PhysicalFrameClock/MissionClock/DarkwingGame.MissionClock; research `Temp/reached_body_aggregate.cs clock oracle` даёт E4 6388/6391/6398 = оригинал, полный 29360 → 9391. Нативные цены на city 1942–6387 (`dotnet run --project Temp/reached_body_aggregate.csproj -c Release -- city 1924 6400 Temp/city_cost_coverage.csv`, затем `python Temp/city_cost_compare.py Temp/city_cost_coverage.csv`; «18»/«17»/«69» у игрока/спавна/bank6 = постоянный сдвиг границ замера, то есть точно; источник фаз `Temp/city_phase.pkl` из `Temp/city_phase_load.py`): resume/scroll/spawn/zone/palette/bank6 (все слоты)/bank1+хвост 4306/4306 exact, аудио NMI 4464/4464, публикация exact кроме якорного 1925 (CHR-защёлки); игрок 3997 exact, 0 неверных, 310 без цены. Попутно найдены и исправлены нативные ошибки логики: SFX $10 при приземлении на актёра; Objects.Parity всегда 0 (7F SFX каждый кадр, триггер BombFrog); ложный WallBlocked=$FF; сравнение F49C с затёртыми F7A8 $02/$03. После этих правок mapped-состояния (city ≤6387, m1 и др.) и весь regression **NOT RUN**. Без цены у игрока: состояние 09 ($D517: F4D7=F5A4+F5DA+EB52 либо F5A4+F5DA; 37 кадров), 06 ($D29A, 32), 10 (=0B $D626, 20), 0D (=04 $D1A4, 16), EB52 класс вне среза (83), CCEA непустая боковая (46), EC65 боковая при упоре камеры (29), D1C2/D69E отсчёт позы выстрела, D77C, CBB7, CDD5, F360, F43E, D1F4, D63E, F850. Следующая операция: цена состояния 09 по $D517, затем 06/10/0D и ветви по списку до 0 без цены; затем экспорт mapped-состояний и stand.py против прежнего Core, нативный clock от reset (без oracle) на 29360, полный regression 4 inputs/Suite/контракты и hosts.\n\n**Пауза по явной просьбе пользователя, 2026-10-25.** HEAD08a4977 + сохранённый WIP: clock проведён через intro-card/два FEFF hold и world9 loader до диагностического stopC666 (poll733). Ни один игровой блокер не закрыт: human17234/city6388/m3active-RNG10060. До WIP полный regression четырёх inputs побайтно equal предыдущим exports/trace/PNG, Suite18/24 STRICT8/24 errors0, contracts/regressions baseline. После WIP: card1194clock+199live97/37negatives PASS; world9 loader359checks/75671instruction boundaries/33negatives PASS; first loader75702 boundaries сохранены. Исправлены native writers97 (card STY и C655) и учёт mask-off после pre-render339 (source PPU подтвердил пропущенный odd skip). Короткий prefix760 до последнего clock-only исправления:15RGB exact, OAM/PAL f8–760 exact, NT остаток710. Полный4-input regression нового WIP, affected contracts/Suite, Editor/свежий Player NOT RUN; UserStand всё ещё build_d29939297aaf. Изменения не закоммичены. Проверки ppu_fixed_* в Temp/intro_card_iteration_gates; source Temp/intro_scene_loader_clock.csv и intro_scene_loader_ppu.csv. Следующая операция после Resume: проверить лимит, завершить обязательный regression WIP через существующий stand.run_port; затем пересмотреть кратчайший доказуемый путь к игровому deadline, не расширять очередной intro-участок автоматически. Фоновая работа/проверки лимита на паузе запрещены.\n\n**Контрольная точка 2026-10-25: 6890511 + build_d29939297aaf + intro-card boundary.** Actual input hook пропускается на Running loader, а clock продолжен через FEFF, AA00, полёт, первый world-7 intro-card и одну обычную card-итерацию до F8B1/FF19. Ненулевой input30checks, FEFF150/7negatives, text625clock/202queue-bytes/11negatives, flight/card168checks/8negatives PASS; прежние75702instructions/90checks сохранены. Исправлен пропущенный последний SFX печатания377:40checks PASS, у старого м1 first158audio-fields378→832. Это не проверка PCM/задержки. Полный набор четырёх inputs после первой card-интеграции был побайтно равен предыдущему; после добавления poll490 полный regression ещё NOT RUN из-за лимита. Первые расхождения остаются human17234, city6388, M3active/RNG10060. Suite/контракты до второй card-итерации baseline без изменений; SceneAudit/Editor/standalone m1 gates PASS. UserStand shortcuts point to build_d29939297aaf.\n\n**Проверка hosts:** ранее отложенный gate закрыт для текущей сборки: `Temp/scene_audit_current`, `Temp/build_current_clock/smoke.json`, `m1_completed.json`, `stand_intro_flight_m1/route.json`. Human checks остаются обязательными для текущего UserStand; автоматический Editor/Player PASS не является полной аудио/ручной приёмкой.\n\n**Точная следующая операция:** сначала полный Core regression четырёх inputs после poll490 (сравнение с `intro_card_full_*`), затем stage6 terminal 960C/967A и два FEFF hold (source-only 127 checks: entry1158, blit2033, holds61/79/10). Не объединять следующие 120 yields в одну цену; затем только достигнутые intro/title/map/briefing/load/state09 пути. Не seed Waiting/фазу из original.\n\n**Изображение м3:** свежий original RGB8106/8107/8108/8370/8371 точен. Остатки5798=40929pixels (NT5bytes),10059=17572pixels при NT/OAM/PAL exact; графические буферы равны прежнему Core. Это открытая проверка физического PPU/фазы снимка, причина ещё не доказана; не full-image PASS.\n\n**Эталон м3 проверен:**73407×4384 bytes в каждом из2оригинальных повторов; f8–73407 byte-equal, исключены только power-on1–7. Вход настоящего Liquidator68496, победа71714, карта72757 count1/mask4 подтверждены по RAM; fresh original RGB:5 exact/2 residual snapshots (см. выше). Артефакт reference/mission3_20261024T183247Z.json. Отчёт Gemini о PASS M3Route неверен: exit0 означает выполнение, сравнение FAIL1314/STRICT50; совпадение всего73407-ввода не достигнуто.\n\n**Ниже исторические checkpoints; их названия текущего стенда/следующие операции заменяются сводкой выше.**\n\n**Предыдущий стенд2026-10-24: build_9d3c2ad03f94, `Build/UserStand`.** «Darkwing Port - Плейтест 2» теперь использует `ReplaySpec.realtime=true` и обычный NTSC accumulator; все38886inputs отreset сохранены. Изменена только Unity-оболочка повтора;60Core/Audio C# файлов совпадают с проверенным Qoder28e19a0. Нативные игровые блокеры и звук не исправлялись.\n\nСвежие проверки: fullCore старый24261 и второй38886 — records4384 equal прежним;15/62 прежних PNG сохранены. City29360 свежим повтором этого viewer-дельта не запускался: используется тот же неизменный Core и прежний результат6388. Suite18/24 STRICT8/24 errors0 **FAIL**, полныйJSON equalQoder;16contracts и619/199/399 PASS. Староеoriginal22229×5 mappedgroups сохраняется; не fullRAM/image/audio acceptance. `Temp/user_stand_realtime_core.json`.\n\nQoder подключил потоковый DE86/E698 и storeE790; CIRAM old[282,716]→{289}∪[707,715],human first3000 differingframes1133→692. Но самостоятельный clock пока честно останавливается наDDCB, DDCEspawn и последующие владельцы ещё внеclock. Первый маршрутный блокер: newf17234 E4original68/nativeB4 и043F03/04; cityf6388 E4CC/E6. Следующая операция — продолжить clock отDDCB черезDDCE до миссии и подключить частичный bank5OAM PC81E5/slot0E/cursor80/parity18/bracket9A01 сRNG послеRTI, без source-state/clock seed. Не считать готовый OAMкомпонент готовым игровым планировщиком.\n\n**Human2026-10-24:** пользователь подтвердил задержку звуков после прыжка/при захвате/выстреле на текущем стенде (build_2f0b066afb16 по контексту; точный запущенный exe независимо не установлен). Audio latency **FAIL по человеческой проверке**, причина ещё не воспроизведена измерением; пользователь просит пока не исправлять. Короткая графическая проверка intro/startм1/pause/death остаётся **AWAITING HUMAN**; F5 отдельно отложен.\n\nСвежий build9d3c:0errors/6warnings,226source hashes before=after=current и354binary hashes проверены; новая UnityApp.dll сrealtimeflag. ActualDarkwingMain1200prefix:5NT/OAM/PAL snapshots/3RGB/7fields exactCore,6negativecontrols,60.053poll/s, normalStop. FreshPlayer из actualярлыка:60/600/1200 RGB exactCore,60.083poll/s; окно768×720 захвачено/осмотрено, свой PID253920 нормально закрыт (exitcode недоступен). Полный38886viewer до конца сейчас **NOT RUN**; пользователь теперь подтвердил более позднее расхождение и что со смертью «вроде всё ок»: **HUMAN_PRELIMINARY_PASS** только эпизода у крюков; полная приёмка остаётся открытой. Момент bat/падения~3:13; fast8frames/Update прежде скрывал весь hurt-blink. Core/Audio не правились. `Temp/editor_user_stand/realtime/`, `Temp/stand_user_human/realtime_smoke.json`, `realtime_window.png`, `Temp/build_user_stand_realtime/`.\n\nДополнение просмотра: «Mesen - Плейтест 2» добавлен в том же UserStand и запущен; обычная скорость, исходная .mmo38886 byte-equal вводу порта. Использован существующий Start-Playthrough.ps1 с параметромReplayMovie, без нового скрипта. Это запуск просмотра, не новый полный gate; подробности FACTS.\n\n**Далее — исторические checkpoints; их NOT RUN/builds/следующие операции заменены сводкой выше.**\n\n**Предыдущий c9f7363+DD5D→DE86 (историческое):** actual `Game.Flow.ResetClock` loader calls276 (polls6–281), handler/interrupted/resume/body/finish по276, commits275, честный stop1 на `$DE86` (staging1540, SP=BB, State=Running/0, новый Waiting не выбран); source spans C235=367 C95C=401 C5F7→FF19=1696 ordinary69 ramp1281(267,271,275) exit1491 DD5A=55; loader buffer identity393 records f8–400; strict negatives47. Staging1540 вычисляется из world/palette/audio/clear-slots при возобновлённом состоянии, не константа и не seed. Full3Core на этом Core: 24261/38886/29360; `buffers.bin` и `trace.csv` побайтово равны baseline `Temp/*_reset_clock_current_final` (новые `Temp/qoder_*_full`), PNG/RGB NOT RUN. Suite18/24 STRICT8/24 errors0 FAIL; contracts/trench/cling/climb PASS. Первый оставшийся разрыв исполнения — `$DE86/$E698` streamer yield/continuation (сейчас ~15 passes/frame), затем CA40→D53F/live `$95`; миссия/босс/карта/world1 ещё не достигнуты.\n\n**Текущий f584f64 (заменяет Temp-only ниже):** actualGame clock258NMI/PC/resumes/257yield exact доRunningC5F7;13negatives. Copyright1B=99 исправлен (100fields/100negatives); helper257SP/1031mutants/11guards/48phases PASS. Full3Core60stableCSharp hashes,4384-byte exports equal9f784aa, PNG15/62 equal/cityRGB NOT RUN. SuitefullJSON18/24 STRICT8/24 errors0/общийFAIL,16contracts619/199/399 unchanged. Новая запись всёещё17234, город6388; нетнового босса/карты/world1. `Temp/reset_clock_gates`, `*_reset_clock_current_final`. Freshbuild_2411d43d74fc succeeded0errors/8warnings; текущиеactualscene/Player smoke/replay NOT RUN. Следующая операция — C95C передfade, same-pass C24B/C24E/C251 наstage6exit, DD5AextraYield; затемDD5D→DE86. Не seedWaiting послеloader.\n\n**Новая запись всё ещё блокирована на f17234.** 2026-10-24, Core9f784aa: cold RESET уже исполняется по native status-poll/инициализации/FF17, а не четырём host-кадрам. Самостоятельное время ещё не доведено до миссии; новый босс/карта/world1 не достигнуты. Полная приёмка открыта.\n\n- **RESET9f784aa:** profile взят из неизменённой movie2.1.1 (randomizeCpuPpuAlignment=false), не подобран поclock. Typed FE0E/FE13 read-clear/suppression, init/New-process/firstFF17 подключены кGameFlow; hardwareMask0 доC095 и disabled-NMI publication/audio gate исправлены. Component16671reads/4success/6blocks/48alignments(3suppression)/15negatives/20splits PASS в.NET иEditor. Actual8callbacks Ctrl/Mask/NmiCounter24, audio474bytes/polls6–8,184negatives PASS. FullCore24261/38886/29360,58Core/Audio hashes stable: f8–end все4384-byte records равныcf1da54, PNG15/62 equal; cityRGB NOT RUN. Первое port-to-port изменение f5 NToffset0, power-on1–7 явно исключено. Sourceold22229×5/new17234/city6388 unchanged; originalRGB8selected exact/residual624/960/480/480, SuitefullJSON18/24 STRICT8/24 errors0/общийFAIL,16contracts/619/199/399 сохранены. `Temp/*_poweron_current_final`, `poweron_gates`. Freshhosts9f NOT RUN; standcf1 ниже.\n- **Card59fab2e, практическая интеграция:** actual reset/input14300 даёт240 committed Card calls,99840 end/98592 resume-entry mapped bytes,237 source-exact resume prices,720 completed95/9A/97 и660negativecontrols. Никакого source-state seed. Source component240costs/1368splits/480duplicate guards, terminal480STA/4410instruction boundaries/14negatives PASS. Теперь resident Card не проходит обычные scroll/spawn/AI. FullCore24261/38886/29360,56Core/Audio hashes stable:4384-byte records byte-equal9aaa285, PNG15/62 equal; cityRGB NOT RUN. Oldoriginal22229×5, newfirst17234/city6388 unchanged. SuitefullJSON18/24 STRICT8/24 errors0/общийFAIL unchanged;16contracts/619/199/399/8×732prefix PASS. OriginalRGB8selectedwholeframes/portraitrightROI exact, intro624/960/480/480 remains. `Temp/*_card_pass_current_final`, `card_pass_gates`, `card_release_production.json`, `card_pass_original_rgb.json`; не fullRAM/image/audio или physical-anchor PASS.\n- **Mission-tail5135648:** обычный `MissionPassContinuation` соединяет OAM→RNG→9A-clear→timer→FF17, но Game ещё Finish безself-deadline. Source75tail/criticalNMI1/300phasechecks и прежние30682 OAM/15partials/406negatives PASS. Полные currentCore24261/38886/29360: старый м1 source22229x5, PNG15/62 равны прошломуCore; city RGB NOT RUN; new first17234 иcity6388 без изменений. Suite fullJSON baseline18/24 STRICT8/24 errors0,16contracts и619/199/399 PASS. Данные `Temp/*_mission_tail_current_final`, `mission_tail_gates`; не fullRAM/image/audio. Свежие hosts6041048 — ниже.\n- **0C timing подключён:** left/wind-up/falling дают352/352original8C34 costs (48falling),352clock negatives/144guards; actualreset wholeBank6 525/526 exact/0false,227232actorfields exact. Первый оставшийся actor-cost15520 — обычный контакт→F9C2, не armor. ПолныеCore24261/38886/29360,54Core/Audio sourcehashes stable: все4384-byte records byte-equal6041048, PNG15/62 exactpriorCore; cityRGB NOT RUN. Originalold2033–24261=22229 каждойиз5mapped-групп, newfirst17234/city6388 неизменны. SuitefullJSON18/24 STRICT8/24 errors0/общийFAIL unchanged;16contracts/619/199/399 и8×732prefix PASS. `Temp/*_thug_current_final`, `thug_production_gates`, `actor_thug_production.txt`. Свежиеhosts этого cost-only delta NOT RUN; playable6041048 ниже.\n- **Минимум доclock:** firstFF17 теперь принадлежит actualGame nativeRESET; независимое вычисление scheduler даётsourceC000176306/FE98→C5A5178648→FF19179934,48alignments/9negatives PASS (`poweron_first_nmi_verified.json`). ContinuousTemp chain выявила и воспроизвела missingcopyright1B=$99: directCHR вместоrequest делалNMI24 короче на49cycles. УзкийWIPfix даёт100fields/100negatives PASS; после него258arrivals/258resumes/257commits доC5F7 exact, minslack7049,516negatives. Transfer continuousclock послеfirstcommit ещёNOT RUN; следующий шаг — native ResetResidentTiming/ResetProcessClock сtimedmask339, затем firstloader/C2fade/DE86. CA40→D53F/live95, contact15520/player06/hook/armedprobe/actors0B-11-12 и30/F5/F6/publication остаются. Conditional Waiting16502 не seed. СуществующиеCard/pause/reverse prices ужеproduction, не переносить повторно.\n- **Playable build_d7e9e3908257 / 6041048:** build0errors/8warnings,214source hashes current=before=after/354binary hashes exact. FullPlayer old24261→реальный Quackerjack/счёт/карта1/1:23snapshots/15RGB exactCore; new38886poll/38852gameFrames:72snapshots/62RGB exactCore, но без босса/карты/world1. Exit0/exceptions0/normal25s smoke PASS. Actual **Assets/Scenes/DarkwingMain.unity** prefix16000:21NT(2KiB)/OAM/PAL snapshots/15RGB/7fields/6negativecontrols exactCore, frames8→6896→15672→16000/штатныйstop. Original-RGBcheck даёт8wholeframes exact/12pixelnegatives, portraitrightROI exact; intro624/960/480/480 остаётся. `Temp/build_card_early`, `stand_card_early_*`, `editor_card_early`, `normal_card_early_smoke`. UserStand обновлён; короткая заставка/пауза/смерть запрошены — AWAITING HUMAN, F5/слух остаются DEFERRED AT USER REQUEST.\n- **Графика8359e15 после HUMAN FAIL стенда0bb1:** убрана лишняя NT-перерисовка псевдо-сцен; исправлены независимые PPUMASK/left8/opaque-priority, pause CHR+FE requests до следующего NMI, death C21E и resident-NMI OAM/scroll. В actual DarkwingMain wholeRGB exact original на8 выбранных кадрах заставки/смерти/паузы/возврата; правая ROI portrait1800 exact. Контракты983044/1563/20480 и5 overwrite-controls PASS. Intro residual624/960/480/480 остаётся; не whole-intro PASS. **AWAITING HUMAN:** запрошены только заставка, пауза→возврат, смерть/повтор на старте м1 в новом UserStand; новая запись/полный уровень не нужны. FACTS содержит исходные причины и диапазон сравнения.\n- **Audio c9ddc88, actual replay отreset:** исправлены EOR CF при смене SFX-маски, gate productHi>>2/реальный early-clamp и достигнутые branch/loop/triangle/vibrato/VolumeDecay costs. Обычный production Core f4372–17233: **12862/12862** Tick+NMI-service и147 live fields exact source, **0 false-supported/0 unsupported**,1890714 byte checks/7negative controls. Ordered APU writes16502–17233 **5645/5645** и все2629 frame-lists4372–7000 exact; не PCM/выходная задержка. Прежние13costFAIL/57unsupported и cache77D16493 устранены, не скрыты исключением0780–07FF. Данные Temp/audio_actual_audit/production_whole/reached/early.\n- **Native prefix d08cdd8:** actual reset→input16502–17233: **8×732** цен exact source/0false/0unknown — CAFC(00×424/01×185/04×57/0B×66), scroll, spawn, zone, palette, bank6-script, bank1-script, CAE2→CA40 head. ResumeFECF→CA40 вычисляет580 через реальный InputTiming, не frame constant. Source-seeded states не подаются runtime. Source8×732 — не полная цена прохода: CA40/30, FF55 context, environment-tail, PPU phase/scheduler иOAM deadline ещё требуют связки. Данные `Temp/prefix_production_audit_final.txt`.\n- **Исправлены минимальные зависимости:** bank6→bank1 теперь два прохода; FriendlyPop использует source F55E rising normalization (4original fixtures, прежнийhelper ошибался3/4). Typed0360/19 рождается native producers:208/208 активных очередей/732flags/93696attr bytes exact; publication732 prices при fixturehandlerphase, не self-clock. RealStep→sharedmacro10 при пустой комнате, полные bottom palettes и корректный момент PrevVerticalMode. Удалён лишний RowService на mode-change: source E7FC падает в один E801-проход; раньше duplicate скрывался равенством итогов, новый guard выявил его на17039. Queue795checks/9byte-clock negatives PASS. Физические NT пока пишутся прежним путём; metadata publisher не объявлен полноценным9A/PPU staging.\n- **Core gates d08cdd8:** `*_native_prefix_final_final` — полные24261/38886/29360. Старый м1 source2033–24261=22229/22229 каждой из5 mapped-групп player/RNG_boss/HUD_score_lives/progress/active_objects. New first17234 E468/B4 и043F03/04; city6388CC/E6: без нового босса/карты/world1. Suite18/24 STRICT8/24 errors0/fullJSON unchanged/общийFAIL; contracts16 и619/199/399, render983044/1563/20480+5controls PASS. Audio actual12862 costs+147fields/7controls повторены с55C# sources; после этого только4EOF whitespace tidy, без логики. Свежие Editor/Player ниже, не fullRAM/image/audio PASS.\n- **D4:** production `OamDispatcher.RunFrame` теперь исполняет возобновляемый native-walk с исходным порядком cull/анимации/parts, slot/part/carry/cursor; invulnerability уменьшается при достижении player-slot после cull. Read-only original полного164819Z: **30682/30682** bank5 calls exact cycles и406 observable выходных bytes, **15/15** NMI partial/resume exact; arbitrary split/idempotence/406 deliberate mismatches PASS. Это source-seeded CPU fixtures, не интегрированное прохождение: игра пока завершает walk целиком без вычисляемого deadline.\n- **DeathSoundGate9B:** CB01 снова ставит25 при неотрицательном9B; D3B6 ставитFF, DE60 очищает. Контракт12/12. Full38886 `Temp/human_native_walk`:147 content bytes C0/C7–D8/0700–077F exact f4372–16492, первый остаток16493–16501 только77D FF/01; прежний11638 устранён. Queue/scratch/APU/PCM этим не приняты. Пять gameplay-групп по-прежнему12862 exact4372–17233; настоящий босс/карта/world1 на ЭТОМ вводе НЕ достигнуты.\n- **Регрессии первоначального09732c2 checkpoint:** старый full24261 `Temp/m1_native_walk_final`, source2033–24261 —22229/22229 в каждой из5 mapped-групп;15PNG byte-identical предыдущемуCore. Suite18/24 STRICT8/24 errors0/общийFAIL, contracts16, trench619/cling199/climb399, Python11 PASS. Старыйгород29360 `Temp/city_native_walk`: NT/OAM/PAL без регрессии, first6388 E4CC/E6 сохраняется. Повторные gates2f94bcc/Core/Editor/Player приведены выше; ручные gates отложены пользователем.\n- **Предыдущий Player build_babea3eef41c / source69fe7c6:** horizontal object-push и pause Active restore; F5 сохранён. Build0errors/4warnings/sourcehashes stable. Fresh standalone full старый24261→реальный Quackerjack/счёт/карта1/1,23snapshots/15RGB exact Core, exit0/exceptions0. Новый full38886poll/38852gameFrames →56snapshots/46RGB exact Core, cleanexit0/exceptions0, но без босса/карты; normal25s smoke PASS. Actual **Assets/Scenes/DarkwingMain.unity**: unchanged164819Z prefix16000,15NT/OAM/PAL snapshots/9RGB и7coordinate/clock fields exact Core,6negative controls rejected; frames10744→16000, штатный stop. Это prefix, не полный Editor route; полный scene comparator корректно отвергает укороченный ввод. Human gates отложены пользователем; этот build заменён указанным выше0bb1.\n- **HUMAN build8d5314c3caaa:** минимальный лаг приземления/зацепа остаётся открытым audio FAIL. Пользователь уточнил: он уже сравнивал Port и Mesen; повторный A/B не нужен. Это не подтверждение остальных stop/card/start gates. На unchanged164819Z все65 pending SFX10/12 совпадают по poll4373–11637,147 content bytes точны4372–11637; не APU/PCM/end-to-end PASS. Normal Editor45s software queue median1005/p951323/max1683 при48k/DSP256x4, с underrun/late и влиянием probe; `Temp/audio_output_timing.json`. Следующая операция — normal standalone/Mesen PCM-onset против показанного события, не опережение SFX на кадр.\n- **HUMAN e7eb:** в остальной обычной м1 прежних звуковых/графических багов пользователь больше не обнаружил — частичный ручной PASS исправлений, не полная приёмка. Новые FAIL: гудение после прерванной заставки до карты, двойной герой при презентации; intro/title ещё визуально ломаются. Верхние/нижние артефакты подъёма и новое оружие в world1 остаются открыты; запись уже имеется, повтор не просим.\n- **Stop/card исправления сохранены:** bank3 81EF fallthrough→81F1 SilenceMasked, stop32/32; D545/D549 hide old OAM, card-entry controls PASS. На unchanged новом вводе original-to-Core RGB4430/4450 **0/61440**, wholeOAM256 f4430–4500 **71/71 exact**. Их прежний новый gameplay first12295 уже устранён object-push ниже; не объявлять stop/card human gates закрытыми по ответу только о лаге.\n- **Предыдущий Player build_8d5314c3caaa**, source1e7a90e: full24261→Quackerjack/счёт/карта1/1,23snapshots/15RGB exact Core, exit0/exceptions0. Actual DarkwingMain prefix4600:12NT/OAM/PAL exact Core, originalRGB4430/4450=0, stop штатный. Stop/card human gates остаются открыты: новый ответ касается лага, не явного подтверждения их исправления. Thunder и остатки intro/краёв неисправлены.\n- **Не смешивать второе оружие с первым:** в human source pickup32075=Thunder/selected2, shot34254; behavior3/841C–85BB пока не исправлен. Измеренные состояния34310–34590 и конкретный source-derived fixture/план переноса находятся в GAPS. Весь второй уровень не принят.\n- **Новый исходный ввод проверен:** `Playthroughs/20261022T164819Z`,38886 frames; два независимых оригинала `Temp/human_164819_fulla/replay1` / `fullb/replay1` byte-identical **f8–38886,38879 полных RAM/NT/OAM/PAL records**, power-on1–7 исключён. Независимая movie-конвертация равна input.bin; hashes/видимый ending в FACTS. Оригинал проходит Quackerjack/счёт/карту и начинает world1 наf29015, count1/mask1. Это дополнительный человеческий ввод, не повтор старых кнопок и не победа Wolfduck.\n- **Музыка:** восстановлены sustain phase2→8720, dotted bit4 и SFX loop8277/8296. Focused10/16/7 cases PASS, signal34/34 PASS. После9B gate147 content bytes $C0/$C7–D8/$0700–077F точны **f4372–16492,12121 кадров подряд**; первый остаток16493 только77D FF/01, прежний11638 закрыт. Queue/scratch/APU/PCM этим не приняты. Прежний FIFO накапливал задержку после underrun; sample deadlines/stereo/initial-silence contract PASS, DSP requested256. End-to-end выстрел/приземление vsMesen и человеческая оценка **DEFERRED AT USER REQUEST**, не выводятся из Editor queue metrics.\n- **Изображение/intro:** на исходном новом вводе card RGB4510/4540 и9700 **0/61440 differences**; раньше card1846. Полная цепочка0E→0C→0A→attract восстановлена, но фаза intro ещё2–3 кадра неточна, ранний audio event489/490 открыт. Чёрная полоса воспроизведена на actual old Playera430 f10700; после cache/neighbor-edge исправления ROIx144–159:3120→166 несовпадающих pixels, whole-frame8800→5937. Это не full RGB PASS: scroll/publication residuals остаются, в том числеf9685/11000. Оценка обеих полос человеком pending.\n- **Новый маршрут продвинут 12295→17234:** `83d9b32` восстановил fixed bank7 F200/F254→F612/F724 horizontal object-push до tile probe, включая right SBC carry (overlap>4→correction5); source fixtures4cases/contract47 PASS, RGB12295=0. Pause bank4 8F12/8F85 должен сохранять полный04D0: native терял выделенный Active, source15347slot15=81/native01; contract FAIL12/16→PASS16/16. Экспорт pause-owned slot0 вместо retained Player исправлен отдельно, FAIL3/15→PASS15/15. Full38886 `Temp/human_object_pause_full`: пять mapped-групп exact **12862 кадра f4372–17233**. Новый first RNG17234 E468/B4 иactive043F03/04; player17235/HUD17626/progress27694. На ЭТОМ вводе босс/карта/world1 ещё не достигнуты. Source NMI17234 прерывает bank5 OAM на81E5/slot0E, RNG выполняется послеRTI; entry-cost75/75 exact,5719engine+JSR/3002NMI. Данные/минимальный план подключения — FACTS и handoff§8, без frame rules или source seeding.\n- **Свежие Core gates69fe7c6:** старый full24261 `Temp/m1_object_pause_full`, source f2033–24261 **22229/22229 в каждой из5 mapped-групп**; все24261 exported records/15PNG byte-identical предыдущему `m1_mute`, sourceRGB23000=0. Не fullRAM/image/audio. Suite18/24 STRICT8/24 errors0/общийFAIL, полный JSON равен baseline; contracts**15/15**, trench619/cling199/climb399, Python14 PASS. PauseHold/Resume RESULT69/69 и79/79; STRICT всё ещё FAIL OAMf1/panel05C4f20, не полная приёмка паузы.\n- **Предыдущий Player build_e7ebf7df9851**, sourceedad8f2:0errors/8warnings; build hashes before/after одинаковы. Fresh full старыйм1 (`stand_humanfix_m1`)→реальный Quackerjack/счёт/карта1/1, exit0/exceptions0;21 snapshots/13RGB exact Core. Новый full Player38886 потребляет38886poll/38852gameclock и совпадает сCore42snapshots/28RGB, но маршрут остаётсяFAIL без босса. Actual **Assets/Scenes/DarkwingMain.unity** Editor2200: snapshot2033 целиком равен CURRENT Player, stop штатный. Normal-speed standalone50s smoke/2непустые кадра/exit0 PASS; runtime Pipeline для queue eval отсутствует, end-to-end latency не измерена. Первая3s пустая boot-capture отвергнута. Human e7eb результат выше; новая сборка stop/card ещё pending.\n\n**Стенд пользователя:** `Build/UserStand/` — `Darkwing Port.lnk`, `Mesen - С ЗАПИСЬЮ.lnk` и `Mesen - БЕЗ ЗАПИСИ.lnk`. Первый Mesen запускает существующий Start-Playthrough.ps1/--recordMovie; закрытие Mesen сохраняет movie/input в Playthroughs. Второй запускает только ROM, без автоматической записи. Прежний неоднозначный ярлык заменён, на Desktop ничего не добавлено. Launcher smoke: штатное закрытие/exit0,312 кадров/input+movie, без State.mss; наш тест убран из человеческих записей в Temp/recorder_shortcut_smoke. Старый ярлык запускал ROM без recorder: прежнюю несохранённую сессию не выдавать за запись; RecentGame содержит лишь снимок. Новые сессии164042Z/164057Z имеют166/2580 кадров полностью нулевого ввода, не покрывают использование оружия.\n\n- **HUMAN FAIL предыдущего a430:** пользователь уточнил два дефекта — вертикальная чёрная полоса и полоса с жёлтыми вставками; также обрыв intro, короткая надпись над героем, неполная intro music/«каша» м1 и поздние выстрел/приземление. Печать и карта уже похожи. Причины/измеренные исправления выше; ручного PASS новой версии пока нет. Два166/2580 нулевых input ниже — не последний игровой ввод164819Z.\n- **Исправлен измеренный постбоссовый графический дефект:** человеческий FAIL наbuild636 локализован по уже сохранённой записи; дополнительных скриншотов не требовали.00578b0 убрал лишний whole-window repaint у world8-loader/clear-scroll, исправил zero-pixel→универсальный3F00 в Ppu.Render и восстановил world-dependent хвост C319/C33C–C35C (08/09→26,0B→11). Никаких frame tables/source RAM seeds. f23000 original-to-port RGB: **6841→3072→0 отличий,61440/61440**, отдельно Core и свежий Player на правильной pre-input границе. Это точность одного кадра, не всего изображения.\n- **Свежие gates00578b0:** Core full24261/CLI exit0, source vsnative f2033–24261 **22229x5** прежних mapped-групп; Suite18/24 STRICT8/24 errors0/общий FAIL, Contracts13/13, trench619/619/cling199/199/climb399/399, audio34/34 PASS. Новые focused: staging/source page0x1024+overwrite-negative,61440 background-zero+nonzero control,48 palette-tail cases PASS. Вокне22500–23254 PAL755/755, OAM754/755, NT13/755; физические NT не объявлены идентичными (f23000 —8 attribute bytes невидимой страницы).\n- **Предыдущий доставленный Player build_a43000271432**, production source00578b0,0build errors/8warnings. `stand_clear_aligned`: full24261→реальный Quackerjack→счёт→карта1/1, clean exit0/exceptions0,17 Bloom warnings;21 snapshots/13 RGB точны тогдашнему Core. Actual DarkwingMain Editor2200: полный snapshot2033 равен Player, штатный stop. По началу/звуку получен HUMAN FAIL выше, audio не принят.\n- **Граница capture исправлена в tooling:** перенос Core-spec в Player без captureAtStart дал post-input снимки/58 pixel differences на счётчике. Такой route отвергнут scene comparator; input не меняли и offset не подбирали. Явный captureAtStart=true + полный повтор даёт0. e17bbee теперь экспортирует этот флаг штатно; unit/negative control и все8 Python tests PASS. Данные `Temp/m1_clear_final`, `stand_clear_aligned`, `build_clear_bg`, `clear_final_*`.\n- **Городской timing blocker не устранён:** свежий полный29360 на69fe7c6 `Temp/city_object_pause_full` byte-identical предыдущему порту `city_silence_card`; first RNG **f6388 E4CC/E6**, player/active6389, HUD6437, progress25304. Wolfduck/счёт/карта1/2 не достигнуты. Self-clock/deadline/continuation не подключены; новый независимый маршрут тоже упёрся в реальное NMI/OAM-пересечение17234. Следующая реализация — исполняемый prefix/NMI clock + resumable bank5 OAM→RNG→commit; минимальные зависимости в handoff§8. Не выдавать cost-contract за интегрированное исправление. Следующие пункты — исторические результаты8930286/1c1dde2.\n- **Новый audio checkpoint8930286:** пользователь локализовал дефект уже на первой заставке, музыка кажется замедленной; печать букв шипит вместо писка. Original cold boot без ввода: печать пишет `$400E=84`, source short-noise mode; порт игнорировал bit7 и шагал шум на CPU/4. Исправлены short-mode tap6 и реальные периоды CPU/1. Triangle ошибочно шагал на CPU/2: бас был на октаву ниже; теперь CPU/1. Это не доказательство исправления темпа секвенсора/всего звука. До правки SignalContract FAIL33/34, после PASS34/34; уточнённый контракт проверяет каждый cycle, pulse CPU/2 — контроль. APU-only исходные writes дают пик печати301.39Hz против original300.66Hz; раньше нет соответствующего тонального режима. Полная waveform/latency приёмка открыта.\n- **Регрессии8930286:** м1 Core24261 завершён; исходные пять групп f2033–24261 снова22229/22229, не полная RAM/звук. CLI получил240s timeout, но runner дописал все24261 records; независимая проверка полной длины/сравнение PASS выбранных полей, CLI execution gate не объявлен PASS. Suite18/24 STRICT8/24 errors0 (общий FAIL), Contracts13/13, trench619/619, cling199/199, climb399/399, queue/period/jump contracts PASS. Город проверен только prefix6600: пять групп+persistent audio равны прежнему порту; original residuals f490 DA02/01 и f6388 E4CC/E6 сохранились. Wolfduck/карта1/2 не достигнуты; полный новый город NOT RUN.\n- **Реальный Editor/Player8930286:** actual DarkwingMain, обычный Editor запуск без replay, один AudioSource, output48000Hz; два замера345→981 дают60.155fps, не половинный темп. Очередь6214→7297 samples (129–152ms) — запас native FIFO, не замер end-to-end latency/разницы с оригиналом. Editor штатно остановлен. Текущий Player **build_636e99f98b20**, production C# равен8930286, build0 errors/8 warnings: полный м124261 → реальный Quackerjack → счёт → карта1/1, exit0/exceptions0; 15 snapshots/final и7 PNG точны относительно предыдущего Player1c1dde2, не original-RGB/audio PASS. Остались17 Bloom warnings. `Build/UserStand/Darkwing Port.lnk` обновлён, рядом оригинал; новый короткий A/B запрошен, **AWAITING HUMAN**. Старый7e ниже — историческое свидетельство.\n- Тайм-аут Player разобран: `build_jumpsfx_clean` был без Development, replay-методы отсутствовали в `Darkwing.UnityApp.dll`; 900s не измеряли скорость APU. Development дал короткий replay2200 и полный м1 за183s. `verify_player.ps1` теперь отвергает отсутствие replay до запуска; отрицательный контроль PASS.\n- В игровом выполнении исправлены ложный SFX21 прыжка (`671c83e`), BG-палитра DF04 вместо аудиотаблицы DF13, входной D9-guard, разница F84E/F850 и обход NMI-очереди enemy SFX (`54f08df`), пропущенный bank3 хвост863E–8659 после записи периода (`1c1dde2`). Последний воспроизведён до правки, после неё6/6 контрактов с no-reset контролем. Это необходимые входы для NMI-cost, не общий аудиоаудит.\n- Измеримое продвижение полного городского native replay: **158 persistent audio bytes** (C0/C7–E3/0700–077F, без C1–C6/APU/PCM) совпадают с оригиналом подряд **f8–489**, прежде только f8–281. Первый остаток audio — **f490 DA 02/01**. Узкая оригинальная трасса: SFX10 из fixed bank7 C63E ставится на f489, порт — f490; 21 poll480–500 совпал по clock/E4/DA/DB с сохранённым полным оригиналом. Нужна проверка первого flight-step/AB57→C61E yield, не задержка по номеру кадра.\n- Главный блокер **не исправлен**: полный input города29360 снова выполнен; первое миссионное RNG-расхождение **f6388 E4 CC/E6**, Wolfduck/подсчёт/карта count1/mask2 **не достигнуты**. Пять прежних групп и NT/OAM/PAL нового порта равны предыдущему порту — это port-to-port, **не original-to-port PASS**.\n- Самостоятельные cycle clock/deadline, подключение FrameScheduler и OAM/RNG continuation остаются **NOT RUN / не реализованы**. D0 проверяет фазу по измеренным commit clocks, не самостоятельное время. Помимо остатка audio нужны реальные NMI publish/queue costs, исполняемый player/scroll/spawn/zone/palette/AI/environment префикс и timed OAM/RNG/yield. Числа3587/24401 из трассы не runtime-константы. Независимый технический review минимальной границы D1–D3 запрошен; обычный плейтест не измеряет CPU-фазу.\n- Исторические регрессии1c1dde2: м1 `Temp/m1_audio_tail` против оригинала `Temp/stand_m1_orig_shift79/replay1`, f2033–24261 — **22229/22229** отдельно player, RNG_boss, HUD_score_lives, progress, active_objects (27 полей активных слотов1–15). Suite **RESULT18/24, STRICT8/24, errors0**, общий verdict **FAIL** сохранён; Contracts13/13, trench619/619, cling199/199, climb399/399 PASS. Не вся RAM/image/audio; свежий8930286 повтор указан выше.\n- Исторический Player1c1dde2: Development **build_7e05397023dc** прошёл полный м1/карту1/1,15 snapshots/7 RGB vsCore. Штатная **Assets/Scenes/DarkwingMain.unity** тогда проверена через Editor API replay2200, snapshot2033 равен Player; не полный Editor маршрут. На диске этот Player теперь заменён636e99f98b20, текущие evidence/ярлык выше.\n- **HUMAN FAIL предыдущего audio, 2026-10-22:** «самолёта» нет; музыка кажется наложенной/медленной, прыжок/выстрел субъективно запаздывают; пользователь затем локализовал музыку/шипение печати уже на первой заставке. По контексту build7e05397023dc. Причина синтеза исправлена, задержка ещё не измерена с оригиналом; подтверждения нового636e нет. **NOT RUN / AWAITING HUMAN:** вертикальная поездка, начало города, второй независимый исходный ввод м1, полное покрытие оружия/секретов/звука/изображения и полная ручная приёмка. Старый успешный маршрут не закрывает эти gates; спецоружие и черепаха в GAPS.\n- Следующая точная операция: isolated Thunder841C–85BB fixture поsource34310–34590, не новая запись; для integratedroute — source horizontal object-push F612/F724→nativeMoveHorizontal напервом12294. Независимый audio остаток CB01–CB07/9B (D3B6=FF, DE60=0/reset) объясняет отсутствующийSFX25 на11637. Затем ранний flight-step/AA00/AB57→C61E, computed NMI/audio cost/deadline/continuation поhandoff §8. Временной review по6388 остаётся запрошенным; не продолжать спекулятивный цикл вместо него.\n\nДанные: `Temp/city_audio_state` → `city_audio_tasks_fix` → `city_audio_queue_fix` → `city_audio_tail`, `Temp/city_audio_tail_states.json`; `Temp/audio_queue_490.csv`/`audio_queue_490_run.txt`; `Temp/m1_audio_tail_states.json`, `Temp/audio_tail_suite`, `audio_tail_contracts`, `audio_tail_regressions`, `audio_tail_before/after`; `Temp/build_audio_tail`, `Temp/stand_audio_tail/scene_compare.json`. Инструмент `stand.py unity --audio-state` только читает живой C#; `states --audio` требует объявленный экспорт/равные длины, отвергает пропуск/лишний record, обрыв и контрольную CA-подмену. ROM/input/movie/goldens не менялись. Чужие AGENTS, база знаний координации и OamCostProbe не включены в игровые коммиты.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793235969825,
+      "createdOn": 1793235969825,
+      "comments": [],
+      "descriptionSha256": "8d29ab80833c792449b9b6050df7efae08897de88df0d2622f9fe19fd6af607d"
+    },
+    {
+      "issueId": "6ae29d47e5dbb5b6ddb7723b",
+      "identifier": "ZERO-34",
+      "title": "GDD: завершить описание разделов с проверенным происхождением",
+      "description": "Содержимое прежнего GDD README перенесено из файлов, чтобы дальнейшая очередь велась только здесь. Формат и правила XHTML теперь задаются Art/AGENTS.xhtml; прежние указания CSS classes/HTML5 не действуют. Проверенные статьи/спрайты сохраняются как документы и evidence.\n\n# Game Design Document (GDD) — Darkwing Duck Reconstruction\n\nДанная папка содержит игровую документацию (Game Design Document) для нативного порта / реконструкции игры **Darkwing Duck** (Capcom, NES 1992) на Unity C#.\n\n## Формат документации\n\nДокументация реализована в стандарте **XHTML 1.0 Strict + XML Schema (XSD) + CSS**:\n\n- **Человекочитаемость:** Все файлы `.xhtml` открываются напрямую в любом браузере (Chrome, Edge, Firefox, Safari) без веб-серверов или сборщиков.\n- **Машиночитаемость и типизация:** Документы являются строгим валидным XML и проверяются по схеме [`gdd.xsd`](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/gdd.xsd).\n- **Единый стиль:** Все страницы используют общий автономный файл стилей [`style.css`](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/style.css) в ретро-киберпанк / нуар-стилистике Darkwing Duck.\n\n## Состав документов\n\n<table><tbody><tr><th><p>Файл</p></th><th><p>Описание</p></th><th><p>Статус</p></th></tr><tr><td><p>[<code>index.xhtml</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/index.xhtml)</p></td><td><p><strong>Главная страница GDD</strong>: видение проекта, ключевые столпы (Design Pillars), карта структуры и глобальный игровой цикл.</p></td><td><p>Active Baseline</p></td></tr><tr><td><p>[<code>character.xhtml</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/character.xhtml)</p></td><td><p><strong>Спецификация персонажа (Чёрный Плащ)</strong>: характеристики, модель ввода, машина состояний (State 0..21), физика, дефлект плащом, спецгазы и <strong>полный каталог анимаций спрайтшита</strong> для замены/рескина героя.</p></td><td><p>Confirmed (1-to-1)</p></td></tr><tr><td><p>[<code>instructions.xhtml</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/instructions.xhtml)</p></td><td><p><strong>Руководство по ведению GDD</strong>: шаблон каркаса страницы, система статусов достоверности, типографика, UI-компоненты и правила XML-разметки.</p></td><td><p>Confirmed</p></td></tr><tr><td><p>[<code>style.css</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/style.css)</p></td><td><p><strong>Единый файл стилей</strong>: оформление карточек, таблиц, бейджей, блоков кода, раскладок клавиатуры <code><kbd></code>, адаптивный макет и стили для печати.</p></td><td><p>Core</p></td></tr><tr><td><p>[<code>gdd.xsd</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/gdd.xsd)</p></td><td><p><strong>XML Schema</strong>: схема структуры для валидации корректности тегов и атрибутов XHTML.</p></td><td><p>Core Schema</p></td></tr><tr><td><p>[<code>validate.ps1</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/validate.ps1)</p></td><td><p><strong>Скрипт проверки</strong>: автоматическая валидация всех <code>.xhtml</code> страниц каталога против <code>gdd.xsd</code>.</p></td><td><p>Tool</p></td></tr><tr><td><p>[<code>export_sprites.py</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/export_sprites.py)</p></td><td><p><strong>Экспортёр графики</strong>: извлечение тайлов CHR и генерация эталонных спрайтшитов/полос анимаций в папку <code>sprites/</code>.</p></td><td><p>Tool</p></td></tr><tr><td><p>[<code>sprites/</code>](file:///D:/Art/SW%20Code%20Zero%20Unity/Docs/GameDesignDocument/sprites/)</p></td><td><p><strong>Каталог эталонных PNG</strong>: тайлмап CHR (256x256), сводный атлас поз (384x192) и 19 покадровых спрайтшитов анимаций.</p></td><td><p>Assets</p></td></tr></tbody></table>\n\n## Проверка валидности\n\nДля автоматической проверки всех страниц документации выполните:\n\n```powershell\npowershell -ExecutionPolicy Bypass -File Art/Docs/GameDesignDocument/validate.ps1\n```\n\n## Генерация спрайтшитов и тайлмапов\n\nДля повторной генерации эталонных PNG-файлов анимаций из ROM выполните:\n\n```powershell\npython Art/Docs/GameDesignDocument/export_sprites.py\n```\n\nЭкспорт фиксирует направление вправо: движок выбирает парную таблицу координат и\nприменяет XOR `$40` к атрибутам тайлов. Простое чтение исходных offsets/атрибутов\nдаёт искажённые кадры `0x2B/0x2D`, хотя CHR 14 выбран правильно (`$8E & $1F = 14`).\n`0x2B` — герой в заставке начала миссии; текстовая плашка PRG 2 выводится отдельно.\n\nДля особого урона `0x1C/0x1D` используются таблицы PRG 4 и CHR 15/12 соответственно,\nпо дескрипторам checkpoint `$0C/$08`. Таблица PRG 5 с теми же ID описывает предметы.\nИсточник, кадры, PRG/CHR, палитра и направление записываются в `sprites/manifest.json`.\nPNG — статическое представление данных, а не эталон приёмки игрового поведения.\nИмена файлов сохранены для существующих ссылок; актуальная семантика — в каталоге и manifest.\n\nПроверка каждой PNG-полосы через действующие нативные OAM/PPU (19 полос, 98 кадров):\n\n```powershell\npython Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.PlayerAnimationContextContract --out Art/Temp/oam_context_contract\npython Art/Docs/GameDesignDocument/export_sprites.py --check-native Art/Temp/player_animation_context\n```\n\nВывод RGBA создаётся только исследовательским контрактом в `Art/Temp/`; в игру и golden-записи он не подаётся.",
+      "status": "Backlog",
+      "priority": "no-priority",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793236295451,
+      "createdOn": 1793236295451,
+      "comments": [],
+      "descriptionSha256": "1866eab475d08c1664e701be887bd39613b8b91c41180f48741829407c859091"
+    },
+    {
+      "issueId": "6ae29e68e5dbb5b6ddb7723e",
+      "identifier": "ZERO-35",
+      "title": "Исторические приёмочные отчёты: утраченные Temp-свидетельства",
+      "description": "При переносе документации 2026-10-29 обнаружены 10 ссылок в ACCEPTANCE_REPORT на отсутствующие исторические файлы. Проверены текущее Art/Temp и все 6 существующих внешних backup-каталогов по точным историческим путям; соответствующих файлов нет. Нельзя подставлять текущий output или отчёт другого build как исторический baseline. В XHTML ссылки явно отмечены как ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО; связанные утверждения не получают подтверждение от новой XML-проверки.\n\nTemp/m1_current_suite/suite_result.json\nTemp/stand_player/build_final.json\nTemp/stand_player/source_before.json\nTemp/stand_player/binary_manifest.json\nTemp/stand_scene/route.json\nTemp/stand_player/route.json\nTemp/stand_player/window_a.png\nTemp/stand_player/window_b.png\nTemp/stand_player/player_smoke.json\nTemp/stand_scene/game_view.png\n\nЕсли нужен соответствующий gate, искать оригинал в отдельно сохранённых исходных артефактах или повторить проверку как НОВОЕ свидетельство с идентификацией нового build; потерянное историческое доказательство этим не восстанавливается. Имеющийся audit_20261018 относится к другой проверке и не подставлен.",
+      "status": "Backlog",
+      "priority": "medium",
+      "creator": {
+        "id": "6ae28336f8f3281e9196c8d9",
+        "name": "Codex,Шнырь",
+        "email": "sh.codex@beholder.learn.su"
+      },
+      "labels": [],
+      "project": "ZERO",
+      "modifiedOn": 1793236584986,
+      "createdOn": 1793236584986,
+      "comments": [],
+      "descriptionSha256": "7b09aeb3377bb3c5ed2c8a786acb97ee974d877e479910fe54a39f7bd8df6365"
+    }
+  ],
+  "auditIssue": {
+    "identifier": "ZERO-37",
+    "issueId": "6ae2aee30e0982d67d404118"
+  },
+  "classification": [
+    {
+      "identifier": "ZERO-3",
+      "option": 3,
+      "reason": "Строка состояния M0, а не отдельное действие: источник/эталон уже описаны в критериях и фактах.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-22",
+        "ZERO-26",
+        "ZERO-28"
+      ],
+      "title": "M0 — источник и эталон",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M0 — источник и эталон",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-4",
+      "option": 3,
+      "reason": "Строка состояния M1 о наличии извлечённых данных; оставшаяся работа раскрыта в предметных задачах.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-21",
+        "ZERO-29",
+        "ZERO-31"
+      ],
+      "title": "M1 — ресурсы",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M1 — ресурсы",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-5",
+      "option": 3,
+      "reason": "Строка состояния M2 и общий статус точности дублируют конкретные timing-задачи.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-12",
+        "ZERO-13",
+        "ZERO-23"
+      ],
+      "title": "M2 — время и сравнение",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M2 — время и сравнение",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-6",
+      "option": 3,
+      "reason": "Название этапа и набор уже выполненных G92-проверок без нового самостоятельного результата.",
+      "action": "move_to_docs",
+      "destination": "Art/Research/DarkwingDuck/FACTS.xhtml",
+      "related": [
+        "ZERO-15",
+        "ZERO-20",
+        "ZERO-27"
+      ],
+      "title": "M3 — вертикальный срез",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M3 — вертикальный срез",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-7",
+      "option": 3,
+      "reason": "Статус M4 смешивает несколько областей; самостоятельных действий сверх задач покрытия нет.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-22",
+        "ZERO-24",
+        "ZERO-26",
+        "ZERO-29"
+      ],
+      "title": "M4 — общие механики",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M4 — общие механики",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-8",
+      "option": 3,
+      "reason": "Общая сводка M5 о частичном звуке дублирует предметные аудиозадачи.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-17",
+        "ZERO-18"
+      ],
+      "title": "M5 — звук",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M5 — звук",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-9",
+      "option": 3,
+      "reason": "Строка состояния M6 описывает масштаб приёмки и уже известный route-PASS, а не новый шаг.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-13",
+        "ZERO-25",
+        "ZERO-26",
+        "ZERO-29"
+      ],
+      "title": "M6 — 7 миссий и боссы",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M6 — 7 миссий и боссы",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-10",
+      "option": 3,
+      "reason": "Общее состояние M7 дублирует полноценный маршрут и финал без самостоятельного deliverable.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-14",
+        "ZERO-26",
+        "ZERO-28"
+      ],
+      "title": "M7 — полный маршрут",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M7 — полный маршрут",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-11",
+      "option": 3,
+      "reason": "Сводка M8 о частичной готовности; фактическая выпускная работа остаётся в ZERO-30/31.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/IMPLEMENTATION_BRIEF_RU.xhtml",
+      "related": [
+        "ZERO-30",
+        "ZERO-31"
+      ],
+      "title": "M8 — выпуск и приёмка",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "M8 — выпуск и приёмка",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-12",
+      "option": 2,
+      "title": "Подключить вычисляемое время кадров к игровому циклу",
+      "reason": "Реальная интеграция времени скрыта в нескольких исторических checkpoint и списках компонентов; зафиксированы её граница, входы и готовый результат для ZERO-13.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Подключить вычисляемое время кадров к игровому циклу",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-13",
+      "option": 2,
+      "title": "Исправить прерывание обработки спрайтов в двух записанных прохождениях",
+      "reason": "Описание смешивало два ввода, старые диагнозы и общий handoff; выделено конкретное исправление прерывания с проверкой обоих окон и прежних маршрутов.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Исправить прерывание обработки спрайтов в двух записанных прохождениях",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-14",
+      "option": 2,
+      "title": "Устранить оставшиеся расхождения вступления и демонстрационного цикла",
+      "reason": "Одновременно перечислялись уже исправленные и оставшиеся intro-дефекты; задана проверка текущего первого расхождения и всего демонстрационного цикла.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Устранить оставшиеся расхождения вступления и демонстрационного цикла",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-15",
+      "option": 2,
+      "title": "Проверить исправления портрета, паузы и смерти на актуальной сборке",
+      "reason": "Старое AWAITING HUMAN ссылалось на устаревшую сборку и не давало выполнимого современного чеклиста; определён подготовительный агентский результат и отдельный человеческий gate.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Проверить исправления портрета, паузы и смерти на актуальной сборке",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-16",
+      "option": 3,
+      "reason": "Закрытая узкая гипотеза о мгновенной смерти и предварительный человеческий результат; нового действия нет.",
+      "action": "move_to_docs",
+      "destination": "Art/Research/DarkwingDuck/FACTS.xhtml",
+      "related": [
+        "ZERO-13",
+        "ZERO-20"
+      ],
+      "title": "Летучая мышь, hook и кажущаяся мгновенная смерть: исходный человеческий отчёт",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "Летучая мышь, hook и кажущаяся мгновенная смерть: исходный человеческий отчёт",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-17",
+      "option": 2,
+      "title": "Измерить причину задержки выстрела, приземления и зацепа и устранить её",
+      "reason": "Смешивались цель исправления и прямой запрет пользователя начинать его; цель сохранена, запрет вынесен явно, определены измерения до/после.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Измерить причину задержки выстрела, приземления и зацепа и устранить её",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-18",
+      "option": 2,
+      "title": "Исправить порядок и звучание вступительной музыки, печати и SFX",
+      "reason": "Большая аудиосводка объединяла драйвер, синтез, графику и latency; отделён порядок событий/сигнал, задержка оставлена ZERO-17.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Исправить порядок и звучание вступительной музыки, печати и SFX",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-19",
+      "option": 3,
+      "reason": "Устаревший отложенный F5-gate уже покрыт коротким человеческим PASS в закрытой ZERO-36.",
+      "action": "covered_by_done",
+      "destination": "Art/Research/DarkwingDuck/FACTS.xhtml",
+      "related": [
+        "ZERO-36"
+      ],
+      "title": "F5: проверить отключение звука на текущем интерактивном checkpoint",
+      "status": "Done",
+      "applied": {
+        "status": "Done",
+        "title": "F5: проверить отключение звука на текущем интерактивном checkpoint",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-20",
+      "option": 2,
+      "title": "Устранить оставшиеся полосы и ошибки потока тайлов в миссии 1",
+      "reason": "Многокилобайтная история NT содержит опровергнутые гипотезы и закрытые кадры; оставлен проверяемый результат по актуальным полосам и подъёму.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Устранить оставшиеся полосы и ошибки потока тайлов в миссии 1",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-21",
+      "option": 2,
+      "title": "Исправить применение Thunder и направление его разрядов",
+      "reason": "Первое split-оружие и Thunder могли быть спутаны; требуется подтвердить фактический тип, оба направления, попадания и боезапас.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Исправить применение Thunder и направление его разрядов",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-22",
+      "option": 2,
+      "title": "Закрыть проверками все обязательные действия четырёх видов оружия",
+      "reason": "Заголовок обещал все четыре оружия, а текст просил проверить только первое; критерий приведён к полному необходимому покрытию.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Закрыть проверками все обязательные действия четырёх видов оружия",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-23",
+      "option": 1,
+      "reason": "Указаны конкретное расхождение PAL, диапазон f18607–18614, данные оригинала и две проверяемые точки $0300/$C059; это самостоятельное ограниченное исследование с понятным результатом сравнения.",
+      "action": "keep",
+      "title": "Палитра D1: порядок shadow/upload на f18607–18614",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Палитра D1: порядок shadow/upload на f18607–18614",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-24",
+      "option": 2,
+      "title": "Проверить уязвимость черепахи в закрытом и открытом панцире",
+      "reason": "Содержался реальный проверяемый human report, но старый OS-Temp screenshot и очередность чужого этапа делали его несамостоятельным; заданы входы/вывод и оба состояния.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Проверить уязвимость черепахи в закрытом и открытом панцире",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-25",
+      "option": 2,
+      "title": "Исправить удаление осколка при столкновении с полом",
+      "reason": "В одну запись ошибочно объединены Wolfduck fixture и самостоятельный дефект удаления осколка; первый оставлен фактом, второй получил точную постановку.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Исправить удаление осколка при столкновении с полом",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-26",
+      "option": 2,
+      "title": "Довести естественные прохождения миссий 2–7 до босса и возврата на карту",
+      "reason": "Фраза «исправлять первый дефект остальных маршрутов» не определяла конечный результат; зафиксированы шесть естественных маршрутов, настоящие боссы и gates по каждой миссии.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Довести естественные прохождения миссий 2–7 до босса и возврата на карту",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-27",
+      "option": 2,
+      "title": "Устранить расхождения спрайтов на карте и при входе в паузу",
+      "reason": "Три кратких диагностических числа не объясняли, что получить; определены отдельные обычный flow/fixture и критерии первого кадра карты/паузы.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Устранить расхождения спрайтов на карте и при входе в паузу",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-28",
+      "option": 2,
+      "title": "Реализовать и проверить финал после естественного завершения игры",
+      "reason": "Имелись только адреса и результат forced-ending; задача теперь требует настоящего оригинального ending и проверенного естественного пути порта.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Реализовать и проверить финал после естественного завершения игры",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-29",
+      "option": 2,
+      "title": "Реализовать и проверить все достижимые секреты и бонусные области",
+      "reason": "Исходная строка описывала отсутствие сценариев, но не результат; заданы инвентарь достижимых областей и проверенные вход/награда/выход.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Реализовать и проверить все достижимые секреты и бонусные области",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-30",
+      "option": 2,
+      "title": "Подготовить и принять окончательную standalone-сборку",
+      "reason": "Выполненный mission1 маршрут был смешан с неопределённым «полным release»; заданы отдельная выпускная сборка, все обязательные gates и состав доказательств.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Подготовить и принять окончательную standalone-сборку",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-31",
+      "option": 2,
+      "title": "Составить provenance и список сторонних компонентов выпускной сборки",
+      "reason": "Отсутствовали состав итогового документа и связь с фактическим release; определены источники, версии/хеши, notices и проверка поставки.",
+      "action": "rewrite",
+      "status": "Backlog",
+      "applied": {
+        "status": "Backlog",
+        "title": "Составить provenance и список сторонних компонентов выпускной сборки",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-32",
+      "option": 3,
+      "reason": "Целиком скопированный исторический технический handoff с гипотезами и ценами, а не самостоятельная задача.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/DarkwingPort/RESEARCH_HANDOFF_RU.xhtml",
+      "related": [
+        "ZERO-12",
+        "ZERO-13"
+      ],
+      "title": "Техническая передача непрерывного clock: актуализировать гипотезы по текущему checkpoint",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "Техническая передача непрерывного clock: актуализировать гипотезы по текущему checkpoint",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-33",
+      "option": 3,
+      "reason": "Копия накопленного STATUS/сменного журнала; открытые действия уже ведутся в предметных задачах.",
+      "action": "move_to_docs",
+      "destination": "Art/Research/DarkwingDuck/FACTS.xhtml",
+      "related": [
+        "ZERO-12",
+        "ZERO-13",
+        "ZERO-14",
+        "ZERO-15",
+        "ZERO-17",
+        "ZERO-18",
+        "ZERO-20",
+        "ZERO-21",
+        "ZERO-26",
+        "ZERO-30"
+      ],
+      "title": "Сверить текущие gates с перенесённым журналом STATUS",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "Сверить текущие gates с перенесённым журналом STATUS",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-34",
+      "option": 3,
+      "reason": "Копия README с составом GDD и инструкциями экспортёра; обещанных в заголовке новых разделов не определено.",
+      "action": "move_to_docs",
+      "destination": "Art/Docs/GameDesignDocument/README.xhtml",
+      "related": [],
+      "title": "GDD: завершить описание разделов с проверенным происхождением",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "GDD: завершить описание разделов с проверенным происхождением",
+        "readback": true
+      }
+    },
+    {
+      "identifier": "ZERO-35",
+      "option": 3,
+      "reason": "Перечень утраченных исторических свидетельств и ограничение доверия; условное «если нужно» не задаёт отдельной работы.",
+      "action": "move_to_docs",
+      "destination": "Art/Research/DarkwingDuck/FACTS.xhtml",
+      "related": [
+        "ZERO-30"
+      ],
+      "title": "Исторические приёмочные отчёты: утраченные Temp-свидетельства",
+      "status": "Canceled",
+      "applied": {
+        "status": "Canceled",
+        "title": "Исторические приёмочные отчёты: утраченные Temp-свидетельства",
+        "readback": true
+      }
+    }
+  ],
+  "criteria": {
+    "task": "Будущее ограниченное действие с понятным результатом, входами и проверяемым критерием завершения",
+    "rewrite": "Реальная работа есть, но цель/границы/выполнение/готовность затеряны в исторической справке",
+    "documentation": "Исторический статус, сводка, инструкция или уже покрытый gate без самостоятельного нового действия"
+  },
+  "auditState": "applied_and_readback_verified",
+  "resultCounts": {
+    "kept": 1,
+    "rewritten": 17,
+    "documentationOrHistory": 15,
+    "removedFromBacklog": 15,
+    "canceledAsDocumentation": 14,
+    "coveredByExistingDoneTest": 1,
+    "remainingBacklog": 18
+  },
+  "originalScope": {
+    "query": {
+      "project": "ZERO",
+      "status": "Backlog",
+      "limit": 200
+    },
+    "count": 33,
+    "identifiers": [
+      "ZERO-3",
+      "ZERO-4",
+      "ZERO-5",
+      "ZERO-6",
+      "ZERO-7",
+      "ZERO-8",
+      "ZERO-9",
+      "ZERO-10",
+      "ZERO-11",
+      "ZERO-12",
+      "ZERO-13",
+      "ZERO-14",
+      "ZERO-15",
+      "ZERO-16",
+      "ZERO-17",
+      "ZERO-18",
+      "ZERO-19",
+      "ZERO-20",
+      "ZERO-21",
+      "ZERO-22",
+      "ZERO-23",
+      "ZERO-24",
+      "ZERO-25",
+      "ZERO-26",
+      "ZERO-27",
+      "ZERO-28",
+      "ZERO-29",
+      "ZERO-30",
+      "ZERO-31",
+      "ZERO-32",
+      "ZERO-33",
+      "ZERO-34",
+      "ZERO-35"
+    ],
+    "commentsChecked": true
+  },
+  "actualBacklog": [
+    "ZERO-12",
+    "ZERO-13",
+    "ZERO-14",
+    "ZERO-15",
+    "ZERO-17",
+    "ZERO-18",
+    "ZERO-20",
+    "ZERO-21",
+    "ZERO-22",
+    "ZERO-23",
+    "ZERO-24",
+    "ZERO-25",
+    "ZERO-26",
+    "ZERO-27",
+    "ZERO-28",
+    "ZERO-29",
+    "ZERO-30",
+    "ZERO-31"
+  ],
+  "preservation": {
+    "snapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-backlog-audit",
+    "status": "pending_external_verification_recorded_in_ZERO-37"
+  }
+}

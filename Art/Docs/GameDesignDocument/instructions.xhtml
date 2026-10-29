@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>Правила документации GDD</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css" />
+  </head>
+  <body>
+<h1 id="правила-документации-gdd">Правила документации GDD</h1>
+<p><a href="index.xhtml">GDD</a> · <a href="../../AGENTS.xhtml">Правила проекта</a> · <a href="https://beholder.learn.su/workbench/beholder/tracker/6ae2823cf8f3281e9196c7ab/issues">Beholder ZERO</a></p>
+<h2 id="формат-и-оформление">Формат и оформление</h2>
+<p>Документация хранится в Art/Docs в UTF-8, в формате XHTML 1.0 Strict. Это корректный XML в namespace XHTML: закрытые теги, кавычки у атрибутов, экранирование &amp; и &lt;. Общий стиль — <a href="../documentation.css">documentation.css</a>.</p>
+<p>Использовать стандартные h1–h6, p, ul/ol/li, dl/dt/dd, table/caption/thead/tbody/tr/th/td, pre/code, blockquote, img и a. Атрибуты class, style, обработчики событий, script и произвольные элементы запрещены. CSS оформляет теги и структуру. Уникальные id нужны для якорей.</p>
+<h2 id="доказательства">Доказательства</h2>
+<p>Для механики указывать поведение, условия, входы/выходы, исключения и свидетельство: ROM с банком/адресом, кадр, запись или контракт. Факты, гипотезы и наблюдения человека различать явно. NES-объект, анимация, PRG/CHR и иллюстрация — разные сущности; соответствие проверяется отдельно. Ресурсы иллюстраций сохраняются рядом в sprites/; экспортёр переиспользуется.</p>
+<h2 id="очередь-и-проверка">Очередь и проверка</h2>
+<p>ZERO-34 содержала справку существующего GDD, а не определённую новую задачу; сведения возвращены в README.xhtml. Текущие планы, назначения и следующие действия — только в трекере. В статье остаются спецификация, факты и ссылки. Наличие статьи не означает приёмку игры.</p>
+<p>Проверять XML, локальную Strict DTD, отсутствие class/style, ссылки и читаемость в браузере. Команда из корня: bundled Python → Art/Tools/DarkwingResearch/project_layout.py validate. Путь bundled runtime получать через load_workspace_dependencies. Каталог: <a href="../../Tools/DarkwingResearch/README.xhtml">инструменты</a>.</p>
+</body>
+</html>

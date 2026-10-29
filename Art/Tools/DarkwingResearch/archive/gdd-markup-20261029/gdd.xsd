@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://www.w3.org/1999/xhtml"
+           xmlns="http://www.w3.org/1999/xhtml"
+           elementFormDefault="qualified"
+           attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XML Schema (XSD) для документов Game Design Document (GDD) проекта Darkwing Duck Unity Port.
+      Определяет валидную структуру XHTML-страниц документации с семантической разметкой.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:import namespace="http://www.w3.org/XML/1998/namespace"/>
+
+  <!-- Базовые атрибуты для всех элементов -->
+  <xs:attributeGroup name="coreAttrs">
+    <xs:attribute name="id" type="xs:string"/>
+    <xs:attribute name="class" type="xs:string"/>
+    <xs:attribute name="title" type="xs:string"/>
+    <xs:attribute name="style" type="xs:string"/>
+    <xs:attribute name="lang" type="xs:string"/>
+    <xs:attribute ref="xml:lang"/>
+    <xs:anyAttribute processContents="lax"/>
+  </xs:attributeGroup>
+
+  <!-- Встраиваемый строчный контент (Inline) -->
+  <xs:group name="inlineElements">
+    <xs:choice>
+      <xs:element name="span" type="InlineType"/>
+      <xs:element name="strong" type="InlineType"/>
+      <xs:element name="em" type="InlineType"/>
+      <xs:element name="b" type="InlineType"/>
+      <xs:element name="i" type="InlineType"/>
+      <xs:element name="code" type="InlineType"/>
+      <xs:element name="kbd" type="InlineType"/>
+      <xs:element name="small" type="InlineType"/>
+      <xs:element name="mark" type="InlineType"/>
+      <xs:element name="sub" type="InlineType"/>
+      <xs:element name="sup" type="InlineType"/>
+      <xs:element name="a" type="AnchorType"/>
+      <xs:element name="br" type="EmptyElementType"/>
+      <xs:element name="img" type="ImageType"/>
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="InlineType" mixed="true">
+    <xs:group ref="inlineElements" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <xs:complexType name="AnchorType" mixed="true">
+    <xs:group ref="inlineElements" minOccurs="0" maxOccurs="unbounded"/>
+    <xs:attributeGroup ref="coreAttrs"/>
+    <xs:attribute name="href" type="xs:string"/>
+    <xs:attribute name="target" type="xs:string"/>
+    <xs:attribute name="rel" type="xs:string"/>
+  </xs:complexType>
+
+  <xs:complexType name="EmptyElementType">
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <xs:complexType name="ImageType">
+    <xs:attributeGroup ref="coreAttrs"/>
+    <xs:attribute name="src" type="xs:string" use="required"/>
+    <xs:attribute name="alt" type="xs:string" use="required"/>
+    <xs:attribute name="width" type="xs:string"/>
+    <xs:attribute name="height" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- Блочные элементы (Blocks) -->
+  <xs:group name="blockElements">
+    <xs:choice>
+      <xs:element name="p" type="InlineType"/>
+      <xs:element name="h1" type="InlineType"/>
+      <xs:element name="h2" type="InlineType"/>
+      <xs:element name="h3" type="InlineType"/>
+      <xs:element name="h4" type="InlineType"/>
+      <xs:element name="h5" type="InlineType"/>
+      <xs:element name="h6" type="InlineType"/>
+      <xs:element name="div" type="FlowContainerType"/>
+      <xs:element name="section" type="FlowContainerType"/>
+      <xs:element name="article" type="FlowContainerType"/>
+      <xs:element name="aside" type="FlowContainerType"/>
+      <xs:element name="main" type="FlowContainerType"/>
+      <xs:element name="header" type="FlowContainerType"/>
+      <xs:element name="footer" type="FlowContainerType"/>
+      <xs:element name="nav" type="FlowContainerType"/>
+      <xs:element name="blockquote" type="FlowContainerType"/>
+      <xs:element name="pre" type="InlineType"/>
+      <xs:element name="ul" type="ListType"/>
+      <xs:element name="ol" type="ListType"/>
+      <xs:element name="dl" type="DescriptionListType"/>
+      <xs:element name="table" type="TableType"/>
+      <xs:element name="figure" type="FigureType"/>
+      <xs:element name="hr" type="EmptyElementType"/>
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="FlowContainerType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="blockElements"/>
+      <xs:group ref="inlineElements"/>
+    </xs:choice>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <!-- Списки -->
+  <xs:complexType name="ListType">
+    <xs:sequence>
+      <xs:element name="li" type="ListItemType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <xs:complexType name="ListItemType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="blockElements"/>
+      <xs:group ref="inlineElements"/>
+    </xs:choice>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <!-- Списки определений dl/dt/dd -->
+  <xs:complexType name="DescriptionListType">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="dt" type="InlineType"/>
+      <xs:element name="dd" type="FlowContainerType"/>
+    </xs:choice>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <!-- Рисунки и подписи -->
+  <xs:complexType name="FigureType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="figcaption" type="InlineType"/>
+      <xs:group ref="blockElements"/>
+      <xs:group ref="inlineElements"/>
+    </xs:choice>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <!-- Таблицы -->
+  <xs:complexType name="TableType">
+    <xs:sequence>
+      <xs:element name="caption" type="InlineType" minOccurs="0"/>
+      <xs:element name="thead" type="TableSectionType" minOccurs="0"/>
+      <xs:element name="tbody" type="TableSectionType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="tfoot" type="TableSectionType" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <xs:complexType name="TableSectionType">
+    <xs:sequence>
+      <xs:element name="tr" type="TableRowType" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <xs:complexType name="TableRowType">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:element name="th" type="TableCellType"/>
+      <xs:element name="td" type="TableCellType"/>
+    </xs:choice>
+    <xs:attributeGroup ref="coreAttrs"/>
+  </xs:complexType>
+
+  <xs:complexType name="TableCellType" mixed="true">
+    <xs:choice minOccurs="0" maxOccurs="unbounded">
+      <xs:group ref="blockElements"/>
+      <xs:group ref="inlineElements"/>
+    </xs:choice>
+    <xs:attributeGroup ref="coreAttrs"/>
+    <xs:attribute name="colspan" type="xs:positiveInteger"/>
+    <xs:attribute name="rowspan" type="xs:positiveInteger"/>
+    <xs:attribute name="scope" type="xs:string"/>
+  </xs:complexType>
+
+  <!-- Структура документа Head -->
+  <xs:complexType name="HeadType">
+    <xs:choice maxOccurs="unbounded">
+      <xs:element name="meta">
+        <xs:complexType>
+          <xs:attribute name="charset" type="xs:string"/>
+          <xs:attribute name="name" type="xs:string"/>
+          <xs:attribute name="content" type="xs:string"/>
+          <xs:attribute name="http-equiv" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="title" type="xs:string"/>
+      <xs:element name="link">
+        <xs:complexType>
+          <xs:attribute name="rel" type="xs:string" use="required"/>
+          <xs:attribute name="type" type="xs:string"/>
+          <xs:attribute name="href" type="xs:string" use="required"/>
+          <xs:attribute name="media" type="xs:string"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:choice>
+  </xs:complexType>
+
+  <!-- Корневой элемент HTML -->
+  <xs:element name="html">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="head" type="HeadType"/>
+        <xs:element name="body" type="FlowContainerType"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="coreAttrs"/>
+      <xs:attribute name="version" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

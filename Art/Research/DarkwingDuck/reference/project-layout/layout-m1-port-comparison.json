@@ -1,0 +1,42 @@
+{
+  "framesOriginal": 24261,
+  "framesPort": 24261,
+  "range": [
+    2033,
+    24261
+  ],
+  "scope": "Mapped fields only; object slots 1..15, all 27 fields $0400..$05A0 when active. No full-RAM or image identity claim.",
+  "groups": {
+    "player": {
+      "matchingFrames": 22229,
+      "firstDifference": null,
+      "originalSha256": "df466d8d29dc6baf1482e0179efd2ee3c20aeb2ecb33d5170ec200a5e86e112a",
+      "portSha256": "df466d8d29dc6baf1482e0179efd2ee3c20aeb2ecb33d5170ec200a5e86e112a"
+    },
+    "RNG_boss": {
+      "matchingFrames": 22229,
+      "firstDifference": null,
+      "originalSha256": "e38a7e5534d7f7709de0debbaf032e464ceebe15d8066f7cba996a1023c1d40c",
+      "portSha256": "e38a7e5534d7f7709de0debbaf032e464ceebe15d8066f7cba996a1023c1d40c"
+    },
+    "HUD_score_lives": {
+      "matchingFrames": 22229,
+      "firstDifference": null,
+      "originalSha256": "9d3a04b6971e516b917ceb937d86f4f949804ee30a64ebd330ac1a3b103afc7b",
+      "portSha256": "9d3a04b6971e516b917ceb937d86f4f949804ee30a64ebd330ac1a3b103afc7b"
+    },
+    "progress": {
+      "matchingFrames": 22229,
+      "firstDifference": null,
+      "originalSha256": "59c67b09de70622ccfe3e601606d931bb7b0162a5cc913213a5e8cb181441d8c",
+      "portSha256": "59c67b09de70622ccfe3e601606d931bb7b0162a5cc913213a5e8cb181441d8c"
+    },
+    "active_objects": {
+      "matchingFrames": 22229,
+      "firstDifference": null,
+      "originalSha256": "31a9218b3edb3b1abf0b3bd7acfd2383be6f6763bda50dba7195ef2596e424d8",
+      "portSha256": "31a9218b3edb3b1abf0b3bd7acfd2383be6f6763bda50dba7195ef2596e424d8"
+    }
+  },
+  "matched": true
+}

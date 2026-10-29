@@ -1,0 +1,492 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>romdev</title>
+    <link rel="stylesheet" type="text/css" href="../../documentation.css" />
+  </head>
+  <body><h1 id="romdev">romdev</h1>
+<p><strong>Vibe-code real retro games.</strong> One command, and your coding agent can make actual working ROMs for NES, SNES, Game Boy, Genesis, Atari, Commodore 64, and more - that run on RetroArch, native emulators, flash carts, and real hardware. No SDK installs. No emulator setup. No PATH fiddling. No "this only works on Linux."</p>
+<pre><code>npx romdevtools
+</code></pre>
+<p>That's the whole setup. Everything - emulators, assemblers, C compilers, starter libraries, example projects, hardware reference docs - ships as bundled WebAssembly and data via npm. Same on Linux, Windows, and macOS (Node 24+).</p>
+<h2 id="features">Features</h2>
+<p>You (or your coding assistant, over <a href="https://modelcontextprotocol.io/">MCP</a> / plain HTTP) get a tool surface for the full homebrew loop:</p>
+<ul>
+<li><strong>Building</strong> - bundled per-platform toolchains (cc65, SDCC, RGBDS, asar, vasm, SGDK, PVSnesLib, libtonc, ...) compiled to WebAssembly. The agent writes source, compiles it, and gets a real ROM.</li>
+<li><strong>Asset conversion</strong> - turn external art and audio into native data without leaving the server: PNG → platform tiles/tilemaps (<code>convertImageToTiles</code>, <code>imageToTilemap</code> - row-major or hardware sprite order), PNG quantize-to-palette, sprite-sheet/Aseprite/GIF loaders, and audio importers (<code>pcmToBrr</code> for SNES, <code>wavToXgm2Pcm</code> for Genesis XGM2 PCM). Path-in, native-data-out.</li>
+<li><strong>Running</strong> - load the ROM into an emulated console (libretro cores as WASM) and step through it frame by frame.</li>
+<li><strong>Seeing</strong> - capture the framebuffer as a PNG and hand it to the agent.</li>
+<li><strong>Driving</strong> - emit controller input, run input scripts, replay sequences.</li>
+<li><strong>Inspecting</strong> - read CPU/video/save RAM, watch memory, disassemble, inspect sprites/palettes/tilemaps, read CPU + sound-chip state.</li>
+<li><strong>Reverse-engineering &amp; romhacking</strong> - a full RE toolkit for modifying existing games: iterative value search (<code>memory({op:'search'})</code> → <code>memory({op:'searchNext'})</code>, the Cheat-Engine loop), <code>memory({op:'classify'})</code> (is this "table" really ASCII?), <code>breakpoint({on:'write'})</code> (the exact instruction that wrote a byte), <code>memory({op:'readCart'})</code> (confirm a patch is live in the running image), <code>input({op:'navigate'})</code> (drive menus by screen-change), <code>watch({on:'dma'})</code> (Genesis: which ROM offset a graphic was DMA'd from), a bundled cheat database as a free labeled RAM map, <code>disasm({target:'accessScan'})</code> (bound every instruction that can reach a RAM byte, indexed bases included), <code>disasm({target:'script'})</code> (decode in-game script interpreters from a declarative grammar), and a cross-platform <a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdevtools/src/platforms/_guides/ROMHACKING_PLAYBOOK.md">ROM-hacking playbook</a> (<code>platform({op:'doc', platform:'romhacking', name:'playbook'})</code>).</li>
+<li><strong>Structural analysis &amp; decompilation</strong> - an open-source RE engine (Rizin + Ghidra, compiled to WebAssembly) covering <strong>all 18 platforms</strong> (incl. the 3D consoles' MIPS R3000/R4300 + SH-4): <code>disasm({target:'functions'})</code> (auto-detected function list, ranked real-code-first with a <code>looksLikeData</code> flag), <code>disasm({target:'cfg'})</code> (control-flow graph), <code>disasm({target:'xrefs'})</code> (deep cross-references following the analysis graph), <strong><code>disasm({target:'reachable', entries})</code></strong> (the CLOSED SET of basic blocks reachable from one or more entry points, following BOTH halves of every call - the callee AND the return site, which is what a recompiler, decompiler or coverage tool actually needs; computed jumps are not followed and the response says so, pointing at the live jumptable resolver below), <code>symbols({op:'analyze'})</code> (one-shot structural map), and <code>disasm({target:'decompile'})</code> (Ghidra C-like pseudocode, with hardware-register MMIO named and 6502 SLEIGH clutter folded to readable C - quality excellent on GBA/Genesis, good on Game Boy/Z80, rough on the 6502 family; on N64/PS1/Dreamcast the image is analyzed at its TRUE load address so calls and globals resolve, and an N64 splat project's segment map gives overlay-exact mapping with provenance). And the differentiator no static tool has: <strong>live computed-jumptable recovery</strong> - <code>breakpoint({on:'jumptable'})</code> runs the emulator to resolve the <code>JMP (table,X)</code> / RTS-trick dispatchers (game-state machines, script/battle VMs) that static analysis collapses to <code>(*_IRQ)()</code>. Understand <em>how</em> a routine works before you touch it; no $3,000 IDA license, no install.</li>
+<li><strong>Saving/restoring</strong> - named save states for try-this-then-undo workflows.</li>
+<li><strong>Active Bezels</strong> - an executable companion to a specific ROM (a <code>.ab</code> package) that runs once per emulated frame, reads the core's live memory, and renders the complete final scene: a map, a HUD, reconstructed world graphics, around or over the game. <code>loadMedia({useActiveBezel:true})</code> picks up the same-basename sidecar (<code>Game.nes</code> → <code>Game.ab</code>) and makes the composite the presented and captured picture. romdev is where a package gets <strong>verified</strong>, not just played: one can load cleanly, tick without trapping, emit perfectly valid draw commands, and still be completely wrong about the game - so <code>frame({op:'screenshot', source:'both'})</code> returns the composite and the raw core framebuffer for the <em>same</em> frame, alongside the three geometries (core framebuffer / intended display aspect / bezel scene) that are easy to conflate. Compare those against the guest's own memory reads and you are checking the package's <em>interpretation</em>, not merely that it drew something.</li>
+<li><strong>Matching decompilation (N64 proven)</strong> - <code>decomp({op})</code> runs the function-level <em>generate → compile → compare → refine</em> loop against a registered <a href="https://github.com/ethteck/splat">splat</a> project's <strong>own</strong> compiler (IDO 5.3 via ido-static-recomp, or MIPS GCC) and build: <code>import</code> (ROM sha1 verified, toolchain fingerprinted, the exact per-file compile command captured from <code>make</code>), <code>plan</code> (payoff-ordered queue + batches over the call graph), <code>generate</code> (m2c with the translation unit's real type context), <strong><code>compare</code></strong> (the candidate compiled <em>inside</em> its TU with the TU's flags; one aggregate verdict from strict instruction+relocation equality, ROM-linked words, the function's own jump tables/literals, and the rest of the TU unchanged - a check that could not run is <code>unknown</code>/<code>error</code>, never <code>exact</code>), <code>search</code> (bounded decomp-permuter jobs), <code>integrate</code> (reviewable patch; apply + full-ROM byte verify, auto-revert on mismatch), <code>types</code> (evidence → proposed structs), <code>progress</code> (code bytes per object, asm/C/library kept apart), and the runtime side - <code>trace</code> (real PC breaks: arguments at entry, return value at <code>ra</code>), <code>coverage</code> (instruction-exact via the core's PC bitmap, per function and basic block), <code>overlays</code>/<code>symbolize</code> (which overlay is resident, by bytes in RAM), <code>smoke</code> (base vs rebuilt ROM, decoded pixels + registers). Ghidra's <code>disasm({target:'decompile'})</code> stays the <em>understanding</em> tool and now loads N64/PS1/Dreamcast segments at their true addresses. Start with <code>platform({op:'doc', platform:'n64', name:'decomp'})</code>.</li>
+<li><strong>Native game runtimes (not just emulation)</strong> - the same run/see/drive/debug loop works on two <em>native</em> game formats, not only libretro cores: <strong>wasmcart</strong> (<code>.wasc</code> - WASM games compiled from any language; created 2026) and <strong>jsgame</strong> (<code>.jsgame</code> - JavaScript canvas/WebGL games; created 2024). <code>loadMedia({platform:'wasmcart'|'jsgame'})</code> → <code>frame({op:'step'|'screenshot'})</code> → <code>input</code> - screenshots, scripted input, and deterministic frame-stepping over the exact same tools. wasmcart carts add a deterministic-replay path (<code>loadMedia({deterministicSeed})</code> - same seed + same input = identical frames), a debug-event timeline (<code>wasm({op:'events'})</code>), and an absolute pointer (<code>input({op:'pointer', x, y, left, right})</code>) for mouse-UI carts a gamepad vocabulary can't drive. Plus V8/WASM introspection an emulator can't give (peek the cart's WASM heap + exports; the JS game's globals). GL carts (wasm imports from the <code>gl</code> module) render headless on an <strong>offscreen WebGL2 context</strong> - screenshots and frame hashes show the real GPU draws, no window needed (wasmcart 0.6.0+; older installs fall back to stubbed GL, reported in <code>status.gl</code>) - and when a human is playing, <code>loadMedia({presentWindow:true})</code> gives the cart its own context so the playtest window presents by GPU blit + swap instead of round-tripping every frame through the CPU (measured <code>convertMs</code> 3.52 → 0 on a 1080p 3D cart); captures stay byte-identical to the headless path either way. <code>pack({target:'wasc'|'jsgame'})</code> zips a source dir into the distributable archive (the "build" step - romdev doesn't compile the WASM; you bring your own). Emulator-only tools (memory regions, cpuState, disasm) report <em>not-applicable</em> for these kinds via a capability descriptor.</li>
+</ul>
+<p>The deliverable is <strong>the ROM</strong>, not the tool: a standard, hardware-valid <code>.nes</code>/<code>.gba</code>/<code>.md</code>/... that runs anywhere ROMs run. The bundled WASM cores are the <em>dev instrument</em> (build → observe → iterate), not the distribution runtime.</p>
+<pre><code>your agent &lt;--MCP--&gt; romdev server &lt;-&gt; WASM libretro core &lt;-&gt; your game
+                          |
+                          +-&gt; WASM homebrew toolchain (cc65, SDCC, SGDK, ...)
+</code></pre>
+<h2 id="who-is-it-for">Who is it for?</h2>
+<ul>
+<li><strong>Homebrew developers</strong> who want a tighter loop than reload-the-emulator-by-hand - build, run, inspect, and patch real ROMs from one tool surface, drive it from your editor's AI, a TUI, the Inspector, or your own scripts.</li>
+<li><strong>Anyone making a retro game with an AI's help</strong>, no prior homebrew experience needed. Run <code>npx romdevtools</code>, point your coding assistant at it, and describe the game you want.</li>
+<li><strong>Reverse-engineers and romhackers</strong> - disassembly, control-flow graphs, a decompiler, live memory search, and write-breakpoints across all 18 systems, no $3,000 IDA license.</li>
+</ul>
+<p>Every capability is exposed as a tool, so a coding agent can drive the whole loop end-to-end - but the tools are just as usable by hand. The agent is the interface, not a requirement.</p>
+<h2 id="supported-systems-pick-your-platform">Supported systems - pick your platform</h2>
+<p>Nineteen consoles/computers, oldest → newest - sixteen 2D systems (including the open-hardware GameTank and sync32) plus three 3D consoles (N64, PlayStation, Dreamcast) - plus the <strong>PICO-8</strong> fantasy console and the two <strong>native game runtimes</strong> (wasmcart, jsgame), each its own tier after the 3D consoles. They vary enormously in how hard a game is to make and how hard an existing game is to hack. <strong>Build</strong> = write code → compile → run. <strong>Hack</strong> = modify an existing commercial ROM (find data → patch → reinsert). A system can be easy on one and hard on the other. (Difficulty is rated <em>as it feels through romdev today</em> - see the note under the table; it gets easier as the tooling improves.)</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Year</th>
+<th>Languages (toolkit)</th>
+<th>Build a game</th>
+<th>Romhack a game</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Atari 2600</strong></td>
+<td>1977</td>
+<td>6502 asm (dasm)</td>
+<td>🔴 Hardest</td>
+<td>🟠 Hard</td>
+<td>The deep end. "Race the beam": no framebuffer, 128 B RAM, every scanline cycle-counted. Iconic, brutal, deeply rewarding.</td>
+</tr>
+<tr>
+<td><strong>Commodore 64</strong></td>
+<td>1982</td>
+<td>C / 6502 asm (cc65)</td>
+<td>🟢 Easy</td>
+<td>-</td>
+<td>40 years of docs, weird but forgiving hardware. A great first 8-bit target.</td>
+</tr>
+<tr>
+<td><strong>MSX / MSX2</strong></td>
+<td>1983</td>
+<td>C / Z80 asm (SDCC)</td>
+<td>🟢 Easy</td>
+<td>-</td>
+<td>Z80 + the same TMS9918/V9938 VDP family as the Master System. Boots cartridge homebrew on the open C-BIOS (no proprietary ROM). Big international library.</td>
+</tr>
+<tr>
+<td><strong>NES / Famicom</strong></td>
+<td>1983</td>
+<td>C / 6502 asm (cc65)</td>
+<td>🔴 Hard</td>
+<td>🟡 Medium</td>
+<td>"Everyone knows the NES" - but the PPU is unforgiving (OAM/NMI timing, CHR-RAM traps, silent black screens). Hacking is friendlier: lots of games store data plainly; the disassembler is mapper-aware.</td>
+</tr>
+<tr>
+<td><strong>Sega Master System</strong></td>
+<td>1985</td>
+<td>C / Z80 asm (SDCC)</td>
+<td>🟢 Easy</td>
+<td>🟡 Medium</td>
+<td>Simple Z80 + VDP. Near-identical twin of the Game Gear.</td>
+</tr>
+<tr>
+<td><strong>PC Engine / TurboGrafx-16</strong></td>
+<td>1987</td>
+<td>C / HuC6280 asm (cc65)</td>
+<td>🟡 Medium</td>
+<td>-</td>
+<td>HuC6280 (65C02 superset) + the HuC6270 VDC. cc65 has no sprite library, so romdev ships a direct-register helper lib; 9-bit GRB color, 64 hardware sprites. HuCards boot with no BIOS.</td>
+</tr>
+<tr>
+<td><strong>Atari 7800</strong></td>
+<td>1986</td>
+<td>C / 6502 asm (cc65)</td>
+<td>🔴 Hard</td>
+<td>🟠 Hard</td>
+<td>MARIA display-list graphics (~100 sprites, little flicker) but a unique model with sparse docs.</td>
+</tr>
+<tr>
+<td><strong>Sega Genesis / Mega Drive</strong></td>
+<td>1988</td>
+<td>C (SGDK) / 68000 asm (vasm)</td>
+<td>🟡 Medium</td>
+<td>🟢 Easy</td>
+<td>SGDK is a real C engine (high productivity) with a big API + sharp edges. <strong>Easiest system to hack:</strong> flat 16 MB 68000 addressing, no bank-switching, near-ASCII text in many games.</td>
+</tr>
+<tr>
+<td><strong>Game Boy</strong></td>
+<td>1989</td>
+<td>C / SM83 asm (SDCC / RGBDS)</td>
+<td>🟢 Easy</td>
+<td>🟢 Easy</td>
+<td>The recommended starting point. Simple hardware, mature C tooling; games often store data uncompressed → easy to hack too.</td>
+</tr>
+<tr>
+<td><strong>Atari Lynx</strong></td>
+<td>1989</td>
+<td>C / 6502 asm (cc65)</td>
+<td>🟡 Medium</td>
+<td>-</td>
+<td>Color handheld; Suzy/Mikey display-list sprite engine is its own thing + a tiny community = few references.</td>
+</tr>
+<tr>
+<td><strong>Game Gear</strong></td>
+<td>1990</td>
+<td>C / Z80 asm (SDCC)</td>
+<td>🟢 Easy</td>
+<td>🟡 Medium</td>
+<td>Same Mode-4 VDP as the Master System; only the visible window differs.</td>
+</tr>
+<tr>
+<td><strong>Super Nintendo (SNES)</strong></td>
+<td>1990</td>
+<td>C (PVSnesLib) / 65816 asm (asar)</td>
+<td>🟡 Medium</td>
+<td>🟡 Medium</td>
+<td>PVSnesLib works but is quirky (many "looks right, renders nothing" traps). Big ROMs often skip compression → medium to hack.</td>
+</tr>
+<tr>
+<td><strong>Game Boy Color</strong></td>
+<td>1998</td>
+<td>C / SM83 asm (SDCC / RGBDS)</td>
+<td>🟢 Easy</td>
+<td>🟢 Easy</td>
+<td>The Game Boy with a real color palette - same easy tooling, plus CGB color.</td>
+</tr>
+<tr>
+<td><strong>Game Boy Advance</strong></td>
+<td>2001</td>
+<td>C (libtonc / libgba)</td>
+<td>🟡 Medium</td>
+<td>-</td>
+<td>32-bit ARM, comfortable C with the well-documented Tonc library - but a big machine (IRQ/DMA/video modes = lots of surface to learn).</td>
+</tr>
+<tr>
+<td><strong>GameTank</strong></td>
+<td>2024</td>
+<td>C / 6502 asm (cc65)</td>
+<td>🟡 Medium</td>
+<td>-</td>
+<td>Clyde Shaffer's <strong>open-hardware</strong> W65C02S console - a 128×128 framebuffer drawn by a hardware blitter + a second 65C02 audio coprocessor. Full Tier-1 (build/run/cpuState/watchpoints/audioDebug/cart). Open docs + a clean SDK make it a friendly modern 8-bit target; ships ~July 2026.</td>
+</tr>
+<tr>
+<td><strong>sync32</strong></td>
+<td>2026</td>
+<td>C (arm-none-eabi, Cortex-M33)</td>
+<td>🟢 Easy</td>
+<td>-</td>
+<td>An RP2350 console with a <strong>flat framebuffer and a function-pointer ABI</strong> - no PPU, no tilemap, no banking, no scanline timing. A game is <code>game_main(api)</code> drawing into a byte array, so it is the gentlest build target here despite being the newest hardware. Build/run/cpuState/memory/palette are wired; there is no romhack column because there are no commercial ROMs.</td>
+</tr>
+</tbody></table>
+<p>The three <strong>3D consoles</strong> are a newer, distinct tier - they compile + boot + render on the <strong>real GPU</strong>, but they're at a different maturity than the 2D lineup: no genre scaffolds yet, and their renderable starting points come from open GPU SDKs (libdragon / PSn00bSDK) rather than romdev's own helper libs. Build = bare C that drives the GPU; Hack = code analysis works (disasm/decompile), data-romhack tooling is minimal.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Year</th>
+<th>Languages (toolkit)</th>
+<th>Build a game</th>
+<th>Romhack a game</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Nintendo 64</strong></td>
+<td>1996</td>
+<td>C (mips-elf-gcc)</td>
+<td>🟠 Hard</td>
+<td>-</td>
+<td>MIPS R4300 + the RDP/RSP. Renders on glide64 through the GPU; bare C drives a GBI display list (or use libdragon). The 3D end of the pool.</td>
+</tr>
+<tr>
+<td><strong>Sony PlayStation</strong></td>
+<td>1994</td>
+<td>C (mips-elf-gcc)</td>
+<td>🟠 Hard</td>
+<td>-</td>
+<td>MIPS R3000. Renders on Beetle PSX HW through the GPU; OpenBIOS embedded (no Sony firmware). Bare C writes the GP0/GP1 ports, or link PSn00bSDK.</td>
+</tr>
+<tr>
+<td><strong>Sega Dreamcast</strong></td>
+<td>1998</td>
+<td>C (sh-elf-gcc)</td>
+<td>🟠 Hard</td>
+<td>-</td>
+<td>SH-4 + PowerVR2. Boots an ELF on Flycast's reios HLE; the bundled <code>dc.h</code> brings up a 640×480 framebuffer. No KallistiOS yet (bare-metal C).</td>
+</tr>
+</tbody></table>
+<p>The <strong>PICO-8</strong> fantasy console is its own tier again - not a hardware machine but a Lua VM (<a href="https://github.com/jtothebell/fake-08">FAKE-08</a>, MIT, no BIOS). It runs <code>.p8</code> (Lua source) and <code>.p8.png</code> (cart-in-a-PNG) carts at 128×128 with sound, and it's the <strong>friendliest build target on the whole list</strong>: the "code" is plain Lua, so <code>build({platform:'pico8', source: lua})</code> just packages a runnable <code>.p8</code> (no compiler, no linker, no crt0). Because it's a VM, there's no machine code to disassemble - <code>disasm({target:'source'})</code> hands back the cart's Lua directly, and <code>memory({region:'system_ram'})</code> reads its 64 KB address space. Thousands of freely-shareable community carts run as-is.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Year</th>
+<th>Language (toolkit)</th>
+<th>Build a game</th>
+<th>"Hack" a cart</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>PICO-8</strong></td>
+<td>2015</td>
+<td>Lua (FAKE-08)</td>
+<td>🟢 Easiest</td>
+<td>🟢 Easy</td>
+<td>The gentlest on-ramp: Lua carts are plain text, so "build" is packaging and "hack" is editing source. Huge community library.</td>
+</tr>
+</tbody></table>
+<p>The two <strong>native game runtimes</strong> are the newest tier - not emulated hardware but native game formats driven through the <em>same</em> run/see/drive/debug loop (<code>loadMedia</code> → <code>frame</code> → <code>input</code> → <code>playtest</code>). Here romdev is the <strong>harness, not the compiler</strong>: you bring your own toolchain, <code>pack({target:'wasc'|'jsgame'})</code> packages the distributable, and the deliverable is the exact artifact you debugged. Emulator-only tools (cpuState, disasm, memory regions) report <em>not-applicable</em> via a capability descriptor; in their place you get WASM/V8 introspection an emulator can't offer.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Year</th>
+<th>Language (toolkit)</th>
+<th>Build a game</th>
+<th>"Hack" a cart</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>wasmcart</strong></td>
+<td>2026</td>
+<td>any language that targets WASM - C, C++, Rust, Zig, mruby, ... (<code>wc_cart.h</code> ABI)</td>
+<td>🟢 Easy</td>
+<td>-</td>
+<td>Ship the same <code>.wasc</code> you debugged. The harness adds deterministic replay (<code>loadMedia({deterministicSeed})</code>), a debug-event timeline (<code>wasm({op:'events'})</code>), named debug state, absolute pointer input for mouse-UI carts, conformance verdicts ("won't load, why"), regression goldens - and GL carts render headless on an offscreen WebGL2 context, so screenshots show the real GPU draws.</td>
+</tr>
+<tr>
+<td><strong>jsgame</strong></td>
+<td>2024</td>
+<td>JavaScript (canvas / WebGL2)</td>
+<td>🟢 Easy</td>
+<td>-</td>
+<td>The web-game developer's on-ramp: run a JS canvas/WebGL game like a cart - screenshots, scripted input, deterministic frame-stepping - plus V8 introspection (read the game's live globals).</td>
+</tr>
+</tbody></table>
+<p><strong>Difficulty legend:</strong> 🟢 Easy · 🟡 Medium · 🟠 Hard · 🔴 Hardest. <strong>Build</strong> ratings come from an agent that actually shipped games across the lineup; <strong>Hack</strong> ratings are for text/data edits (a <code>-</code> means no romhack data yet - it's CPU-and-game-dependent, and any game using custom compression jumps to Hard regardless of system).</p>
+<p>The <strong>RE analysis engine</strong> (control-flow graphs, cross-references, function detection, and a Ghidra decompiler) works on <strong>all 18 systems</strong> - including the 3D consoles' MIPS R3000/R4300 and SH-4 - regardless of the Hack rating above; the rating reflects how hard the <em>data</em> is to edit, not whether the <em>code</em> can be analyzed. Decompiler readability tracks the CPU: excellent on the 32-bit ARM (GBA) and 68000 (Genesis), good on the MIPS/SH-4 3D CPUs and Z80, down to rough on the 8-bit 6502 family. (The byte-exact <em>rebuildable-project</em> disassembler - <code>disasm({target:'project'})</code> - covers the 15 classic platforms, and <strong><code>build({output:'reassemble'})</code> rebuilds any of them into a byte-identical ROM in one call</strong>; the 3D consoles get analysis/decompile, not full reassembly yet.)</p>
+<blockquote>
+<p><strong>These ratings reflect difficulty <em>with romdev's current tooling</em> - not an abstract take on the hardware.</strong> The biggest predictor of how hard a platform feels here isn't its raw hardware but the quality of its scaffolds, snippets, and SDK integration. Good tooling moves a platform a whole tier: the Atari 2600 is the hardest hardware on the list, yet a thick, hardware-verified snippet shelf made it <em>hard-but-shippable</em>; the same agent that found NES "hard" shipped on the C-and-SDK platforms in a single pass. <strong>These numbers drift toward easier over time</strong> as scaffolds, footgun fixes, and richer runtimes land. Treat the column as "expect roughly this much friction today," not "this system is permanently this hard."</p>
+</blockquote>
+<p><strong>If you just want to ship something fast:</strong> Game Boy, Game Boy Color, Master System, Game Gear, or C64. <strong>If you want a challenge / iconic constraint:</strong> NES or Atari 2600. <strong>If you want to modify a classic game:</strong> Genesis or Game Boy (their data is usually uncompressed). The harder systems are very doable but take more iterations - worth choosing deliberately.</p>
+<h2 id="each-platform-ships-a-real-sdk-sound-scaffolds">Each platform ships a real SDK + sound + scaffolds</h2>
+<p>Every 2D platform has a working core, ready-made starter projects, and <strong>5 genre scaffolds</strong> - shmup / platformer / puzzle / sports / racing - plus a music demo. That now includes the Atari 2600 (all five, match-3 board and all), the open-hardware GameTank, and sync32. The 3D consoles are the exception: N64 and PlayStation ship the five, Dreamcast ships starter projects only. PC Engine and MSX <em>also</em> ship a hardware helper library and sprite/music example projects alongside their genre scaffolds; Genesis adds a <code>two_plane_parallax</code> scaffold (hardware scroll, no per-frame tilemap writes). Each platform has a sound API, per-platform <code>MENTAL_MODEL.md</code> + <code>TROUBLESHOOTING.md</code> docs (readable in-session via <code>platform({op:'doc'})</code>), and debug helpers. Scaffold a project in one call with <code>scaffold({op:'project'})</code> (or <code>scaffold({op:'game'})</code> for the genre-shaped baselines). Every scaffold builds with zero warnings and renders visible content (checked via <code>frame({op:'verify'})</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Core</th>
+<th>Compiler / SDK</th>
+<th>Sound</th>
+<th>Music engine</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NES</td>
+<td>fceumm</td>
+<td>cc65</td>
+<td><code>sound_play_tone/noise</code> (APU)</td>
+<td>FamiTone2</td>
+</tr>
+<tr>
+<td>Game Boy</td>
+<td>gambatte</td>
+<td>SDCC (sm83) / RGBDS</td>
+<td><code>sound_play_tone/noise</code> (DMG APU)</td>
+<td>hUGEDriver</td>
+</tr>
+<tr>
+<td>Game Boy Color</td>
+<td>gambatte (CGB)</td>
+<td>SDCC / RGBDS</td>
+<td>APU + CGB color</td>
+<td>hUGEDriver</td>
+</tr>
+<tr>
+<td>SNES</td>
+<td>snes9x</td>
+<td>PVSnesLib (C) / asar (asm)</td>
+<td><code>sfx_play</code> (SPC700 + BRR)</td>
+<td>SPC700 engine</td>
+</tr>
+<tr>
+<td>Genesis</td>
+<td>genesis_plus_gx</td>
+<td>SGDK (m68k-gcc) / vasm (asm)</td>
+<td><code>sfx_*</code> PSG</td>
+<td>XGM2 via SGDK</td>
+</tr>
+<tr>
+<td>SMS</td>
+<td>genesis_plus_gx</td>
+<td>SDCC (z80)</td>
+<td><code>sfx_*</code> SN76489 PSG</td>
+<td>3-voice PSG tracker</td>
+</tr>
+<tr>
+<td>Game Gear</td>
+<td>genesis_plus_gx</td>
+<td>SDCC (z80)</td>
+<td><code>sfx_*</code> (same PSG)</td>
+<td>PSG tracker</td>
+</tr>
+<tr>
+<td>C64</td>
+<td>vice_x64</td>
+<td>cc65</td>
+<td><code>sfx_*</code> SID (ADSR)</td>
+<td>3-voice SID sequencer</td>
+</tr>
+<tr>
+<td>GBA</td>
+<td>mGBA</td>
+<td>libtonc / libgba (arm-gcc)</td>
+<td><code>sfx_*</code> libtonc</td>
+<td>maxmod</td>
+</tr>
+<tr>
+<td>Atari Lynx</td>
+<td>handy</td>
+<td>cc65</td>
+<td><code>sfx_*</code> MIKEY 4-voice</td>
+<td>cc65 lynx audio</td>
+</tr>
+<tr>
+<td>Atari 2600</td>
+<td>stella2014</td>
+<td>dasm (asm)</td>
+<td>(asm)</td>
+<td>2-voice 6507 chiptune</td>
+</tr>
+<tr>
+<td>Atari 7800</td>
+<td>prosystem</td>
+<td>cc65</td>
+<td><code>sfx_*</code> TIA</td>
+<td>2-voice TIA tracker</td>
+</tr>
+<tr>
+<td>PC Engine</td>
+<td>geargrafx</td>
+<td>cc65</td>
+<td><code>psg_tone</code> (HuC6280 PSG, 6 ch)</td>
+<td>hand-authored PSG</td>
+</tr>
+<tr>
+<td>MSX / MSX2</td>
+<td>blueMSX</td>
+<td>SDCC (z80)</td>
+<td><code>msx_psg_tone</code> (AY-3-8910)</td>
+<td>hand-authored PSG</td>
+</tr>
+<tr>
+<td>Nintendo 64</td>
+<td>parallel_n64 (glide64, <strong>GPU</strong>)</td>
+<td>mips-gcc (C)</td>
+<td>AI / RSP</td>
+<td>-</td>
+</tr>
+<tr>
+<td>PlayStation</td>
+<td>beetle_psx_hw (<strong>GPU</strong>)</td>
+<td>mips-gcc (C; PSn00bSDK)</td>
+<td>SPU</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Dreamcast</td>
+<td>flycast (<strong>GPU</strong>)</td>
+<td>sh-gcc (C)</td>
+<td>AICA</td>
+<td>-</td>
+</tr>
+<tr>
+<td>wasmcart</td>
+<td>CartHost (native WASM host - no emulator; GL carts on an offscreen WebGL2 context)</td>
+<td>bring-your-own WASM toolchain (<code>wc_cart.h</code>)</td>
+<td>48 kHz PCM ring (<code>wc_audio</code> / <code>wc_pcm_mixer</code>)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>jsgame</td>
+<td>rungame (native V8 host - no emulator)</td>
+<td>JavaScript (canvas / WebGL2)</td>
+<td>game's own WebAudio graph (not captured in-harness yet)</td>
+<td>-</td>
+</tr>
+</tbody></table>
+<p>(The two native-runtime rows are the harness tier: no scaffolds and no bundled compiler - <code>pack({target:'wasc'|'jsgame'})</code> packages a source dir you built with your own toolchain.)</p>
+<p>The <code>platformer</code> scaffold side-scrolls (hardware camera + per-platform column streaming) on every platform except NES and the Atari 2600 - both single-screen, since neither has hardware background scroll.</p>
+<p>The three 3D consoles (N64 / PlayStation / Dreamcast) render on the <strong>real GPU</strong> through <a href="https://github.com/monteslu/native-gles"><code>native-gles</code></a> - headless OpenGL/EGL, no browser, no software rasterizer - one engine across all three. PlayStation embeds <a href="https://github.com/grumpycoders/pcsx-redux">OpenBIOS</a> (MIT, region-free), so no proprietary firmware ships. These don't ship genre scaffolds yet; their renderable starting points come from the open GPU SDKs - <a href="https://github.com/DragonMinded/libdragon">libdragon</a> (Unlicense) for N64, <a href="https://github.com/Lameguy64/PSn00bSDK">PSn00bSDK</a> (MPL) for PlayStation - which emit the real GPU geometry the GL cores render. (The 2D consoles' software libs render to a CPU framebuffer the GL cores don't scan out.)</p>
+<h2 id="how-its-packaged">How it's packaged</h2>
+<p><code>romdev</code> is a small <strong>monorepo</strong> of npm packages. The thing you install is <code>romdevtools</code>; it hard-depends on a set of <code>romdev-*</code> binary packages that carry the WebAssembly:</p>
+<ul>
+<li><strong><a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdevtools"><code>romdevtools</code></a></strong> - the tool server (HTTP routes + Agent Skill + MCP), all generic tools, scaffolds, runtime/library source, debug helpers, and the <code>romdevtools</code> / <code>romdev-mcp</code> (alias) / <code>romdevtools-cli</code> binaries. The fast-churning layer; ships <strong>zero wasm</strong>.</li>
+<li><strong><code>romdev-core-*</code></strong> (12) - shared emulator cores: <code>fceumm</code>, <code>gambatte</code>, <code>gpgx</code>, <code>vice</code>, <code>handy</code>, <code>prosystem</code>, <code>geargrafx</code> (PC Engine), <code>bluemsx</code> (MSX), <code>gametank</code> (GameTank), and the GPU cores <code>parallel-n64</code> (N64), <code>beetle-psx-hw</code> (PlayStation), <code>flycast</code> (Dreamcast).</li>
+<li><strong><a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdev-core-host"><code>romdev-core-host</code></a></strong> + <strong><a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdev-core-runner"><code>romdev-core-runner</code></a></strong> (2) - the ISOMORPHIC libretro host runtime (paths under Node, factory + bytes in a browser/worker, one implementation) and the SDL "play it in a window" tier on top of it, published standalone so SDKs, web IDEs, and tools can run cores without the server. The server consumes the same host.</li>
+<li><strong><code>romdev-platform-*</code></strong> (3) - self-contained platform bundles where the core + compiler are used by no one else: <code>snes</code>, <code>gba</code>, <code>atari2600</code>.</li>
+<li><strong><code>romdev-toolchain-*</code></strong> (7) - shared compilers: <code>cc65</code>, <code>sdcc</code>, <code>m68k-gcc</code>, <code>vasm</code>, <code>rgbds</code>, <code>mips-gcc</code> (N64/PS1 C), <code>sh-gcc</code> (Dreamcast C).</li>
+<li><strong><code>romdev-analysis*</code></strong> (2) - the RE engine: <code>romdev-analysis</code> (Rizin → WASM) + <code>romdev-analysis-decompiler</code> (Ghidra decompiler + SLEIGH specs → WASM).</li>
+<li><strong><code>romdev_game_codes</code></strong> (1) - the bundled game-code / cheat database (~30 MB of pre-parsed cheats for thousands of known ROMs across 13 platforms). Split out so the main package stays small and the DB grows on its own cadence; lazy-loaded one platform at a time.</li>
+</ul>
+<p><code>romdevtools</code> resolves each core/compiler from its package lazily - a toolchain's WASM is only loaded into memory the first time you build for that platform, so booting the server is fast and a session only pays for the platforms it actually uses. WASM is a <strong>build output</strong>: it ships via the npm packages, not committed to this git repo (which holds the source, recipes, and version pins). See <a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdevtools/BUILDING.md">packages/romdevtools/BUILDING.md</a> for the platform × core × toolchain matrix and how the wasm is built (a pinned Emscripten container).</p>
+<h2 id="connect">Connect</h2>
+<p>Boot the server (it stays in the foreground - <code>Ctrl-C</code> to stop):</p>
+<pre><code>npx romdevtools      # tool server on http://127.0.0.1:7331/mcp
+</code></pre>
+<p>The first run downloads the cores/toolchains; later runs start instantly from the npm cache. An <strong>optional observer</strong> for watching tool calls live is at <code>http://127.0.0.1:7331/livestream</code> - purely for humans, no agent needs it.</p>
+<p>Then register <code>http://127.0.0.1:7331/mcp</code> (streamable-HTTP transport) with your agent:</p>
+<h3 id="claude-code">Claude Code</h3>
+<pre><code>claude mcp add --transport http romdev http://127.0.0.1:7331/mcp
+</code></pre>
+<h3 id="opencode">opencode</h3>
+<p>Add it to <code>opencode.json</code> (the <code>type</code> must be <code>"remote"</code> for an HTTP server):</p>
+<pre><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "romdev": {
+      "type": "remote",
+      "url": "http://127.0.0.1:7331/mcp",
+      "enabled": true
+    }
+  }
+}
+</code></pre>
+<h3 id="codex-cli">Codex CLI</h3>
+<p>Either run <code>codex mcp add romdev --url http://127.0.0.1:7331/mcp</code>, or add the table to <code>~/.codex/config.toml</code>:</p>
+<pre><code>[mcp_servers.romdev]
+url = "http://127.0.0.1:7331/mcp"
+</code></pre>
+<p>In a Codex session, <code>/mcp</code> lists the connected servers and their tools.</p>
+<h3 id="any-other-mcp-client">Any other MCP client</h3>
+<p>It's a standard <strong>streamable-HTTP</strong> MCP server - point any MCP-capable client at <code>http://127.0.0.1:7331/mcp</code>. Set <code>PORT</code> / <code>HOST</code> env vars to change the bind address.</p>
+<p><strong>Both protocol eras are served on that one endpoint.</strong> Legacy clients (the <code>initialize</code> handshake plus <code>Mcp-Session-Id</code>) work exactly as before. Clients speaking the stateless <strong>2026-07-28</strong> revision - no handshake, no session id, protocol version and capabilities in each request's <code>_meta</code> - are served natively, and <code>server/discover</code> advertises what the server supports. That revision has no protocol session to carry your identity, so the server ties your calls to <em>your</em> emulator three ways, in this order: a <code>_meta["dev.romdev/sessionHandle"]</code> handle; the optional <strong><code>session</code> argument every tool accepts</strong> (the form an agent can produce from inside a tool call - pass one stable slug on every call); or, when a call names nothing, <strong>your keep-alive connection</strong> - the server keys the session to it and each result ends with a <code>session: &lt;id&gt;</code> line you can pass back. Claude Code 2.1.x names nothing, so it gets the connection default and the reminder line. Over plain HTTP the same job is done by the <code>x-romdev-session</code> header (send it on every call, and reuse ONE <code>Mcp-Session-Id</code> - re-initializing per call is a fresh session even with the header set).</p>
+<hr />
+<p>Then just describe what you want:</p>
+<pre><code>&gt; Make me a tiny NES game where a sprite moves around the screen.
+
+[agent: scaffold({op:"game", platform:"nes", genre:"platformer"})]
+[agent: build({output:"run", platform:"nes", path}) → builds, loads, runs, screenshots in one call]
+[agent sees the result, iterates]
+</code></pre>
+<p><code>romdev</code> also doubles as a plain emulator: <code>romdev-cli play game.gba</code> opens an SDL window with hot-plug controllers and live fps in the title bar.</p>
+<h2 id="development">Development</h2>
+<p>This is an npm-workspaces monorepo (Node 24+):</p>
+<pre><code>git clone git@github.com:monteslu/romdev.git
+cd romdev
+npm install
+npm test            # runs each package's tests
+</code></pre>
+<p>The bundled WASM is built from pinned upstream source in a reproducible Emscripten container - see <a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdevtools/BUILDING.md">packages/romdevtools/BUILDING.md</a>. You only need to rebuild it when bumping an upstream version or adding a platform; day-to-day work uses the already-built wasm in the binary packages.</p>
+<p>Development workflow notes: <a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/packages/romdevtools/docs/decomp-throughput.md">measured decompilation, bounded search and SMS IR</a>. These extend existing tools; the notes distinguish implemented behavior, verification limits and deployment requirements.</p>
+<h2 id="license">License</h2>
+<p>romdev's code is <strong>MIT</strong>, and <strong>the games you build are yours - including to
+sell.</strong> Full details + the third-party component inventory: <a href="romdev_LICENSE">LICENSE</a>
+and <a href="https://github.com/monteslu/romdev/blob/189fbcbd64672acb925599cb04804f561be5bdc0/NOTICE">NOTICE</a>.</p>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Состав Git и локальные файлы</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css"/>
+  </head>
+  <body><h1 id="состав-git-и-локальные-файлы">Состав Git и локальные файлы</h1>
+<p>Проверено 2026-10-18. Исключение из Git не означает удаление с диска.</p>
+<h2 id="оставлять-локально">Оставлять локально</h2>
+<ul>
+<li><code>Art/Darkwing Duck (USA).nes</code> и другие <code>*.nes</code>. Ожидаемый SHA-256 исходника:
+<code>1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00</code>.
+Для исследовательских инструментов файл нужно положить по указанному пути самостоятельно.</li>
+<li><code>Art/Research/DarkwingDuck/extracted/raw/</code>: исходные PRG/CHR, их банки, заголовок и
+промежуточные nametable-дампы. Проверено, что <code>header.bin + prg.bin + chr.bin</code>
+полностью восстанавливают исходный <code>.nes</code>; исключить только расширение <code>.nes</code> недостаточно.
+Восстановление этих исследовательских файлов из локального ROM:
+<code>python Art/Tools/DarkwingResearch/extract_rom.py</code> из корня проекта.</li>
+<li><code>home/</code> внутри записей Mesen и <code>Art/Tools/DarkwingResearch/runs/inspect-home/</code>:
+автоматические рабочие каталоги отладчика. В текущих каталогах находятся <code>.cdl</code>.
+Отдельные <code>coverage.cdl</code> в записях остаются исследовательскими артефактами.</li>
+<li><code>Art/Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent-windows-x64.zip</code>:
+дубликат распакованных <code>mesen-agent.exe</code>, <code>MesenCore.dll</code> и <code>LICENSE</code>.
+Байтовое совпадение файлов из ZIP с локальными файлами проверено.
+Релиз и контрольная сумма архива сохранены в соседних <code>release.json</code> и <code>SHA256SUMS</code>.</li>
+<li>Корневые <code>trace.txt</code>, <code>m1z_pit*_report.txt</code>, кэш Python. Результаты, которые нужны
+как доказательство, сохранять отдельно с описанием сценария и происхождения.</li>
+<li>Кэши и результаты Unity (<code>Library</code>, <code>Temp</code>, <code>Build</code>, <code>Builds</code>, <code>Logs</code>,
+<code>UserSettings</code>) уже исключены.</li>
+</ul>
+<h2 id="сохранять-в-git">Сохранять в Git</h2>
+<ul>
+<li><code>Assets</code> вместе с <code>.meta</code>, <code>Packages</code>, <code>ProjectSettings</code>, исходники инструментов,
+документы, каталоги объектов и зафиксированные результаты анализа.</li>
+<li>Исходные эталоны Mesen, сценарии, snapshots, данные кадров и отчёты сравнений.
+Имя <code>tmp_*</code>, расширение <code>.bin</code> или большой размер сами по себе не делают файл
+ненужным: часть записей используется как доказательство и вход проверок.</li>
+<li>Ранние <code>Art/Tools/DarkwingResearch/runs/</code> пока сохраняются: на них ссылается
+<code>Art/Research/DarkwingDuck/docs/game_flow.md</code>.</li>
+<li>Распакованная согласованная пара Mesen CLI/core и её лицензия пока сохраняются:
+пути используются инструментами и <code>toolchain-lock.json</code>. Переносить её на
+внешнюю загрузку следует вместе с воспроизводимым получением нужной версии.</li>
+<li>Экспорты предыдущего диалога пока сохраняются как указанный в handoff источник.
+В дальнейшем их можно заменить самостоятельными проверенными заметками.</li>
+</ul>
+<h2 id="репозиторий-и-история">Репозиторий и история</h2>
+<p>2026-10-19 создан приватный репозиторий
+<code>https://github.com/MetaWarlock/sw-code-zero-unity</code>, подключён как <code>origin</code>;
+основная ветка — <code>main</code>.</p>
+<p>Перед первой загрузкой из всех 197 коммитов подготовленной ветки удалены 127
+исторических путей, соответствующих текущим исключениям. Проверено отсутствие
+этих путей во всех публикуемых коммитах, сохранение содержимого итогового дерева,
+сообщений, авторов и дат коммитов. Хеши коммитов изменились вследствие очистки.</p>
+<p>Исходная история со всеми локальными ссылками и снимком текущих изменений сохранена
+в проверенном Git bundle вне проекта:
+<code>D:/Art/SW Code Zero Unity - Git Backups/2026-10-19-37fe6b1e/original-with-current-changes.bundle</code>.
+Рядом сохранены исходный индекс, патчи и отчёт операции. Локальные ROM и дампы
+остались на диске без изменений.</p>
+<p>На GitHub загружается только <code>main</code>. Локальные служебные ссылки Codex и reflog
+могут содержать прежние коммиты; их и резервную копию не следует публиковать
+через <code>push --mirror</code> или отправку всех ссылок.</p>
+<p>Сгенерированные игровые ассеты в <code>Assets</code> сохраняются; отсутствие <code>.nes</code> в
+репозитории не означает отсутствия извлечённого из оригинала контента.</p>
+</body>
+</html>

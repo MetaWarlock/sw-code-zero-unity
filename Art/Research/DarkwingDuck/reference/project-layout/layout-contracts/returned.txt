@@ -1,0 +1,16 @@
+PASS G92 successful pair+scan exits, row borrow, tall Y edge and negative controls: 29 checks
+PASS 47/47 F200/F254 horizontal push; armed scan, pair fallthrough, right SBC borrow, opposite probe and source tables
+PASS 16/16 pause activity bytes; low-only active states, inactive stale bit7 and saved fields
+PASS 12/12 CB01 death SFX gate, repeated service, mission signs, D3B6 latch and DE60 reset
+PASS 7 checks: original f4454/f4455 shot contract and negative control
+PASS 7 checks: repair pickups preserve inactive gas; native frog HP83
+PASS 8 checks: $C9B3 Select and indexed meter subtraction
+PASS crouch A same-frame integration and seventeen-pass drop guard (human f18770-f18788)
+PASS Quackerjack kick carries both sides of CMP #$50 into RNG
+PASS 9 checks: lob probe/burst/reused slots and boss flash owner
+PASS 9 checks: B315/B3F8/DA04 native boss tail (diagnostic fixture, not route proof)
+PASS native scene descriptor cell, one staging completion, and real section CHR upload
+PASS side-offscreen animation freeze, visible resume, and player-above-camera exception
+PASS 4 checks: rising class-2 contact and hanging firing pose
+PASS resident return continues player/engine in the same frame, without another NMI
+PASS cleared-map progression, C4 selection, preserved behavior, and HUD screen position (diagnostic fixture)

@@ -1,0 +1,395 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Darkwing Duck (NES) — Game Flow State Machine</title>
+    <link rel="stylesheet" type="text/css" href="../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="darkwing-duck-nes-game-flow-state-machine">Darkwing Duck (NES) — Game Flow State Machine</h1>
+<p>Reverse-engineered game-flow doc for the Unity port. Companion: <code>labels_flow.json</code>.
+Evidence: static disassembly (<code>disasm/flat_bank*.txt</code>, <code>disasm/bank7_*.txt</code>) + emulator probes
+(<code>Art/Tools/DarkwingResearch/runs/flow_boot</code>, <code>flow_confirm</code>, <code>flow_yes</code>, <code>flow_gameplay</code>, <code>flow_death</code>).</p>
+<h2 id="h-0-architecture-recap">0. Architecture recap</h2>
+<ul>
+<li>One cooperative master process (entry <code>$C595</code>, bank 7 fixed at <code>$C000-$FFFF</code>) runs the whole game
+as a linear script with <code>JSR $FF06</code> yields. <code>CreateProcess $FED7</code> is used exactly once (boot).</li>
+<li>Every "screen" in the game (title, cutscenes, city map, missions, interiors) is a <strong>world</strong>:
+a 17-wide <strong>layout grid</strong> of tile/scene bytes + per-tile behaviors, ticked by a per-bank engine.</li>
+<li><code>$31</code> = <strong>current world/scene id</strong>. Ids 0-6 = the 7 missions; ids 7+ = cutscene/dialog scenes.</li>
+<li><code>$32/$33</code> = pointer to the current world's layout grid. <code>$22/$23</code> = index of the player's cell
+inside that grid (also used as a scratch pointer by dialogs).</li>
+<li><code>LDA ($32),Y / LDY $22</code> reads "the tile under the player"; in the city map grid (bank 1)
+special tile values drive the scene-mode dispatch at <code>$CA8F</code>:
+<code>$14</code> → bank 5 gameplay engine, <code>$34/$56/$76/$97/$B5/$98</code> → bank 4 <code>$9800</code> interior engine,
+anything else → bank 5 <code>$8000</code> (map/default engine).</li>
+<li>NMI <code>$C000</code>: OAM DMA from <code>$0200</code>, palette upload from <code>$0300</code> when <code>$18!=0</code>, VRAM queue
+(<code>$C119</code>, flags <code>$1C/$1D</code>), scroll writes <code>$2005 = $FC (X), $FA (Y)</code>, CHR switch from
+<code>$1A/$1B</code> (<code>$1A&amp;$1F</code>→CHR0 sprites, <code>$1B&amp;$1F</code>→CHR1 bg) via <code>SetCHR0 $FF21</code>/<code>SetCHR1 $FF3B</code>,
+bank-task queue (<code>$DC[8]</code>, marker <code>$88</code>, idx <code>$DB</code>) processed at PRG=3.</li>
+<li>All 40 <code>JSR $FF55</code> (SwitchPRG) call sites live in bank 7; other banks request via bank-7 helpers.</li>
+</ul>
+<h2 id="h-1-boot-attract-flow-master-process-c595-bank-7">1. Boot &amp; attract flow (master process <code>$C595</code>, bank 7)</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Routine (bank 7 unless noted)</th>
+<th>Screen (verified frame ≈)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>$C595</code> init, <code>$C276</code> fade-to-black, audio <code>$C21E</code>, <code>$C838</code> clear <code>$0400-$05FF</code>, palette <code>$C1BA</code></td>
+<td>black</td>
+<td><code>$51=$F0</code> delay</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>$C95C</code> clear objects/scroll; <code>$31=$07; JSR $DD57</code></td>
+<td>copyright "©DISNEY PRODUCED BY CAPCOM…" (f≈50-250)</td>
+<td><code>DialogScene(7)</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>$62=$0E; JSR $AA00</code> (bank 2); sleep 30; <code>$62=$0F; JSR $AA00</code></td>
+<td>"I am the terror that flaps in the night!" intro monologue (f≈250-750)</td>
+<td><code>$AA00</code> = VRAM text-stream player (<code>$ABAA/$ABBD</code> per <code>$62</code>); <code>$62</code> = text stream id</td>
+</tr>
+<tr>
+<td>4</td>
+<td>loop <code>yield; $F5A4(0); $F5DA; bank5 $8000</code> until <code>$0510 &gt;= $5C</code></td>
+<td>intro continues</td>
+<td>object-0 Y gate</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>bank2 $9600</code> (sound <code>$2B</code>, wait anim), sleep 60</td>
+<td>—</td>
+<td/>
+</tr>
+<tr>
+<td>6</td>
+<td>dialogs <code>DialogScene(9)</code>,<code>(0E)</code>,<code>(0C)</code>,<code>(0A)</code> with bank2 object scenes <code>$8F00/$9100/$9000/$A000</code></td>
+<td>thunderbike ride (f≈800-1100), plane at night (f≈1200-1400), DW close-up (f≈1500-2000)</td>
+<td>any button skips; Start (<code>$14&amp;$10</code>) → jump to step 9</td>
+</tr>
+<tr>
+<td>7</td>
+<td>loop <code>yield; $F51B(0); $DA70; bank5 $8000</code> until scroll X <code>$FD==1 &amp;&amp; $FC==0</code></td>
+<td>bike ride scrolls exactly one screen ($100 px)</td>
+<td/>
+</tr>
+<tr>
+<td>8</td>
+<td>fade <code>$C970</code>; <code>bank2: $8000(X=1); $8D30; $9200; $C158</code> render on; <code>$51=$B4</code> wait; idle counter <code>$67/$68</code></td>
+<td>DW + Launchpad rooftop scene</td>
+<td>if <code>$67==$A0 &amp;&amp; $68==6</code> (~29 s) → <code>JMP $FFE0</code> soft reset (attract loop)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>wait <code>$14&amp;$10</code> (Start) at <code>$C78C</code> → <code>$C792</code></td>
+<td/>
+<td/>
+</tr>
+<tr>
+<td>10</td>
+<td><code>$C792</code>: fade; <code>bank2 $9500</code> + <code>$9200</code>; wait Start at <code>$C7AD</code></td>
+<td>TITLE screen: logo + PRESS START (f≈2100+)</td>
+<td>Start → <code>$C7CF</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>$C7CF</code>: <code>$C986</code> clear; <code>$62=$0A; bank2 $9E00; $62=$0D; $AA00</code></td>
+<td>mission-briefing cutscene (Launchpad + DW)</td>
+<td/>
+</tr>
+<tr>
+<td>12</td>
+<td><code>bank2: $8000(X=2); $8E00</code>; <code>$31=$00; $A100</code>; <code>$C8B5</code> (=bank4 <code>$8000</code> + <code>DialogScene($31)</code>)</td>
+<td>map intro dialog</td>
+<td>then <code>JMP $C9AC</code> = city map loop</td>
+</tr>
+</tbody></table>
+<p><code>$DD57</code> = <code>DialogScene/LoadWorld(A via $31)</code>. Per-id descriptor tables (bank 7, indexed by <code>$31</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$DF50/$DF60</code></td>
+<td>layout grid pointer lo/hi (id0=<code>$DF90</code> bridge, id1=<code>$DFD4</code> city, id2=<code>$E018</code> sewers, id3=<code>$E05C</code> tower, id4=<code>$E0D4</code> forest, id5=<code>$E10D</code> warehouse, id6=<code>$E146</code> FOWL; id 31 = <code>$83E1</code> in bank 1 = the city map grid)</td>
+</tr>
+<tr>
+<td><code>$DEE6</code>/<code>$DEF5</code></td>
+<td>CHR0 sprite / CHR1 bg bank request (written to <code>$1A/$1B</code>; NMI masks <code>&amp;$1F</code>)</td>
+</tr>
+<tr>
+<td><code>$DEC8</code></td>
+<td>initial scroll Y (<code>$FB</code>) + obj0 Y</td>
+</tr>
+<tr>
+<td><code>$DEB9</code></td>
+<td>player start cell index in grid (<code>$22/$23</code>; mission 1 = <code>$33</code> = row 3 col 0)</td>
+</tr>
+<tr>
+<td><code>$DF04</code></td>
+<td>music/sound id (<code>$C2F9</code>)</td>
+</tr>
+<tr>
+<td><code>$DF22</code></td>
+<td>sprite palette set (<code>$C319</code> = copy 16 bytes from <code>$C4FD/$C505[id*8]</code>)</td>
+</tr>
+<tr>
+<td><code>$DEAA/$DED7/$DEE6...$DF41</code></td>
+<td>per-scene small params (<code>$36</code>,<code>$2C</code>,<code>$1A</code>,<code>$D9</code>,<code>$2D</code>,<code>$3D</code>)</td>
+</tr>
+<tr>
+<td><code>$E388</code></td>
+<td>same structure for map sub-scenes (tables <code>$E497+</code>), entered when <code>$5B!=0</code></td>
+</tr>
+</tbody></table>
+<p>Special-casing inside <code>$DD57</code>: <code>$31 &lt; 7</code> → world init (<code>$04D0=$80,$0400=$D0</code>, <code>$50=9</code>, <code>$F5FC</code>);
+<code>$31 == 8/10</code> → <code>$0400=$D8</code>; ends with <code>JMP $C254</code> (bank-5 tick + palette fade-in <code>$C270</code>).</p>
+<h2 id="h-2-city-map-loop-c9ac-cad8-bank-7">2. City map loop (<code>$C9AC</code> … <code>$CAD8</code>, bank 7)</h2>
+<p>Per frame (<code>$C9AC</code>):</p>
+<ol>
+<li><code>$65</code> bit7 set → spin at <code>$CAD8</code> (yield loop) until map rebuild done (rebuild = <code>$D95D</code>).</li>
+<li><strong>Select</strong> (<code>$14&amp;$20</code>) on states not in {7,9,$12,$15} and <code>$61!=0</code>: sound <code>$1B</code>; toggle <code>$98</code>;
+help-bubble select logic (<code>$5F</code>, <code>$05BE/$05C0</code>, <code>$54==2 → $CAE7</code>).</li>
+<li><strong>Start</strong> (<code>$14&amp;$10</code>) on enterable state: sound <code>$1C</code>; <code>bank4 $8F00</code> (save map objects to
+<code>$0360+</code> buffers, set briefing objects from tables <code>$9026/$902C</code>) → opens confirm dialog.</li>
+<li><code>$CAFC</code>: map cursor/water anim (<code>$05E4/$05E6</code> RAM-frame wave), then
+<code>LDX $50; AND #$1F; JMP ($CB5F/$CB75)</code> — <strong>map state jump table</strong> (state <code>$50</code>):
+0:<code>$CB8B</code> 1:<code>$CD0E</code> 2:<code>$CFD7</code> 3:<code>$D16E</code> 4:<code>$D1A4</code> 5:<code>$D282</code> 6:<code>$D39A</code> 7:<code>$D453</code> 8:<code>$D51B</code>
+9:<code>$D517</code> A:<code>$D690</code> B:<code>$D726</code> C:<code>$D7F9</code> D/E:<code>$D8A4</code> F:<code>$D837</code> 10:<code>$D826</code> 11:<code>$D838</code>
+12:<code>$D817</code> 13:<code>$D894</code> 14:<code>$D9B2</code>… (low confidence on entries ≥7; see labels).<ul>
+<li><code>$CD0E</code> = "standing": Left/Right → walk (<code>$CCBA</code>), Up → <code>$56=1</code>, B → <code>$CF3A</code> check →
+<code>$CE39</code> spawn HELP bubble readout; <code>$50</code> updated by tile/walk handlers.</li>
+</ul>
+</li>
+<li><code>$DA70</code> update obj0; <code>bank4 $8090</code> (scroll/VRAM row feeder); <code>$5B!=0 → $E388</code> (load map
+sub-scene); <code>bank6 $8000</code>, <code>bank1 $8800</code> (map object behaviors via table <code>$8836/$88B6</code>, behaviors ≥ <code>$47</code>).</li>
+<li><code>$CA8F</code> scene-mode dispatch by tile under player (see §0) → bank 5 tick (map/gameplay) or bank 4 <code>$9800</code> tick (interiors).</li>
+<li><code>$CAD8</code>: <code>$C2DE</code>; <code>$9A</code> frame counter; yield; loop.</li>
+</ol>
+<p><strong>Pending-load processor <code>$D41B</code></strong> (called from <code>$CAFC</code> tail <code>$CB3E</code>):</p>
+<ul>
+<li><code>$6D!=0</code> → <code>X=$6D&amp;$1F; JSR $E388</code> (load map sub-scene: HELP text, interiors).</li>
+<li><code>$64!=0</code> → <code>$D46C</code> <strong>GAME OVER card</strong> (fade <code>$C276</code>, <code>$C838/$C92A</code>, <code>$C1BA</code> clears <code>$2000-$23FF</code>,
+bank2 task 3 draws its screen records, <code>$8D00</code> stages the palette, <code>$9900</code> waits for input).
+Not a map rebuild — the map rebuild is <code>$D95D</code> (corrected 2026-10-16, evidence below).</li>
+<li>else → <code>JSR $DD57</code> with <code>$31</code> = <strong>world id 0-6 → mission load!</strong> After load, <code>$1A=$D589[$31]</code>.</li>
+</ul>
+<h3 id="mission-selection-bank-2-a400-a607-the-yesno-tier-chooser">Mission selection (bank 2 <code>$A400-$A607</code>, the YES/NO + tier chooser)</h3>
+<ul>
+<li><code>$38</code> = <strong>missions-completed / tier counter</strong> (0 boot; <code>INC $38</code> at <code>$D95B</code> on each mission-complete return).</li>
+<li><code>$6C</code> = cursor over the 3 current-tier HELP bubbles; Left/Right move it (<code>$A46E/$A48B</code>).</li>
+<li>Confirm (B) → jump table <code>$A4A8/$A4AB</code> → handler per bubble:<ul>
+<li>bubble 0 <code>$A4B0</code>: <code>$38&lt;3 → $31=0</code> (bridge); <code>$38&lt;6 → $31=3</code> (tower); <code>$38==6 → $31=6</code> (FOWL).</li>
+<li>bubble 1 <code>$A503</code>: <code>$38&lt;3 → $31=1</code> (city); else <code>$31=4</code> (forest).</li>
+<li>bubble 2 <code>$A53A</code>: <code>$38&lt;3 → $31=2</code> (sewers); else <code>$31=5</code> (warehouse).
+(each handler spawns flight/briefing objects ids <code>$73</code>, <code>$BB</code> via <code>$FA6C</code>, calls <code>$A6A5</code>).</li>
+</ul>
+</li>
+<li><code>$A571</code>: hide HELP-bubble objects <code>$04D2-$04D4</code> for the chosen mission slot.</li>
+<li><code>$A5AB</code>: if <code>$F8</code> bit7 (just completed) set completed-bit: mission id → <code>$69 |= bit(id)</code>.</li>
+</ul>
+<p><strong>YES A / NO B confirm dialog</strong>: text drawn via <code>$AA00</code> stream; verified behavior:
+mission help text → A → "YES A BUTTON / NO B BUTTON" → A = fly to node.
+Exact YES/NO input handler address not yet pinned (open question Q3).</p>
+<h3 id="mission-entry-sequence-verified-frames-flow_yes">Mission entry sequence (verified frames, <code>flow_yes</code>)</h3>
+<p>YES → DW flies across map screen (bank-4 engine, f≈430-730) → loader switches PRG to bank
+<code>set</code> (= <code>$31</code>, 0-6) to read metatiles (f≈732) → NMI applies CHR (<code>$1A=0E|80?</code>, <code>$1B=10..16</code>)
+→ PRG→bank 5 gameplay (f≈743) → level fades in with intro sign (f≈870).</p>
+<h3 id="mission-level-data-mapping-deliverable-2">Mission → level data mapping (deliverable 2)</h3>
+<table>
+<thead>
+<tr>
+<th>$31</th>
+<th>name (levels.json)</th>
+<th>layout grid (bank 7)</th>
+<th>tile/metatile bank (PRG)</th>
+<th>CHR1 bg (<code>$DEF5&amp;1F</code>)</th>
+<th>CHR0 spr</th>
+<th>start cell ($DEB9)</th>
+<th>music (<code>$DF04</code>)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>bridge</td>
+<td><code>$DF90</code> (17x4)</td>
+<td>bank 0 (<code>$36F0</code> big / <code>$3AF0</code> small)</td>
+<td>16 (<code>$90</code>)</td>
+<td>14 (<code>$8E</code>)</td>
+<td><code>$33</code></td>
+<td><code>$00</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>city</td>
+<td><code>$DFD4</code></td>
+<td>bank 1</td>
+<td>17 (<code>$91</code>)</td>
+<td>14</td>
+<td><code>$33</code></td>
+<td><code>$01</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>sewers</td>
+<td><code>$E018</code></td>
+<td>bank 2</td>
+<td>18 (<code>$92</code>)</td>
+<td>14</td>
+<td><code>$00</code></td>
+<td><code>$04</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>tower</td>
+<td><code>$E05C</code> (10x12)</td>
+<td>bank 3</td>
+<td>19 (<code>$93</code>)</td>
+<td>14</td>
+<td><code>$6E</code></td>
+<td><code>$05</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>forest</td>
+<td><code>$E0D4</code> (19x3)</td>
+<td>bank 4</td>
+<td>20 (<code>$94</code>)</td>
+<td>14</td>
+<td><code>$00</code></td>
+<td><code>$07</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>warehouse</td>
+<td><code>$E10D</code> (19x3)</td>
+<td>bank 5</td>
+<td>21 (<code>$95</code>)</td>
+<td>14</td>
+<td><code>$00</code></td>
+<td><code>$0C</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>fowl_fortress</td>
+<td><code>$E146</code> (19x3)</td>
+<td>bank 6</td>
+<td>22 (<code>$96</code>)</td>
+<td>14</td>
+<td><code>$00</code></td>
+<td><code>$09</code></td>
+</tr>
+</tbody></table>
+<p>levels.json offsets are file offsets (include 16-byte iNES header): <code>layout_offset-0x10</code> = PRG offset.
+All 7 grids + scroll tables live consecutively in fixed bank 7 (<code>$DF90-$E352+</code>), so the engine reads
+them without banking. Sprite CHR is bank 14 for all missions; bg CHR = <code>16 + 2*set</code>.
+Cutscene scene ids (7-14) use their own grids (<code>$E17F-$E18A</code>) and CHRs (bg 24/28/29/30, spr 15/31/0).</p>
+<h2 id="h-3-gameplay-world-ids-0-6-bank-5-engine">3. Gameplay (world ids 0-6, bank 5 engine)</h2>
+<ul>
+<li>Frame: map-loop path <code>$CAAF</code> (or dedicated loops) → <code>bank5 $8000</code> = object tick: alternating
+even/odd frame order (<code>$95</code> parity), 16 object slots stride <code>$10</code>
+(<code>$0400,X</code> flags, <code>$0420,X</code> anim id, <code>$04E0,X</code> behavior, <code>$04F0/$0500,$0510/$0520</code> abs X/Y).</li>
+<li>Object behaviors are <strong>bytecode scripts</strong>: pointer tables bank 5 <code>$9B0B/$9C0B</code> (+hi <code>$9D45</code>),
+rendered by OAM builder <code>$8150</code> into shadow OAM <code>$0200</code> (bank 5 <code>$AE53/$AF23</code> metasprite tables).</li>
+<li>Bank task queue runs per-frame side ticks in banks 4/6/1 (seen in NMI logs during gameplay).</li>
+<li><strong>HUD</strong>: top-left heart (health), drawn in nametable; verified pause screen shows
+"POINTS 000000 / GAS / GAS ENERGY: 03".</li>
+<li><strong>Pause</strong>: Start during gameplay → bank 4 routine (<code>$8F83</code> region; entered via bank-4 task):
+saves objects (<code>$0360+</code>) &amp; sprite palettes (<code>$038F</code>), <code>$1A=$9F</code> (CHR0=31 status font),
+<code>$FE&amp;=$F7</code> (hide sprites), loop {bank5 tick, draw status screen <code>$90E1</code>, <code>$9148</code>, wait Start};
+resume path <code>$8FCD</code> restores everything (<code>$1A=$F2|$80</code>, <code>$FE|=$08</code>).</li>
+<li>Health (<code>$42/$43=03,03</code> at spawn) and gas energy (<code>03</code>) live in low RAM; exact score/lives
+addresses not yet pinned (open question Q4). Select cycles gas weapons (standard DW behavior;
+not yet located — Q5).</li>
+</ul>
+<h2 id="h-4-mission-complete-map-return-bank-7-d49c">4. Mission complete → map return (bank 7 <code>$D49C</code>)</h2>
+<p>Outcome flag <code>$F8</code> (bit7 set = mission completed, cleared = died):</p>
+<ul>
+<li><strong>Completed</strong> (<code>$F8&lt;0</code>): <code>$D4B3</code>: fade, render off, palette, <code>$C95C</code>, <code>$62=$07</code>, audio;
+clears <code>$5D/$54/$60/$61/$6B/$6D</code>; <code>JMP $D95D</code> → map rebuild; <code>INC $38</code> (tier counter);
+<code>bank2 $9900</code> cutscene (<code>$D4AC</code>). At map, <code>$A5AB</code> sets <code>$69</code> bit for the finished mission.</li>
+<li><strong>Died</strong> (<code>$F8&gt;=0</code>): <code>$D4E9</code>: <code>$C235</code>, obj0 off, yield, <code>$97=4</code>, <code>JSR $C8B5</code> → <code>bank4 $8000</code> +
+<code>DialogScene($31)</code> — <strong>reloads the same world from its start grid cell</strong> (no mid-level
+checkpoint found; checkpoints = level start. Open question Q6 covers mid-level flags).</li>
+<li>After return, master continues in map loop <code>$C9AC</code> (<code>$65=$FF</code> set by <code>$D8D0</code> path keeps the
+loop spinning while the map rebuilds).</li>
+</ul>
+<h3 id="game-over-card-prompt-d46c-d4af-ported-2026-10-16">GAME OVER card + prompt (<code>$D46C</code> … <code>$D4AF</code>, ported 2026-10-16)</h3>
+<p>Reached from <code>$D41D</code> when the death counter <code>$64</code> is non-zero (<code>$CB27</code> INCs it only once both HUD
+energy columns <code>$05E6</code>/<code>$05E4</code> are empty). Sequence: <code>$C276</code> fade → <code>$FF06</code> yield → <code>$C14E</code> →
+<code>$97=$04</code> → <code>$C21E</code> → <code>$C838</code> (clear <code>$0400-$05FF</code>) → <code>$C92A</code> (38 B from <code>$C936</code> → <code>$05C2</code>) → zero
+<code>$FC/$FA/$FD/$FB/$95</code> → <code>$C1BA</code> with <code>A=$20</code> (<code>$2000 &amp;= $FE</code>, clear 1024 tiles + 64 attributes at
+<code>$23C0</code>) → <code>$C21E</code> → <code>LDA #$02 JSR $FF55</code> (PRG bank 2) → <code>LDX #$03 JSR $8000</code> (draws bank-2 screen
+records) → <code>JSR $8D00</code> (stages palette) → <code>LDA #$0C JSR $F84E</code> → <code>JSR $9900</code> → <code>$D4AF LDA $F8</code>.</p>
+<p>Card content, read straight out of the ROM (<code>prg_bank2.bytes</code>, ROM SHA-256 <code>1271dce8…abb0a00</code>):
+records at <code>$8789</code>, <code>[addrHi][addrLo][len]</code> + tiles, ended by <code>addrHi &amp; $80</code> —
+<code>$20AE</code>/<code>$20EE</code> = "GAME"/"OVER" (rows 5,7 col 14), <code>$2165</code>/<code>$21A5</code> = "CONTINUE     A BUTTON"/
+"STAGE SELECT B BUTTON" (rows 11,13 col 5); font tile = <code>$DA + letter − 'A'</code>, space <code>$03</code>;
+BG palette = 16 B at <code>$8D15</code>. MMC1 latches chr0=<code>$1F</code>/chr1=<code>$19</code> (gold <code>chr_map.csv</code>), <code>$2000=$90</code>
+⇒ BG pattern table <code>$1000</code> = 4K CHR bank 25. No sprites.</p>
+<p>Branch (both directions captured from the original ROM):</p>
+<ul>
+<li><strong>A/Start</strong> → <code>$F8</code> stays clear → <code>$D4E9</code> = <strong>CONTINUE</strong>: <code>$C235</code>, <code>$0400=0</code>, <code>$04D0=0</code>, <code>$6D=0</code>,
+yield, <code>$97=$04</code>, <code>JSR $C8B5</code> (= bank <code>$04</code> + <code>JSR $DD57</code> on world <code>$31</code>, which still holds the
+mission id) → same mission restarts; <code>$DD57</code> zeroes <code>$64</code> at <code>$DE4C</code>.</li>
+<li><strong>B</strong> → <code>$998C</code> sets <code>$F8=$FF</code> → falls into <code>$D4B3</code> = <strong>STAGE SELECT</strong>: <code>$C276</code>, yield, <code>$C14E</code>,
+<code>LDA #$F0 JSR $F84E</code>, <code>$C1BA</code>, <code>$C95C</code>, <code>$62=$07</code>, <code>$97=$04</code>, <code>$C21E</code>, zero
+<code>$5D/$54/$60/$61/$6B/$6D</code>, <code>JMP $D95D</code> (map rebuild; <code>INC $38</code> at <code>$D95B</code> is jumped past, so the
+tier counter does NOT advance).</li>
+<li>Evidence: <code>reference/gold_gameover</code> (600 f card), <code>gold_gameover_continue</code> (<code>0:a@300-303</code>,
+ends in the mission), <code>gold_gameover_select</code> (<code>0:b@300-303</code>, ends on the city map). Port check:
+<code>Art/AgentScripts/GameOverVerify.cs</code> → nametable <code>$2000-$23FF</code> 0 mismatches vs <code>vram_frames.bin</code> f300,
+BG palette 0/16, and the rendered frame is <strong>0/61440 differing pixels</strong> vs <code>frame_000300.png</code>.</li>
+<li>Open: the exact <code>$9900</code> input gate (how many frames the card ignores pad) was not measured —
+the capture seeded with A at f266 produced no <code>ram_frames.bin</code>, so the port accepts input from
+the first GameOver frame (GAPS G27-note).</li>
+</ul>
+<h2 id="h-5-progression-completion-flags">5. Progression &amp; completion flags</h2>
+<ul>
+<li><code>$69</code> = <strong>completed-missions bitmask</strong>, bit N = mission N done (bank 2 <code>$A5AB-$A607</code>).</li>
+<li><code>$38</code> = missions completed count / tier index (0 → choose from {0,1,2}; 3 → {3,4,5}; 6 → {6}).</li>
+<li><code>$F8</code> = last mission outcome (bit7 = success).</li>
+<li><code>$50</code> = map state (position/zone); states {7,9,$12,$15} reject Start/Select (dialogs, FOWL gate).</li>
+<li><code>$65</code> bit7 = "map needs rebuild" latch; <code>$5B</code> = pending map sub-scene id; <code>$64</code> = pending map rebuild request.</li>
+<li><code>$6D</code> = pending map sub-scene load (<code>$E388</code>).</li>
+</ul>
+<h2 id="h-6-ending-final-mission-6-fowl_fortress">6. Ending (final mission 6 = fowl_fortress)</h2>
+<p>Static evidence only (not probed yet — open question Q7):</p>
+<ul>
+<li>After mission 6 completes, tier <code>$38==6</code>; map state 0x16 handler <code>$D9B2</code>: if <code>$66==$FF</code> →
+<code>$62=$0B; bank2 $9E00; $62=$12; bank2 $AA00</code> (ending text/cutscene stream 0x12), else <code>$62=$0C</code>.</li>
+<li>Map state 0x11 handler <code>$D838</code> (<code>$31&gt;=6</code>): fade; <code>bank2 $8000(X=5); $A900</code> (palette+objects id
+<code>$56</code>, CHR <code>$1A=$8C/$1B=$9E</code>) — post-final cutscene; then <code>bank2 $9E00</code>, <code>DialogScene($0B)</code>,
+<code>bank2 $9280</code>, <code>$65=$FF</code> (map rebuild).</li>
+<li><code>$AA00</code> stream id <code>$12</code> and grid <code>$E18A</code> (scene id 13/14: CHR0=<code>$80</code>→0, CHR1=<code>$9D</code>→29) are the
+likely ending/credits screens. No ASCII "CREDITS" text exists in PRG (text is CHR tiles drawn
+from VRAM streams); the ending is the <code>$AA00($12)</code>/scene-13/14 sequence. Exact order TBD.</li>
+</ul>
+<h2 id="h-7-open-questions">7. Open questions</h2>
+<ul>
+<li>Q1: full map-state jump table entries ≥ index 7 (hi-table <code>$CB75</code> alignment needs a scripted
+disassembly pass from <code>$CB8B</code>/<code>$CD0E</code> etc.).</li>
+<li>Q2: map node → <code>$38</code>-tier bubble plumbing: which handler writes <code>$38</code>/opens the bubble chooser
+(bank 2 <code>$A400</code> loop is invoked from the dialog advance path; caller not yet traced).</li>
+<li>Q3: YES/NO confirm-dialog input handler address (bank 2 region <code>$A400-$A6A4</code>, exact routine TBD).</li>
+<li>Q4: score/lives RAM addresses (score shown on pause as POINTS; lives counter not yet located).</li>
+<li>Q5: Select-button gas-weapon cycling routine (expected bank 5/6 player behavior).</li>
+<li>Q6: whether any mid-level checkpoints exist (retry path <code>$D4E9</code> reloads from level start; the
+spring/sign objects at level start may just be decoration).</li>
+<li>Q7: ending/credits exact sequence &amp; screens (needs a playthrough probe of mission 6 completion).</li>
+<li>Q8: <code>$D589</code> per-mission values (<code>$80,$83,$81,$84,$86,$80,$81</code>) — CHR0 with flag bits (semantics TBD).</li>
+<li>Q9: energy/health decrement sites (<code>$42/$43</code> start at 03) and the heart HUD update routine.</li>
+</ul>
+</body>
+</html>

@@ -6,7 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/DarkwingMain.unity
+    path: Packages/su.learn.codezero/Scenes/DarkwingMain.unity
     guid: fb2d4d7901ed4af4f833b8f9f03ee7e1
   - enabled: 0
     path: Assets/Scenes/SampleScene.unity

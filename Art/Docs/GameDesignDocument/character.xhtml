@@ -1,0 +1,589 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Чёрный Плащ (Darkwing Duck)</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css"/>
+  </head>
+  <body>
+  <div>
+
+    <!-- Хлебные крошки -->
+    <div>
+      <ol>
+        <li><a href="index.xhtml">GDD Root</a></li>
+        <li><a href="index.xhtml#structure">Персонажи</a></li>
+        <li>Чёрный Плащ (Player)</li>
+      </ol>
+    </div>
+
+    <!-- Шапка документа -->
+    <div>
+      <div>Entity Specification • Player Core</div>
+      <h1 id="чёрный-плащ-darkwing-duck">Чёрный Плащ (Darkwing Duck)</h1>
+      <p>Полная спецификация механики главного героя: физическая модель, раскладка управления, конечный автомат состояний (FSM), защита плащом и арсенал спецгазов</p>
+
+      <div>
+        <div>
+          <span>Статус механики</span>
+          <span><span>Confirmed (1-to-1)</span></span>
+        </div>
+        <div>
+          <span>Процедуры ROM</span>
+          <span><code>$C9AC – $DBCE</code> (Bank 0)</span>
+        </div>
+        <div>
+          <span>Реализация в Unity</span>
+          <span><code>Darkwing.Core.PlayerController</code></span>
+        </div>
+        <div>
+          <span>Версия ревизии</span>
+          <span>v1.2 (Subsystem-verified)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Верхняя навигация по страницам GDD -->
+    <div>
+      <a href="index.xhtml">Главная (Overview)</a>
+      <a href="character.xhtml">Персонаж (Darkwing Duck)</a>
+      <a href="instructions.xhtml">Инструкции по ведению GDD</a>
+    </div>
+
+    <!-- Основная сетка контента -->
+    <div>
+
+      <!-- Центральный контент -->
+      <div>
+
+        <!-- Секция 1: Обзор и базовые статы -->
+        <div id="overview">
+          <h2 id="h-1-общие-параметры-персонажа-confirmed">
+            <span>1. Общие параметры персонажа</span>
+            <span>Confirmed</span>
+          </h2>
+          <p>
+            Чёрный Плащ — единственный управляемый игровой персонаж. Движение подчиняется строго дискретной сетке тиков NES (~60.0988 кадра в секунду). Герой не имеет инерции разгона на земле (скорость шага набирается мгновенно), но обладает управляемой баллистикой прыжка в воздухе.
+          </p>
+
+          <div>
+            <div>
+              <div>Запас здоровья (HP)</div>
+              <div>4 хита</div>
+              <div>Отображается на HUD шкалой из 4 сегментов</div>
+            </div>
+            <div>
+              <div>Базовые жизни</div>
+              <div>2 жизни</div>
+              <div>Стартовый запас попыток (максимум до 9)</div>
+            </div>
+            <div>
+              <div>Хитбокс (Стоя)</div>
+              <div>16 × 24 px</div>
+              <div>Ширина 16px, высота 24px от подошвы</div>
+            </div>
+            <div>
+              <div>Хитбокс (Присед)</div>
+              <div>16 × 14 px</div>
+              <div>Высота снижается на 10 пикселей</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Секция 2: Модель управления -->
+        <div id="controls">
+          <h2 id="h-2-модель-управления-input-mapping-confirmed">
+            <span>2. Модель управления (Input Mapping)</span>
+            <span>Confirmed</span>
+          </h2>
+          <p>
+            Ввод опрашивается один раз за логический кадр. Раскладка полностью соответствует стандартному геймпаду NES / Famicom:
+          </p>
+
+          <div>
+            <table>
+              <caption>Конфигурация клавиш и контекстные действия</caption>
+              <thead>
+                <tr>
+                  <th>Клавиша</th>
+                  <th>Действие на земле</th>
+                  <th>Действие в воздухе / на крюке</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><kbd>←</kbd> / <kbd>→</kbd></td>
+                  <td>Ходьба в указанном направлении (фиксированная скорость)</td>
+                  <td>Воздушное руление (Air Steer), коррекция траектории</td>
+                </tr>
+                <tr>
+                  <td><kbd>↑</kbd></td>
+                  <td><strong>Взгляд вверх + Укрытие плащом</strong> (блок пуль)</td>
+                  <td>Подтягивание на платформу с крюка (при удержании <kbd>A</kbd>)</td>
+                </tr>
+                <tr>
+                  <td><kbd>↓</kbd></td>
+                  <td>Приседание (уменьшение хитбокса, возможность стрельбы)</td>
+                  <td>Ускорение падения / соскок с крюка</td>
+                </tr>
+                <tr>
+                  <td><kbd>↓</kbd> + <kbd>A</kbd></td>
+                  <td>Спуск сквозь одностороннюю (сквозную) платформу</td>
+                  <td>Быстрый сброс зацепа с крюка вниз</td>
+                </tr>
+                <tr>
+                  <td><kbd>A</kbd></td>
+                  <td><strong>Прыжок</strong> (переменная высота прыжка)</td>
+                  <td>Автоматический зацеп за крюк при соприкосновении</td>
+                </tr>
+                <tr>
+                  <td><kbd>B</kbd></td>
+                  <td>Выстрел из газового пистолета (прямо, в приседе, вверх)</td>
+                  <td>Выстрел в полете / выстрел во время висения на крюке</td>
+                </tr>
+                <tr>
+                  <td><kbd>Select</kbd></td>
+                  <td colspan="2">Циклическое переключение активного спецгаза (Standard → Heavy → Thunder → Arrow)</td>
+                </tr>
+                <tr>
+                  <td><kbd>Start</kbd></td>
+                  <td colspan="2">Игровая пауза (заморозка симуляции логики)</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Секция 3: Машина состояний (FSM) -->
+        <div id="states">
+          <h2 id="h-3-машина-состояний-персонажа-fsm-confirmed-cb41">
+            <span>3. Машина состояний персонажа (FSM)</span>
+            <span>Confirmed ($CB41)</span>
+          </h2>
+          <p>
+            Поведение персонажа управляется детерминированным конечным автоматом. Каждое состояние обрабатывается собственной процедурой из таблицы переходов <code>$CB5F / $CB75</code>:
+          </p>
+
+          <div>
+            <div>
+              <div>
+                <div>State 0: Стояние (Stand)</div>
+                <span><code>$CB8B</code></span>
+              </div>
+              <p>
+                Состояние покоя. Выполняет проверку контакта с врагами, перехода в ходьбу (<kbd>←</kbd>/<kbd>→</kbd>), присед (<kbd>↓</kbd>), взгляд вверх (<kbd>↑</kbd>), прыжок (<kbd>A</kbd>) или стрельбу (<kbd>B</kbd>).
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>State 1: Прыжок (Jump Physics)</div>
+                <span><code>$CD0E</code></span>
+              </div>
+              <p>
+                Фаза активного подъема. Если игрок отпускает кнопку <kbd>A</kbd> до достижения пика, вертикальная скорость усекается, реализуя короткий прыжок (Variable Jump).
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>State 2: Присед (Crouch)</div>
+                <span><code>$CFD7</code></span>
+              </div>
+              <p>
+                Уменьшает высоту хитбокса героя до 14 пикселей. Позволяет уворачиваться от высоких выстрелов врагов и вести огонь на нижнем уровне. На сквозных платформах нажатие <kbd>A</kbd> инициирует спуск.
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>State 3: Взгляд вверх и плащ</div>
+                <span><code>$D16E</code></span>
+              </div>
+              <p>
+                Активирует укрытие плащом. Передний хитбокс героя замещается отражающей зоной (Deflect Probe). Снаряды врагов рикошетят со звуком попадания по металлу. Позволяет стрелять вертикально вверх.
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>State 4 &amp; 6: Получение урона</div>
+                <span><code>$D1A4 / $D29A</code></span>
+              </div>
+              <p>
+                Отбрасывание назад (Knockback). Управление блокируется на 16 кадров. Персонаж получает неуязвимость с эффектом мерцания спрайта (Invulnerability Blink) длительностью ~120 кадров.
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>State 12: Висение на крюке (Hang)</div>
+                <span><code>$D7F9</code></span>
+              </div>
+              <p>
+                Зацеп за подвесы, карнизы и фонари. Персонаж фиксируется по оси Y на уровне захвата. Доступны: поворот, стрельба, подтягивание наверх на платформу (<kbd>↑</kbd> + <kbd>A</kbd>) или спрыгивание вниз (<kbd>↓</kbd>).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Секция 4: Защитная стойка (Плащ) -->
+        <div id="cape-deflect">
+          <h2 id="h-4-защитная-механика-дефлект-плащом-cape-shield-unique-mechanic">
+            <span>4. Защитная механика: Дефлект плащом (Cape Shield)</span>
+            <span>Unique Mechanic</span>
+          </h2>
+          <p>
+            Укрытие плащом — ключевая механика выживания в игре, кардинально отличающая геймплей Darkwing Duck от классической серии Mega Man:
+          </p>
+
+          <div>
+            <div>Правила работы дефлекта плащом</div>
+            <ul>
+              <li><strong>Активация:</strong> Удержание кнопки <kbd>↑</kbd> при нахождении на твердой поверхности.</li>
+              <li><strong>Угол защиты:</strong> Плащ полностью блокирует фронтальные атаки и атаки сверху спереди по ходу взгляда персонажа.</li>
+              <li><strong>Отражаемые объекты:</strong> Стандартные пули, дротики, энергетические шары рядовых противников. Снаряд уничтожается либо меняет траекторию с воспроизведением SFX металлического рикошета.</li>
+              <li><strong>Уязвимости:</strong> Прямой физический контакт с телом врага (Melee Contact), взрывные волны, атаки со спины и лазерные лучи некоторых боссов пробивают плащ и наносят урон.</li>
+              <li><strong>Ограничение подвижности:</strong> Во время укрытия плащом горизонтальное перемещение заблокировано. Для шага необходимо отпустить <kbd>↑</kbd>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Секция 5: Арсенал газового оружия -->
+        <div id="weapons">
+          <h2 id="h-5-арсенал-и-типы-боеприпасов-equipment">
+            <span>5. Арсенал и типы боеприпасов</span>
+            <span>Equipment</span>
+          </h2>
+          <p>
+            Основным инструментом устранения врагов является фирменный газовый пистолет (Gas Gun). Помимо стандартного бесконечного газа, герой может подбирать на уровнях капсулы с тремя видами специального газа:
+          </p>
+
+          <div>
+            <table>
+              <caption>Характеристики боеприпасов газового пистолета</caption>
+              <thead>
+                <tr>
+                  <th>Тип боеприпаса</th>
+                  <th>Расход газа</th>
+                  <th>Урон</th>
+                  <th>Поведение снаряда</th>
+                  <th>Тактическое назначение</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Стандартный газ (Standard)</strong></td>
+                  <td>— (0)</td>
+                  <td>1 HP</td>
+                  <td>Одиночное облачко газа, летит строго по прямой на всю ширину экрана</td>
+                  <td>Базовое оружие. Лимит на экране: 2 снаряда одновременно.</td>
+                </tr>
+                <tr>
+                  <td><strong>Тяжёлый газ (Heavy Gas)</strong></td>
+                  <td>1 ед.</td>
+                  <td>3 HP</td>
+                  <td>Тяжелый газовый шар падает по параболе и катится по земле</td>
+                  <td>Уничтожение бронированных наземных целей и групп мелких врагов. Пробивает насквозь.</td>
+                </tr>
+                <tr>
+                  <td><strong>Грозовой газ (Thunder Gas)</strong></td>
+                  <td>1 ед.</td>
+                  <td>2 HP</td>
+                  <td>При выстреле разделяется на два электрических разряда, идущих по диагоналям</td>
+                  <td>Борьба с летающими и высоко расположенными врагами, а также зачистка узких проходов.</td>
+                </tr>
+                <tr>
+                  <td><strong>Газовая стрела (Arrow Gas)</strong></td>
+                  <td>2 ед.</td>
+                  <td>2 HP</td>
+                  <td>Летит горизонтально. При попадании в стену раскрывает присоску-перекладину</td>
+                  <td><strong>Создание платформы!</strong> Герой может цепляться за стрелу и подтягиваться на недоступные карнизы.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <div>Исходные таблицы в коде ROM ($CF21 – $CFD3)</div>
+            <p>
+              В ROM поведение снарядов задано в таблицах <code>Projectile_SpawnOffset</code>, <code>Projectile_BehaviorTable</code> и <code>Projectile_MaxActiveTable</code>. Лимиты одновременных снарядов строго фиксированы во избежание мерцания спрайтов на NES.
+            </p>
+          </div>
+        </div>
+
+        <!-- Секция 6: Каталог анимаций и спецификация спрайтшита -->
+        <div id="animations">
+          <h2 id="h-6-спецификация-спрайтшита-и-каталог-анимаций-spritesheet-spec">
+            <span>6. Спецификация спрайтшита и каталог анимаций</span>
+            <span>Spritesheet Spec</span>
+          </h2>
+          <p>
+            Данный раздел является техническим заданием для художников и аниматоров при замене главного героя на альтернативного персонажа, создании скинов или обновлении графического пакета (Spritesheet Replacement). Чтобы новая графика бесшовно интегрировалась в игровой движок (<code>PlayerCore.cs</code>) и сохраняла попиксельную точность оригинала, спрайты обязаны строго соблюдать привязку и перечень используемых анимаций.
+          </p>
+
+          <div>
+            <div>
+              <div>Опорная точка (Pivot)</div>
+              <div>Bottom-Center</div>
+              <div>Центр стопы на линии контакта с землей</div>
+            </div>
+            <div>
+              <div>Базовая ориентация</div>
+              <div>Лицом вправо</div>
+              <div>Направление выбирает таблицу координат и XOR H-Flip каждого тайла; катсцены показаны в исходном правом направлении</div>
+            </div>
+            <div>
+              <div>Габарит ячейки</div>
+              <div>32 × 32 / 40 px</div>
+              <div>Хитбокс тела: 16×24 (стоя), 16×14 (присед)</div>
+            </div>
+            <div>
+              <div>Всего анимаций</div>
+              <div>19 состояний</div>
+              <div>Охватывают все 22 состояния конечного автомата</div>
+            </div>
+          </div>
+
+          <div>
+            <div>Критические правила для художников</div>
+            <ul>
+              <li><strong>Неподвижный Origin:</strong> Опорная точка (подошва по центру) не должна «плавать» от кадра к кадру. Смещение подошвы приведет к дерганию персонажа и проваливанию в геометрию пола.</li>
+              <li><strong>Точки вылета снарядов (Muzzle Offsets):</strong> Оружие должно визуально соответствовать координатам дула: стоя прямо (<code>+16px, +12px</code>), в приседе (<code>+16px, +4px</code>), вертикально вверх (<code>+4px, +28px</code>).</li>
+              <li><strong>Силуэт плаща/укрытия:</strong> Анимация <code>0x04</code> обязана визуально перекрывать персонажа спереди и сверху, поскольку защитный хитбокс щита активируется именно в этой позе.</li>
+            </ul>
+          </div>
+
+          <div>
+            <div>Сводные графические файлы для загрузки и анализа</div>
+            <p>
+              Для разработчиков и художников извлечены статические текстуры с явным контекстом PRG, CHR, палитры и направления. Это представление таблиц ROM, а не приёмочный захват игры:
+            </p>
+            <ul>
+              <li><strong>Полная тайловая карта CHR (Bank 14):</strong> <a href="sprites/player_tileset_chr.png">player_tileset_chr.png</a> (256×256 px, 256 тайлов 8×8 в палитре Чёрного Плаща)</li>
+              <li><strong>Сводный атлас экспортируемых поз героя:</strong> <a href="sprites/player_full_atlas.png">player_full_atlas.png</a> (384×192 px, 31 поза на сетке 48×48 px с общим origin). Контексты каждого файла: <a href="sprites/manifest.json">manifest.json</a>.</li>
+            </ul>
+          </div>
+
+          <div>
+            <table>
+              <caption>Экспортируемые анимации: PRG 5 ($B429/$B4F0), особый урон — PRG 4 ($B222/$B292)</caption>
+              <thead>
+                <tr>
+                  <th>ID (Hex)</th>
+                  <th>Название анимации</th>
+                  <th>Кадров</th>
+                  <th>Тип</th>
+                  <th>Связанные состояния</th>
+                  <th>Описание позы и требования</th>
+                  <th>Тайлмап / Спрайтшит</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>0x01</td>
+                  <td><strong>Idle / Stand</strong></td>
+                  <td>1</td>
+                  <td><span>Static</span></td>
+                  <td>State 0 (Stand)</td>
+                  <td>Базовая поза покоя. Герой стоит на земле, плащ опущен за спиной.</td>
+                  <td><a href="sprites/anim_01_idle.png">anim_01_idle.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x03</td>
+                  <td><strong>Walk Cycle</strong></td>
+                  <td>5</td>
+                  <td><span>Loop</span></td>
+                  <td>State 0 (Walk)</td>
+                  <td>Цикл бега. Кадр 0 — пыль; кадры 1..4 — циклический бег со скоростью 1.25 px/тик.</td>
+                  <td><a href="sprites/anim_03_walk.png">anim_03_walk.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x04</td>
+                  <td><strong>Look Up &amp; Cape Deflect</strong></td>
+                  <td>3</td>
+                  <td><span>Hold</span></td>
+                  <td>State 3 (Look Up)</td>
+                  <td>Взгляд вверх и плащ: полы плаща смыкаются спереди в пуленепробиваемый щит.</td>
+                  <td><a href="sprites/anim_04_look_up_deflect.png">anim_04_look_up_deflect.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x05</td>
+                  <td><strong>Stand Fire</strong></td>
+                  <td>3</td>
+                  <td><span>One-shot</span></td>
+                  <td>State 0 + Button B</td>
+                  <td>Стрельба прямо стоя. Вытягивание пистолета вперед на уровне груди, вспышка/газ.</td>
+                  <td><a href="sprites/anim_05_stand_fire.png">anim_05_stand_fire.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x06</td>
+                  <td><strong>Crouch / Duck</strong></td>
+                  <td>2</td>
+                  <td><span>Hold</span></td>
+                  <td>State 2 (Crouch)</td>
+                  <td>Приседание на корточки/колено. Силуэт прижимается к земле (высота 14px).</td>
+                  <td><a href="sprites/anim_06_crouch.png">anim_06_crouch.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x07</td>
+                  <td><strong>Crouch Fire</strong></td>
+                  <td>3</td>
+                  <td><span>One-shot</span></td>
+                  <td>State 2 + Button B</td>
+                  <td>Стрельба из приседа. Пистолет вытянут вперед на нижнем уровне (4px от пола).</td>
+                  <td><a href="sprites/anim_07_crouch_fire.png">anim_07_crouch_fire.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x08</td>
+                  <td><strong>Stage Intro Drop</strong></td>
+                  <td>2</td>
+                  <td><span>Descent</span></td>
+                  <td>State 19 (Transport)</td>
+                  <td>Высадка на уровень. Герой падает сверху, удерживая плащ куполом-парашютом.</td>
+                  <td><a href="sprites/anim_08_stage_drop.png">anim_08_stage_drop.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x09</td>
+                  <td><strong>Hurt / Knockback</strong></td>
+                  <td>1</td>
+                  <td><span>Hit</span></td>
+                  <td>State 4, 6, 7</td>
+                  <td>Получение урона: отброс назад с раскрытым клювом и раскинутыми руками.</td>
+                  <td><a href="sprites/anim_09_hurt.png">anim_09_hurt.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x0B</td>
+                  <td><strong>Air Stun / Bonk</strong></td>
+                  <td>1</td>
+                  <td><span>Stun</span></td>
+                  <td>State 5, 10, 11</td>
+                  <td>Удар головой о потолок или оглушение в воздухе при соударении с преградой.</td>
+                  <td><a href="sprites/anim_0b_air_stun.png">anim_0b_air_stun.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x0C</td>
+                  <td><strong>Hook Hang Idle</strong></td>
+                  <td>3</td>
+                  <td><span>Loop</span></td>
+                  <td>State 12 (Hang)</td>
+                  <td>Висение на крюке, уличных фонарях или балочных подвесах. Рука сжата на кольце.</td>
+                  <td><a href="sprites/anim_0c_hook_hang.png">anim_0c_hook_hang.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x0D</td>
+                  <td><strong>Shoot Up / Hang Shoot</strong></td>
+                  <td>4</td>
+                  <td><span>One-shot</span></td>
+                  <td>State 3, 11, 12</td>
+                  <td>Стрельба вертикально вверх (с земли стоя, в прыжке или во время висения на крюке).</td>
+                  <td><a href="sprites/anim_0d_shoot_up.png">anim_0d_shoot_up.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x0E</td>
+                  <td><strong>Jump Fall / Apex</strong></td>
+                  <td>2</td>
+                  <td><span>Fall</span></td>
+                  <td>State 1, 11 (Falling)</td>
+                  <td>Нисходящая ветвь прыжка и свободное падение. Полы плаща парусят куполом вверх.</td>
+                  <td><a href="sprites/anim_0e_jump_fall.png">anim_0e_jump_fall.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x0F</td>
+                  <td><strong>Jump Rise</strong></td>
+                  <td>2</td>
+                  <td><span>Rise</span></td>
+                  <td>State 1, 11 (Rising)</td>
+                  <td>Восходящая фаза прыжка. Тело устремлено вверх, плащ струится за фигурой.</td>
+                  <td><a href="sprites/anim_0f_jump_rise.png">anim_0f_jump_rise.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x11</td>
+                  <td><strong>Air Steer / Arc</strong></td>
+                  <td>1</td>
+                  <td><span>Steer</span></td>
+                  <td>State 1, 11</td>
+                  <td>Воздушное горизонтальное руление при регулируемой высоте прыжка.</td>
+                  <td><a href="sprites/anim_11_air_steer.png">anim_11_air_steer.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x12</td>
+                  <td><strong>Hook Grab / Ledge Reach</strong></td>
+                  <td>1</td>
+                  <td><span>Reach</span></td>
+                  <td>State 11 → 12</td>
+                  <td>Захват зацепа. Рука вытянута вверх к карнизу/кольцу в момент касания триггера.</td>
+                  <td><a href="sprites/anim_12_hook_reach.png">anim_12_hook_reach.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x1C</td>
+                  <td><strong>Special Hurt: 0x1C</strong></td>
+                  <td>1</td>
+                  <td><span>Hazard</span></td>
+                  <td>Checkpoint 0x0C, hazard anim 0x5D</td>
+                  <td>$FA29 выбирает особый урон. PRG 4: кадр 46, CHR 15 ($1A=$8F). Здесь не используется кадр 40 предмета из PRG 5. Название атакующего нельзя выводить только из номера анимации.</td>
+                  <td><a href="sprites/anim_1c_hazard_shock.png">anim_1c_hazard_shock.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x1D</td>
+                  <td><strong>Special Hurt: 0x1D</strong></td>
+                  <td>1</td>
+                  <td><span>Hazard</span></td>
+                  <td>Checkpoint 0x08, hazard anim 0x4D</td>
+                  <td>$FA29 выбирает особый урон. PRG 4: кадр 47, CHR 12 ($1A=$8C). Малый силуэт с глазами — содержимое этого контекста, а не баллончик PRG 5.</td>
+                  <td><a href="sprites/anim_1d_hazard_slime.png">anim_1d_hazard_slime.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x2B</td>
+                  <td><strong>Mission Intro Card</strong></td>
+                  <td>18</td>
+                  <td><span>Cutscene</span></td>
+                  <td>State 9, $9600/$9605</td>
+                  <td>Герой в заставке начала миссии. Кадры 174–176 — части героя из PRG 5, CHR 14, направление вправо. Плашка миссии выводится отдельно из PRG 2 через $9636/$967A; в этот спрайтшит она не входит.</td>
+                  <td><a href="sprites/anim_2b_victory_card.png">anim_2b_victory_card.png</a></td>
+                </tr>
+                <tr>
+                  <td>0x2D</td>
+                  <td><strong>Mission Clear</strong></td>
+                  <td>44</td>
+                  <td><span>Cutscene</span></td>
+                  <td>State 0x15, $DA04</td>
+                  <td>Поза героя при завершении миссии. $DA3A запрашивает $8E: CHR-банк 14 (4 КиБ), не 25. Кадры 227–228 собираются в исходном правом направлении с парной таблицей координат и XOR H-Flip. PRG 4 использует соответствующие кадры 44–45. Эти позы нельзя удалять из графики героя как «тайлы транспорта».</td>
+                  <td><a href="sprites/anim_2d_level_clear_walk.png">anim_2d_level_clear_walk.png</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Правая колонка: Навигация по заголовкам страницы -->
+      <div>
+        <h3 id="содержание-страницы">Содержание страницы</h3>
+        <ul>
+          <li><a href="#overview">1. Общие параметры</a></li>
+          <li><a href="#controls">2. Модель управления</a></li>
+          <li><a href="#states">3. Машина состояний (FSM)</a></li>
+          <li><a href="#cape-deflect">4. Дефлект плащом</a></li>
+          <li><a href="#weapons">5. Арсенал и боеприпасы</a></li>
+          <li><a href="#animations">6. Спецификация анимаций</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Подвал документа -->
+    <div>
+      <div>
+        <span><a href="index.xhtml">← Вернуться на Главную</a></span>
+      </div>
+      <div>
+        <span>Следующая страница: <a href="instructions.xhtml">Инструкции по ведению GDD →</a></span>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

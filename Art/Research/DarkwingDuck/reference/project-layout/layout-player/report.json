@@ -1,0 +1,44 @@
+﻿{
+    "scope":  "standalone boot/render/clean exit only; no playthrough or ROM comparison",
+    "exe":  "D:/Art/SW Code Zero Unity/Art/Build/ArtLayout/DarkwingDuck.exe",
+    "startedUtc":  "2026-10-29T01:13:11.8280331Z",
+    "success":  true,
+    "arguments":  "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -logFile \"D:\\Art\\SW Code Zero Unity\\Art\\Temp\\layout-player\\Player.log\"",
+    "pid":  388908,
+    "captureA":  {
+                     "path":  "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\layout-player\\a.png",
+                     "width":  784,
+                     "height":  759,
+                     "clientWidth":  768,
+                     "clientHeight":  720,
+                     "clientLeft":  8,
+                     "clientTop":  31,
+                     "samples":  34560,
+                     "nonBlack":  2720,
+                     "colors":  25,
+                     "sha256":  "51F6E005434FF70CFA3A13EB90142326EB944342CC54EF380EB4A485F303EB12"
+                 },
+    "captureB":  {
+                     "path":  "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\layout-player\\b.png",
+                     "width":  784,
+                     "height":  759,
+                     "clientWidth":  768,
+                     "clientHeight":  720,
+                     "clientLeft":  8,
+                     "clientTop":  31,
+                     "samples":  34560,
+                     "nonBlack":  26934,
+                     "colors":  26,
+                     "sha256":  "786B1CCE71AC2F1FAFBB165D2C79D0966233111CF6964ACE03312753E9D0F3C2"
+                 },
+    "framesDiffer":  true,
+    "playerExitCode":  0,
+    "cleanExit":  true,
+    "log":  "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\layout-player\\Player.log",
+    "exceptions":  [
+
+                   ],
+    "bloomWarnings":  17,
+    "finishedUtc":  "2026-10-29T01:13:32.8029580Z",
+    "exitCode":  0
+}

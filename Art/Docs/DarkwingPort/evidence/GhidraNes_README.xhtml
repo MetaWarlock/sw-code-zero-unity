@@ -1,0 +1,151 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>GhidraNes</title>
+    <link rel="stylesheet" type="text/css" href="../../documentation.css" />
+  </head>
+  <body><h1 id="ghidranes">GhidraNes</h1>
+<p>A Ghidra extension to support disassembling and analyzing NES ROMs.</p>
+<p><img src="https://raw.githubusercontent.com/kylewlacy/GhidraNes/4c419644c51c650d2507920e2f083d288056c6f0/github/screenshots/ghidra-nes.png" alt="Ghidra disassembly showing a decompiled function from a file named &quot;game.nes&quot;" /></p>
+<h2 id="features">Features</h2>
+<ul>
+<li><p>Import NES ROMs in the iNES format. The following mappers are supported:</p>
+<ul>
+<li>16K/32K fixed PRG ROM<ul>
+<li><a href="https://www.nesdev.org/wiki/NROM">NROM</a> (mapper 0)</li>
+<li><a href="https://www.nesdev.org/wiki/CNROM">CNROM</a> (mappers 3, 185)</li>
+<li><a href="https://www.nesdev.org/wiki/CPROM">CPROM</a> (mapper 13)</li>
+<li>Misc mapper <a href="https://www.nesdev.org/wiki/INES_Mapper_087">87</a></li>
+</ul>
+</li>
+<li>16K bankable PRG ROM<ul>
+<li><a href="https://www.nesdev.org/wiki/MMC1">MMC1/SxROM</a> (mapper 1)</li>
+<li><a href="https://www.nesdev.org/wiki/UxROM">UxROM</a> (mapper 2)</li>
+<li><a href="https://www.nesdev.org/wiki/MMC4">MMC4/FxROM</a> (mapper 10)</li>
+<li><a href="https://www.nesdev.org/wiki/Bandai_FCG_board">Bandai FCG boards</a> (mappers 16, 153, 157, 159)</li>
+<li><a href="https://www.nesdev.org/wiki/UNROM_512">UNROM 512</a> (mapper 30)</li>
+<li><a href="https://www.nesdev.org/wiki/INES_Mapper_067">Sunsoft 3</a>/<a href="https://www.nesdev.org/wiki/INES_Mapper_068">Sunsoft 4</a> (mappers 67, 68)</li>
+<li><a href="https://www.nesdev.org/wiki/VRC3">Konami VRC3</a> (mapper 73)</li>
+<li>Misc mappers <a href="https://www.nesdev.org/wiki/INES_Mapper_071">71</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_072">72</a></li>
+</ul>
+</li>
+<li>32K bankable PRG ROM<ul>
+<li><a href="https://www.nesdev.org/wiki/AxROM">AxROM</a> (mapper 7)</li>
+<li><a href="https://www.nesdev.org/wiki/INES_Mapper_034">BNROM/NINA</a> (mapper 34)</li>
+<li><a href="https://www.nesdev.org/wiki/GxROM">GxROM</a> (mapper 66)</li>
+<li><a href="https://www.nesdev.org/wiki/NINA-003-006">NINA003/006</a> (mappers 79,146)</li>
+<li>Misc mappers <a href="https://www.nesdev.org/wiki/Color_Dreams">11</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_038">38</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_140">140</a></li>
+</ul>
+</li>
+<li>8K bankable PRG ROM<ul>
+<li><a href="https://www.nesdev.org/wiki/MMC3">MMC3/TxROM</a>/<a href="https://www.nesdev.org/wiki/INES_Mapper_118">TxSROM</a>/<a href="https://www.nesdev.org/wiki/INES_Mapper_119">TQROM</a> (mappers 4, 118, 119)</li>
+<li><a href="https://www.nesdev.org/wiki/INES_Mapper_019">Namco 129/163</a> (mapper 19)</li>
+<li><a href="https://www.nesdev.org/wiki/VRC2_and_VRC4">Konami VRC2/4</a> (mappers 21, 22, 23, 25)</li>
+<li><a href="https://www.nesdev.org/wiki/RAMBO-1">RAMBO-1</a> (mappers 64, 158)</li>
+<li><a href="https://www.nesdev.org/wiki/Sunsoft_FME-7">Sunsoft FME-7/5A/5B</a> (mapper 69)</li>
+<li><a href="https://www.nesdev.org/wiki/VRC7">Konami VRC7</a> (mapper 85)</li>
+<li><a href="https://www.nesdev.org/wiki/DxROM">DxROM</a> (mapper <a href="https://www.nesdev.org/wiki/INES_Mapper_206">206</a>)</li>
+<li><a href="https://www.nesdev.org/wiki/INES_Mapper_210">Namco 175/340</a> (mapper 210)</li>
+<li>Misc mappers <a href="https://www.nesdev.org/wiki/INES_Mapper_018">18</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_065">65</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_074">74</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_076">76</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_088">88</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_095">95</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_154">154</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_191">191</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_192">192</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_194">194</a>, <a href="https://www.nesdev.org/wiki/INES_Mapper_195">195</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>Add labels and memory blocks in disassembly, making it easier to jump around a disassembled ROM!</p>
+</li>
+</ul>
+<h2 id="installation">Installation</h2>
+<ol>
+<li>Install a Compatible version of Java and Ghidra (Java 21+).</li>
+<li>Download the latest <a href="https://github.com/kylewlacy/GhidraNes/releases">GhidraNes release</a>. Make sure the release you download matches your Ghidra version!</li>
+<li>Go to "File" &gt; "Install Extensions...". Click "+" in the top-right corner and choose the GhidraNes Zip. Click "OK" to install the extension.</li>
+<li>Restart Ghidra.</li>
+</ol>
+<h2 id="usage">Usage</h2>
+<ol>
+<li>In Ghidra, create a new project by following the wizard under "File" &gt; "New Project...".</li>
+<li>Drag-and-drop an iNES <code>.nes</code> ROM onto the project. Set the format to "NES ROM" and click "OK".</li>
+<li>Double-click the ROM in the project to open Ghidra's CodeBrowser.</li>
+<li>Analyze the file when prompted (or go to "Analysis" &gt; "Auto Analyze..."). Leave the settings as default and click "Analyze".</li>
+<li>Done, the game will be disassembled! On the left-hand side, under "Symbol Tree" &gt; "Functions", open <code>reset</code> to jump to the reset vector (where execution starts), or <code>vblank</code> to jump to the NMI vector (where execution goes during VBlank).</li>
+</ol>
+<h2 id="notes">Notes</h2>
+<h3 id="bank-switching">Bank switching</h3>
+<p>GhidraNes maps each bank of the ROM to its own memory block, but there is no control-flow analysis implemented that handles bank switching automatically. Instead, handling bank switching in the disassembly is a manual process. Take this function for example:</p>
+<p><img src="https://raw.githubusercontent.com/kylewlacy/GhidraNes/4c419644c51c650d2507920e2f083d288056c6f0/github/screenshots/bank-switching-broken.png" alt="Ghidra disassembly showing a &quot;reset&quot; function consisting of &quot;LDA #0x0&quot;, &quot;STA DAT_8000&quot;, and &quot;JMP (0xfffc)=&gt;reset&quot;. The gutter shows this function as an infinite loop" /></p>
+<p>This disassembled function is doing a bank switch: the write to <code>DAT_8000</code> switches the PRG ROM to bank 0 in this case. Cases like this can be fixed in Ghidra using the following steps:</p>
+<ol>
+<li>Right click the <code>JMP</code> instruction</li>
+<li>Click "References &gt; Add/Edit (R)"</li>
+<li>Double click the destination operand</li>
+<li>For the "To Address" field, change the left-hand dropdown from "RAM:" to the appropriate memory bank ("PRG0::" for this example)</li>
+<li>Click "Update"</li>
+</ol>
+<p>The disassembly should now show a jump to the correct bank:</p>
+<p><img src="https://raw.githubusercontent.com/kylewlacy/GhidraNes/4c419644c51c650d2507920e2f083d288056c6f0/github/screenshots/bank-switching-fixed.png" alt="Ghidra disassembly showing the same &quot;reset&quot; function, but the &quot;JMP&quot; instruction now goes to &quot;(0xfffc)=&gt;LAB_PRG0__ffaf&quot;" /></p>
+<blockquote>
+<p>Note: Any write instruction (e.g. <code>STA</code>/<code>STX</code>/'STY', <code>INC</code>/<code>DEC</code>) to a mapper register will cause control flow to change if the bank containing the currently-executing code is switched out. To fix these:</p>
+<ol>
+<li>Right-click the write instruction</li>
+<li>Choose <code>Fallthrough</code>&gt;<code>Set...</code></li>
+<li>Remember the value in the address offset box</li>
+<li>Select <code>User</code>, and choose the new bank from the dropdown.</li>
+<li>Set the address offset box to the value from step 3 (since the PC will still be the "next" instruction in the new bank).</li>
+</ol>
+<p>This should help with analysis and decompilation so they can "follow" the bank switch.</p>
+</blockquote>
+<p>By default, ROMs with PRG block sizes of less than 32K are created with a base address of <code>0x8000</code> except for the last bank, which will be at the "highest" address for that bank (8K blocks will be at <code>0xe000</code>, 16K at <code>0xc000</code>).  You can use the <code>Options...</code> dialog at load time to set each bank's address if you know in advance where each bank should be.  If you later determine that the guess was wrong and you don't want to re-import the ROM, you can re-base the bank using the Memory Map window:</p>
+<ol>
+<li>Select menu <code>Window</code>&gt;<code>Memory Map</code> if you don't have it open already.</li>
+<li>Select the row with the bank you want to change.</li>
+<li>Select the blue cross icon ("Move a block to another address") in the title bar of the Memory Map window.</li>
+<li>Change the "New Start Address" to the correct base address.  The "New End Address" should automatically update for you based on the block size.</li>
+<li>Select "OK" and the bank will be updated.</li>
+</ol>
+<h2 id="development">Development</h2>
+<h3 id="developing-with-eclipse">Developing with Eclipse</h3>
+<ol>
+<li>Install Java and Ghidra.</li>
+<li>install Eclipse.</li>
+<li>Install the GhidraDev Eclipse plugin. Instructions can be found in your Ghidra install directory, under <code>Extensions/Eclipse/GhidraDev/GhidraDev_README.html</code>.</li>
+<li>In Eclipse, open the GhidraNes repo by going to "File" &gt; "Open Projects from File System...". Click "Directory", then choose this repo (the <em>top-level</em> folder containing this <code>README.md</code> file and the <code>GhidraNes</code> subdirectory). Finally, click "Finish".</li>
+<li>Open "GhidraDev" &gt; "Link Ghidra...". Add your Ghidra installation, click "Next &gt;", then select the "GhidraNes" as the Java project. Click "Finish".</li>
+<li>Go to "Run" &gt; "Run As" &gt; "Ghidra" to run Ghidra with the GhidraNes extension.</li>
+</ol>
+<h3 id="building-a-release-from-eclipse">Building a release from Eclipse</h3>
+<p><strong>NOTE:</strong> Ensure the GhidraNes Eclipse project is set up with the <em>earliest</em> version of Java that should be targeted. Using a later version of Java can cause compatibility issues!</p>
+<ol>
+<li>Install Gradle (with <a href="https://sdkman.io/">SDKMAN</a>, this can be done with <code>sdk install gradle</code>).</li>
+<li>In Eclipse, open "GhidraDev" &gt; "Export" &gt; "Ghidra Module Extension...". Choose "GhidraNes" as the project, click "Next &gt;", then choose "Local installation directory:" and browse to your Gradle installation dir (with SDKMAN, this will be at <code>~/.sdkman/candidates/gradle/$GRADLE_VERSION</code>). Click "Finish".</li>
+<li>The built zip file will be saved in the <code>GhidraNes/dist/</code> directory. See the "Installation" section for details on installing the built zip.</li>
+</ol>
+<h3 id="developing-with-another-editor-such-as-vs-code">Developing with another editor (such as VS Code)</h3>
+<ol>
+<li>Install Java and Ghidra.</li>
+<li>Configure the JDK settings in your editor.<ul>
+<li>For VSCode: Follow the official <a href="https://code.visualstudio.com/docs/java/java-tutorial">"Getting Started with Java in VS Code"</a> guide.</li>
+</ul>
+</li>
+<li>Copy the <code>GhidraNes/gradle.properties.example</code> file to <code>GhidraNes/gradle.properties</code> and configure Ghirda's installation directory as needed.</li>
+<li>Import the GhidraNes repo as a Java project (the <em>top-level</em> folder containing this <code>README.md</code> file and the <code>GhidraNes</code> subdirectory).</li>
+</ol>
+<h3 id="building-a-release-with-gradle">Building a release with Gradle</h3>
+<ol>
+<li>Move to the inner <code>GhidraNes</code> subdirectory: <code>cd GhidraNes/GhidraNes</code></li>
+<li>Run <code>gradle buildExtension</code><ul>
+<li>If the <code>gradle.properties</code> file hasn't been set up, properties can be passed to Gradle directly, e.g. <code>gradle buildExtension -PGHIDRA_INSTALL_DIR=/home/user/ghidra_10.2.2_PUBLIC</code></li>
+</ul>
+</li>
+<li>The built zip file will be saved in the <code>GhidraNes/dist/</code> directory. See the "Installation" section for details on installing the built zip.</li>
+</ol>
+<h2 id="publishing-a-release">Publishing a release</h2>
+<ol>
+<li>Update <code>CHANGELOG.md</code> as a new commit</li>
+<li>Create a tag for the new release. The tag and release name should be named <code>vYYYYMMDD</code> based on the current date <a href="https://www.utctime.net/">in UTC</a> (e.g. <code>v20250520</code>)</li>
+<li>Push the tag. This will trigger the <a href="https://github.com/kylewlacy/GhidraNes/actions/workflows/release.yml">"Release" GH Actions workflow</a>, which will create a new <a href="https://github.com/kylewlacy/GhidraNes/releases">draft release</a> with release notes and build assets after a few minutes</li>
+<li>Double-check that the build assets look good, adjust or add to the release notes if needed, and publish!</li>
+</ol>
+</body>
+</html>

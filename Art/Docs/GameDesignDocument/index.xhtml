@@ -1,0 +1,237 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Game Design Document (GDD)</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css"/>
+  </head>
+  <body>
+  <div>
+
+    <!-- Хлебные крошки -->
+    <div>
+      <ol>
+        <li><a href="index.xhtml">GDD Root</a></li>
+        <li>Главная</li>
+      </ol>
+    </div>
+
+    <!-- Шапка документа -->
+    <div>
+      <div>Darkwing Duck Reconstruction • GDD Core</div>
+      <h1 id="game-design-document-gdd">Game Design Document (GDD)</h1>
+      <p>Единый стандарт геймдизайна, системных правил и игровых сущностей проекта нативного порта Darkwing Duck (Capcom, NES 1992) на Unity C#</p>
+
+      <div>
+        <div>
+          <span>Статус документа</span>
+          <span><span>Active Baseline</span></span>
+        </div>
+        <div>
+          <span>Версия GDD</span>
+          <span>0.1.0-draft</span>
+        </div>
+        <div>
+          <span>Эталон (Reference)</span>
+          <span>NES NTSC USA (Capcom, 1992)</span>
+        </div>
+        <div>
+          <span>Целевой движок</span>
+          <span>Unity 6 (Native C# Core)</span>
+        </div>
+        <div>
+          <span>Последнее обновление</span>
+          <span>25 октября 2026</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Верхняя навигация по ключевым страницам GDD -->
+    <div>
+      <a href="index.xhtml">Главная (Overview)</a>
+      <a href="character.xhtml">Персонаж (Darkwing Duck)</a>
+      <a href="instructions.xhtml">Инструкции по ведению GDD</a>
+    </div>
+
+    <!-- Основная сетка контента -->
+    <div>
+
+      <!-- Центральный контент -->
+      <div>
+
+        <!-- Секция 1: Видение и продуктовая суть -->
+        <div id="vision">
+          <h2 id="h-1-видение-и-ключевые-столпы-design-pillars-confirmed">
+            <span>1. Видение и ключевые столпы (Design Pillars)</span>
+            <span>Confirmed</span>
+          </h2>
+          <p>
+            <strong>Darkwing Duck Unity Port</strong> — это бескомпромиссная реконструкция классического экшен-платформера Capcom 1992 года. Цель проекта — создать полностью понятную, верифицируемую и расширяемую нативную кодовую базу на C#, воспроизводящую оригинальное поведение, физику, тайминги и управление «1-в-1» относительно оригинального NTSC картриджа NES.
+          </p>
+
+          <div>
+            <div>
+              <div>
+                <div>1. Позиционный тактический бой</div>
+                <span>Core</span>
+              </div>
+              <p>
+                В отличие от классического бега со стрельбой, игра строится вокруг контроля дистанции, стрельбы из приседа, ведения огня вверх и уникальной механики <strong>дефлекта плащом</strong>, блокирующей и отражающей вражеские пули.
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>2. Вертикальность и крюки</div>
+                <span>Core</span>
+              </div>
+              <p>
+                Многоуровневая структура локаций с активным использованием зацепа за крюки, балки, карнизы и уличные фонари. Игрок может подтягиваться, спрыгивать вниз и вести огонь прямо во время висения.
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>3. Специализированный арсенал</div>
+                <span>Core</span>
+              </div>
+              <p>
+                Газовый пистолет поддерживает сменные спецбоеприпасы: тяжелый шар (Heavy Gas), разветвленную молнию (Thunder Gas) и стрелу-присоску (Arrow Gas), которая служит временной платформой и опорой для зацепа.
+              </p>
+            </div>
+
+            <div>
+              <div>
+                <div>4. Детерминированная дискретность</div>
+                <span>Engine</span>
+              </div>
+              <p>
+                Полное соблюдение тиковой модели NTSC (~60.0988 Гц), попиксельных пробников коллизий, оригинальных хитбоксов и таймеров анимаций без использования сторонней эмуляции внутри Unity.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Секция 2: Структура и карта документации -->
+        <div id="structure">
+          <h2 id="h-2-структура-game-design-document-architecture">
+            <span>2. Структура Game Design Document</span>
+            <span>Architecture</span>
+          </h2>
+          <p>
+            Документация разбита на модульные независимые страницы. Каждая страница описывает конкретную подсистему игры на стыке геймдизайнерских правил и технической спецификации.
+          </p>
+
+          <div>
+            <table>
+              <caption>Карта страниц и текущий статус готовности</caption>
+              <thead>
+                <tr>
+                  <th>Модуль / Страница</th>
+                  <th>Файл</th>
+                  <th>Основное содержание</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Главная страница</strong></td>
+                  <td><a href="index.xhtml">index.xhtml</a></td>
+                  <td>Видение, структура GDD, ключевые циклы, архитектурные правила</td>
+                  <td><span>Готово</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Главный герой</strong></td>
+                  <td><a href="character.xhtml">character.xhtml</a></td>
+                  <td>Физика, машина состояний (State 0..21), дефлект плащом, газы</td>
+                  <td><span>Готово</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Инструкции по ведению</strong></td>
+                  <td><a href="instructions.xhtml">instructions.xhtml</a></td>
+                  <td>Стандарты разметки XHTML, правила XSD, семантика CSS и валидация</td>
+                  <td><span>Готово</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Оружие и спецгазы</strong></td>
+                  <td>weapons.xhtml</td>
+                  <td>Таблицы урона, скорости снарядов, лимиты слотов, расход газа</td>
+                  <td><span>В плане</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Бестиарий и боссы</strong></td>
+                  <td>enemies.xhtml</td>
+                  <td>Каталог врагов, скрипты боссов (Quackerjack, Liquidator и др.)</td>
+                  <td><span>В плане</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Топология уровней</strong></td>
+                  <td>levels.xhtml</td>
+                  <td>7 основных миссий, бонусные подуровни, скролл, двери, триггеры</td>
+                  <td><span>В плане</span></td>
+                </tr>
+                <tr>
+                  <td><strong>Интерфейс и мета-игра</strong></td>
+                  <td>ui_meta.xhtml</td>
+                  <td>HUD, экраны выбора миссий, подсчет очков, система жизней</td>
+                  <td><span>В плане</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Секция 3: Глобальный игровой цикл -->
+        <div id="game-loop">
+          <h2 id="h-3-базовый-игровой-цикл-core-loop-confirmed">
+            <span>3. Базовый игровой цикл (Core Loop)</span>
+            <span>Confirmed</span>
+          </h2>
+          <p>
+            Игровой процесс Darkwing Duck опирается на классическую структуру платформеров Capcom золотой эпохи с вариативным выбором этапов:
+          </p>
+
+          <ol>
+            <li><strong>Выбор миссии на карте Сент-Канара:</strong> Игрок выбирает одну из доступных на данном этапе локаций (3 начальные миссии первой волны, затем следующая тройка и финальная крепость F.O.W.L.).</li>
+            <li><strong>Прохождение локации:</strong> Линейно-ветвящийся платформинг с поиском секретных комнат и алмазов, преодоление препятствий с зацепом за крюки и ликвидация врагов.</li>
+            <li><strong>Сражение с боссом:</strong> Битва на замкнутой арене с уникальным паттерном атак босса (требует чтения таймингов и укрытия плащом).</li>
+            <li><strong>Подсчет результатов и Бонус-уровень:</strong> Переход на экран подсчета очков, возможность сыграть в тир с летающими воздушными шарами для пополнения жизней и спецбоеприпасов.</li>
+            <li><strong>Прогрессия:</strong> Возврат на карту города с разблокировкой новых этапов.</li>
+          </ol>
+
+          <div>
+            <div>Детализация подсистем</div>
+            <p>
+              Каждая механика в данном документе описывается с двойной точностью: во-первых, как понятное геймдизайнерское правило для дизайнеров и тестировщиков, и во-вторых, со ссылкой на доказательную базу реверс-инжиниринга оригинального ROM (процедуры <code>$C9AC</code>, <code>$CB8B</code> и др.).
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Правая колонка: Навигация по заголовкам страницы -->
+      <div>
+        <h3 id="содержание-страницы">Содержание страницы</h3>
+        <ul>
+          <li><a href="#vision">1. Видение и ключевые столпы</a></li>
+          <li><a href="#structure">2. Структура GDD</a></li>
+          <li><a href="#game-loop">3. Базовый игровой цикл</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- Подвал документа -->
+    <div>
+      <div>
+        <span>Darkwing Duck Unity Port • Проект реконструкции 1-в-1</span>
+      </div>
+      <div>
+        <span>Следующая страница: <a href="character.xhtml">Персонаж (Darkwing Duck) →</a></span>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

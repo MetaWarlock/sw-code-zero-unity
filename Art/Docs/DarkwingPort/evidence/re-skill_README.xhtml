@@ -1,0 +1,127 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>/re — Reverse Engineering Skill for Claude Code</title>
+    <link rel="stylesheet" type="text/css" href="../../documentation.css"/>
+  </head>
+  <body><h1 id="re-reverse-engineering-skill-for-claude-code">/re — Reverse Engineering Skill for Claude Code</h1>
+<p>A Claude Code skill that bootstraps and drives retro game reverse-engineering projects. Point it at a ROM or binary, and it scaffolds a full RE workspace — then iteratively disassembles, annotates, extracts assets, and ports the game to a web canvas, all from the CLI.</p>
+<h2 id="what-it-does">What it does</h2>
+<ul>
+<li><strong><code>/re path/to/rom.nes</code></strong> — Bootstrap a new RE project: identify the binary, scaffold REVERSE.md + labels.csv + tools/, create first investigation tasks</li>
+<li><strong><code>/re</code></strong> (no args) — Continue from where you left off: pick the next unchecked task from REVERSE.md and work it</li>
+<li><strong><code>re_loop.sh</code></strong> — Run autonomous sessions in a loop until all tasks are done, auto-committing after each</li>
+</ul>
+<h2 id="supported-platforms">Supported platforms</h2>
+<p>The skill is platform-agnostic. It has been used on:</p>
+<ul>
+<li>NES (6502, iNES format, 2bpp CHR tiles)</li>
+<li>Game Boy (SM83/LR35902, Nintendo logo header)</li>
+<li>DOS MZ (8086/Borland, EGA planar graphics)</li>
+</ul>
+<p>Adding a new platform means writing the <code>tools/instruction_set.py</code> for that CPU — everything else adapts.</p>
+<h2 id="install">Install</h2>
+<pre><code># Clone or copy into your Claude Code skills directory
+mkdir -p ~/.claude/skills
+cp -r re/ ~/.claude/skills/re/
+
+# Or clone the repo and symlink
+git clone https://github.com/USER/re-skill.git
+ln -s "$(pwd)/re-skill" ~/.claude/skills/re
+</code></pre>
+<p>After install, <code>/re</code> will appear as an available skill in Claude Code.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li><a href="https://docs.anthropic.com/en/docs/claude-code">Claude Code CLI</a> (<code>claude</code> command)</li>
+<li>Python 3.8+</li>
+<li><code>pypng</code> (<code>pip install pypng</code>) — for tile/screen PNG export</li>
+<li><code>jq</code> — for re_loop.sh stream parsing</li>
+</ul>
+<h2 id="what-gets-scaffolded">What gets scaffolded</h2>
+<pre><code>your-project/
+  REVERSE.md            # Data-range map, findings, task list, verification checklist
+  labels.csv            # addr,name,comment — grows as you annotate
+  dead_ends.md          # Stuck log — avoids repeating failed approaches
+  re_loop.sh            # Autonomous session driver
+  re_loop_sessions/     # Session logs
+  tools/
+    instruction_set.py  # CPU opcode database (you build per platform)
+    dis.py              # Targeted disassembler (auto-loads labels.csv)
+    search_bytes.py     # Byte pattern search
+    xref.py             # Cross-reference finder
+    decode_tables.py    # Struct/table decoder
+    extract_tiles.py    # Graphics decoder
+    render_screen.py    # Screen compositor
+    emu/                # Scriptable emulator (Ph5.5, optional)
+  gfx/                  # Extracted graphics
+  web/
+    index.html          # Game reimplementation
+    catalog.html        # Asset browser for visual validation
+  docs/
+    architecture_exe.md # Binary layout, call graph, data flow
+    architecture_web.md # JS modules, EXE-to-web mapping
+</code></pre>
+<h2 id="the-phases">The phases</h2>
+<ol>
+<li><strong>Identify</strong> — file header, platform, CPU, memory map</li>
+<li><strong>Decompress</strong> — unpack if compressed (skip if flat ROM)</li>
+<li><strong>Disassemble</strong> — build instruction_set.py + dis.py, start annotating</li>
+<li><strong>Extract assets</strong> — tiles, palettes, tilemaps to PNG; build catalog.html</li>
+<li><strong>Map data structures</strong> — tables, structs, pointer arrays
+5.5. <strong>Scriptable emulator</strong> — (optional) minimal CPU emulator for automated data extraction and cross-validation when static RE isn't enough</li>
+<li><strong>Validate</strong> — cross-check everything against a running emulator</li>
+<li><strong>Web port</strong> — faithful reimplementation as plain HTML canvas</li>
+</ol>
+<h2 id="re_loopsh-autonomous-mode">re_loop.sh — autonomous mode</h2>
+<pre><code>./re_loop.sh                 # default: up to 50 sessions
+./re_loop.sh --max 10        # limit to 10 sessions
+./re_loop.sh --tasks 3       # work 3 tasks per session
+./re_loop.sh --max-turns 50  # limit Claude turns per session
+./re_loop.sh --dry-run       # print the prompt, don't run
+</code></pre>
+<p>Each session: read REVERSE.md, pick top task, investigate with tools, update docs, commit. Stops when no tasks remain or <code>--max</code> is hit.</p>
+<h2 id="design-principles">Design principles</h2>
+<ul>
+<li><strong>No third-party disassemblers</strong> — all tooling built from scratch for full understanding</li>
+<li><strong>Write findings immediately</strong> — every 2-3 tool calls, update REVERSE.md and labels.csv</li>
+<li><strong>Dead-end tracking</strong> — after 10 fruitless tool calls, log it and split the task</li>
+<li><strong>Knowledge base accumulation</strong> — labels.csv is loaded by all tools automatically; findings compound across sessions</li>
+<li><strong>Verification checkpoints</strong> — each phase has a cross-check gate before proceeding</li>
+<li><strong>Visual validation</strong> — catalog.html lets you compare extracted assets against the emulator</li>
+<li><strong>Plain HTML/JS</strong> — web port uses no build tools, served with <code>python3 -m http.server</code></li>
+</ul>
+<h2 id="skill-files">Skill files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SKILL.md</code></td>
+<td>Entry point — frontmatter, dispatch logic, session rules</td>
+</tr>
+<tr>
+<td><code>phases.md</code></td>
+<td>Phase checklist with verification checkpoints</td>
+</tr>
+<tr>
+<td><code>reverse_template.md</code></td>
+<td>REVERSE.md scaffold with memory map, data structures, state machine sections</td>
+</tr>
+<tr>
+<td><code>dead_ends_template.md</code></td>
+<td>Dead-ends log template with lifecycle rules</td>
+</tr>
+<tr>
+<td><code>re_loop_template.sh</code></td>
+<td>Autonomous loop script template</td>
+</tr>
+</tbody></table>
+<h2 id="license">License</h2>
+<p>MIT</p>
+</body>
+</html>

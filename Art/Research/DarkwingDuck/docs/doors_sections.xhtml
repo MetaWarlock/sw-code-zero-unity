@@ -1,0 +1,170 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Двери и переходы секций ($E388) — спецификация</title>
+    <link rel="stylesheet" type="text/css" href="../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="двери-и-переходы-секций-e388-спецификация">Двери и переходы секций ($E388) — спецификация</h1>
+<p>Источник: дизассемблирование банка 7 (фиксированный <code>$C000–$FFFF</code>), файл
+<code>disasm/bank7_E388.txt</code> (<code>disasm/flat_bank7.txt:4818-4935</code>), плюс банк 1 <code>$96C9</code>.
+<code>disasm/bank4_E388.txt</code> — НЕ код: в банке 4 на этом адресе данные, использовать нельзя.
+Метки расходятся: <code>labels_level.json</code> → <code>DoorCheckpointLoad</code>, <code>labels_flow.json</code> →
+<code>LoadMapSubScene</code>; обе частично верны (§6).</p>
+<h2 id="h-1-e388-загрузчик-секции-x-id-секции">1. <code>$E388</code> = загрузчик секции, X = id секции</h2>
+<ul>
+<li><code>E388 STX $10</code> (сохранить id) → <code>E38A JSR $C248</code> → гашение <code>$C276</code> (<code>$0F=$10</code>, <code>$0D=$00</code>)<ul>
+<li>очистка слотов <code>$C235</code> + аудио <code>$C21E</code> → <code>E38D LDX $10</code> восстановить id.</li>
+</ul>
+</li>
+<li>10 таблиц банка 7, индекс X (<code>E38F-E3BD</code>):</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>адрес таблицы</th>
+<th>назначение</th>
+<th>в RAM</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$E497,X</code></td>
+<td>стартовый id ячейки</td>
+<td><code>$22</code>, <code>$23</code></td>
+</tr>
+<tr>
+<td><code>$E4C1,X</code></td>
+<td>стартовая строка камеры / high Y</td>
+<td><code>$FB</code>, <code>$0520</code></td>
+</tr>
+<tr>
+<td><code>$E4EB,X</code></td>
+<td>стартовый scroll X / abs X hi</td>
+<td><code>$FD</code>, <code>$0500</code></td>
+</tr>
+<tr>
+<td><code>$E515,X</code></td>
+<td>требуемый CHR0 банк</td>
+<td><code>$1A</code></td>
+</tr>
+<tr>
+<td><code>$E53F,X</code></td>
+<td>требуемый CHR1 банк</td>
+<td><code>$1B</code></td>
+</tr>
+<tr>
+<td><code>$E5E7,X</code></td>
+<td>банк тайлсета</td>
+<td><code>$36</code></td>
+</tr>
+<tr>
+<td><code>$E5BD,X</code></td>
+<td>неизвестно</td>
+<td><code>$3D</code></td>
+</tr>
+<tr>
+<td><code>$E611,X</code></td>
+<td>событие кольца <code>$DC[8]</code> (<code>$F84E</code>)</td>
+<td><code>$D9</code></td>
+</tr>
+<tr>
+<td><code>$E569,X</code> → <code>JSR $C2F9</code></td>
+<td>BG-палитра, 16 байт из <code>$C3xx/$5D</code></td>
+<td><code>$0300</code>+<code>$0320</code></td>
+</tr>
+<tr>
+<td><code>$E593,X</code> → <code>JSR $C319</code></td>
+<td>sprite-палитра, 8+8 байт из <code>$C4FD/$C505[id*8]</code></td>
+<td><code>$0310</code>/<code>$0330</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li>Размер таблиц 42 байта (id 0–41); запись id 0 — заглушка <code>$C2</code>, т.е. максимальный id <code>$29</code>
+из объектного пути влазит ровно.</li>
+<li><code>E3C2-E3D3</code>: <code>$3E=$3F=$EE=$ED=0</code>, <code>$0510=$06</code>, <code>$04F0=$30</code> → спавн <code>(table:$30, table:$06)</code>.</li>
+<li><code>E3E8 STA $5B=0</code> (сброс запроса) → <code>E3EA JSR $DE24</code> (сброс состояния, §4) → <code>E3ED JSR $FF06</code>
+(yield) → <code>E3F0 A=$2C; JSR $FA78</code> (<code>$0420=$2C</code>, <code>$0430=0</code>, <code>$0410=0</code>) → <code>E3F5-E3FC</code>
+<code>$04D0=$80</code>, <code>$0400=$D0</code> (то же, что <code>$DD57</code>) → <code>E401 LDX#0; JSR $F5FC</code> (<code>$0550=$AB</code>,
+<code>$0560=$FF</code>) → <code>E406 $50=$12</code>.</li>
+<li><code>E408</code> если <code>$5D≠0</code>: <code>JSR $C850</code> (18 байт <code>$C8CF → $05B0</code>); далее <code>E40F</code> ветвление по <code>$54</code>:
+1 → <code>$05BA=$7A</code>, 2 → <code>$7B</code>, 3 → <code>$7C</code> (все trio <code>$05BC=$7D</code>); 0/иначе → <code>E43D JSR $C887</code>,
+<code>$05BE=$05C0=0</code>. Затем <code>E44A $5D=0</code>, <code>E44C $53=0</code>, <code>E44E JSR $C158</code> (включить рендер,
+<code>$2001=$1E</code>, <code>$FE=$1E</code>).</li>
+<li><code>E454</code>: если <code>$6D ∈ {2,4,6,8,$A,$C,$E}</code> → <code>$3B=$78</code>.</li>
+<li><code>E478</code>: если <code>$6D ∈ {4,6,8,$A,$C,$E}</code> → <code>JMP $C25F</code> (PRG=4, <code>JSR $9800</code> — внутренний движок),
+иначе <code>E492 JMP $C254</code> (PRG=5, <code>JSR $8000</code>). <strong>Не возвращаются</strong>, оба уходят в <code>$C270</code>.</li>
+</ul>
+<h2 id="h-2-триггер-двери-со-стороны-игрока-eb52-ebc8">2. Триггер двери со стороны игрока (<code>$EB52</code> → <code>$EBC8</code>)</h2>
+<ul>
+<li><code>$EB52</code> пробирает метатайлы типом через <code>$EBE8</code> (карта <code>$0600</code>, маски
+<code>$ECA9/$ECAD/$ED19</code>), максимум в <code>$10</code> (<code>EB6E-EB72</code>).</li>
+<li>Хвост: <code>EBAA CPX #$01</code> → <code>EBAE LDA $10</code> / <code>EBB0 CMP #$05</code> / <code>EBB2 BEQ $EBC8</code> —
+<strong>только слот 0 (игрок)</strong>, тип метатайла 5 = «выход здесь».</li>
+<li><code>EBC8 LDA $0500,X</code> (abs X hi = колонка) <code>SEC; EBCB SBC $FD; CLC; EBCF ADC $22; EBD1 TAY;</code>
+<code>EBD2 LDA ($34),Y; EBD4 AND #$1F; EBD6 STA $5B; EBD8 STA $6D; EBDA RTS</code>.</li>
+</ul>
+<p>Итого: <strong>id двери = биты 0–4 скрипт-байта текущей ячейки</strong> (массив <code>$E18C</code>-семейства);
+бит 6 = горизонтальный скролл, бит 7 = Y-snap (см. <code>player_mechanics.md</code>). Разделения битов
+нет — просто <code>AND #$1F</code> (<code>level_format.md</code> §3/§9 закрыты этим же выводом).
+Назначение = <code>$E497/$E4C1/$E4EB[id]</code>, т.е. <code>$22 = $FB*$2E + $FD</code> (проверено: id1 0x19=1<em>17+8,
+id6 0x31=2</em>17+15, id7 0x4B=7<em>10+5, id16 0x33=3</em>17+0, id28 0x6E=11*10+0).
+<code>$E388</code> <strong>не трогает <code>$32/$33/$34/$35</code> и не меняет <code>$2E</code></strong> → сменить мир (набор комнат) он не
+может; это делает <code>$DD57</code>.</p>
+<h2 id="h-3-второй-источник-id-объекты-дверь-выхода-миссии">3. Второй источник id: объекты «дверь выхода миссии»</h2>
+<p>Банк 1 <code>$96C9</code>, поведения <code>$7C/$7D</code> (уже портированы как <code>MissionDoor</code>,
+<code>EnemyBehaviors.cs:4302</code>): <code>96F1 LDA $04E0,X; AND #$0F; TAY; 96F7 LDA $970C,Y → $5B;</code>
+<code>96FC LDA $971A,Y → $9C; 9701 LDA $9728,Y → $66</code>.
+<code>$970C = {0F, 11, …, 29}</code>, <code>$971A = {10, 12, …, 2A}</code> (смещения файла банка 1 0x170C/0x171A;
+третья таблица на 0x1728). <code>$93CF</code> переставляет <code>$9C → $5B</code> и обнуляет <code>$66</code>.
+Потребители <code>$5B</code> только два: <code>CA6E LDX $5B / CA72 JSR $E388</code> и
+<code>D461 LDA $6D; AND #$1F; TAX; D466 JSR $E388</code> (респаун после смерти <code>$D41B</code>).
+Смерть/победа двери: SFX <code>$23</code>, состояние игрока <code>$14</code>, слот убивается; результат (<code>$F8</code> бит 7)
+решается позже (<code>game_flow.md</code> §4).</p>
+<h2 id="h-4-что-делает-de24-сброс-состояния-игрокакамеры">4. Что делает <code>$DE24</code> (сброс состояния игрока/камеры)</h2>
+<p><code>JSR $C14E</code> (рендер выкл, <code>$2001=0</code>), повторно <code>JSR $C235</code>, <code>$52=$20=$2B=$2F=1</code>, <code>$21=4</code>,
+<strong><code>$FC=0</code>, <code>$FA=0</code></strong>, обнуляет <code>$28,$29,$70,$71,$5F,$56,$57,$64,$58,$5A,$5C,$ED,$EE,$5E,$50,</code>
+<code>$63,$65,$9B,$3B,$9D,$F8,$9E,$98</code> (обратить внимание: <strong><code>$F8=0</code> — флаг результата</strong>), затем
+<code>$25 = ($FD ROR ROR) &amp; $80</code>, <code>$0F = ($25 ^ $80) | $08</code>, <code>$05=1</code>, <code>DE8A JSR $E698</code> в цикле до
+<code>$25 == $0F</code>.
+<code>$E698</code> собирает 4 записи очереди VRAM (<code>$0360–$0377</code>) из <code>$EB17,X/$EB1F,X</code> + упаковка бита <code>$25</code>,
+<code>E703 LDY $23; JSR $EB27</code> (указатель комнаты) <code>; JSR $EA36</code> (раскрытие метатайлов), патчит из
+обратного чтения PPU <code>$0140,X</code>; сбрасывается через <code>$C119</code>.
+<code>$E7C6</code> (перерисовка строки) вызывается только из скролл-кода <code>DCC1/DD14</code>; <code>$E63C</code> — только из
+<code>DC14/DC67</code>.
+Переключения банков внутри загрузки: <code>$FF55</code> PRG=4 на <code>$DE99</code>, затем <code>JSR $8040</code>, <code>$8090</code>
+(фидер/спавнер банка 4); в хвосте движок выбирает PRG=5 (<code>$C254</code>) или PRG=4 (<code>$C25F</code>).
+CHR: пишутся только <code>$1A/$1B</code>, применяет их NMI (<code>SetCHR0 $FF21</code> / <code>SetCHR1 $FF3B</code>).</p>
+<h2 id="h-5-checkpoints-и-завершение-уровня">5. Checkpoints и завершение уровня</h2>
+<p><code>$6D</code> — одновременно «текущий id секции» и последняя дверь (<code>EBD8</code>); используется для выбора
+движка (<code>E454/E478</code>) и респауна (<code>D461-D466</code>). На зачистке уровня сбрасывается: <code>$D4B3</code>
+обнуляет <code>$5D/$54/$60/$61/$6B/$6D</code>, затем <code>INC $38</code>. <strong>Промежуточных чекпойнтов внутри уровня
+нет</strong>: <code>D4E9</code> перечитывает <code>$31</code> из стартовой ячейки <code>$DEB9</code> (кормит <code>$6D</code> также <code>$DB27</code>,
+<code>PlayerCore.cs</code> checkpoint-feed).</p>
+<h2 id="h-6-расхождения-документов-с-дизассемблированием">6. Расхождения документов с дизассемблированием</h2>
+<ul>
+<li><code>level_format.md</code> §3/§9: нет разделения битов, <code>AND #$1F</code> на <code>$EBD4</code>; <code>$6D</code> = сам id двери,
+отдельной таблицы чекпойнтов нет.</li>
+<li><code>game_flow.md</code> §1 (последняя строка: «<code>$E388</code> — та же структура для подсцен карты») занижает:
+<code>$E388</code> — также загрузчик дверей выхода миссии/боссов (id <code>$0F–$29</code> из <code>$970C</code>), и он не
+перезагружает <code>$32/$34/$2E</code>, значит не меняет миры — это <code>$DD57</code>.</li>
+<li><code>game_flow.md</code> §5 «<code>$6D</code> = ожидающая загрузка подсцены карты» неточно: запрос лежит в <code>$5B</code>,
+а <code>$6D</code> — липкий id для выбора движка/респауна.</li>
+</ul>
+<h2 id="h-7-данные-для-порта-что-уже-на-диске-что-ещё-нужно">7. Данные для порта (что уже на диске, что ещё нужно)</h2>
+<p>Уже на диске, экспорт не нужен: <code>Art/Unity/CodeZero/Darkwing/Data/world_bank7.bytes</code> = сырой банк 7
+(проверено: <code>file[0xE388-0xC000] = 0x86</code>), таблицы секций на смещениях файла
+<strong>0x2497 / 0x24C1 / 0x24EB / 0x2515 / 0x253F / 0x2569 / 0x2593 / 0x25BD / 0x25E7 / 0x2611</strong>
+по 42 байта, плюс <code>$C35D/$C45D</code> (блоки BG-палитр, 16 B), <code>$C4FD/$C505</code> (sprite-палитры, 8 B),
+<code>$EB17/$EB1F</code>, <code>$C8CF</code> (18 B).
+<code>RoomDecoder.cs</code> читает только дескрипторы <code>$DEAA–$DF80</code> и сетку/флаги <code>$DF90/$E18C</code> —
+<strong>читателя дверей/секций нет</strong>. <code>GameData.ScrollDoor</code> (<code>DataLoader.cs:31</code>) — массив флаг-байтов,
+но <code>&amp; $1F</code> никто не потребляет; <code>DarkwingGame.cs</code>/<code>PlayerCore.cs</code> сейчас лишь сохраняют <code>$6D</code>.</p>
+<p>Осталось реализовать: (a) <code>SectionTable[42]</code> поверх <code>world_bank7.bytes</code> в <code>RoomDecoder</code>/
+<code>WorldState</code>; (b) три таблицы дверей банка 1 (есть в <code>prg_bank1.bytes</code> на 0x170C/0x171A/0x1728,
+в коде захардкожены в <code>EnemyBehaviors.cs:4291-4296</code>, в <code>manifest.json</code> не перечислены);
+(c) палитрные блоки <code>$C35D/$C45D/$C4FD/$C505</code> (ни в одном <code>.bytes</code>, нужен экспорт).</p>
+<p>НЕИЗВЕСТНО: семантика <code>$3D</code>, записей кольца <code>$D9</code>, <code>$54</code>, <code>$3B=$78</code>, и массива сидов
+<code>$05B0/$05BA</code>.</p>
+</body>
+</html>

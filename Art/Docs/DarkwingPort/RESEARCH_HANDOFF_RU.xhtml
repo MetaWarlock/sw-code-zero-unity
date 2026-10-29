@@ -1,0 +1,584 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>Работа с проектом</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css" />
+  </head>
+  <body><h1 id="работа-с-проектом">Работа с проектом</h1>
+<p>Проект <code>D:\Art\SW Code Zero Unity</code>, установленный Unity 6000.6.5f1. Перед изменениями читать <code>AGENTS.md</code> и <a href="IMPLEMENTATION_BRIEF_RU.xhtml">бриф</a>. Текущие результаты — только в <a href="ACCEPTANCE_REPORT.xhtml">приёмке</a>; очередь — <a href="https://beholder.learn.su/workbench/beholder/tracker/6ae2823cf8f3281e9196c7ab/issues">Beholder ZERO</a>, вопросы/адреса — <code>Art/Research/DarkwingDuck/GAPS.md</code> и <code>FACTS.md</code>.</p>
+<p>База последней проверки — <code>901cc0150460018a1ac159f1a8e91e82499d1a99</code> + локальные изменения интеграции и инструментов. В Assets исправлены GameFlow/Launcher/nametable/CHR/text; см. приёмку. Исходные правки <code>UniversalRP.asset</code>, IET Settings.json и untracked-исследования сохранять; коммиты не создавались. Build через Editor добавляет InputSystem_Actions в preloadedAssets. История текущих документов доступна в Git, например <code>git show 901cc015:Art/Research/DarkwingDuck/GAPS.md</code>.</p>
+<h2 id="воспроизведение-проверок-powershell">Воспроизведение проверок (PowerShell)</h2>
+<pre><code>Set-Location -LiteralPath 'D:\Art\SW Code Zero Unity'
+unity status --project-path 'D:\Art\SW Code Zero Unity' --format json
+python Art\Tools\DarkwingResearch\run_check.py --suite --out Art\Temp\next_suite
+$LASTEXITCODE
+python Art\Tools\DarkwingResearch\run_check.py --entry PhysCompare.EnemyVerifyTrace --out Art\Temp\next_enemy
+python -m unittest discover -s Art\Tools\DarkwingResearch -p 'test_*.py' -v
+powershell -NoProfile -ExecutionPolicy Bypass -File Art\Tools\DarkwingResearch\test_player_smoke.ps1
+python Art\Tools\DarkwingResearch\run_check.py --entry PhysCompare.AuditSelfTests --out Art\Temp\next_tests
+</code></pre>
+<p>Для <code>--suite</code>: exit0 = все выбранные STRICT совпали; 1 = расхождение; 2 = ошибка/неполный или устаревший отчёт. Последний запуск — exit1. Wrapper проверяет внутренний success CLI и даёт 240000ms; Suite занимает около 44с. Без <code>--suite</code> exit0 подтверждает только исполнение: читать результат, это не приёмочный PASS. После разбора временный вывод не хранить как второй постоянный отчёт.</p>
+<p>Шаблон: <code>python Art\Tools\DarkwingResearch\run_check.py --file Art/AgentScripts/TitleVerify.cs --entry TitleVerify.Run --out Art\Temp\next_title</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Файл / класс</th>
+<th>Действующие entry</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Art/AgentScripts/PhysCompare.cs</td>
+<td>EnemySweep, BossFightSeed с <code>--args '[29]'</code>, BossFightWolfDefeat, PauseHold, PauseResume, HudOam, M6RouteTrace (префикс PhysCompare.)</td>
+</tr>
+<tr>
+<td>Art/AgentScripts/TitleVerify.cs / IntroVerify.cs / MapOamVerify.cs</td>
+<td>TitleVerify.Run / IntroVerify.Run / MapOamVerify.Run</td>
+</tr>
+<tr>
+<td>Art/AgentScripts/MissionCardVerify.cs / GameOverVerify.cs</td>
+<td>MissionCardVerify.Suite / GameOverVerify.Run</td>
+</tr>
+<tr>
+<td>Art/AgentScripts/FlowVerify.cs</td>
+<td>FlowVerify.Check — принудительные победы, не прохождение</td>
+</tr>
+<tr>
+<td>Art/AgentScripts/BootFlowProbe.cs / SceneAudit.cs</td>
+<td>BootFlowProbe.Run — fixed-step снимки без ROM alignment; SceneAudit.Inspect — чтение Editor API</td>
+</tr>
+</tbody></table>
+<p>Экспорт звука и диагностическое сравнение (CSV/WAV сначала генерируются, постоянные копии не требуются):</p>
+<pre><code>python Art\Tools\DarkwingResearch\run_check.py --file Art/Tools/DarkwingResearch/AudioPortRender.cs --entry AudioPortRender.RenderTo --args '["D:/Art/SW Code Zero Unity/Art/Temp/next_audio"]' --out Art\Temp\next_audio_run
+python Art\Tools\DarkwingResearch\compare_audio_port.py --port-state Art\Temp\next_audio\audio_port_song1_state.csv --port-wav Art\Temp\next_audio\audio_port_song1.wav --out Art\Temp\next_audio_comparison.json
+</code></pre>
+<p>Для SFX использовать <code>AudioPortSfxCompare.RenderTo</code> из <code>Art/Tools/DarkwingResearch/AudioPortSfxCompare.cs</code> тем же способом. Exit0 аудиосравнения означает выполнение диагностики, не идентичность сигнала. Нельзя заменять original goldens выходом порта.</p>
+<h2 id="обычный-вход-editor-и-standalone">Обычный вход: Editor и standalone</h2>
+<p>Editor этого проекта должен быть ready. Все CLI-команды явно адресуют проект, runtime Pipeline включать не нужно. Кнопочный replay существует только для Editor/Development, запускается до первого игрового кадра и не допускает seed RAM/phase. В обычном запуске Enter=Start, X=B, Z=A, стрелки=движение; карту/страницы подтверждают B/A по подсказкам.</p>
+<p>F5 в активном окне порта переключает весь звук (музыку и эффекты) для последовательного A/B с Mesen. Повторное нажатие возвращает текущий звук без перезапуска музыки; игровая логика, секвенсор/APU и потребление PCM продолжаются в тишине. При новом запуске звук включён; Mesen этот хоткей порта не меняет.</p>
+<pre><code>unity command editor_stop --project-path 'D:\Art\SW Code Zero Unity' --caller plugin --skill unity-cli --format json
+python Art\Tools\DarkwingResearch\run_check.py --file Art/AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.EditorRoute --out Art\Temp\editor_route_command
+# Progress должен показать finished=True; результат — Art/Temp/editor_route/route.json.
+python Art\Tools\DarkwingResearch\run_check.py --file Art/AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.Progress --out Art\Temp\editor_progress
+unity command editor_stop --project-path 'D:\Art\SW Code Zero Unity' --caller plugin --skill unity-cli --format json
+python Art\Tools\DarkwingResearch\build_player.py --out Art\Build\Audit_20261018\DarkwingDuck.exe --evidence Art\Temp\integration_build --development
+powershell -NoProfile -ExecutionPolicy Bypass -File Art\Tools\DarkwingResearch\verify_player.ps1 -Exe 'D:\Art\SW Code Zero Unity\Art\Build\Audit_20261018\DarkwingDuck.exe' -PngA 'Art\Temp\player_route\window_a.png' -PngB 'Art\Temp\player_route\window_b.png' -FirstWaitSec 50 -SecondWaitSec 1 -Replay 'D:\Art\SW Code Zero Unity\Art\Temp\route_input_player.json'
+python Art\Tools\DarkwingResearch\run_check.py --file Art/AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.Verify --out Art\Temp\route_verify
+python Art\Tools\DarkwingResearch\run_check.py --file Art/AgentScripts/BootFlowProbe.cs --entry BootFlowProbe.IdleTitle --out Art\Temp\idle_title
+python Art\Tools\DarkwingResearch\run_check.py --entry PhysCompare.EnemyFixtureRegression --out Art\Temp\enemy_regression
+</code></pre>
+<p>Build wrapper требует Succeeded/0 errors и проверяет source hashes до/после. Verify требует одинаковые 14 состояний Editor/Player, обязательные фазы, движение/прыжок/газ. Smoke сам по себе проверяет только запуск/окно/штатный выход. Данные в Temp перезаписывать при повторении, промежуточные коллекции не сохранять.</p>
+<p>Оригинальный маршрут от reset (выходная папка должна отсутствовать; load-state/patch не применять):</p>
+<pre><code>python Art\Tools\DarkwingResearch\probe_run.py --out Art\Temp\ordinary_original_route --frames 4200 --compact --screenshot-every 100 --vram-every 20 --timeout 260 --input '0:start@900-903' --input '0:start@1100-1103' --input '0:start@1300-1303' --input '0:start@1500-1503' --input '0:b@1700-1703' --input '0:a@2000-2003' --input '0:a@2200-2203' --input '0:a@2400-2403' --input '0:a@2600-2603' --input '0:a@2800-2803' --input '0:b@3620-3623' --input '0:right@3700-3770' --input '0:a@3790-3805' --input '0:b@3850-3853'
+python Art\Tools\DarkwingResearch\compare_frames.py --route Art\Temp\ordinary_original_route Art\Temp\editor_route\route.json Art\Temp\player_route\route.json
+</code></pre>
+<p>Последняя команда сохраняет точные различия и даёт exit1 при несовпадении любого сравниваемого PNG. Текущий ordinary-entry проходит как маршрут; <strong>полная пиксельная эквивалентность меню не принята</strong>. Mesen CLI relative f попадает в Lua capture f+1; port replay нумеруется с 1. Поэтому управляющие состояния сравниваются с offset921, а устойчивые экраны — по явно указанным парам. Это не одинаковая длительность переходов. Канонические исходные goldens не переписывать. Постоянные минимальные доказательства — только существующие файлы <code>evidence/audit_20261018</code>.</p>
+<p>Ниже исходные исследовательские сведения и адреса. Это данные подготовки, а не текущие вердикты готовности.</p>
+<h1 id="справочник-уже-собранных-сведений">Справочник уже собранных сведений</h1>
+<p>Это материалы подготовки задания, а не готовый порт. Не требуется повторять весь поиск. Проверять конкретное утверждение тогда, когда от него зависит текущая реализация. При конфликте статей и поведения ROM приоритет имеют воспроизводимые наблюдения оригинала.</p>
+<h2 id="h-1-rom">1. ROM</h2>
+<table>
+<thead>
+<tr>
+<th>Свойство</th>
+<th>Подтверждённое значение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Файл</td>
+<td><code>Art/Darkwing Duck (USA).nes</code></td>
+</tr>
+<tr>
+<td>Размер</td>
+<td>262160 байт / <code>0x40010</code></td>
+</tr>
+<tr>
+<td>SHA-256 всего файла</td>
+<td><code>1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00</code></td>
+</tr>
+<tr>
+<td>SHA-1 всего файла</td>
+<td><code>c7b81ee2ff158a58582bc1bf508ffb1213e7a53a</code></td>
+</tr>
+<tr>
+<td>MD5 всего файла</td>
+<td><code>da86da29043284e236b5ece1c293c5ee</code></td>
+</tr>
+<tr>
+<td>CRC32 всего файла</td>
+<td><code>a157e56c</code></td>
+</tr>
+<tr>
+<td>SHA-256 без 16-байтного заголовка</td>
+<td><code>f97f05a4f8747d81dc8adaf07df70d1f87366632ae3e93103d387043ef5ec508</code></td>
+</tr>
+<tr>
+<td>Заголовок</td>
+<td><code>4e 45 53 1a 08 10 10 08 00 00 00 00 00 00 00 01</code></td>
+</tr>
+<tr>
+<td>Формат заголовка</td>
+<td>NES 2.0: <code>(byte7 &amp; 0x0C) == 0x08</code></td>
+</tr>
+<tr>
+<td>Mapper / submapper</td>
+<td>1 / 0, MMC1</td>
+</tr>
+<tr>
+<td>Trainer / battery flag</td>
+<td>Нет / нет</td>
+</tr>
+<tr>
+<td>PRG</td>
+<td><code>0x10..0x2000F</code>, 128 КиБ, восемь банков по 16 КиБ</td>
+</tr>
+<tr>
+<td>CHR</td>
+<td><code>0x20010..0x4000F</code>, 128 КиБ, 32 банка по 4 КиБ</td>
+</tr>
+<tr>
+<td>Регион по заголовку</td>
+<td>byte12 = 0, NTSC</td>
+</tr>
+<tr>
+<td>Векторы NMI / RESET / IRQ</td>
+<td><code>$C000</code> / <code>$FFE0</code> / <code>$FFE0</code></td>
+</tr>
+</tbody></table>
+<p>Имя файла не является доказательством редакции. У этого файла NES 2.0 заголовок; при сравнении с чужой базой hash различать весь файл и PRG+CHR. Для инструмента, понимающего только iNES, разрешается отдельная производная копия с документированным преобразованием заголовка и неизменным payload. Оригинал не переписывать.</p>
+<p>Все следующие <code>0x...</code> смещения — <strong>файловые, с 16 байтами заголовка</strong>, если явно не сказано CPU/PRG-relative. При переводе CPU <code>$8000–$BFFF</code> в смещение формула <code>0x10 + bank16k*0x4000 + (cpu-0x8000)</code> верна только когда этот банк реально отображён в нижнее 16-КиБ окно. MMC1 может менять отображение; не применять формулу вне подтверждённого режима.</p>
+<h2 id="h-2-таблицы-уровней-из-cadeditor">2. Таблицы уровней из CadEditor</h2>
+<p>Источник — конфигурация и код <a href="https://github.com/spiiin/CadEditor/tree/b28316ddd9be4e79ac5e6adf89b7751df609d94e">CadEditor</a>, MIT. Локальные копии использованных файлов находятся в <code>Art/Docs/DarkwingPort/evidence/</code>, имена начинаются с <code>CadEditor_</code>.</p>
+<table>
+<thead>
+<tr>
+<th>ID набора</th>
+<th>Имя в конфигурации</th>
+<th align="right">Массив типов объектов</th>
+<th align="right">Записей</th>
+<th align="right">Layout</th>
+<th align="right">Ширина × высота</th>
+<th align="right">Базовая палитра-кандидат</th>
+<th align="right">Первый экран-кандидат</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>Bridge (в исходнике <code>Brigde</code>)</td>
+<td align="right"><code>0x10315</code></td>
+<td align="right">51</td>
+<td align="right"><code>0x1DFA0</code></td>
+<td align="right">17×4</td>
+<td align="right">0</td>
+<td align="right"><code>0x01</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>City</td>
+<td align="right"><code>0x10438</code></td>
+<td align="right">60</td>
+<td align="right"><code>0x1DFE4</code></td>
+<td align="right">17×4</td>
+<td align="right">2</td>
+<td align="right"><code>0x21</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Sewers</td>
+<td align="right"><code>0x10584</code></td>
+<td align="right">68</td>
+<td align="right"><code>0x1E028</code></td>
+<td align="right">17×4</td>
+<td align="right">4</td>
+<td align="right"><code>0x41</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Tower</td>
+<td align="right"><code>0x106A0</code></td>
+<td align="right">54</td>
+<td align="right"><code>0x1E06C</code></td>
+<td align="right">10×12</td>
+<td align="right">6</td>
+<td align="right"><code>0x61</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Forest</td>
+<td align="right"><code>0x10816</code></td>
+<td align="right">80</td>
+<td align="right"><code>0x1E0E4</code></td>
+<td align="right">19×3</td>
+<td align="right">10</td>
+<td align="right"><code>0x81</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Warehouse</td>
+<td align="right"><code>0x10962</code></td>
+<td align="right">63</td>
+<td align="right"><code>0x1E11D</code></td>
+<td align="right">19×3</td>
+<td align="right">12</td>
+<td align="right"><code>0xA1</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>FOWL's Fortress</td>
+<td align="right"><code>0x10A89</code></td>
+<td align="right">58</td>
+<td align="right"><code>0x1E156</code></td>
+<td align="right">19×3</td>
+<td align="right">9</td>
+<td align="right"><code>0x101</code></td>
+</tr>
+</tbody></table>
+<p>Это внутренние группы редактора, не подтверждённые номера миссий меню и не порядок прохождения.</p>
+<p>Структура размещений — пять раздельных массивов по N байт. Если <code>A</code> — начало массива типов:</p>
+<ul>
+<li><code>A-4N</code>: screen X;</li>
+<li><code>A-3N</code>: local X;</li>
+<li><code>A-2N</code>: screen Y;</li>
+<li><code>A-N</code>: local Y;</li>
+<li><code>A</code>: type ID.</li>
+</ul>
+<p>Всего в этих диапазонах 434 записи, из них 7 имеют type <code>0xFF</code>. Обнаружено 100 различных ID без <code>0xFF</code>. Это не утверждение о 100 врагах: набор включает предметы, триггеры и другие объекты. Семантику пустых/служебных записей подтвердить. Позиции не объединять в world Y через 240 без исследования — размер экранной структуры и видимой области различается.</p>
+<p>Остальные ориентиры:</p>
+<table>
+<thead>
+<tr>
+<th>Данные</th>
+<th>Адрес/формат</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Экраны-кандидаты</td>
+<td><code>0x10 + screenId*0x40</code>, 64 индекса макротайлов, сетка 8×8</td>
+</tr>
+<tr>
+<td>Диапазон редактора</td>
+<td>300 слотов; это не 300 доказанно используемых комнат</td>
+</tr>
+<tr>
+<td>Макротайлы 32×32</td>
+<td><code>0x36F0 + set*0x4000</code>, 256 записей по четыре индекса метатайлов</td>
+</tr>
+<tr>
+<td>Метатайлы 16×16</td>
+<td><code>0x3AF0 + set*0x4000</code>, четыре массива tile ID по 256 байт</td>
+</tr>
+<tr>
+<td>Атрибуты метатайлов</td>
+<td>Ещё 256 байт сразу после четырёх массивов; palette = <code>raw &amp; 3</code>, type = <code>raw &gt;&gt; 4</code>; сохранять весь raw</td>
+</tr>
+<tr>
+<td>Названия type nibble в редакторе</td>
+<td>0 background, 1 hook, 2 platform, 3 block, 4 spikes, 5 door; поведение подтвердить</td>
+</tr>
+<tr>
+<td>Палитры-кандидаты</td>
+<td><code>0x1C36D + id*16</code>, конфигурация объявляет 32 записи</td>
+</tr>
+<tr>
+<td>Background CHR</td>
+<td><code>0x30010 + set*0x1000</code>; для основных групп set 0–6</td>
+</tr>
+<tr>
+<td>Sprite CHR</td>
+<td>Конфигурация начинает с <code>0x20010</code>, но банк зависит от runtime</td>
+</tr>
+<tr>
+<td>Scroll/door массив</td>
+<td>Соответствующий layout address + 508 (<code>0x1FC</code>), такой же размер</td>
+</tr>
+</tbody></table>
+<p>Не извлекать автоматически восьмой набор метатайлов лишь потому, что общий OffsetRec имеет count=8: сначала доказать назначение диапазона. Семь основных групп проверены структурным разбором.</p>
+<p><strong>Особое место:</strong> CadEditor прибавляет 256 ко всем байтам layout финального уровня. В ячейке с линейным индексом 12 лежит <code>0x98</code>, что даёт <code>0x198</code> / 408 — вне 300 слотов. Нельзя читать её как обычный экран или заменять пустым. Установить смысл по исполняемому коду/переходам. Нулевые ячейки и служебные ссылки также требуют семантического разбора.</p>
+<h2 id="h-3-анимации-и-метаспрайты">3. Анимации и метаспрайты</h2>
+<p>Указатели этого набора относятся к PRG bank 5, отображённому в нижнее окно. Таблицы старших/младших байтов раздельные; это не обычный interleaved массив little-endian слов.</p>
+<table>
+<thead>
+<tr>
+<th>Таблица</th>
+<th align="right">Число</th>
+<th align="right">CPU адрес low</th>
+<th align="right">CPU адрес high</th>
+<th align="right">Файловые low / high</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Анимации</td>
+<td align="right">199</td>
+<td align="right"><code>$B429</code></td>
+<td align="right"><code>$B4F0</code></td>
+<td align="right"><code>0x17439</code> / <code>0x17500</code></td>
+</tr>
+<tr>
+<td>Составные кадры</td>
+<td align="right">314</td>
+<td align="right"><code>$9B0B</code></td>
+<td align="right"><code>$9C45</code></td>
+<td align="right"><code>0x15B1B</code> / <code>0x15C55</code></td>
+</tr>
+<tr>
+<td>Наборы координат</td>
+<td align="right">208</td>
+<td align="right"><code>$AE53</code></td>
+<td align="right"><code>$AF23</code></td>
+<td align="right"><code>0x16E63</code> / <code>0x16F33</code></td>
+</tr>
+</tbody></table>
+<p>Формат, используемый редактором:</p>
+<ul>
+<li>Анимация: header byte, timer byte, список индексов кадров. Редактор считает <code>count=(header+1)%128</code>, а при <code>header+1 &gt;= 128</code> прибавляет к индексам 256. Сохранить raw и проверить крайние значения/смысл таймера в runtime.</li>
+<li>Статический кадр: первый байт + 1 = число частей; второй = индекс координат; затем пары tile ID / attribute.</li>
+<li>Координаты частей: пары Y, X; оба значения знаковые 8-битные.</li>
+<li>Атрибуты включают palette low bits, flips <code>0x40/0x80</code>; остальные биты нельзя выбрасывать без проверки.</li>
+</ul>
+<p>При фактическом разборе обнаружены <strong>311 статических и 3 RAM-кадра</strong>:</p>
+<table>
+<thead>
+<tr>
+<th align="right">Frame ID, десятичный</th>
+<th align="right">CPU-указатель</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right">31</td>
+<td align="right"><code>$05B0</code></td>
+</tr>
+<tr>
+<td align="right">156</td>
+<td align="right"><code>$05C2</code></td>
+</tr>
+<tr>
+<td align="right">251</td>
+<td align="right"><code>$05E8</code></td>
+</tr>
+</tbody></table>
+<p>Эти три записи не переводятся в ROM по формуле банка 5. Нужно найти писателей этих областей и алгоритм динамического формирования. Это одна из причин, почему нельзя считать экспорт таблиц готовым комплектом всех финальных спрайтов.</p>
+<h2 id="h-4-ui-и-ram-ориентиры">4. UI и RAM-ориентиры</h2>
+<p>CadEditor описывает две карты интерфейса с потоками по <code>0x80B1</code> и <code>0x83FC</code>. Команда: PPU address в <strong>big-endian</strong>, один байт количества, затем буквальные байты; <code>0xFF</code> в начале следующей команды завершает поток. Это конкретный формат этих двух карт, не универсальная компрессия Capcom. Необновлённые области могут зависеть от предыдущего содержимого VRAM. Контексты палитры/CHR из конфигурации ещё нуждаются в сверке.</p>
+<p>Следующие RAM-поля — ориентиры из исследований автора CadEditor. До использования в приёмочных тестах подтвердить экспериментом и указать слот/область применимости:</p>
+<table>
+<thead>
+<tr>
+<th>RAM</th>
+<th>Предполагаемое назначение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$0400 + slot</code></td>
+<td>флаги объекта</td>
+</tr>
+<tr>
+<td><code>$0410 + slot</code></td>
+<td>кадр анимации</td>
+</tr>
+<tr>
+<td><code>$0420 + slot</code></td>
+<td>номер анимации</td>
+</tr>
+<tr>
+<td><code>$0430 + slot</code></td>
+<td>таймер анимации</td>
+</tr>
+<tr>
+<td><code>$04D0 + slot</code></td>
+<td>стадия/состояние объекта</td>
+</tr>
+<tr>
+<td><code>$04E0 + slot</code></td>
+<td>индекс функции поведения</td>
+</tr>
+<tr>
+<td><code>$0580 + slot</code></td>
+<td>направление</td>
+</tr>
+<tr>
+<td><code>$05A0 + slot</code></td>
+<td>здоровье/специальное значение</td>
+</tr>
+<tr>
+<td><code>$0070</code></td>
+<td>индекс активного объекта по исследованию</td>
+</tr>
+<tr>
+<td><code>$0050/$0051/$0058</code></td>
+<td>состояния/параметры игрока из экспериментального Lua</td>
+</tr>
+<tr>
+<td><code>$006D</code>, <code>$007C</code></td>
+<td>локация, таймер неуязвимости из того же Lua</td>
+</tr>
+<tr>
+<td><code>$0550/$0560 + slot</code></td>
+<td>компоненты вертикального движения из того же Lua</td>
+</tr>
+</tbody></table>
+<p>Файл <code>evidence/spiiin_dwd.lua</code> — <strong>экспериментальный инъекционный скрипт, меняющий игру</strong>, в том числе гравитацию. Не запускать его как пассивный измеритель и не переносить его константы как достоверную физику оригинала. Он полезен только как подсказка для поиска адресов.</p>
+<h2 id="h-5-уже-созданные-подготовительные-материалы">5. Уже созданные подготовительные материалы</h2>
+<table>
+<thead>
+<tr>
+<th>Путь относительно проекта</th>
+<th>Содержание и пределы</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Art/Tools/DarkwingResearch/extract_rom.py</code></td>
+<td>Python stdlib, привязан к указанному SHA-256; разбор CHR, основных таблиц, анимаций, координат и двух UI-потоков</td>
+</tr>
+<tr>
+<td><code>Art/Research/DarkwingDuck/extracted/manifest.json</code></td>
+<td>Идентификация ROM, counts, проверки roundtrip, исключения</td>
+</tr>
+<tr>
+<td><code>Art/Research/DarkwingDuck/extracted/</code></td>
+<td>RAW PRG/CHR, JSON таблицы, grayscale-превью; это ещё не Unity-ready ассеты</td>
+</tr>
+<tr>
+<td><code>Art/Tools/DarkwingResearch/vendor/mesen-agent/</code></td>
+<td>Локальный Windows x64 mesen-agent v0.1.0 с matching MesenCore.dll, лицензией, zip и checksum</td>
+</tr>
+<tr>
+<td><code>Art/Tools/DarkwingResearch/record_reference.py</code></td>
+<td>Ограниченная запись эксперимента; создаёт новый output-каталог, сохраняет команду/hash и проверяет базовый результат</td>
+</tr>
+<tr>
+<td><code>Art/Tools/DarkwingResearch/oracle_capture.lua.in</code></td>
+<td>Снимки RAM/palette/OAM по endFrame, журнал APU writes, опциональные PNG</td>
+</tr>
+<tr>
+<td><code>Art/Tools/DarkwingResearch/capture_checkpoints.lua</code></td>
+<td>Ранняя ограниченная диагностическая запись кадров</td>
+</tr>
+<tr>
+<td><code>Art/Tools/DarkwingResearch/runs/</code></td>
+<td>Ранние эксперименты оригинала, PNG/WAV/snapshots/логи</td>
+</tr>
+<tr>
+<td><code>Art/Docs/DarkwingPort/evidence/mesen_help.txt</code></td>
+<td>Справка фактически запущенного бинарника</td>
+</tr>
+<tr>
+<td><code>Art/Docs/DarkwingPort/evidence/shared_dialogue_messages.md</code></td>
+<td>Извлечённые сообщения предыдущего диалога; порядок блоков не гарантирован, старые выводы перепроверять по первоисточникам</td>
+</tr>
+</tbody></table>
+<p>Пройденные подготовительные проверки: пересборка header+PRG+CHR; CHR encode/decode; обратное кодирование таблиц метатайлов, статических кадров/координат и анимационных записей. Структурный roundtrip доказывает сохранность данных, но <strong>не</strong> корректную интерпретацию их игрового смысла.</p>
+<p>Эмулятор действительно загрузил этот ROM и записал изображения, звук и состояния. Просмотрены вступление, заставка и экран выбора/обсуждения миссии. Полное прохождение, игровые параметры, детерминизм всей записи и корректность портированной реализации не проверялись. Unity-игра ещё не реализована. Каталог с именем <code>enter_level</code> не является доказательством входа в уровень: смотреть фактический кадр/состояние.</p>
+<p>В одном инструментированном фрагменте зафиксированы записи APU с callback PC <code>$80FD</code>, <code>$80EB</code>, <code>$8215</code>, <code>$8218</code>, <code>$821D</code>; PRG-relative offsets <code>$C0FD</code>, <code>$C0EB</code>, <code>$C215</code>, <code>$C218</code>, <code>$C21D</code>. Это ориентир на bank 3, а не готовые имена функций. PC из callback может указывать на положение после выборки операндов — найти фактическую инструкцию по соседней дизассемблированной области. PRG-relative offset не включает заголовок; для file offset добавить <code>0x10</code>.</p>
+<p>Записанный WAV был PCM 48 кГц, stereo, 16 bit. Это конфигурация наблюдавшегося инструмента, не формат хранения музыки в ROM.</p>
+<p><code>endFrame</code> в наблюдённой трассе приходился на scanline 240, cycle 0. <code>summary.final_frame</code> и последний записанный <code>ppu.frameCount</code> различались на единицу из-за границы остановки. Не исправлять индексы произвольным сдвигом: формально определить фазу. Захват PCM и callback PNG тоже требуют проверки границ перед строгим сравнением.</p>
+<p>Документация некоторых инструментов скачана с HEAD, а бинарник mesen-agent — релиз v0.1.0. При конфликте сверяться со справкой и исходниками <strong>соответствующего релиза</strong>. Нельзя считать совместимость всех API уже доказанной.</p>
+<p>Команды для исполнителя, когда начинается реализация:</p>
+<pre><code>Set-Location -LiteralPath 'D:\Art\SW Code Zero Unity'
+python Art/Tools/DarkwingResearch/extract_rom.py
+&amp; '.\Tools\DarkwingResearch\vendor\mesen-agent\mesen-agent.exe' --help
+</code></pre>
+<p>Пример уже использованного интерфейса записи; output-каталог должен быть новым:</p>
+<pre><code>python Art/Tools/DarkwingResearch/record_reference.py --out Art/Research/DarkwingDuck/reference/boot_probe_001 --frames 300 --screenshots-every 100 --timeout 45
+</code></pre>
+<p>Это инструментальный пробный сценарий, не приёмочный тест прохождения. Для игровых сценариев исполнитель должен создать корректные input schedules и проверяемые конечные условия. Большие выводы и PNG просматривать выборочно по задаче.</p>
+<h2 id="h-6-инструментарий-основной-путь-и-запасные-варианты">6. Инструментарий: основной путь и запасные варианты</h2>
+<table>
+<thead>
+<tr>
+<th>Инструмент</th>
+<th>Использование</th>
+<th>Ограничение</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a href="https://github.com/atonamy/mesen-agent">mesen-agent</a></td>
+<td>Основной кандидат: headless execution, ввод, RAM, snapshots, кадры, звук, breakpoints, trace/CDL, Lua</td>
+<td>Бинарник уже есть; точную семантику API/фазы зафиксировать</td>
+</tr>
+<tr>
+<td><a href="https://github.com/spiiin/CadEditor">CadEditor</a></td>
+<td>Проверяемые форматы карт/объектов/анимаций, источник ориентиров</td>
+<td>Не содержит полностью перенесённый gameplay; конфигурация не равна спецификации всех особых случаев</td>
+</tr>
+<tr>
+<td><a href="https://github.com/kylewlacy/GhidraNes">GhidraNes</a></td>
+<td>Статический анализ 6502/MMC1, именование процедур/таблиц</td>
+<td>Сам автоматически не восстанавливает весь control flow через bank switching; совместимость Ghidra/Java/заголовка проверяет исполнитель</td>
+</tr>
+<tr>
+<td><a href="https://github.com/mstan/nesrecomp">NESRecomp</a></td>
+<td>Вспомогательная статическая рекомпиляция, анализ/дополнительная проверка</td>
+<td>Поддержка MMC1 не доказывает готовность Darkwing Duck; сгенерированная библиотека не является полноценным портом</td>
+</tr>
+<tr>
+<td><a href="https://github.com/monteslu/romdev">romdev</a></td>
+<td>Запасной MCP/CLI инструментарий анализа и экспериментов</td>
+<td>Дополнительная инфраструктура; использовать при конкретной пользе, не устанавливать автоматически</td>
+</tr>
+<tr>
+<td><a href="https://github.com/vgrichina/re-skill">re-skill</a></td>
+<td>Справочный опыт организации реверса</td>
+<td>Его веб-направление не заменяет цель Unity; не требуется установка для исполнения этого задания</td>
+</tr>
+</tbody></table>
+<p>Известные исследованные revision: CadEditor <code>b28316ddd9be4e79ac5e6adf89b7751df609d94e</code>; NESRecomp <code>2b4fcdb98c9e702be3fb365cfc645003c50b5fc1</code>; GhidraNes <code>4c419644c51c650d2507920e2f083d288056c6f0</code>; mesen-agent HEAD при чтении <code>dbc2c744ad52e1c89a8570d22d7fa92507ad4816</code> — <strong>не считать его автоматически commit релизного бинарника</strong>.</p>
+<p>Публичный пригодный к использованию полный дизассемблированный проект Darkwing Duck в ходе подготовки не найден. Есть сообщение CaH4e3 о его наличии и видео процесса; это не основание строить план на доступности такого исходника. Старый диалог содержал гипотезы и примеры по другим играм; они не доказывают работоспособность на этом ROM.</p>
+<h2 id="h-7-первоисточники-для-целевого-чтения">7. Первоисточники для целевого чтения</h2>
+<ul>
+<li><a href="https://chatgpt.com/share/6acb9982-6480-83ed-999d-cb33ee452ae5">Предыдущий диалог</a>: контекст выбора между рекомпиляцией и восстановлением понятной архитектуры.</li>
+<li><a href="https://github.com/spiiin/CadEditor/blob/b28316ddd9be4e79ac5e6adf89b7751df609d94e/CadEditor/settings_nes/darkwing_duck/Settings_DarkwingDuck-All.cs">Конфигурация Darkwing Duck</a>, <a href="https://github.com/spiiin/CadEditor/blob/b28316ddd9be4e79ac5e6adf89b7751df609d94e/CadEditor/shared_settings/CapcomBase.cs">CapcomBase</a>, <a href="https://github.com/spiiin/CadEditor/blob/b28316ddd9be4e79ac5e6adf89b7751df609d94e/CadEditor/Utils.cs">Utils</a>, <a href="https://github.com/spiiin/CadEditor/blob/b28316ddd9be4e79ac5e6adf89b7751df609d94e/CadEnemyEditor/AnimEditor.cs">AnimEditor</a>, <a href="https://github.com/spiiin/CadEditor/blob/b28316ddd9be4e79ac5e6adf89b7751df609d94e/PluginMapEditor/MapUtils.cs">MapUtils</a>: исходный код форматов.</li>
+<li><a href="https://spiiin.github.io/blog/2258302958/">Разбор уровней автором редактора</a>, <a href="https://spiiin.github.io/blog/3874274906/">разбор объектов и анимации</a>: исторические ориентиры; некоторые адресные подписи менее точны, чем код и наблюдения ROM.</li>
+<li><a href="https://github.com/atonamy/mesen-agent/blob/v0.1.0/UI/Debugger/Documentation/LuaDocumentation.json">Lua API Mesen fork</a>: сверять с используемым релизом.</li>
+<li><a href="https://github.com/kylewlacy/GhidraNes#bank-switching">GhidraNes: bank switching</a>: ограничения статического анализа банков.</li>
+<li><a href="https://www.nesdev.org/wiki/NES_2.0">NES 2.0</a>, <a href="https://www.nesdev.org/wiki/MMC1">MMC1</a>, <a href="https://www.nesdev.org/wiki/Cycle_reference_chart">тайминги</a>: аппаратные форматы и время.</li>
+<li><a href="https://www.nesdev.org/wiki/PPU_rendering">PPU rendering</a>, <a href="https://www.nesdev.org/wiki/PPU_sprite_priority">sprite priority</a>, <a href="https://www.nesdev.org/wiki/PPU_OAM">OAM</a>: точное представление.</li>
+<li><a href="https://www.nesdev.org/wiki/NES_APU">APU</a>, <a href="https://www.nesdev.org/wiki/APU_Mixer">APU Mixer</a>: звук и смешивание.</li>
+<li><a href="https://www.nesfiles.com/NES/Darkwing_Duck/Darkwing_Duck.pdf">Руководство Capcom</a>: перечень механик и интерфейс; противоречия кнопок разрешать экспериментом.</li>
+<li><a href="https://docs.unity3d.com/6000.0/Documentation/ScriptReference/MonoBehaviour.OnAudioFilterRead.html">Unity OnAudioFilterRead</a>: требования аудиопотока. По графике в первую очередь смотреть локальные исходники URP 17.6.0 и API установленного Editor.</li>
+<li><a href="https://zcode.z.ai/en/docs/goal">ZCode Goal Mode</a>, <a href="https://zcode.z.ai/en/docs/agents">ZCode project instructions</a>: <code>/goal</code> задаётся в чате; workspace <code>AGENTS.md</code> служит постоянной инструкцией. Не полагаться на автоматическое чтение вложенных документов без явного указания открыть их.</li>
+</ul>
+<h2 id="h-8-стенд-ручного-прохождения-arttoolsdarkwingresearchstand">8. Стенд ручного прохождения (Art/Tools/DarkwingResearch/stand)</h2>
+<p>Запуск: <code>Art\Tools\DarkwingResearch\stand\Start-Playthrough.ps1</code> (то же самое <code>python Art\Tools\DarkwingResearch\stand\stand.py record</code>).
+Открывается штатный Mesen GUI, сам ROM загружается, и с этого же момента работает <strong>штатный же рекордер Movies</strong>: стенд передаёт Mesen опцию <code>--recordMovie=&lt;сессия&gt;\movie.mmo</code>, поэтому от человека не требуется ни одного пункта меню. Клавиши игрока 1: стрелки — D-pad, <code>Z</code>=A, <code>X</code>=B, <code>Enter</code>=Start, <code>LeftShift</code>=Select; в текущей конфигурации <code>AllowBackgroundInput=false</code>, то есть клавиши слышны только когда окно Mesen в фокусе (один клик по нему). Запись заканчивается закрытием окна.</p>
+<p>Формат захвата (Mesen 2.1.1, проверено на релизном бинарнике и его исходниках): <code>.mmo</code> — это zip из <code>Input.txt</code> и <code>GameSettings.txt</code>; <code>MovieRecorder::RecordInput</code> пишет на каждый кадр эмуляции <code>"|" + device-&gt;GetTextState()</code> по всем устройствам консоли, поэтому строка выглядит как <code>|..|........|........</code> (2-символьное сервисное устройство, порт 1, порт 2). Геймпад — 8 символов в порядке собственного перечисления кнопок (<code>Core/NES/Input/NesController.h</code>: <code>Up = 0, Down, Left, Right, Start, Select, B, A</code>, литерал <code>"UDLRSsBA"</code>), <code>.</code> — кнопка не нажата. <code>input.bin</code> — это колонка порта 1, пересобранная в байт порядка <code>NesButtons.ToByte</code>; ни одного смещения по времени wall-clock в цепочке нет. <code>GameSettings.txt</code> внутри <code>.mmo</code> дополнительно записывает конфигурацию консоли, с которой шла запись, и она детерминирована: <code>nes.ramPowerOnState = AllZeros</code>, <code>randomizeMapperPowerOnState = false</code>, <code>randomizeCpuPpuAlignment = false</code>, <code>runAheadFrames = 0</code>. У mesen-agent нет флага <code>ramPowerOnState</code>, он при включении рандомизирует RAM, поэтому первые кадры и остаются непоказуемыми (<code>powerOnWindowLines</code>).</p>
+<p>Конфигурация GUI стендом <strong>не переписывается</strong>: Mesen на выходе перезаписывает <code>settings.json</code> своим (проверено — правки <code>Preferences.ShowFrameCounter</code> и <code>Nes.Port2.Type</code>, внесённые снаружи, исчезают), поэтому <code>record</code> только читает и печатает фактические значения (клавиши, пауза в фоне, <code>EnableRewind</code>, <code>RecordFrom</code>). Файл лежит рядом с исполняемым: <code>Art\Tools\DarkwingResearch\vendor\Mesen2\settings.json</code>; первое окно конфигурации на этой машине уже подтверждено.</p>
+<p>Записи лежат в <code>Art\Playthroughs\&lt;UTC-метка&gt;/</code> (в <code>.gitignore</code>, автоматически не удаляются): <code>meta.json</code> (хэши ROM и эмулятора, клавиши, соглашение о кадрах), <code>movie.mmo</code> (запись Mesen), <code>movie.json</code> (что из неё прочитано: кадры, поля, <code>nonPadPresses</code>), <code>input.bin</code> (по одному байту NES-геймпада на кадр эмулятора), <code>trace.csv</code> и <code>replayN/</code> (оригинал), <code>unity/</code> (порт), <code>diff/</code>.</p>
+<pre><code>python Art\Tools\DarkwingResearch\stand\stand.py record                # живая сессия в Mesen GUI
+python Art\Tools\DarkwingResearch\stand\stand.py movie &lt;file.mmo&gt;      # конвертировать запись, сделанную через меню Movies
+python Art\Tools\DarkwingResearch\stand\stand.py replay &lt;сессия&gt; [--state file.mss] [--png 100,200]
+python Art\Tools\DarkwingResearch\stand\stand.py unity  &lt;сессия&gt; [--png 100,200]
+python Art\Tools\DarkwingResearch\stand\stand.py diff   &lt;сессия&gt; --png
+python Art\Tools\DarkwingResearch\stand\stand.py selftest &lt;сессия&gt;
+</code></pre>
+<p>Соглашение: одна строка movie-лога = один кадр NES = один <code>InputPolled</code> при повторе; пауза эмулятора кадров не добавляет. Точка старта сравнения — первый кадр после power-on reset, смещения не подбираются. Во время записи <strong>нельзя</strong> грузить состояния и перематывать (<code>EnableRewind=true</code>): <code>.mmo</code> от этого не портится структурно, но консоль под записанным треком прыгает, и обнаружить это постфактум нечем. При повторе (<code>stand.lua</code>) загрузка состояния помечается как <code>INVALID</code>, и <code>replay</code>/<code>unity</code> для такой сессии отказываются; автосохранение — нет (см. ниже).</p>
+<p>Что доказано (2026-10-19):</p>
+<ul>
+<li>захват без ручных шагов: <code>Mesen.exe &lt;rom&gt; --recordMovie=&lt;путь&gt;</code> загружает ROM, играет титульную заставку и по закрытию окна пишет <code>.mmo</code> (943 и 693 строки <code>Input.txt</code> за 16 с и 12 с реального времени — ровно 60 кадров/с);</li>
+<li>сессия <code>Art/Playthroughs/movie_probe</code> (трек из 943 кадров, старт от reset): <code>movie</code> → <code>replay --runs 2</code> → <code>unity</code> → <code>diff --png</code> проходят целиком, два независимых повтора байт-идентичны, кроме кадра 1-7 (Mesen рандомизирует work RAM и палитру при включении; измерено и вынесено в <code>powerOnWindowLines</code>, а не спрятано);</li>
+<li><strong>Человеческая запись</strong> <code>Art/Playthroughs/20261019T050329Z</code>: 24261 кадр/1424 диапазона, исходники не изменены. Полный маршрут теперь повторён в Core, штатной DarkwingMain и свежем Player: настоящий Quackerjack → победа/самолёт/счёт → карта count/mask1/1, 8600 очков, 5 жизней. f2033–24261 по всем пяти отображённым группам состояния 22229/22229; детали/ограничения — в ACCEPTANCE_REPORT. Старое заключение «порт блокируется x916» устарело. Повторный поиск пути/перебор прыжков не нужен.</li>
+<li><code>emu.setInput</code> из Lua попадает в консоль так же, как собственный <code>--input</code> агента: кадр 100 из <code>m1_standing.mss</code> совпал с эталоном пиксель-в-пиксель (0 различающихся пикселей из 61440);</li>
+<li>расписание <code>--input</code> самого mesen-agent через <code>emu.getInput</code> НЕ видно (250 кадров с <code>right@100-120</code> записались нулями) — headless-самотест генерирует <code>input.bin</code> сам и гоняет его через режим replay;</li>
+<li>детектор: контрольная пара повторов молчит (1193 кадра), намеренная правка <code>x+1</code> в одном кадре найдена ровно на этом кадре (<code>selftest</code>);</li>
+<li>скорость headless-повтора измерена: mesen-agent считает ровно 60 кадров/с wall-clock и с полным отпечатком кадра, и с пустым Lua-callback (<code>--no-max-speed</code> не меняет ничего), поэтому <code>replay</code> сам подбирает <code>--timeout</code> под длину трека (~1.6 с на кадр) вместо жёстких 600 с;</li>
+<li><code>INVALID</code> теперь ставит только загрузка состояния. Сохранение консоль не трогает: на длинном повторе mesen-agent сам пишет автосейв в изолированный <code>--home</code> (<code>SaveStates/&lt;rom&gt;_11.mss</code> примерно на 300-й секунде), и раньше это ложно аннулировало сессию;</li>
+<li><code>trace.csv</code> обрывается на конце трека, а не на останове эмулятора: на длинных треках агент переполняет <code>--frames</code> (запрошено 24261 — выполнено 36046 при лимите 600 с и 29809/29810 при лимите 496 с, причина <code>timeout</code> вместо <code>frame_limit</code>, тогда как <code>--frames 600/120/6000</code> останавливались ровно на лимите). Поэтому <code>replay</code> сам считает лимит как <code>длина/60 × 1.15 + 30 с</code>, терпит <code>reason=timeout</code> с его же rc=4 и проверяет другое — что отпечатанных кадров ровно столько, сколько в треке; две записи одной сессии тогда всегда равной длины;</li>
+<li><code>emu.exit()</code> в Lua Mesen 2.1.1 отсутствует (<code>attempt to call a nil value (field 'exit')</code>) — остановить прогон из скрипта нельзя, только досчитать трек;</li>
+<li>RESET-пролог f8 восстановлен; ранний Start его не обходит, NT/OAM/PAL f8–281 равны. Первые остатки текущего полного захвата: NT f282, PAL f293, OAM f463; G62/физическая NT-раскладка открыты. Суммы байтов — диагностика; строгие команды ниже используют байты/SHA-256, включая отрицательный контроль перестановки с прежней суммой.</li>
+</ul>
+<p>Что НЕ проверено: не проверено, запрещает ли сам Mesen загрузку состояния во время записи фильма (<code>.mmo</code> от этого структурно не портится, но консоль под треком прыгает). Порядок 8-символьных полей (порт 1 раньше порта 2) теперь подтверждён на живой игре: в записи пользователя из 24261 кадра (10335 кадров с нажатыми кнопками, все восемь кнопок) <code>nonPadPresses</code> пуст, то есть все нажатия попадают ровно в 8-символьное поле порта 1.</p>
+<p>Текущие минимальные данные и команды (без повторного захвата оригинала):</p>
+<pre><code>python Art/Tools/DarkwingResearch/stand/stand.py states --original Art/Temp/stand_original/replay1/buffers.bin --port Art/Temp/stand_port_route/buffers.bin --start 2033
+python Art/Tools/DarkwingResearch/stand/stand.py buffers --original Art/Temp/stand_original/replay1/buffers.bin --port Art/Temp/stand_port_route/buffers.bin --start 8
+python Art/Tools/DarkwingResearch/stand/stand.py scene --session Art/Playthroughs/20261019T050329Z --core Art/Temp/stand_port_route --route Art/Temp/stand_scene/route.json
+python Art/Tools/DarkwingResearch/stand/stand.py scene --session Art/Playthroughs/20261019T050329Z --core Art/Temp/stand_port_route --route Art/Temp/stand_player/route.json
+python Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Contracts --out Art/Temp/m1_contracts
+python Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Regressions --out Art/Temp/m1_regressions
+</code></pre>
+<p><code>buffers.bin</code>: один record = RAM2048 + физические NT2048 + OAM256 + PAL32 =4384 байта, pre-input poll1-based. <code>states</code> проверяет только явно отображённые группы; <code>buffers</code> — все байты соответствующих буферов. Снимки ReplayState содержат 4KiB PPU-address window; при сравнении с CIRAM берутся физические первые2KiB, при прямом Editor/Player сравнении проверен весь window. В <code>scene</code> номер снимка f означает Game.Frame=f−1 до обработки входа; <code>final</code> записан после потребления всех кадров. Смещений/переносов кнопок нет.</p>
+<p>Свежий build: <code>Art/Build/DarkwingDuck/DarkwingDuck.exe</code>, Development (replay включён условной компиляцией). Без аргумента игра интерактивна. Спецификации штатного повтора — <code>Art/Temp/stand_scene/spec.json</code> и <code>Art/Temp/stand_player/spec.json</code> (<code>captureAtStart=true</code>), обе разворачиваются в исходный input.bin. Editor: до Play установить SessionState <code>DarkwingReplay</code> на абсолютный путь scene spec; UseFlow=true, Game.Frame0. Player: <code>-darkwing-replay &lt;absolute spec&gt;</code>; окно/render/exit проверяет существующий <code>verify_player.ps1</code> с <code>-ReplayTimeoutSec 1200 -CompletedMission -ShowGameWindow</code>. После готового route требуется <code>stand.py scene</code>, один smoke не доказывает сравнение. Результаты, оставшиеся NT/RGB/audio/Suite расхождения — только в ACCEPTANCE_REPORT.</p>
+<p>Текущий checkpoint 2026-10-22 после смены 113: <code>Ppu.Render</code> вертикально заворачивает в ту же NT-страницу, строки <code>$E7C6</code> перенесены; полный m1 state не изменился, city trace равен. Ложный SFX <code>$21</code> на каждом прыжке удалён: в оригинале <code>$CBB7</code> звука не вызывает, <code>gold_jump</code> a@20-22 держит <code>$D9=04</code>, <code>$D0/$D1=0</code>; <code>$21</code> остаётся только стартом миссии с карты (<code>$A241</code>). Player <code>Art/Build/DarkwingDuck/DarkwingDuck.exe</code> пересобран, smoke PASS. Нужен короткий ручной прогон м1 (ходьба вправо + прыжок вверх, вертикальная поездка) и отдельная оценка музыки; остаток HUD/спрайтов ещё открыт. Это не полная приёмка изображения/звука.</p>
+<h2 id="текущая-работа">Текущая работа</h2>
+<p>Работа интеграции ведётся в ZERO-12/ZERO-13. Справочный handoff из ZERO-32 и журнал из ZERO-33 сохранены в FACTS/источнике аудита ZERO-37; эти две карточки не являются активными задачами. Актуальная очередь: <a href="https://beholder.learn.su/workbench/beholder/tracker/6ae2823cf8f3281e9196c7ab/issues">трекер</a>.</p>
+<div id="clock-reference-from-tracker"><h2>Справка непрерывного времени из исторического handoff</h2><p>Источник — прежняя ZERO-32, импортировавшая записи2026-10-22…25. Полный исторический текст: <a href="../../Research/DarkwingDuck/reference/tracker-backlog-audit.json">JSON-источник аудита</a><span>. Ниже — контракт и ограниченные наблюдения, не план следующей смены и не подтверждение текущей полноты. Работа интеграции — ZERO-12/13.</span></p><p>Цепочка различает InputPolled, принятие NMI, публикацию VRAM/OAM, очереди/аудио и продолжение процесса. Yield определяется commitFF17→FF19, не входом в процедуру. На историческом обычном f6385 CADF достигался за 57 cycles до poll, commit — за 2 cycles; хвост 55 cycles измерялся отдельно. Это объясняет чувствительность к округлению, но не задаёт таблицу runtime-цен.</p><p>Resumable bank5 OAM сохраняет slot/part/carry/указатели и порядок мутаций. Историческое component-подтверждение: 30682 прохода и 15 partials. Наличие BeginWalk/AdvanceWalkTo/FinishWalk не означает integrated deadline: полный Finish до прерывания оставлял human17234/city6388.</p><p>В источнике164819Z NMI17234 приходился на bank5PC81E5,slot0E,cursor80,parity18,$9A=01; RNGC2DE следовал послеRTI. Это наблюдение конкретного ввода: место прерывания нативная игра получает из собственного времени/состояния, не по номеру кадра.</p><p>RESET/FEFF/AA00/Card/mission-tail и стоимости имеют отдельные component-результаты в FACTS. Объединение требует непрерывной цепочки владельцев$30/$95/F5/F6 без повторного input/Flow/player/INC95. Старые stop-точкиDDCB/C63C/C666 различаются по ревизии; они не универсальный диагноз. Неизвестный Running не превращается в Waiting.</p><p>Измеренные ROMcosts — oracle evidence. Body24401/audio3587 и фаза по sourcecommit описывают конкретные измерения, не разрешённый runtime-вход. Верхняя граница может исключить crossing, но не сертифицирует точную следующую фазу. K1Card-anchor:237resume и minslack19560 не доказывали ранний poll↔логический сдвиг; холодный профиль был связан с movie/Mesen2.1.1/randomize=false, не с любойNES.</p></div></body>
+</html>

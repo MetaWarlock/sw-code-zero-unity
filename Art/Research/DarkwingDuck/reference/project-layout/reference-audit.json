@@ -1,0 +1,122 @@
+{
+  "result": "PASS",
+  "changes": [
+    {
+      "path": "Art/Tools/DarkwingResearch/decode_room.py",
+      "beforeSha256": "12953a9b44992683ddef20519d99f54336267ae5d138a6ea3fd0792d50605764",
+      "afterSha256": "548eaa4e6e3830e5afb79d0ee45d1655d8ace2593926d787e2ff21036c9c8955",
+      "runtimeCommentsOnly": false
+    },
+    {
+      "path": "Art/Tools/DarkwingResearch/preserve.py",
+      "beforeSha256": "c91149ca69dfd48c6eaa991bae7a00ff3a9fb15b4c3135f9f691e2b7edf752f1",
+      "afterSha256": "8df9c2bd91f2ae2e3d9cff17caa83adf2b7b4b86eae2d0bd257a537e91922390",
+      "runtimeCommentsOnly": false
+    },
+    {
+      "path": "Art/Tools/DarkwingResearch/probe_run.py",
+      "beforeSha256": "74751df79800c24f9fb7e6e5efc19cb64386e808776449d89f2bcf4ea9c82eb7",
+      "afterSha256": "e090bfb520e174688617b4f028824f817513fb4ccf242312726a030986e9337f",
+      "runtimeCommentsOnly": false
+    },
+    {
+      "path": "Art/Tools/DarkwingResearch/route_search.py",
+      "beforeSha256": "5bc79bb9334cb64ddfb72ba0d7ee1e0f49ebb6ee46f22961f7ea3d8b03a03281",
+      "afterSha256": "3f0fccd426223254cdecd118b39d4680e3287c2f75d1647d4afbf925b5a8f155",
+      "runtimeCommentsOnly": false
+    },
+    {
+      "path": "Art/Tools/DarkwingResearch/terrain_window.py",
+      "beforeSha256": "87d84efc60864ca0f1ef25e13b39a6fcf3e2e01272530dfd1f219cfa4dbfa27b",
+      "afterSha256": "3b1bba49367c4cbd626e1fa37b48cb121d8fc50cfd1ed6109cbc82ac2c5148ee",
+      "runtimeCommentsOnly": false
+    },
+    {
+      "path": "Art/Tools/DarkwingResearch/cost/reached_body_aggregate.cs",
+      "beforeSha256": "df8cf779aff339f982b3df3d364c703fd39413fa2393e3200797563449fce69a",
+      "afterSha256": "ac282bf24d50eb6032e651279ccb89921b4cb1a8f3337f8d66a9bfd026aa7d0a",
+      "runtimeCommentsOnly": false
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Audio/AudioSequencer.cs",
+      "beforeSha256": "e1efe95ddfe10ea57b08460648120d10976dcee0d0f3f612cf10068fb17fb609",
+      "afterSha256": "f7eb3019599e347ae0ace11d757929032393fa9546d149b237c1f5624e9cda59",
+      "runtimeCommentsOnly": true
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/EnemyBehaviors.cs",
+      "beforeSha256": "77b3246133e190fe87ece93056de990bc242d7a55fe7fdde965847e2d0f219fa",
+      "afterSha256": "cc20bd9cd26c86c85ea8d45973d0b5ca8543a1d8905f6960e3fcd3e6318ba167",
+      "runtimeCommentsOnly": true
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/PlayerCore.cs",
+      "beforeSha256": "ba8d2062f0b71bdcad7f743673f72e05afc881c8fe6d1127b09e8be272313b43",
+      "afterSha256": "12fef92b61c892aa59896e7da4ec0e20e239684e7566e64eddc1983cbfc8cbd8",
+      "runtimeCommentsOnly": true
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/RoomDecoder.cs",
+      "beforeSha256": "6b91d117c95441bc63b1176a13c35feb5197159fff09a16b8422f89c34dfd534",
+      "afterSha256": "ca8db492c161835435111f1b42df8a9d1ce6e7dbfe04da7495701a15bfc51d87",
+      "runtimeCommentsOnly": true
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/SectionTable.cs",
+      "beforeSha256": "150d745b8c80687ab9ceedb9217dfcecf8f5af9ef27d9336619fec4abd8302bc",
+      "afterSha256": "522e93b9ffda24348208e940b33c776d25f37e03b6826f8c9fca6b5cbbac70ff",
+      "runtimeCommentsOnly": true
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/WorldState.cs",
+      "beforeSha256": "b88040f29acd3e631131fdb930b48e74f6c740b948557ceaa562dc597541999d",
+      "afterSha256": "8c314fe34b09ca73633e06d8da53bd65f16875cc98d7902a09dc4f67dea29493",
+      "runtimeCommentsOnly": true
+    }
+  ],
+  "runtimeBehaviorChanged": false,
+  "date": "2026-10-29",
+  "issue": "ZERO-2",
+  "humanGate": "ZERO-36 PASS; Done",
+  "gapRowsMovedTo": [
+    "ZERO-12",
+    "ZERO-20",
+    "ZERO-30",
+    "ZERO-6",
+    "ZERO-14"
+  ],
+  "sourceHead": "c740f1c3ee7f0204b3a3aa804d26c78032b10c85",
+  "sourceState": "previous staged migration plus source citation fixes; runtime comments only",
+  "plannedSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-reference-audit",
+  "ownership": {
+    "result": "PASS",
+    "byteIdenticalFiles": 3432,
+    "convertedDocuments": 30,
+    "missing": [],
+    "changedImmutablePayload": [],
+    "beforeManifestSha256": "cf01b8d2a789f5e4af5cc70cafa571d685c60b1c3c72ce32608e9a67740f9bf9"
+  },
+  "verification": {
+    "xhtmlStrict": "PASS35documents",
+    "validatorControls": "PASS1positive5negative",
+    "preservationControls": "PASS1positive7negative",
+    "python": "PASS17",
+    "UnityRecompile": "PASS",
+    "dotnetBuild": "PASS0errors5existingWarnings",
+    "secondReferencesRun": "PASS empty changes"
+  },
+  "humanTest": {
+    "issue": "ZERO-36",
+    "issueId": "6ae29fc3e5dbb5b6ddb77241",
+    "status": "Done",
+    "result": "PASS",
+    "commentId": "6ae2a9c9ca718e7e8ffa3132",
+    "commentAuthorId": "1222742759862304769",
+    "commentCreatedOn": 1793239512057,
+    "commentBody": "PASS",
+    "reportedBy": "warlock / dima@iqseo.ru; current chat explicitly confirms task closure",
+    "build": "build_a9780eeca272",
+    "scope": "aggregate PASS of the short launch/mission1-start/movement/jump/fire/F5/clean-exit checklist; no separate per-step measurements; not full game/image/audio equivalence"
+  },
+  "acceptanceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-human-accepted"
+}

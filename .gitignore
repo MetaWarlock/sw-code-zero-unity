@@ -1,14 +1,14 @@
 [Ll]ibrary/
 [Tt]emp/
 [Oo]bj/
-/Tools/DarkwingResearch/**/bin/
+/Art/Tools/DarkwingResearch/**/bin/
 [Bb]uild/
 [Bb]uilds/
 [Ll]ogs/
 [Uu]serSettings/
 [Mm]emoryCaptures/
 *.csproj
-!Tools/DarkwingResearch/**/*.csproj
+!Art/Tools/DarkwingResearch/**/*.csproj
 *.sln
 *.slnx
 *.user
@@ -17,31 +17,31 @@
 *.suo
 *.tmp
 .vs/
-Research/DarkwingDuck/reference/*/raw_frames/
+Art/Research/DarkwingDuck/reference/*/raw_frames/
 __pycache__/
 *.pyc
 *.pyo
 
 # Local source ROM and reproducible raw ROM dumps (see Docs/DarkwingPort/GIT_CONTENTS_RU.md).
 *.nes
-/Research/DarkwingDuck/extracted/raw/
+/Art/Research/DarkwingDuck/extracted/raw/
 
 # Mesen working directories; keep explicit captures, goldens and verification reports.
-/Research/DarkwingDuck/reference/**/home/
-/Tools/**/home/
-/Tools/DarkwingResearch/runs/inspect-home/
+/Art/Research/DarkwingDuck/reference/**/home/
+/Art/Tools/**/home/
+/Art/Tools/DarkwingResearch/runs/inspect-home/
 
 # Duplicate download; extracted tools, license, release metadata and checksums stay tracked.
-/Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent-windows-x64.zip
+/Art/Tools/DarkwingResearch/vendor/mesen-agent/mesen-agent-windows-x64.zip
 
 # Vendored Mesen 2.1.1 GUI build used by the playthrough stand (SHA-256 pinned in Docs).
-/Tools/DarkwingResearch/vendor/Mesen2/
+/Art/Tools/DarkwingResearch/vendor/Mesen2/
 
 # The user's own playthrough recordings: never committed, never auto-deleted.
-/Playthroughs/
+/Art/Playthroughs/
 
 # Preserved local reference data: external verified backups, metadata stays in Git.
-/Research/DarkwingDuck/reference/cost-harness/data/
+/Art/Research/DarkwingDuck/reference/cost-harness/data/
 
 # Ad hoc output written to the project root.
 /trace.txt

@@ -1,0 +1,268 @@
+{
+  "schema": 1,
+  "date": "2026-10-29",
+  "trackerProject": "ZERO",
+  "tracker": "https://beholder.learn.su/workbench/beholder/tracker/6ae2823cf8f3281e9196c7ab/issues",
+  "agent": {
+    "email": "sh.codex@beholder.learn.su",
+    "personId": "6ae28336f8f3281e9196c8d9"
+  },
+  "beforeSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-before",
+  "manifestSha256": "cf01b8d2a789f5e4af5cc70cafa571d685c60b1c3c72ce32608e9a67740f9bf9",
+  "migratedTaskReferences": [
+    {
+      "source": "milestones",
+      "row": 0,
+      "identifier": "ZERO-3",
+      "issueId": "6ae29b62e5dbb5b6ddb771de"
+    },
+    {
+      "source": "milestones",
+      "row": 1,
+      "identifier": "ZERO-4",
+      "issueId": "6ae29b62e5dbb5b6ddb771e1"
+    },
+    {
+      "source": "milestones",
+      "row": 2,
+      "identifier": "ZERO-5",
+      "issueId": "6ae29b62e5dbb5b6ddb771e4"
+    },
+    {
+      "source": "milestones",
+      "row": 3,
+      "identifier": "ZERO-6",
+      "issueId": "6ae29b62e5dbb5b6ddb771e7"
+    },
+    {
+      "source": "milestones",
+      "row": 4,
+      "identifier": "ZERO-7",
+      "issueId": "6ae29b62e5dbb5b6ddb771ea"
+    },
+    {
+      "source": "milestones",
+      "row": 5,
+      "identifier": "ZERO-8",
+      "issueId": "6ae29b63e5dbb5b6ddb771ed"
+    },
+    {
+      "source": "milestones",
+      "row": 6,
+      "identifier": "ZERO-9",
+      "issueId": "6ae29b63e5dbb5b6ddb771f0"
+    },
+    {
+      "source": "milestones",
+      "row": 7,
+      "identifier": "ZERO-10",
+      "issueId": "6ae29b63e5dbb5b6ddb771f3"
+    },
+    {
+      "source": "milestones",
+      "row": 8,
+      "identifier": "ZERO-11",
+      "issueId": "6ae29b63e5dbb5b6ddb771f6"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        3,
+        8,
+        9,
+        33
+      ],
+      "identifier": "ZERO-12",
+      "issueId": "6ae29b63e5dbb5b6ddb771f9"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        7,
+        16,
+        35
+      ],
+      "identifier": "ZERO-13",
+      "issueId": "6ae29b63e5dbb5b6ddb771fc"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        0,
+        1,
+        2,
+        36
+      ],
+      "identifier": "ZERO-14",
+      "issueId": "6ae29b64e5dbb5b6ddb771ff"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        6
+      ],
+      "identifier": "ZERO-15",
+      "issueId": "6ae29b64e5dbb5b6ddb77202"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        4
+      ],
+      "identifier": "ZERO-16",
+      "issueId": "6ae29b64e5dbb5b6ddb77205"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        5,
+        12
+      ],
+      "identifier": "ZERO-17",
+      "issueId": "6ae29b64e5dbb5b6ddb77208"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        13,
+        18,
+        21,
+        23,
+        40
+      ],
+      "identifier": "ZERO-18",
+      "issueId": "6ae29b64e5dbb5b6ddb7720b"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        11
+      ],
+      "identifier": "ZERO-19",
+      "issueId": "6ae29b64e5dbb5b6ddb7720e"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        14,
+        17,
+        22,
+        26
+      ],
+      "identifier": "ZERO-20",
+      "issueId": "6ae29b65e5dbb5b6ddb77211"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        15,
+        25
+      ],
+      "identifier": "ZERO-21",
+      "issueId": "6ae29b65e5dbb5b6ddb77214"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        19
+      ],
+      "identifier": "ZERO-22",
+      "issueId": "6ae29b65e5dbb5b6ddb77217"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        27
+      ],
+      "identifier": "ZERO-23",
+      "issueId": "6ae29b65e5dbb5b6ddb7721a"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        24
+      ],
+      "identifier": "ZERO-24",
+      "issueId": "6ae29b65e5dbb5b6ddb7721d"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        28,
+        30
+      ],
+      "identifier": "ZERO-25",
+      "issueId": "6ae29b65e5dbb5b6ddb77220"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        34
+      ],
+      "identifier": "ZERO-26",
+      "issueId": "6ae29b66e5dbb5b6ddb77223"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        37
+      ],
+      "identifier": "ZERO-27",
+      "issueId": "6ae29b66e5dbb5b6ddb77226"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        38
+      ],
+      "identifier": "ZERO-28",
+      "issueId": "6ae29b66e5dbb5b6ddb77229"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        39
+      ],
+      "identifier": "ZERO-29",
+      "issueId": "6ae29b66e5dbb5b6ddb7722c"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        41
+      ],
+      "identifier": "ZERO-30",
+      "issueId": "6ae29b66e5dbb5b6ddb7722f"
+    },
+    {
+      "source": "gaps",
+      "rows": [
+        42
+      ],
+      "identifier": "ZERO-31",
+      "issueId": "6ae29b66e5dbb5b6ddb77232"
+    },
+    {
+      "identifier": "ZERO-32",
+      "issueId": "6ae29c01e5dbb5b6ddb77235"
+    },
+    {
+      "identifier": "ZERO-33",
+      "issueId": "6ae29c01e5dbb5b6ddb77238"
+    }
+  ],
+  "additionalIssueReferences": [
+    {
+      "identifier": "ZERO-34",
+      "issueId": "6ae29d47e5dbb5b6ddb7723b"
+    },
+    {
+      "identifier": "ZERO-35",
+      "issueId": "6ae29e68e5dbb5b6ddb7723e"
+    },
+    {
+      "identifier": "ZERO-36",
+      "issueId": "6ae29fc3e5dbb5b6ddb77241"
+    }
+  ]
+}

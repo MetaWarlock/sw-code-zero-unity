@@ -1,0 +1,209 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Bank Extraction Guide</title>
+    <link rel="stylesheet" type="text/css" href="../../documentation.css"/>
+  </head>
+  <body><h1 id="bank-extraction-guide">Bank Extraction Guide</h1>
+<p>How to extract PRG banks from NES ROM files for Ghidra analysis.
+Getting this wrong produces a Ghidra project that appears to work but returns zeros or wrong
+addresses — causing silent misanalysis. Always verify vectors after extraction.</p>
+<hr/>
+<h2 id="ines-header-primer">iNES Header Primer</h2>
+<p>Every <code>.nes</code> file starts with a 16-byte iNES header:</p>
+<pre><code>Bytes 0–3:   "NES\x1A"  (magic)
+Byte  4:     Number of 16KB PRG-ROM banks
+Byte  5:     Number of 8KB CHR-ROM banks (0 = CHR RAM)
+Byte  6:     Flags (mapper low nibble, mirroring, battery, trainer)
+Byte  7:     Flags (mapper high nibble, NES 2.0 indicator)
+Bytes 8–15:  Padding / extended header
+</code></pre>
+<p>PRG-ROM starts at file offset <strong><code>0x10</code></strong> (16 bytes in), unless a 512-byte trainer is present
+(bit 2 of byte 6), in which case PRG starts at <code>0x210</code>.</p>
+<p>Each PRG bank is <strong>16KB = 0x4000 bytes</strong>.</p>
+<hr/>
+<h2 id="faxanadu-mapper-1-mmc1-16-banks-16kb">Faxanadu — Mapper 1 (MMC1), 16 banks × 16KB</h2>
+<p><strong>ROM:</strong> <code>baserom.nes</code>
+<strong>PRG banks:</strong> 16 (numbered 0–15)
+<strong>CHR:</strong> RAM (no CHR ROM banks)</p>
+<h3 id="memory-map">Memory map</h3>
+<table>
+<thead>
+<tr>
+<th>Bank</th>
+<th>NES address</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0–14</td>
+<td><code>$8000–$BFFF</code></td>
+<td>Switchable via MMC1</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>$C000–$FFFF</code></td>
+<td><strong>Fixed</strong> — always mapped</td>
+</tr>
+</tbody></table>
+<h3 id="extraction-formula">Extraction formula</h3>
+<pre><code>file_offset = 0x10 + (bank_number × 0x4000)
+size        = 0x4000  (16KB each)
+</code></pre>
+<h3 id="extract-all-banks-run-once-to-populate-banks">Extract all banks (run once to populate <code>banks/</code>)</h3>
+<pre><code>d = open('F:/Projects/nesrecomp/baserom.nes', 'rb').read()
+import os; os.makedirs('banks', exist_ok=True)
+for i in range(16):
+    open(f'banks/bank{i:02d}.bin', 'wb').write(d[0x10 + i*0x4000 : 0x10 + (i+1)*0x4000])
+</code></pre>
+<h3 id="ghidra-load-settings-per-bank">Ghidra load settings — per bank</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Fixed bank (15)</th>
+<th>Switchable banks (0–14)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Format</td>
+<td>Raw Binary</td>
+<td>Raw Binary</td>
+</tr>
+<tr>
+<td>Processor</td>
+<td>6502 / little / 16 / default</td>
+<td>6502 / little / 16 / default</td>
+</tr>
+<tr>
+<td>Base address</td>
+<td><strong><code>0xC000</code></strong></td>
+<td><strong><code>0x8000</code></strong></td>
+</tr>
+<tr>
+<td>Name</td>
+<td><code>bank15.bin</code></td>
+<td><code>bankNN.bin</code></td>
+</tr>
+</tbody></table>
+<h3 id="verification">Verification</h3>
+<p>After loading bank15.bin at <code>0xC000</code>, the vectors at <code>$FFFA–$FFFF</code> should read:</p>
+<pre><code>$FFFA–$FFFB: NMI  vector → $C999
+$FFFC–$FFFD: RESET vector → $C913
+$FFFE–$FFFF: IRQ  vector → $C9D5
+</code></pre>
+<hr/>
+<h2 id="super-mario-bros-mapper-0-nrom-256-2-banks-16kb">Super Mario Bros. — Mapper 0 (NROM-256), 2 banks × 16KB</h2>
+<p><strong>ROM:</strong> <code>Super Mario Bros. (World).nes</code>
+<strong>PRG banks:</strong> 2 (32KB total, <strong>no bank switching</strong>)
+<strong>CHR:</strong> 1 × 8KB ROM bank</p>
+<h3 id="memory-map-2">Memory map</h3>
+<p>Because NROM-256 has no switching, <strong>both banks are always mapped simultaneously</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>NES address</th>
+<th>File offset</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bank 0</td>
+<td><code>$8000–$BFFF</code></td>
+<td><code>0x10 – 0x400F</code></td>
+</tr>
+<tr>
+<td>Bank 1</td>
+<td><code>$C000–$FFFF</code></td>
+<td><code>0x4010 – 0x800F</code></td>
+</tr>
+</tbody></table>
+<p>The two banks are one contiguous 32KB block. <strong>Load them as a single file.</strong></p>
+<h3 id="extraction">Extraction</h3>
+<pre><code>d = open('F:/Projects/nesrecomp/Super Mario Bros. (World).nes', 'rb').read()
+open('F:/Projects/nesrecomp/smb_prg.bin', 'wb').write(d[0x10:0x8010])
+# Produces 32768 bytes covering NES $8000–$FFFF
+</code></pre>
+<h3 id="ghidra-load-settings">Ghidra load settings</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Format</td>
+<td>Raw Binary</td>
+</tr>
+<tr>
+<td>Processor</td>
+<td>6502 / little / 16 / default</td>
+</tr>
+<tr>
+<td>Base address</td>
+<td><strong><code>0x8000</code></strong></td>
+</tr>
+<tr>
+<td>Name</td>
+<td><code>smb_bank0.bin</code></td>
+</tr>
+</tbody></table>
+<p>Load the <strong>single 32KB file</strong> — do <strong>not</strong> split into two 16KB files. NROM has no mapper,
+so splitting creates an artificial bank boundary that doesn't exist at runtime.</p>
+<h3 id="verification-2">Verification</h3>
+<p>After loading <code>smb_prg.bin</code> at <code>0x8000</code>, the vectors at <code>$FFFA–$FFFF</code> should read:</p>
+<pre><code>$FFFA–$FFFB: NMI  vector → $8082
+$FFFC–$FFFD: RESET vector → $8000
+$FFFE–$FFFF: IRQ  vector → $FFF0
+</code></pre>
+<hr/>
+<h2 id="adding-a-new-game-checklist">Adding a new game — checklist</h2>
+<ol>
+<li>Read the iNES header: <code>hexdump -C game.nes | head -2</code></li>
+<li>Check byte 4 (PRG bank count) and byte 6/7 (mapper number)</li>
+<li>Determine if the mapper has bank switching:<ul>
+<li><strong>No switching (NROM):</strong> extract full PRG as one file, base <code>0x8000</code></li>
+<li><strong>Fixed+switchable (MMC1, MMC3, etc.):</strong> extract each bank separately; fixed bank
+goes at its NES address (<code>$C000</code> for 16KB fixed), switchable banks at <code>$8000</code></li>
+</ul>
+</li>
+<li>Verify the NMI/RESET/IRQ vectors match the game's known entry points</li>
+<li>Name each file <code>bankNN.bin</code> (or <code>game_prg.bin</code>) so the MCP server can find it</li>
+<li>Run Ghidra Auto Analysis before any manual work</li>
+</ol>
+<hr/>
+<h2 id="common-mistakes">Common mistakes</h2>
+<table>
+<thead>
+<tr>
+<th>Mistake</th>
+<th>Symptom</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Wrong base address (e.g. <code>0x0000</code> instead of <code>0x8000</code>)</td>
+<td><code>get_hexdump</code> returns zeros; addresses are off</td>
+<td>Re-import with correct base</td>
+</tr>
+<tr>
+<td>Split NROM into two 16KB banks</td>
+<td>Bank 1 code unreachable from Bank 0 analysis; cross-bank refs broken</td>
+<td>Merge into single 32KB file</td>
+</tr>
+<tr>
+<td>Missing <code>--game</code> flag when running recompiler</td>
+<td><code>inline_dispatch</code> tables not expanded; no default-case miss logging</td>
+<td><code>NESRecomp.exe rom.nes --game games/&lt;name&gt;/game.cfg</code></td>
+</tr>
+<tr>
+<td>Loaded bank at wrong NES address</td>
+<td>Vector addresses look right but function addresses are all shifted</td>
+<td>Check <code>Min Address</code> in <code>get_program_info</code> — must match bank's NES base</td>
+</tr>
+</tbody></table>
+</body>
+</html>

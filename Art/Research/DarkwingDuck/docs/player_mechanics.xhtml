@@ -1,0 +1,878 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Darkwing Duck (NES) — Player Mechanics (static reverse, addresses + constants)</title>
+    <link rel="stylesheet" type="text/css" href="../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="darkwing-duck-nes-player-mechanics-static-reverse-addresses-constants">Darkwing Duck (NES) — Player Mechanics (static reverse, addresses + constants)</h1>
+<p>Scope: player (object slot 0) movement, physics, collisions, hook/hang, gas gun, damage, animations.
+All CPU addresses are as executed in game (fixed bank = PRG bank 7 at $C000-$FFFF; switchable
+$8000-$BFFF = bank noted per label). File offset = <code>bank*0x4000 + (addr - base)</code>, base $8000 for
+banks 0-6, $C000 for bank 7.</p>
+<h2 id="h-0-corrections-to-previously-established-context">0. Corrections to previously "established" context</h2>
+<ul>
+<li>The NMI bank-queue task (<code>NMI $C0F6: JSR $8000</code>) runs the <strong>audio driver in PRG bank 3</strong>
+(bank3 $8000 = <code>JMP $806C</code>; $8393 = note processing, $8684/$86BA/$8023 = tempo/envelope
+helpers, $80EC = <code>STA $4000,Y</code> APU write). The earlier claim that bank5 $8393/$8684 are
+"per-object animation advance / sprite composition" is <strong>wrong</strong> — those are audio.</li>
+<li>Player animation + OAM composition <strong>is</strong> bank5 $8000-$81F7 (<code>$802F</code> per-slot:
+culling $802F-$80C6, player invuln blink $80E1-$80F1, anim advance $8100-$8141, OAM
+composition $8143-$81F7). It runs every frame from the master loop.</li>
+<li>Bank 4 $9800 is a near-copy of bank5 $8000 (same object update; differs only in JSR
+targets $982F and anim tables $B222/$B292 instead of $B429/$B4F0). Only screens whose
+level-script byte is $34/$56/$76/$97/$B5/$98 use the bank4 copy (<code>$CAC5</code>); all others
+use bank5 (<code>$CAAF</code>). Bank4 $9800 was never executed in the 120-frame mission-1 trace.</li>
+<li>Bank 2 is not only menus: the <strong>frame task loop</strong> at bank2 $A400 runs the briefing/level
+intro (loops until A/B/Left/Right pressed, <code>$A414: AND #$C3</code>), and the fixed-bank master
+gameplay loop is <code>$C9AC</code>.</li>
+</ul>
+<h2 id="h-1-per-frame-flow-master-process-fixed-bank">1. Per-frame flow (master process, fixed bank)</h2>
+<p><code>$C9AC Player_MainLoop</code> (loops via <code>$CAE4 JMP $C9AC</code>, yields each frame with <code>$FF06</code>):</p>
+<ol>
+<li><code>$C9AC</code>: <code>$65</code> negative → skip to <code>$CAD8</code> (level inactive).</li>
+<li><code>$C9B3</code> <strong>Select</strong> (edge <code>$14</code> bit5): if <code>$50</code> not in {09,12,15,07} and <code>$61 != 0</code>:
+SFX $1B (<code>$F850</code>), <code>$98 ^= 1</code> (gas gun on/off). Activate (<code>$CA07</code>): <code>$53 = $54</code> (weapon
+index), <code>INC $5F</code>, save <code>$61→$05C0</code>, <code>$60→$05BE</code>. Deactivate (<code>$C9E0</code>): restore
+<code>$05C0→$61</code>, <code>$05BE→$60</code>, clear <code>$53/$5F/$05BE/$05C0</code>; if <code>$54==2</code> also <code>$CAE7</code>
+(or <code>$04D2/$04D3 |= $83</code>).</li>
+<li><code>$CA17</code> <strong>Start</strong> (edge bit4): same state guards → SFX $1C, bank4 <code>$8F00</code> (pause).</li>
+<li><code>$CA40 JSR $CAFC Player_DeathCheck</code>: if slot0 active (<code>$04D0</code> bit7) →
+<code>$CB41 Player_StateDispatch</code>; else energy/HUD drain <code>$CB01-$CB3E</code> (see §7) then <code>$D41B</code>.</li>
+<li><code>$CB41 Player_StateDispatch</code>: X=0; <strong>every frame</strong> re-arms walk velocity
+<code>$0530=$80, $0540=$01</code> (<code>$CB43-$CB4C</code>); dispatches <code>JMP ($CB5F+Y)($CB75+Y)</code>, <code>Y = $50 &amp; $1F</code>
+(player state machine id, see §2).</li>
+<li><code>$CA59 JSR $DA70 Player_CameraFollow</code>: horizontal dead-zone follow; screen X of player
+<code>$00 = $04F0-$FC</code>; scroll right (<code>$DC19</code>, <code>$2F=2</code>) while <code>$00 &gt;= $10</code> (and <code>$00 &lt; $88</code>),
+scroll left (<code>$DBCE</code>, <code>$2F=1</code>) while <code>$00 &gt;= $89</code>/<code>&lt; $F1</code>; after scrolling the player is
+pushed 16 px (<code>$DABD-$DACC</code>, <code>$DAEE-$DAFA</code>). Skipped while <code>$50</code> in {07,08,12}.</li>
+<li><code>$DAFD Player_ScriptCheckpointHook</code>: reads level script byte <code>($34),Y</code> (Y=<code>$22</code> = current
+screen column): byte $C1-$CF odd → <strong>checkpoint</strong> <code>$6D = byte</code>; low nibble == 1 → hook
+column (see §5); nibble == 2 → vertical scroll snap <code>$DB3F-$DB6C</code>.</li>
+<li><code>$CA5C</code>: <code>$6E/$6F = $04F0/$0500</code> (player prev X, used by collision clamps).</li>
+<li>bank4 <code>$8090</code>: level object spawner (layout pointers <code>$72/$74/$76/$78</code>, occupancy
+<code>$0340</code>, spawns into slots 15..4, sets <code>$04E0</code> behavior/$0420 anim/$05A0 etc.).</li>
+<li><code>$E388</code> if <code>$5B != 0</code> (door/level-event loader, §5); <code>$EDF1</code> (area palette/CHR by <code>$31</code>);
+<code>$EFBE</code> (palette animation).</li>
+<li>bank6 <code>$8000</code> = enemy behavior dispatch (slots 1-15, ids &lt; $47, table <code>$825F/$82A7</code>);
+also sets <code>$99 = $40</code>. bank1 <code>$8800</code> = boss dispatch (ids &gt;= $47, table <code>$8836/$88B6</code>);
+also <code>$99 = $40</code>. <strong><code>$99</code> = gravity fraction = $40 every frame</strong> (§3).</li>
+<li>bank5 <code>$8000</code> (or bank4 <code>$9800</code>): object anim/cull/OAM update (§0).</li>
+<li><code>$CAD8</code>: <code>$C2DE</code>, yield <code>$FF06</code>.</li>
+</ol>
+<p>Input: read on every process resume at <code>$C162</code> (labelled Slot0_ResumeHook; called from
+<code>$FEC7 Process_ResumeRunning</code> → so exactly once per frame per process). <code>$16</code> = held,
+<code>$14</code> = pressed edge; bits 7=A, 6=B, 5=Select, 4=Start, 3=Up, 2=Down, 1=Left, 0=Right
+(verified from read order at <code>$C16D-$C180</code>).</p>
+<h2 id="h-2-player-state-machine-50-dispatch-cb41-table-cb5fcb75">2. Player state machine (<code>$50</code>, dispatch <code>$CB41</code>, table <code>$CB5F/$CB75</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>$50</th>
+<th>handler</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>00</td>
+<td><code>$CB8B</code></td>
+<td>stand / walk / fire / crouch / look-up dispatcher on ground</td>
+</tr>
+<tr>
+<td>01</td>
+<td><code>$CD0E</code></td>
+<td>shared jump/air physics (also re-entered from ground states)</td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>$CFD7</code></td>
+<td>crouch (Down held)</td>
+</tr>
+<tr>
+<td>03</td>
+<td><code>$D16E</code></td>
+<td>look up (Up held)</td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>$D1A4</code></td>
+<td>hurt, airborne (anim $0C→$0B); also 13 ($0D) shares it</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>$D282</code></td>
+<td>stunned (anim 8, timer <code>$51</code>)</td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>$D29A</code></td>
+<td>hurt, ground/knockback flight</td>
+</tr>
+<tr>
+<td>07</td>
+<td><code>$D353</code></td>
+<td>death throes (launch up, pause, fall, energy drain)</td>
+</tr>
+<tr>
+<td>08</td>
+<td><code>$D41B</code></td>
+<td>death handler (respawn at checkpoint <code>$6D</code> / game over)</td>
+</tr>
+<tr>
+<td>09</td>
+<td><code>$D517</code></td>
+<td>walking into a door (bank2 <code>$9600</code> transition)</td>
+</tr>
+<tr>
+<td>0A</td>
+<td><code>$D590</code></td>
+<td>forced hop (crouch+A), uncontrollable ≈17 frames</td>
+</tr>
+<tr>
+<td>0B</td>
+<td><code>$D626</code></td>
+<td>full airborne control (also 16 <code>$10</code> = variant with <code>$43</code> flag)</td>
+</tr>
+<tr>
+<td>0C</td>
+<td><code>$D7F9</code></td>
+<td>hanging on hook/peg</td>
+</tr>
+<tr>
+<td>0D</td>
+<td><code>$D1A4</code></td>
+<td>hurt variant (exits via <code>$D23F</code> to <code>$10</code>)</td>
+</tr>
+<tr>
+<td>0E</td>
+<td><code>$D1A4</code></td>
+<td>hurt, recovering (exits when <code>$F64A</code> overlap clears)</td>
+</tr>
+<tr>
+<td>0F</td>
+<td><code>$D837</code></td>
+<td>no-op (RTS)</td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>$D626</code></td>
+<td>airborne variant</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>$D838</code></td>
+<td>area cutscene (briefing / mission-complete, sets <code>$65=$FF</code> at end)</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>$D517</code></td>
+<td>post-transition walk-out (also used by death respawn)</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>$D994</code></td>
+<td>transport-tube drop cutscene (<code>$51==$73</code> → anim 8)</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>$D9B2</code></td>
+<td>level-complete jingle (bank2 <code>$9E00</code>/<code>$AA00</code>)</td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>$DA04</code></td>
+<td>grabbed/carried by end-of-level enemy (anim $2D, then state $11)</td>
+</tr>
+</tbody></table>
+<p>Table entries beyond index 21 run into data; <code>$50</code> never exceeds $15 in code.</p>
+<h3 id="ground-state-0-cb8b">Ground state 0 ($CB8B)</h3>
+<pre><code>$CB8B JSR $CD0E            ; run shared vertical/jump physics first
+$CB8E LDA $50; BEQ ..      ; if still state 0:
+$CB93 LDA $10; CMP #$04    ; contact result == 4 (enemy or spike, §4/§6)
+$CB99 LDA $7C; BNE ..      ; and not invulnerable
+  → $CB9D: $50=6, $51=$0F, anim 9 ($FA78), SFX $15, $7C=$3C, JSR $F9C2 (§6)
+$CBB7 LDA $14 AND #$80     ; A pressed → jump:
+  $0550=$E5, $0560=$04 (impulse), $50=1, JMP $CD0E
+$CBCE LDA $16 AND #$03     ; Left/Right held → $CC53 walk:
+  B pressed → fire while walking ($CF3A gate, anim 5, $CE39) and RTS (no move this frame)
+  anim 5 (fire) → wait frame 2/timer 4 ($CBF6)
+  else anim 3 (walk) if not already; walk-cycle wrap: frame 4+timer 6 → frame 1 timer 0 ($CC84)
+  frame 0 + timer&lt;4 → footstep dust coords $0530=$48, $0540=$00 ($CCAA)
+  steer ($CCB4): $52 = $16&amp;3; bit0 set (Right) → JSR $F200 (A=$00,Y=$02); bit0 clear →
+  $CCDF: JSR $F254 (A=$03,Y=$02); blocked if $9E negative; special-case checkpoint $6D==$0E
+  with $0400 == $50/$10 (hanging flags) → no move
+  after move: $CCEA damage check identical to $CB93
+$CBD7 LDA $16 AND #$0F     ; Up only → anim 4, $50=3 ($CC3A)
+                           ; Down → anim 6, $50=2, $0490=0 ($CC44)
+$CBE6/$CC16 LDA $14 AND #$40 ; B pressed → fire:
+  skip if anim==4; $CF3A can-fire gate; set anim 5 if not firing; JSR $CE39 (spawn)
+$CBEF no fire input: if anim 5 finished (frame 2, timer 4) or anim==1 → anim 1 (stand), $5A=0
+</code></pre>
+<h3 id="crouch-state-2-cfd7">Crouch (state 2, $CFD7)</h3>
+<ul>
+<li>Down released → <code>$D0AD: $50=0</code> (stand).</li>
+<li>anim 7 (crouch-fire) frame 2/timer 4 → back to anim 6 (<code>$D08C</code>).</li>
+<li>B pressed with frame==1 → crouch fire: <code>$CF3A</code>, anim 7, <code>$CE39</code> (<code>$CFFB-$D00E</code>).</li>
+<li>A pressed (<code>$D00F</code>): <code>$F64A</code> enemy-overlap check, then integrate + probe down:
+<code>$10==0</code> → stay; <code>$10==1/2</code> → <code>$D06F: $50=$0A</code> (forced hop, anim $12, <code>$F607</code> vel cut,
+<code>$0480/$5A/$9D=0</code>); <code>$10&gt;=3</code> → if <code>$10==8</code> set <code>$0400 |= $20</code> (hook flag), else
+<code>$EDD2</code> (snap up) + <code>$F607</code>.</li>
+<li>Down pressed edge (<code>$D0B2</code>→<code>$D11C</code>): <code>$0490=$FF</code>; floor probe: <code>$10==0</code> → fall (<code>$F2D7</code>);
+<code>$10==2</code> → <strong>drop-through</strong>: <code>$D166: $50=1</code>, <code>$F607</code> (velocity = -0.33 down) — press-Down
+descent through the tile; <code>$10==4</code> → spike damage; <code>$10==8</code> → set <code>$0400</code> bit5.</li>
+</ul>
+<h3 id="look-up-state-3-d16e">Look up (state 3, $D16E)</h3>
+<p>Up held; frame pinning at 2; A pressed → normal jump impulse (<code>$D18B-$D199</code>, <code>$56=1</code> →
+up-reaching jump anim $0D). Up released → <code>$50=0</code>.</p>
+<h3 id="forced-hop-state-0a-d590">Forced hop (state $0A, $D590)</h3>
+<p>Integrates down (<code>$F5A4</code>/<code>$F5DA</code> + probes). <code>$9D</code> counter: reaches $11 (17) → state $0E hurt
+(anim $0B, <code>$5A=0</code>). <code>$5A</code> counter (gated by <code>$43</code>): reaches $11 → state 4 hurt, anim $0B,
+<strong>SFX $12</strong>. <code>$0480</code> counter: reaches $12 (18) → <code>$50=1</code> (airborne). No steering input.</p>
+<h2 id="h-3-physics-exact-constants">3. Physics — exact constants</h2>
+<p><strong>Coordinate/velocity format</strong>: positions are 16.8 fixed point:
+X = <code>$04F0</code> (int lo) / <code>$0500</code> (hi) with fraction accumulator <code>$0470</code>; Y = <code>$0510</code>/<code>$0520</code>
+with fraction accumulator <code>$0460</code> (slot 0). <strong>X grows rightward; Y grows downward</strong> (screen
+Y = <code>$0510 - $FA</code> mod $F0, <code>$8049-$8054</code>). Velocities are signed 8.8: integer byte + fraction
+byte (e.g. <code>$0540</code> = X vel int, <code>$0530</code> = X vel frac; <code>$0560</code> = Y vel "up-int", <code>$0550</code> = frac).
+Vertical integration <strong>subtracts</strong> the velocity from Y ($F5A4 adds when falling, i.e. negative
+velocity), so positive <code>$0560</code> = upward motion.</p>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Addr (set)</th>
+<th>Value</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Walk speed</td>
+<td><code>$CB43-$CB4C</code>, re-armed every frame</td>
+<td><code>$0540=$01, $0530=$80</code></td>
+<td><strong>1.5 px/frame</strong> horizontal, both directions ($F4FD adds, $F51B subtracts). Instant start/stop — no acceleration, no friction anywhere in player code (no ice-specific branch found).</td>
+</tr>
+<tr>
+<td>Jump impulse</td>
+<td><code>$CBBD-$CBC5</code> (also <code>$D18B</code>, ground/look-up)</td>
+<td><code>$0560=$04, $0550=$E5</code></td>
+<td><strong>4.8945 px/frame upward</strong> (= 4 + 229/256)</td>
+</tr>
+<tr>
+<td>Gravity</td>
+<td><code>$F5DA</code> (<code>SEC SBC $99</code>), <code>$99=$40</code> set every frame by bank6 <code>$8000</code> and bank1 <code>$8800</code></td>
+<td><strong>0.25 px/frame² downward</strong></td>
+<td>velocity -= 1/4 px/frame each frame</td>
+</tr>
+<tr>
+<td>Terminal fall</td>
+<td><code>$F5EB-$F5F8</code></td>
+<td><code>$0560=$F8, $0550=$00</code></td>
+<td><strong>max fall 8 px/frame</strong></td>
+</tr>
+<tr>
+<td>Variable jump</td>
+<td><code>$CD47-$CD54</code>: A released (held check <code>$16</code> bit7) while <code>$0560 &lt; 5</code> → <code>$F5FC</code></td>
+<td><code>$0560=$FF, $0550=$AB</code></td>
+<td>velocity set to <strong>-0.332 px/frame</strong> (downward) = ascent cancelled. If <code>$0560 &gt;= 5</code> (external launches) the release does not cut.</td>
+</tr>
+<tr>
+<td>Jump-cut also used</td>
+<td><code>$F607</code> (slot 0 fixed form of <code>$F5FC</code>)</td>
+<td>same values</td>
+<td>used on landings, head bonks, hurt exits</td>
+</tr>
+<tr>
+<td>Knockback drift</td>
+<td><code>$F9C2</code>/<code>$D2DE</code></td>
+<td><code>$F607</code> value</td>
+<td>hurt launch starts as slow fall; steering inverted during flight (§6)</td>
+</tr>
+<tr>
+<td>Hang drift</td>
+<td><code>$DB8F-$DB96</code></td>
+<td><code>$0550=$80, $0560=$00</code></td>
+<td>0.5 px/frame upward while hanging (peg ride)</td>
+</tr>
+<tr>
+<td>Air control</td>
+<td>state 11 <code>$D78D/$D795</code> and state 1 <code>$CD18</code></td>
+<td>same <code>$0530/$0540</code></td>
+<td><strong>full air steering at 1.5 px/frame</strong> (same as ground)</td>
+</tr>
+</tbody></table>
+<p>Jump height ≈ v²/2g = 4.8945²/0.5 ≈ <strong>48 px (~3 tiles)</strong>, apex ≈ 20 frames after takeoff.
+Short hop: releasing A immediately → rise of ≈ (4.89² − 0.33²)/(2·0.25) frames-worth… precisely
+the cut zeroes ascent within 1 frame, minimum hop ≈ 13-14 px.</p>
+<p>Turnaround: none — direction changes are instantaneous (both integrators share the same
+velocity registers; the facing flag <code>$0400</code> bit6 flips immediately, <code>$F24B</code>/<code>$F2A6</code>).</p>
+<h2 id="h-4-tile-collisions">4. Tile collisions</h2>
+<p><strong>Probe engine</strong>: <code>$EB52 Player_TileProbeScan</code> — samples <code>Y=$40 … $40+$41</code> probe points;
+each point = <code>$EBE8</code>: X = <code>$04F0/$0500 + TileProbe_OffsetXTable[$ED19]</code> idx, Y =
+<code>$0510/$0520 + TileProbe_OffsetYTable[$ECAD]</code> idx; converts to an index into the decompressed
+metatile map at <strong><code>$0600</code></strong> (2 bytes per 16×16 cell column/row pair: address =
+<code>2*((Y&gt;&gt;5 &amp;7)&lt;&lt;3 | (X&gt;&gt;5 &amp;7) | (X&gt;&gt;8 &amp;1)&lt;&lt;6) + ((X&gt;&gt;4|Y&gt;&gt;4)&amp;1)</code>, <code>$EC6D-$EC90</code>) and returns
+either <code>metatile &gt;&gt; 4</code> (the <strong>type nibble</strong>, when mask table <code>$ECA9[idx] == 0</code>) or
+<code>metatile &amp; $0F</code> (sub-tile solidity mask, when mask = $0F). <code>$10</code> = max result over the
+points (player: no early exit; other slots exit at <code>$10 &gt;= 2</code>).</p>
+<p>Probe sets (index into <code>$ED19</code>/<code>$ECAD</code>, count = <code>$41+1</code>):</p>
+<table>
+<thead>
+<tr>
+<th>caller</th>
+<th>$40</th>
+<th>points</th>
+<th>X offsets</th>
+<th>Y offsets</th>
+<th>purpose</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$F200</code>/<code>$F254</code> via <code>$EB52</code></td>
+<td>0/3</td>
+<td>0-2 / 3-5</td>
+<td>+12 / -12</td>
+<td>-11,0,+11</td>
+<td>side walls (3 pts: top/center/bottom)</td>
+</tr>
+<tr>
+<td>falling (<code>$F2D7</code>, <code>$F3A3</code>)</td>
+<td>6</td>
+<td>6-8</td>
+<td>-11,0,+11</td>
+<td>+12,+12,+12</td>
+<td>floor (left/center/right foot 12 px below center)</td>
+</tr>
+<tr>
+<td>rising (<code>$F3C4</code>)</td>
+<td>9</td>
+<td>9-11</td>
+<td>-11,0,+11</td>
+<td>-12,-12,-12</td>
+<td>ceiling/head</td>
+</tr>
+<tr>
+<td>state 11 hook probe</td>
+<td>$3A</td>
+<td>58-60</td>
+<td>(see tables)</td>
+<td>≈ -20,-20,-3</td>
+<td>hook/peg above head</td>
+</tr>
+</tbody></table>
+<p><strong>Type nibble semantics (measured from consumption code):</strong></p>
+<table>
+<thead>
+<tr>
+<th>$10</th>
+<th>effect</th>
+<th>evidence</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>empty</td>
+<td><code>$F32E BCC</code> keep falling</td>
+</tr>
+<tr>
+<td>1</td>
+<td>one-way/special: rising passes through (<code>$D6EE-$D6F9</code>); falling with vel &gt;= <code>$FD</code> (-3) lands (<code>$F4EC</code>, <code>$D6FB</code>); on ground probes lands only if probe Y lo nibble &gt;= 8 (<code>$F332</code>)</td>
+<td>one-way platform</td>
+</tr>
+<tr>
+<td>2</td>
+<td>solid ground: landing (<code>$F360</code>, <code>$D6DC</code>→<code>$D7B7</code>), crouch drop-through</td>
+<td>main floor</td>
+</tr>
+<tr>
+<td>3</td>
+<td>solid: land on top when falling (<code>$D711</code>), wall when horizontal (<code>$F36D</code>: <code>$10&gt;=3</code> → stop)</td>
+<td>walls/blocks</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>damage</strong> (same path as enemy contact)</td>
+<td><code>$D134-$D151</code>, <code>$D73C</code>, <code>$F440</code> → state 6 hurt + SFX $15</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>door/level object</strong>: <code>$EBC8</code> reads level-object map <code>($34),Y &amp; $1F → $5B</code> <strong>and <code>$6D</code></strong></td>
+<td><code>$5B</code> triggers <code>$E388</code> section load next frame (<code>$CA6E-$CA72</code>)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>cleared to 0 (no collision)</td>
+<td><code>$EBE3</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>sets <code>$0400</code> bit5 ($20) = "on hook tile" this frame; bit5 makes the vertical integrator treat the player as grounded (<code>$CCEA</code>/<code>$CDF5-$CE21</code>)</td>
+<td>grab ledges/pegs from below</td>
+</tr>
+<tr>
+<td>8-F</td>
+<td>slope/half-tile family: <code>attr &amp; $0F &gt;= 8</code> checked at <code>$F332</code>; <code>$10==8</code> sets bit5</td>
+<td>partial solidity</td>
+</tr>
+</tbody></table>
+<p><strong>Resolution/snapping</strong> (all against the last sampled probe coordinate <code>$06</code>=X, <code>$07</code>=Y):
+<code>$ED85</code> snap left edge (X -= X&amp;0F), <code>$ED9D</code> snap right edge (X += 16-(X&amp;0F)), <code>$EDB3</code> snap
+down onto tile top (Y += 16-(Y&amp;0F)), <code>$EDD2</code> snap up (Y -= Y&amp;0F). Horizontal move flow
+(<code>$F200</code> right): apply velocity <code>$F4FD</code> (+1.5) → enemy-overlap pushback <code>$F612</code> (penetration
+capped at 4, position pushed out; if pushed past <code>$6E/$6F</code> previous X → re-probe other side
+<code>$F29A</code> with <code>$40=3</code>) → tile probe; <code>$10 &gt;= 3</code> → <code>$ED85</code> snap back. Landing flow
+(<code>$F2D7</code> falling branch): integrate → enemy-overlap vertical pushback <code>$F64A</code>/<code>$F49C</code> →
+gravity <code>$F5DA</code> → floor probe; <code>$10==2</code> (or 1 with the nibble rule, or &gt;=8) → <code>$5C=1</code>,
+re-probe with <code>$40=$3A</code>, snap <code>$EDB3</code>, return carry=1 → caller <code>$CE08</code>: <code>$50=0</code>, <code>$56=0</code>,
+<code>$5C=0</code>, <code>$9E=0</code>, SFX <code>$10</code>.</p>
+<h2 id="h-5-hook-peg-grab-hang-ride">5. Hook (peg) grab / hang / ride</h2>
+<ul>
+<li>The level <strong>script byte</strong> <code>($34),Y</code> per screen column gates everything: low nibble == 1 =
+hook column; byte $C1-$CF (odd) = checkpoint id → <code>$6D</code> (<code>$DB27</code>).</li>
+<li><strong>Grab</strong> <code>$DB6D Player_HookGrabCheck</code> (called from <code>$DAFD</code> after camera follow, only when
+scroll X <code>$FC == 0</code> and script nibble == 1): if <code>$50 != $0C</code> and player screen Y
+(<code>$0510-$FA</code>) &gt;= <code>$E8</code> (232) → <code>$DB8B</code>: <code>$50=$0C</code> (hang), <code>$0550=$80/$0560=$00</code>
+(0.5 px/frame up), <strong>all object slots 15..1 cleared</strong> (<code>$DB99-$DBB1</code>), script byte $90 →
+<code>$0400 |= $20</code>. So Darkwing catches the peg as he descends past the bottom of the screen —
+there is no "Up near hook" test; it is position + script-column based.</li>
+<li><strong>Hang</strong> state 12 <code>$D7F9</code>: integrates <code>$F539</code> (0.5/frame rise); anim frame pinning (6→f1,
+$0D→f1, 4→f2). The camera scroll routines carry the player (script byte $90 sets bit5
+again every frame). Release: when scroll Y <code>$FA == 0</code> → <code>$50=1</code> (fall).</li>
+<li>Grabbing also happens from airborne state 11: <code>$D6C4</code> probe with <code>$40=$3A</code> (hook points
+above head) feeding <code>$10</code> into the same land/grab decisions; and type-7/8 tiles set
+<code>$0400</code> bit5 which the jump physics treat as ground (<code>$CE08</code>).</li>
+</ul>
+<h2 id="h-6-damage-knockback-death">6. Damage, knockback, death</h2>
+<p><strong>Contact detection</strong> <code>$F612</code> (horizontal) / <code>$F64A</code> (vertical): compares the player (slot 0)
+against its paired slot (X^1) when both active and enemy behavior <code>$04E0 != 0</code>; computes
+overlap via <code>$F699</code>/<code>$F6DF</code>; result clamped to <code>$10 = min(pen,4)</code>. <code>$10 == 4</code> = full overlap
+→ damage. Spikes produce the same <code>$10==4</code> from tile probes — identical reaction.</p>
+<p><strong>Hurt</strong> (fresh hit, <code>$7C==0</code>): <code>$50=6</code>, <code>$51=$0F</code>, anim 9 (<code>$FA29</code> picks anim $1D/$1C in
+areas <code>$31==$08</code> with enemy anim $4D / <code>$31==$0C</code> with $5D), SFX $15, <code>$7C=$3C</code> (<strong>60
+invincibility frames</strong>), then <code>$F9C2 Player_HurtKnockback</code>:</p>
+<ul>
+<li>saves <code>$58 = $50</code> (state to restore), forces <code>$50 = 6</code>;</li>
+<li>writes the flash codes into the dynamic RAM metasprite template <code>$05B0</code> block:
+hit1 → <code>$05B4=$82</code>, hit2 → <code>$05B8=$83</code>, hit3 → <code>$05B6=$83</code>, hit4 → <code>$05B2=$82</code> <strong>and
+death</strong>: <code>$7C=0, $50=7, $04D0=$80, anim 9</code> (<code>$FA1E</code>). <strong>4 hits = death</strong> (the HP counter is
+hidden inside the RAM sprite template bytes <code>$05B2-$05B8</code>).</li>
+<li>Invuln blink: bank5 <code>$80E1-$80F1</code> decrements <code>$7C</code> per frame and skips OAM composition when
+<code>($95 &amp; 4) == 0</code> (4 frames invisible / 4 visible).</li>
+</ul>
+<p><strong>Knockback flight</strong> (state 6 <code>$D2C3</code>): horizontal velocity registers re-set to 0.5 px/frame,
+first frame <code>$F5FC</code> (fall -0.33), companion slot 5 spawned (template $0A) at player X, Y-$14;
+per frame: vertical integrate <code>$F2D7</code> (gravity applies), <strong>inverted steering</strong> — Right held
+(bit0=1) → <code>$F254</code> (moves left, faces right), Left → <code>$F200</code> — i.e. the player drifts away
+from the held direction while <code>$52</code> was latched at hit time; <code>$51</code> counts $0F → <code>$50=0</code>.
+State 4 (air hurt) lets you steer facing only, fire (anim $0C), or press A to jump out
+(anim $0D if Up / $11), Down to drop.</p>
+<p><strong>Death paths</strong>:</p>
+<ol>
+<li>4-hit ladder (above) → state 7.</li>
+<li>Pits/falling out: death throes state 7 <code>$D353</code> can be entered with <code>$66</code> (death flag set
+by level scripts) — <code>$CB41</code> runs when <code>$04D0</code> bit7 clear via <code>$CAFC</code>'s <code>$66</code> branch.</li>
+<li>Gas energy exhausted: <code>$CB0E-$CB3B</code> / state 7 <code>$D3D9-$D407</code> drain HUD meters
+<code>$05E6</code> then <code>$05E4</code> (tile codes $70..$79); both empty → <code>INC $64</code> → <code>$D41B</code>.</li>
+</ol>
+<p><strong>Death sequence</strong> state 7 <code>$D353</code>: launch up (<code>$0560=2</code>), <code>$0490=$0F</code> frames of rise,
+<code>$0480=$3C</code> pause (at $1E plays SFX $25 and sets <code>$9B</code>), then falls with gravity; energy
+drain; → state 8.</p>
+<p><strong>State 8 <code>$D41B</code></strong>: if <code>$64 != 0</code> → game over cinematic (<code>$D46C</code>, bank2 <code>$8D00</code>/<code>$9900</code>,
+continue counter <code>$5D</code>, then <code>$D95D</code> level restart). Else if <code>$6D == 0</code> → reset to level
+entry (<code>$C887</code> spawn, <code>$50=$12</code>, CHR <code>$D589[$31]</code>). Else respawn at checkpoint: <code>$66</code> clears,
+<code>$5D</code> counts deaths, <code>$E388</code> with X=<code>$6D &amp; $1F</code> reloads the section (respawn position
+<code>$04F0=$30, $0510=$06</code>, anim $2C, <code>$0400=$D0</code>, state <code>$12</code>).</p>
+<p><strong>Lives/continues</strong>: <code>$64</code> = death flag accumulated per life; <code>$5D</code> = deaths at checkpoints;
+game over → continue screen → level restart (no separate lives counter found; continues are
+implicit via <code>$5D</code>).</p>
+<h2 id="h-7-gas-gun-weapon-b">7. Gas gun (weapon B)</h2>
+<p>Fire request (<code>$CC16</code>, <code>$CC53</code>, <code>$CD2C</code> in air, <code>$CFFB</code> crouch, <code>$D1FA</code> hurt, <code>$D79C</code> air):
+<code>$CF3A Player_CanFire</code> — counts active slots 4..1 whose anim matches the weapon's set
+(<code>$CFCF[$53]</code> base: w0=$13; w1={16,18,14}; w2={14,17,29}; w3={14,19,1A}); blocked if count &gt;=
+<code>$CFD3[$53]</code> = <strong>max active [3, 1, 2, 1]</strong> for weapons [0,1,2,3].</p>
+<p><code>$CE39 Player_FireProjectile</code>:</p>
+<ul>
+<li><code>$53==0</code> → Y=0; else <code>$CEF2 Player_EnergyGate</code> (returns Y=4 = blocked when active-meter
+<code>$05BE:$05C0</code> is below the weapon threshold: w1/w3 need <code>$05C0 &gt;= $72</code> when <code>$05BE==$70</code>,
+w2 needs <code>$05C0 &gt;= $73</code>).</li>
+<li>Slot preference <code>$CF29[Y] = [04, 02, 03, 02, FF]</code> (search downward for inactive slot).</li>
+<li>Spawn X = player X + offset table (16-bit): <code>$CF21/$CF22</code> = <strong>+15 / -15 px</strong> (weapons 0/1),
+<code>$CF25/$CF26</code> = <strong>+22 / -22 px</strong> (weapons 2/3); side selected by <code>$52 &amp; 2</code> (bit1=Left).</li>
+<li>Spawn Y = player Y - 3, or +8 if player anim 7 (looking up), or same if anim $0E/$0F.</li>
+<li><code>$0580,X</code> = <code>$52</code> (direction), behavior <code>$04E0,X = $CF2E[$53] = [1,2,3,4]</code>, template
+<code>$FA6C($CF32[$53] = [13,16,14,14])</code>, SFX <code>$F850($CF36[$53] = [11,13,11,14])</code>,
+<code>$0570,X = 1</code>.</li>
+</ul>
+<p>Projectile behaviors (bank 6, dispatched via <code>$825F/$82A7</code>):</p>
+<table>
+<thead>
+<tr>
+<th>$53</th>
+<th>behavior</th>
+<th>motion</th>
+<th>on hit</th>
+<th>spawn cost (active meter <code>$8982</code> + saved <code>$890B</code>)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0 normal gas</td>
+<td>1 <code>$82F0</code></td>
+<td>horizontal <strong>4 px/frame</strong> ($0540=4, $0530=0), <strong>6</strong> once anim $18; no gravity</td>
+<td>wall → anim $14 burst, cloud remains</td>
+<td>none at spawn</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2 <code>$8385</code></td>
+<td>lob: X <strong>0.5 px/frame</strong>, Y <strong>3 px/frame up</strong> + gravity → arc</td>
+<td>floor → anim $14, spawns 2 behavior-1 clouds (dirs 2,1), SFX $24</td>
+<td><code>$FE</code> = 1 + 1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>3 <code>$841C</code></td>
+<td>waits, then X <strong>3.6 px/frame</strong> ($0540=3, $0530=$99); sticks to wall (<code>$0570=$84</code>), proximity check to player, timer <code>$0480</code> $FF→$78 → anim $29 lightning falls ($F5C9)</td>
+<td>—</td>
+<td><code>$FD</code> = 2 + 2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4 <code>$85BC</code></td>
+<td>no per-frame motion; after anim frame 4/timer 2 → <code>$8634</code> spawns 2 behavior-1 clouds (dirs 1,2), object dies</td>
+<td>timed</td>
+<td><code>$FE</code> = 1 + 1</td>
+</tr>
+</tbody></table>
+<p>Manual says Heavy/Thunder cost 2 and Arrow 3; the code's per-shot active-meter drains are
+1 / 2 / 1 and the fire gates are 2 / 3 / 2. The visible meter is two-digit: <code>$05BE</code> = high
+digit ($70-$79 = 0-9), <code>$05C0</code> = low digit ($70-$7A = 0-10) → 0-99 units; pickups add <code>$0A</code>
+(10 units) via <code>$88FF</code> and set <code>$54</code> (1/2/3) + HUD icon <code>$05BA = $7A/$7B/$7C</code>. Lingering gas
+clouds (behavior 8 <code>$8837</code>, anims $22-$28) drain the meter every frame via <code>$8957</code>
+(1 unit/frame, 10/frame for anim $24) — so the manual numbers likely count spawn + lingering
+drain; exact name→index mapping (which of $54=1/2/3 is Heavy/Thunder/Arrow) is <strong>unverified</strong>
+(needs CHR/HUD icon decode or the pause menu in bank4 <code>$8F00</code>).</p>
+<p>Energy HUD drain while idle: <code>$05E6</code> (right column) decrements each frame; at <code>$6F</code> refill
+from <code>$05E4</code> (left column) with <code>$05E6=$79</code>; both at <code>$70</code> → death (§6). (This is the
+"energy = timer" bar; refills are pickups only.)</p>
+<h2 id="h-8-player-animation-numbers-fa78-sets-0420-table-bank5-b429b4f0">8. Player animation numbers ($FA78 sets $0420; table bank5 $B429/$B4F0)</h2>
+<p>Entry format: <code>[lastFrameIdx(+bit7 flags), duration, frameId0, x, frameId1, x, ...]</code>
+(frameId indexes the metasprite frame tables <code>$9B0B/$9C45</code>, or <code>$9C0B/$9D45</code> when bit7 of
+byte0 set). Durations are frames per step.</p>
+<table>
+<thead>
+<tr>
+<th>anim</th>
+<th>entry</th>
+<th>frames × dur</th>
+<th>role (from code)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>01</td>
+<td>$AFF3</td>
+<td>1 × 8</td>
+<td>stand</td>
+</tr>
+<tr>
+<td>03</td>
+<td>$AFF9</td>
+<td>5 × 6 (cycle wraps 1-4, <code>$CC84</code>)</td>
+<td>walk</td>
+</tr>
+<tr>
+<td>04</td>
+<td>$B000</td>
+<td>3 × 4</td>
+<td>look up / reach up (also hang pose)</td>
+</tr>
+<tr>
+<td>05</td>
+<td>$B005</td>
+<td>3 × 4</td>
+<td>fire (standing)</td>
+</tr>
+<tr>
+<td>06</td>
+<td>$B00A</td>
+<td>2 × 4</td>
+<td>crouch</td>
+</tr>
+<tr>
+<td>07</td>
+<td>$B00E</td>
+<td>3 × 4</td>
+<td>crouch-fire</td>
+</tr>
+<tr>
+<td>08</td>
+<td>$B013</td>
+<td>2 × 8</td>
+<td>stunned/squash (state 5, cutscene 19)</td>
+</tr>
+<tr>
+<td>09</td>
+<td>$B017</td>
+<td>1 × 8</td>
+<td>hurt (fresh hit) / death</td>
+</tr>
+<tr>
+<td>0B</td>
+<td>$B01F</td>
+<td>1 × 8</td>
+<td>hurt falling / recover</td>
+</tr>
+<tr>
+<td>0C</td>
+<td>$B022</td>
+<td>3 × 4</td>
+<td>hurt flying (air)</td>
+</tr>
+<tr>
+<td>0D</td>
+<td>$B027</td>
+<td>4 × 4</td>
+<td>jump reaching up (Up held / hook grab, loops 1-3)</td>
+</tr>
+<tr>
+<td>0E</td>
+<td>$B02D</td>
+<td>2 × 4</td>
+<td>fire in air, rising</td>
+</tr>
+<tr>
+<td>0F</td>
+<td>$B031</td>
+<td>2 × 4</td>
+<td>fire in air, falling</td>
+</tr>
+<tr>
+<td>11</td>
+<td>$B038</td>
+<td>1 × 8</td>
+<td>jump (neutral)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>$B03B</td>
+<td>1 × 8</td>
+<td>forced-hop / transition / grabbed</td>
+</tr>
+<tr>
+<td>13</td>
+<td>$B03E</td>
+<td>3 × 4</td>
+<td>normal gas projectile</td>
+</tr>
+<tr>
+<td>14</td>
+<td>$B043</td>
+<td>6 × 2</td>
+<td>projectile burst / stuck</td>
+</tr>
+<tr>
+<td>16</td>
+<td>$B050</td>
+<td>2 × 4</td>
+<td>weapon-1 projectile</td>
+</tr>
+<tr>
+<td>17</td>
+<td>$B054</td>
+<td>1 × 8</td>
+<td>thunder stuck bolt</td>
+</tr>
+<tr>
+<td>18</td>
+<td>$B057</td>
+<td>3 × 4</td>
+<td>full traveling gas cloud</td>
+</tr>
+<tr>
+<td>19</td>
+<td>$B05C</td>
+<td>2 × 4</td>
+<td>weapon-3 projectile</td>
+</tr>
+<tr>
+<td>1A</td>
+<td>$B060</td>
+<td>2 × 4</td>
+<td>weapon-3 projectile 2</td>
+</tr>
+<tr>
+<td>29</td>
+<td>$B097</td>
+<td>2 × 6</td>
+<td>lightning strike</td>
+</tr>
+<tr>
+<td>2C</td>
+<td>—</td>
+<td>(state $12 spawn pose)</td>
+<td>materialize at checkpoint</td>
+</tr>
+<tr>
+<td>2D</td>
+<td>$B0B6</td>
+<td>44 × 4</td>
+<td>carried by end-of-level enemy</td>
+</tr>
+</tbody></table>
+<p>Frame ids observed (low byte of each pair): stand=01, walk=02/05/04/04/06, up=02/07/04,
+fire=02/08/08→09/0A, crouch=09/0A→0B, crouchfire=0B/0B/0B, stun=0C/0D→08, hurt=0E,
+hurtfall=11, hurtfly=12/13/13→14, jumpup=14/17/18/17→19, airfire=19/1A→1A, jump=15,
+hop=16.</p>
+<h2 id="h-9-key-ram-player">9. Key RAM (player)</h2>
+<table>
+<thead>
+<tr>
+<th>addr</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$50</code></td>
+<td>player state machine id (§2)</td>
+</tr>
+<tr>
+<td><code>$51</code></td>
+<td>state timer (stun/knockback $0F; cutscene counters)</td>
+</tr>
+<tr>
+<td><code>$52</code></td>
+<td>latched direction bits (<code>$16&amp;3</code>)</td>
+</tr>
+<tr>
+<td><code>$53</code></td>
+<td>active weapon index 0-3 (copy of <code>$54</code> while gas on)</td>
+</tr>
+<tr>
+<td><code>$54</code></td>
+<td>selected weapon index (set by pickups)</td>
+</tr>
+<tr>
+<td><code>$55</code></td>
+<td>vertical phase scratch (0 while falling)</td>
+</tr>
+<tr>
+<td><code>$56</code></td>
+<td>air sub-state: 1 = Up held (reach pose), 2 = fired in air</td>
+</tr>
+<tr>
+<td><code>$58</code></td>
+<td>state saved across hurt</td>
+</tr>
+<tr>
+<td><code>$5A,$5B,$5C,$43</code></td>
+<td>counters/flags: hop timer, pending level event id, landed flag, hook variant flag</td>
+</tr>
+<tr>
+<td><code>$5D</code></td>
+<td>deaths/continue counter</td>
+</tr>
+<tr>
+<td><code>$5F</code></td>
+<td>gas active (1)</td>
+</tr>
+<tr>
+<td><code>$60/$61</code></td>
+<td>saved gas energy (hi/lo digit)</td>
+</tr>
+<tr>
+<td><code>$64</code></td>
+<td>death flag-count → game over</td>
+</tr>
+<tr>
+<td><code>$65</code></td>
+<td>level active (negative = inactive)</td>
+</tr>
+<tr>
+<td><code>$66</code></td>
+<td>death flag (set by level scripts)</td>
+</tr>
+<tr>
+<td><code>$67/$68</code></td>
+<td>frame counters (level timers)</td>
+</tr>
+<tr>
+<td><code>$6D</code></td>
+<td>checkpoint id (script $C1-$CF) / door target from type-5 tile</td>
+</tr>
+<tr>
+<td><code>$6E/$6F</code></td>
+<td>player previous X (collision clamp reference)</td>
+</tr>
+<tr>
+<td><code>$70/$71</code></td>
+<td>spawner cursors; <code>$7C</code></td>
+</tr>
+<tr>
+<td><code>$9B</code></td>
+<td>energy-warning latch; <code>$9D/$9E</code></td>
+</tr>
+<tr>
+<td><code>$98</code></td>
+<td>gas gun on/off toggle</td>
+</tr>
+<tr>
+<td><code>$99</code></td>
+<td>gravity fraction, $40 every frame</td>
+</tr>
+<tr>
+<td><code>$0470/$0530/$0540</code></td>
+<td>X fraction / X vel frac / X vel int (slot 0)</td>
+</tr>
+<tr>
+<td><code>$0460/$0550/$0560</code></td>
+<td>Y fraction / Y vel frac / Y vel int (slot 0)</td>
+</tr>
+<tr>
+<td><code>$04F0/$0500, $0510/$0520</code></td>
+<td>player abs X, abs Y (16-bit)</td>
+</tr>
+<tr>
+<td><code>$0400</code></td>
+<td>slot-0 flags: $80 active, $40 facing right, $20 on-hook-tile this frame, $10/$04 misc, bit5 cleared+set by tile probes each frame</td>
+</tr>
+<tr>
+<td><code>$0410/$0420/$0430</code></td>
+<td>anim frame idx / anim number / anim timer</td>
+</tr>
+<tr>
+<td><code>$05B0-$05BF</code></td>
+<td>dynamic RAM metasprite template 31 (also hides the 4-hit HP ladder $82/$83 codes)</td>
+</tr>
+<tr>
+<td><code>$05BE/$05C0</code></td>
+<td>active gas energy hi/lo digit</td>
+</tr>
+<tr>
+<td><code>$05E4/$05E6</code></td>
+<td>energy HUD columns (tile codes $70-$79)</td>
+</tr>
+</tbody></table>
+<h2 id="h-10-open-questions-unresolved">10. Open questions / unresolved</h2>
+<ol>
+<li>Weapon name ↔ index mapping ($54 = 1/2/3 vs Heavy/Thunder/Arrow) — needs HUD icon CHR
+decode ($05BA tiles $7A/$7B/$7C) or bank4 $8F00 pause menu.</li>
+<li>Manual cost mismatch: code = spawn drain 1/2/1 (+ gate 2/3/2) + lingering drain 1/frame
+(10/frame for anim $24); manual says 2/2/3. Unit semantics of the 2-digit meter vs the
+manual's "shots" not fully reconciled.</li>
+<li>Who spawns behavior-8 lingering clouds (the drain path <code>$8837→$89D6</code>) — behavior id 8 not
+seen in <code>$CF2E</code>; likely set by an anim-end hook or the burst routines' second spawn.</li>
+<li>Arrow flight: behavior 4 shows no velocity integration — the visible projectile motion for
+weapon 3 is still unexplained (possibly a different behavior gets set after spawn, or the
+anim-driven template moves it).</li>
+<li>Crouch drop-through ($D166) sets state 1 with downward velocity — exact interplay with the
+type-2 landing rule (why it doesn't re-land next frame) not traced to the end.</li>
+<li>Ice friction: no player-code branch found for low-friction surfaces; if present it lives in
+the level scripts or bank4 level code.</li>
+<li><code>$10 == 4</code> damage threshold: overlap math ($F699/$F6DF) gives penetration 1-17 clamped to
+4; the exact pixel overlap that reaches 4 (i.e. the real hitbox sizes) not yet tabulated
+per enemy.</li>
+<li>MMC1 note: all PRG switches observed as 5 writes to <code>$FFF0</code> (register 4) — nonstandard
+wiring (CHR regs at $BFFF/$DFFF); irrelevant to mechanics but worth documenting in the
+mapper notes.</li>
+</ol>
+</body>
+</html>

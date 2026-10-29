@@ -1,0 +1,264 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>Приёмка Darkwing Duck NES → Unity — 2026-10-24</title>
+    <link rel="stylesheet" type="text/css" href="../documentation.css" />
+  </head>
+  <body><h1 id="приёмка-darkwing-duck-nes-unity-2026-10-24">Приёмка Darkwing Duck NES → Unity — 2026-10-24</h1>
+<p id="historical-report">Исторический отчёт о названных в нём версиях. Текущая очередь и состояния приёмки — Beholder ZERO. После миграции 2026-10-29 10 старых ссылок на Temp оказались недоступны и явно помечены; ZERO-35 хранит этот gap. Новая сборка и новая XML-проверка не восстанавливают эти исторические свидетельства.</p><p><strong>Порт не завершён.</strong> Этот файл — единственный текущий отчёт о приёмке. Исходные критерии <a href="IMPLEMENTATION_BRIEF_RU.xhtml">брифа §9–11</a> сохранены. Исторические версии — в Git; часть прежних выводов не воспроизвелась.</p>
+<p>Текущий стенд — <strong>build_9d3c2ad03f94</strong>, <code>Art/Build/UserStand</code>; Core/Audio остаются Qoder <code>28e19a0</code> (60CSharp hashes equal), Unity-оболочка дополнена <code>ReplaySpec.realtime</code>. «Darkwing Port - Плейтест 2» воспроизводит все38886inputs отreset на обычной скорости; рядом «Mesen - Плейтест 2» с той же .mmo на100%. Обычные порт/Mesen с записью и без неё сохранены. <code>ProjectSettings/ProjectSettings.asset</code> чист; чужие рабочие изменения не присвоены.</p>
+<p>Qoder подключил потоковый загрузчик <code>$DE86/$E698</code> к вычисляемому времени, переносу незавершённого прохода через NMI и store-точке <code>$E790</code>. У старой м1 окно несовпадения CIRAM с оригиналом <code>[282,716]</code> сократилось до <code>{289} ∪ [707,715]</code>; у второй записи в первых3000 кадрах число кадров с различиями CIRAM уменьшилось1133→692. Это продвижение загрузчика, а не завершение игрового clock: он ещё останавливается на <code>$DDCB</code>, путь <code>$DDCE</code> остаётся вне него.</p>
+<table>
+<thead>
+<tr>
+<th>Миссия / босс</th>
+<th>Подтверждённый результат на текущем Core</th>
+<th>Открытый блокер / граница</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1. Мост / Quackerjack</td>
+<td>Старая запись24261: настоящий бой → счёт → карта1/1; fullPlayer проверен вbuild2f0, маршрутCore сохранён</td>
+<td>Вторая независимая запись38886 расходится на f17234; полного покрытия изображения, звука, оружия и секретов нет</td>
+</tr>
+<tr>
+<td>2. Город / Wolfduck</td>
+<td>Короткий1499-кадровый fixture: RESULT/STRICT PASS</td>
+<td>Полная запись29360 расходится с f6388; босс и карта1/2 не достигнуты; применение Thunder не закрыто</td>
+</tr>
+<tr>
+<td>3. Канализация / Liquidator</td>
+<td>Частичная реализация; короткий fixture FAIL</td>
+<td>Полный естественный маршрут, бой и прогрессия не подтверждены</td>
+</tr>
+<tr>
+<td>4. Башня / Moliarty</td>
+<td>Частичная реализация; короткий fixture FAIL</td>
+<td>Полный естественный маршрут, бой и прогрессия не подтверждены</td>
+</tr>
+<tr>
+<td>5. Лес / Bushroot</td>
+<td>Частичная реализация; короткий fixture FAIL</td>
+<td>Полный естественный маршрут, бой и прогрессия не подтверждены</td>
+</tr>
+<tr>
+<td>6. Склад / Megavolt</td>
+<td>Частичная реализация; короткий fixture FAIL</td>
+<td>Полный естественный маршрут, бой и прогрессия не подтверждены</td>
+</tr>
+<tr>
+<td>7. FOWL HQ / Steelbeak</td>
+<td>Короткий1499-кадровый fixture: RESULT/STRICT PASS</td>
+<td>Полный маршрут, настоящий бой и финал не подтверждены</td>
+</tr>
+</tbody></table>
+<p><strong>Итого: у 1/7 миссий подтверждён полный маршрут одного ввода; полностью принятых миссий0/7.</strong> Короткие seeded-fixtures, наличие dispatch босса и семь принудительных clear не доказывают прохождение. Процент готовности не выводится.</p>
+<ul>
+<li><strong>PASS выбранных проверок:</strong> три полных Core-повтора24261/38886/29360;63 C# hashes стабильны;4384-byte exports равны Qoder captures. У старой записи f2033–24261 каждая из пяти групп (игрок, RNG/boss, HUD/score/lives, progression, активные объекты) совпала22229/22229 с оригиналом. Это не full-RAM/image/audio PASS. Clock loader:72 отрицательных контроля;16 contracts и trench619/cling199/climb399 PASS. Suite <strong>FAIL: RESULT18/24 STRICT8/24 errors0</strong>, результат сохранён без ослабления критериев.</li>
+<li><strong>Текущий freshhost PASS в указанном объёме:</strong> build9d3c0errors/6warnings,226source/354binary hashes проверены. ActualDarkwingMain1200prefix5NT/OAM/PAL snapshots3RGB7fields6negativecontrols exactCore,60.053poll/s. Actualярлык freshPlayer:60/600/1200 RGB exactCore,60.083poll/s, окно768×720 захвачено иосмотрено; свой сервисный Player нормально закрыт,exitcode недоступен. Полный38886real-time viewer до конца NOT RUN; пользователь посмотрит позже. <strong>Предыдущий build2f0</strong> подтверждал оба fullPlayer м1:23/72snapshots15/62RGB exactCore,exit0/exceptions0 иEditor16000prefix; эти результаты не выдаются за новый fullPlayer9d3c. FreshfullCore старый24261/второй38886 сохранили records и15/62PNG; freshcity не запускался, Core/Audio не менялись.</li>
+<li>**Изображение частично:**8 выбранных целых RGB-кадров и правая ROI портрета равны оригиналу,12pixel controls. Intro f1800/2200/2300/2400 всё ещё567/828/458/458 отличающихся пикселей (было624/960/480/480). City RGB NOT RUN. Полная музыка, PCM и конечная задержка звука NOT RUN; отложенная пользователем проверка F5/звука не повторно запрошена.</li>
+<li><strong>FAIL маршрутов / следующий шаг:</strong> f17234 <code>$E4</code> original68/nativeB4, <code>$043F</code>03/04; требуется продолжение bank5 OAM через NMI (PC81E5, slot0E, cursor80, parity18, bracket9A01), RNG после RTI. До этого довести самостоятельный clock от текущего <code>$DDCB</code> через <code>$DDCE</code> и последующие владельцы до миссии, без clock/source-state seed. City f6388 <code>$E4</code>CC/E6 остаётся.</li>
+<li><strong>HUMAN FAIL audio2026-10-24</strong> после прыжка/при захвате/выстреле сохранён; по просьбе пользователя звук не исправлялся. Human-сообщение о мгновенной смерти послеbat в автоматическом viewer привело к проверке f11590–11636:47XY/state/visibleOAM/PAL exact, смерть11636/Y512 в обеих версиях; ускоренный показ попадал только в невидимый hurt-blink. Теперь viewer real-time; пользователь подтвердил более позднее расхождение и что со смертью «вроде всё ок»: <strong>HUMAN_PRELIMINARY_PASS</strong> этого эпизода. Прежняя общая графическая проверка и полная приёмка остаются открыты. F5 отдельно отложен. f17234/город6388/Thunder не закрыты.</li>
+</ul>
+<p>Артефакты: <code>Art/Temp/user_stand_{core_result,players_result,original_rgb,m1_states,human_states,city_states}.json</code>, <code>Art/Temp/user_stand_{clock,suite,contracts,regressions}/</code>, <code>Art/Temp/editor_user_stand/{comparison,original_rgb}.json</code>, <code>Art/Temp/build_user_stand/{build_final,source_before,source_after,binary_manifest}.json</code>. Три лишних временных helper-скрипта удалены; в <code>AGENTS.md</code> закреплены поиск и переиспользование готовых инструментов, минимальное расширение и обоснование нового helper до его создания. После проверки и отчёта работа остановлена по просьбе пользователя.</p>
+<h2 id="историческая-проверка-2026-10-19">Историческая проверка 2026-10-19</h2>
+<p>Числа, builds и первые расхождения ниже относятся к этой дате; текущую приёмку определяет сводка выше.</p>
+<p>База после очистки истории: <code>5f1b7e6</code> + локальные исправления; содержимое прежней G92 сохранено в <code>08384cd</code>. ROM SHA-256 <code>1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00</code>, неизменён. Исходные незавершённые изменения сохранены.</p>
+<p>Текущий результат: <strong>первая миссия целиком завершена тем же непрерывным вводом в Core, штатной сцене и свежем standalone</strong>. Остальной порт и полная пиксельная/звуковая эквивалентность не приняты.</p>
+<ul>
+<li>Источник: <code>Art/Playthroughs/20261019T050329Z/input.bin</code>, 24261 кадр/1424 диапазона, SHA-256 <code>50718e87aebd5798f72720e1f84dbe2531a79e8b459cf4a7fbcb43598fe1eb70</code>. Исходная сессия сохранена. Два полных повтора оригинала побайтно равны вне первых 7 power-on кадров; SHA-256 объединённых RAM/NT/OAM/PAL f8–24261: <code>b19da6736d52b3e6990f5b8bdbbacef3986acdd0e7b122354796918dcdfbc86b</code>.</li>
+<li>Без seed/warp/patch/direct clear: RESET → титул/диалоги/карта → миссия → бой с Quackerjack → <code>$B315/$B3F8/$DA04/$D838</code> → самолёт/очки → карта. На f24261: <code>(208,183)</code>, world0, count/mask1/1, scoreUnits86 (8600), lives <code>$70/$75</code> (5). Порядок и номера ввода не менялись.</li>
+<li><strong>22229/22229</strong> кадров f2033–24261 совпали в каждой группе <code>stand.py states</code>: 27 отображённых полей игрока; RNG/boss; HUD/score/lives; progression; все 27 полей каждого активного слота1–15 с двусторонней проверкой активности. SHA-256 равны во всех пяти группах. Остатки неактивных слотов и вся RAM этим не сертифицированы.</li>
+<li>G92 положительные pair/scan и отрицательные контроли — 29 проверок; всего 13 групп <code>PhysCompare.Mission1Contracts</code> PASS. <code>Mission1Regressions</code>: trench/cling/climb RESULT+STRICT <strong>619/619,199/199,399/399</strong> (trench также ENEMIES/PAL). Текущий Suite <strong>FAIL, RESULT18/24 STRICT8/24 errors0</strong>, <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/m1_current_suite/suite_result.json] результат</span>. Дополнительный FAIL к прежним19: <code>w05_fall</code> <code>$23</code> f683, RESULT370/371 при равных X/Y; G62 остаётся открытым, golden/критерии не ослаблены.</li>
+<li>Стенд сравнивает NT/OAM/PAL побайтно и по SHA-256; перестановка двух байтов при прежней сумме обнаруживается. f8–281 равны, первые остатки: NT f282, PAL f293, OAM f463. Полные NT отличаются и в кадрах с одинаковым RGB. Из десяти выбранных поздних RGB PNG exact восемь: 18562,20725,22142,22200,22492,22521,23255,24261; f22739/f23000 — <strong>5745/3072</strong> отличий из61440. Это не покадровый image PASS всего маршрута.</li>
+</ul>
+<p>Исправленные причины: завершение <code>$D709</code> и высота <code>$FBE9</code>; RESET/ввод и возврат resident-loader в тот же игровой кадр; позднее применение CHR arena1→10; X-регистр после <code>$CE39</code> (обрезалась скорость игрока вместо пули); анимации хвата/приседа и отпускание; HP/pickups/Select/стоимость оружия/HUD; RNG carry и облака газа Quackerjack, владелец flash; настоящее поражение/победная анимация/полёт/счёт/возврат, отметка C4 пройденной миссии. Первый провал проходится через хват, выпущенную опору X+24 и повторный прыжок; гипотеза обязательного неизвестного буста отозвана.</p>
+<p>Сырые минимальные данные: <code>Art/Temp/stand_original/replay1/buffers.bin</code>, <code>Art/Temp/stand_port_route/buffers.bin</code> и их trace/выбранные PNG. Воспроизведение и границы кадров — §8 <a href="RESEARCH_HANDOFF_RU.xhtml">RESEARCH_HANDOFF</a>. Промежуточные дубликаты удалены, запись человека и исходные goldens не менялись.</p>
+<h2 id="значение-результатов">Значение результатов</h2>
+<ul>
+<li><code>RESULT</code> в Compare — только X/Y, при <code>camera:true</code> ещё <code>$50,$FA,$FB,$22,$23,$2B</code> (8 полей). В Hurt/Door это сумма <strong>field-frames</strong>, в WorldSeeds — 133 значения в семи загрузчиках. Единицы не взаимозаменяемы.</li>
+<li><code>STRICT</code> — 20 перечисленных полей <code>pv/ov</code> (включая дроби, Y-скорость, счётчик урона, <code>$25,$10,$28,$FC,$1F,$20</code>) и только явно включённые ENEMIES/PAL/OAM/PANEL. Не сравнивает всё состояние, VRAM или итоговые RGB-пиксели. X-скорости, многие таймеры/флаги/RNG не входят в эти 20 полей.</li>
+<li>ENEMIES сопоставляет <strong>тот же индекс RAM-слота 01–0F</strong>, проверяет missing/extra по активности с двух сторон; у активных сравнивает Xlo/Xhi/Ylo/Yhi/state/behavior/anim. Если обе стороны неактивны, прочие байты не проверяются. <code>$0400,$0570</code>, скорости, дроби, anim frame/timer и глобальные boss bytes этим вердиктом не сертифицируются.</li>
+<li><code>enemies:true</code> подключает bank6 и seed слотов; симуляцию определяет WorldRunning; <code>scoreEnemies:true</code> включает их приёмку. В стандартном Suite ENEMIES включён только у b_attack. У маршрутов STRICT не означает совпадение всех врагов.</li>
+<li>PAL — 32 байта <code>$3F00</code>; PALMODEL (<code>$0300/$0320/$18</code>) диагностический и сам по себе не влияет на STRICT. OAM — 256 байт каждый кадр, без допуска. Отсутствующие кадры теперь ERROR вместо «не оценивались». PANEL — явно перечисленные поля панели/блока.</li>
+<li><code>frames</code> в старом API Compare — историческая подсказка: выполняется весь захват от seed+1 (либо явный limit). Длина сверяется с <code>request.json --frames</code>; частичные/пустые/укороченные захваты отвергаются. Ограничение окна явно отражается в знаменателе.</li>
+<li>Совпадение указанных полей не доказывает полную покадровую идентичность. Ни golden, ни пороги не менялись.</li>
+</ul>
+<h2 id="короткие-fixtures-результаты-18-октября">Короткие fixtures — результаты 18 октября</h2>
+<table>
+<thead>
+<tr>
+<th>Проверка</th>
+<th>Фактический результат</th>
+<th>Граница</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Suite</td>
+<td><strong>FAIL</strong>, RESULT 19/24, STRICT 8/24, ERROR 0; gate exit 1</td>
+<td>24 сценария, не 25; прежняя пустая строка не сценарий</td>
+</tr>
+<tr>
+<td>Hurt / Door</td>
+<td>1056/1056 (16×66), 1470/1470 (15×98)</td>
+<td>принудительные fixtures / выбранные поля</td>
+</tr>
+<tr>
+<td>WorldSeeds</td>
+<td>133/133</td>
+<td>19 полей по разным фазам загрузчика ×7; не прохождение</td>
+</tr>
+<tr>
+<td>EnemySweep</td>
+<td><strong>MATCH</strong> 599/599, 699/699, 799/799, 899/899, 899/899</td>
+<td>это карта, а не враги миссии. Исправлен владелец кадра в seed; SlotsEqual не менялся</td>
+</tr>
+<tr>
+<td>Quackerjack</td>
+<td>RESULT/STRICT/ENEMIES 570/570, seed29</td>
+<td>короткая idle-сцена после patch-door, без доказательства естественной победы</td>
+</tr>
+<tr>
+<td>Wolfduck pilot14</td>
+<td>RESULT f40 (317/399), STRICT f38 (38/399), ENEMIES f38 slot03 state 81/80 (356/399)</td>
+<td>world1, seed0, без residentFade; RAM-патч $EE=0F сокращает бой</td>
+</tr>
+<tr>
+<td>Пауза hold / resume</td>
+<td>RESULT/ENEMIES/PANEL 69/69 и 79/79; OAM/STRICT 68/69 и 78/79</td>
+<td>обе расходятся на f1; это не полный PASS</td>
+</tr>
+<tr>
+<td>HUD OAM</td>
+<td>contact 398/399, jump 118/119; longroute 883/2499</td>
+<td>отдельный OAM-сценарий, не сертификация изображения</td>
+</tr>
+<tr>
+<td>Титул</td>
+<td>OAM и палитра 59/60, первая ошибка port f1; nametable 960/2048 отличаются с $2400</td>
+<td>выбранное окно; прежний пункт про $97=220 не подтверждён текущей диагностикой ($97=212)</td>
+</tr>
+<tr>
+<td>IntroVerify</td>
+<td>$8F00 276/276, $9100 148/148, $9000 63/63; $A000 отдельный seed</td>
+<td>процедуры вызываются вручную; только поля слотов1–2, не полный экран/обычный GameFlow</td>
+</tr>
+<tr>
+<td>MapOamVerify</td>
+<td>обычный проход: 107/899, 0/179, 42/259, 0/582 exact OAM</td>
+<td>paired-проход подсевает оригинальные записи, поэтому не равен непрерывному маршруту; тоже имеет ошибки</td>
+</tr>
+<tr>
+<td>Карточки миссий</td>
+<td>160/160 по 7 мирам</td>
+<td>content-only blit; поиск лучшего кадра, не временная идентичность</td>
+</tr>
+<tr>
+<td>GameOverVerify</td>
+<td>nametable $2000–23FF 0 ошибок, BG palette 0/16 ошибок; A/B ветки выполнены</td>
+<td>смерть и состояние принудительны; не полный continue-маршрут</td>
+</tr>
+<tr>
+<td>FlowVerify</td>
+<td>7 принудительных clear → Ending; EndingStage6 через 515 frames, $65=FF</td>
+<td>ClearMission выставляет DamageAccum=10 и вызывает HitFlash; реальные семь боёв этим не проверены</td>
+</tr>
+<tr>
+<td>BootFlowProbe</td>
+<td>настоящая сцена Editor: Title → NewGameDialog → MapCursor → MapBriefing → Mission0; IdleTitle 600f PASS</td>
+<td>кнопки от Awake, без LoadWorld/phase/RAM вызовов из проверки; выстрел/ходьба/прыжок проверяются отдельно от полного прохождения</td>
+</tr>
+<tr>
+<td>Аудио</td>
+<td><a href="../../Research/DarkwingDuck/audio_port_comparison.json">Диагностика</a>: свежий song1 export 600f/479210 samples + Save/Load; файлы равны сохранённым; исправленная membership 33/51,44/59,26/34</td>
+<td>presence без порядка/кратности не является event-stream match</td>
+</tr>
+<tr>
+<td>WAV</td>
+<td>best envelope correlation <strong>0,4367</strong>, offset <strong>−87 f</strong>, 48kHz</td>
+<td>это не RMS и не совпадение сигнала; оптимизация сдвига скрывает абсолютный тайминг</td>
+</tr>
+<tr>
+<td>SFX $3F</td>
+<td>свежие 40f экспортированы; по старому заявленному выравниванию port1=probe88 совпало 1091/1160 значений</td>
+<td>первая диагностическая ошибка port f1 D3=05/03; фаза/начальное состояние ещё не подтверждены, точность не принята</td>
+</tr>
+</tbody></table>
+<p><a href="evidence/audit_20261018/suite/suite_result.json">Сжатый снимок Suite</a> сохраняет статусы, первые расхождения, gate exit1 и границы original routes. Дополнительно прошли 14 C#, 7 Python и 2 PowerShell целевых проверки; отрицательные missing-source/missing-exe дают gate2/gate1. Проверки Y/missing/extra уже существовавшей ENEMIES-логики сохранены. Исправлены обрезание отчётов, неполные captures, внутренняя ошибка CLI и аудиосравнение с собственным списком порта; smoke не принимает рамку окна за изображение и корректно считает RGB через int. Полные воспроизводимые дампы генерировать командами из <a href="RESEARCH_HANDOFF_RU.xhtml">RESEARCH_HANDOFF</a>.</p>
+<h2 id="семь-миссий-и-боссы">Семь миссий и боссы</h2>
+<p>Ниже исторические короткие seeded-записи 18 октября, отдельно от полного человеческого маршрута выше: во всех <code>$38=0</code> до конца, без завершения миссии (<a href="evidence/audit_20261018/suite/suite_result.json">данные</a>).</p>
+<table>
+<thead>
+<tr>
+<th>Миссия / world</th>
+<th>RESULT</th>
+<th>STRICT</th>
+<th>Обычный полный маршрут</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 / 00</td>
+<td>2499/2499</td>
+<td>f814 $25, 2163/2499</td>
+<td>короткий fixture не завершён; полный новый маршрут подтверждён выше</td>
+</tr>
+<tr>
+<td>2 / 01</td>
+<td>1499/1499</td>
+<td>1499/1499</td>
+<td>не доказан</td>
+</tr>
+<tr>
+<td>3 / 02</td>
+<td>f1314, 1313/1499</td>
+<td>f50 $25, 1131/1499</td>
+<td>не доказан</td>
+</tr>
+<tr>
+<td>4 / 03</td>
+<td>f198, 1498/1499</td>
+<td>f190 $25, 908/1499</td>
+<td>не доказан</td>
+</tr>
+<tr>
+<td>5 / 04</td>
+<td>f507, 1497/1499</td>
+<td>f499 $25, 1038/1499</td>
+<td>не доказан</td>
+</tr>
+<tr>
+<td>6 / 05</td>
+<td>f330, 1034/1499</td>
+<td>f303 $10, 977/1499</td>
+<td>не доказан</td>
+</tr>
+<tr>
+<td>7 / 06</td>
+<td>1499/1499</td>
+<td>1499/1499</td>
+<td>не доказан</td>
+</tr>
+</tbody></table>
+<p><a href="evidence/audit_20261018/boss_capture_inventory.txt">Скан 85 захватов</a>: 14 содержат boss core, только Quackerjack ($50) и Wolfduck ($54 с контроллером $53). Bushroot ($49), Moliarty ($4A), Liquidator ($57), Megavolt ($5A), Steelbeak ($62) активного core в этом наборе не имеют. Название каталога pilot не доказывает покрытие: pilot4/5 с wolfduck в имени содержат Quackerjack. Контроллер $53 не восьмой босс. Наличие веток dispatch не доказывает полноту поведения; G90 остаётся частичным.</p>
+<p>Секреты/бонусы: часть pickup-кода имеется, но входы, награда/выход, достижимость и полное покрытие по мирам не доказаны. UI, progression и полный финал остаются частичными. Процент готовности не выводится.</p>
+<h2 id="источник-и-воспроизводимость">Источник и воспроизводимость</h2>
+<p>Исходные request, снимки и бинарные данные 85 RAM-захватов находятся в <code>Art/Research/DarkwingDuck/reference/</code>; они не переписывались. <a href="evidence/audit_20261018/stored_reference_determinism.json">Сверка сохранённых det_a/det_b</a>: RAM отличается только f0–3, OAM f0–5, palette f0–6, то есть общий стабильный участок начинается f7. Это уточнение прежнего вывода, не разрешение пропускать ошибку на произвольном seed+1. Новую пару det_a/b не снимали; новый обычный маршрут от reset записан отдельно, его общий участок двух запусков (records7–3099) совпал по RAM/palette/OAM.</p>
+<h2 id="обычный-вход-в-миссию-1">Обычный вход в миссию 1</h2>
+<p>Причины повреждения установлены по данным до Unity-вывода:</p>
+<ul>
+<li>Первая неверная ветка титула — port f240: GameFlow принимал RESET-задержку <code>$51=$F0</code> за таймер титула и запускал незавершённый Intro. Оригинальный <code>$C7AD–$C7CC</code> ждёт Start (probe_flow остаётся на титуле более 240f). IdleTitle теперь держит CHR31/25 все 600f.</li>
+<li><code>LoadWorld</code> не публиковал новую nametable: это делал только начальный Launcher для world0. Добавлен StreamColumns нового мира; предварительная загрузка миссии перед титулом (и оставшийся от неё EntryFreeze17) удалена.</li>
+<li>После карточки <code>$D562/$D565</code> просит CHR0=$80→bank0; порт оставлял загрузочный14. Обычные ненулевые CHR-запросы теперь применяются в начале следующего кадра перед палитрой (<code>$C047/$C050</code>), а не только хранятся в latch. В gameplay банки <strong>0/16</strong>, в загрузчике14/16.</li>
+<li>Карта использовала CHR26/26. Bank2 <code>$8E16–$8E1F</code> задаёт <code>$9F/$9A</code>, то есть <strong>31/26</strong>. Экспортированный снимок содержал старый текст; карта теперь строится task2 исходного банка. <code>$A300</code> имеет строки <code>$22E7/$2327/$2367</code> шириной 19 тайлов, отдельно от <code>$AA00</code>.</li>
+</ul>
+<p>Порядок шага сохранён: ввод → GameFlow.Step → DarkwingGame.Step → изображение. URP, point texture, PPUCTRL90 и camera postProcessing=false проверены. Исправление шейдеров не требовалось; ERROR было наблюдением повреждённых тайлов, не установленным исключением.</p>
+<p>EnemyFixtureRegression доказывает отдельную причину: тот же golden и SlotsEqual при world-owner дают <strong>f9 slot01 active 00/01</strong>, при map-owner — 20/20. Source <code>m1_gameplay.mss</code> фактически содержит map-плашку $36, caret $39 и пузыри $BB/$73/$73. На неверной ветке Y плашки расходился уже на f1. Полные пять записей совпали; это исправление fixture, не покрытие bank6. Эталоны сохранены.</p>
+<h2 id="standalone-и-штатная-сцена">Standalone и штатная сцена</h2>
+<p>Свежая <strong>Development</strong> Windows x64 сборка <a href="../../Build/DarkwingDuck/DarkwingDuck.exe">Art/Build/DarkwingDuck/DarkwingDuck.exe</a>: build <code>build_9db4d1106d85</code>, Succeeded, 25567ms, 0 errors/8 warnings; <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/build_final.json] BuildReport</span>, <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/source_before.json] исходные hashes</span>, <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/binary_manifest.json] binary manifest</span>. Hashes исходников до/после build равны. Нативный C# runtime не исполняет ROM; исследовательский эмулятор не требуется игре.</p>
+<p><code>DarkwingMain.unity</code>, UseFlow=true: ввод начинается в Awake при Game.Frame0. Editor действительно тикает (Time.frameCount164→166), потребил все24261 входных кадров и завершил маршрут. <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_scene/route.json] Editor route</span> и <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/route.json] Player route</span> содержат <strong>22 полностью одинаковых сериализованных снимка плюс одинаковое конечное состояние</strong>: поля, весь 4KiB NT-window, OAM, PAL, framebuffer, активные слоты. <code>stand.py scene</code> дополнительно сверил каждый снимок с Core в той же pre-input границе; физические NT2KiB, OAM/PAL и10 RGB PNG совпали. Приёмочные offsets не применялись.</p>
+<p>Свежий Player действительно открыл окно768×720, показал миссию и конечную карту с «OK!»: <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/window_a.png] начало</span>, <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/window_b.png] карта</span>, <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_player/player_smoke.json] smoke/exit</span>. Все24261 input consumed; count/mask1/1, 8600 очков, 5 жизней. Штатный CloseMainWindow/exit0, исключений нет. 17 Bloom warnings остаются. Финальный viewport по центрам исходных пикселей: <strong>1542/61440</strong> RGB отличия, из них134 с delta&gt;1 (включая Development watermark); это не exact Unity output PASS. <span>[ИСТОРИЧЕСКОЕ СВИДЕТЕЛЬСТВО НЕДОСТУПНО: ../../Temp/stand_scene/game_view.png] Снимок Game view</span> сохранён; Editor остановлен, сцена не изменена.</p>
+<p>Оставшиеся границы: физические NT/атрибуты и G62 inline CPU-время; полный idle attract, звук, остальные шесть естественных миссий/боссы, секреты и финал не приняты. Семь forced clears остаются только fixture ветвления. Полная приёмка брифа открыта.</p>
+</body>
+</html>

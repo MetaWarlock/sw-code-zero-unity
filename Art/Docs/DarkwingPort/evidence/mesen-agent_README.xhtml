@@ -1,0 +1,572 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>mesen-agent</title>
+    <link rel="stylesheet" type="text/css" href="../../documentation.css" />
+  </head>
+  <body><h1 id="mesen-agent">mesen-agent</h1>
+<p><a href="https://github.com/atonamy/mesen-agent/actions/workflows/build.yml"><img src="https://github.com/atonamy/mesen-agent/actions/workflows/build.yml/badge.svg" alt="Agent CI" /></a>
+<a href="https://github.com/atonamy/mesen-agent/releases/latest"><img src="https://img.shields.io/github/v/release/atonamy/mesen-agent?display_name=tag" alt="Latest release" /></a>
+<a href="mesen-agent_LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="License: GPL-3.0" /></a></p>
+<p><code>mesen-agent</code> is a native, windowless emulator, debugger, and evidence-capture
+toolkit designed for AI coding agents. It lets an agent compile a ROM, run it
+for a deterministic number of frames, drive controllers, execute Lua,
+break/step through machine code, inspect or mutate memory, compare states, and
+collect screenshots, gameplay video, audio, traces, and coverage without ever
+opening Mesen's graphical interface.</p>
+<p>The project is especially useful for agentic NES development: an AI can change
+assembly or C code, build a <code>.nes</code>, exercise the exact behavior it changed,
+inspect zero-page state and CPU execution, and return machine-readable evidence
+in a single terminal loop. The same CLI also supports the other consoles in
+Mesen's emulation core.</p>
+<blockquote>
+<p>[!NOTE]
+This is a focused fork of <a href="https://github.com/SourMesen/Mesen2">SourMesen/Mesen2</a>
+around Mesen 2.1.1. The upstream repository is archived; current GUI-focused
+Mesen development continues at <a href="https://github.com/nesdev-org/MesenCE">nesdev-org/MesenCE</a>.
+This fork deliberately publishes <code>mesen-agent</code> CLI binaries, not the Mesen GUI.</p>
+</blockquote>
+<h2 id="install">Install</h2>
+<h3 id="fast-install-of-the-latest-cli-release">Fast install of the latest CLI release</h3>
+<p>Linux and macOS:</p>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/atonamy/mesen-agent/master/Headless/install.sh | sh
+</code></pre>
+<p>The installer selects the current OS and CPU architecture, verifies the release
+checksum, and installs the CLI and its matching runtime in <code>$HOME/.local/bin</code>.
+Ensure that directory is on <code>PATH</code>:</p>
+<pre><code>export PATH="$HOME/.local/bin:$PATH"
+mesen-agent --help
+</code></pre>
+<p>Windows PowerShell:</p>
+<pre><code>irm https://raw.githubusercontent.com/atonamy/mesen-agent/master/Headless/install.ps1 | iex
+</code></pre>
+<p>This installs to <code>%USERPROFILE%\.local\bin</code>. Add that directory to <code>PATH</code>, or
+invoke <code>mesen-agent.exe</code> by absolute path.</p>
+<p>You can also download an archive directly from
+<a href="https://github.com/atonamy/mesen-agent/releases/latest">GitHub Releases</a>.
+Each release contains only <code>mesen-agent</code>, the matching Mesen core runtime,
+licenses, and checksums—no Avalonia UI or .NET application.</p>
+<h3 id="install-directly-from-a-github-release">Install directly from a GitHub release</h3>
+<p>The release asset must match the host operating system and CPU:</p>
+<table>
+<thead>
+<tr>
+<th>Host</th>
+<th>Release asset</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>macOS Apple silicon</td>
+<td><code>mesen-agent-macos-arm64.tar.gz</code></td>
+</tr>
+<tr>
+<td>macOS Intel</td>
+<td><code>mesen-agent-macos-x64.tar.gz</code></td>
+</tr>
+<tr>
+<td>Linux arm64</td>
+<td><code>mesen-agent-linux-arm64.tar.gz</code></td>
+</tr>
+<tr>
+<td>Linux x86-64</td>
+<td><code>mesen-agent-linux-x64.tar.gz</code></td>
+</tr>
+<tr>
+<td>Windows x86-64</td>
+<td><code>mesen-agent-windows-x64.zip</code></td>
+</tr>
+</tbody></table>
+<p>The following commands download from GitHub Releases, verify the published
+checksum, and install into the location used by the agent skill.</p>
+<p>macOS, automatically selecting Apple silicon or Intel:</p>
+<pre><code>INSTALL_DIR="$HOME/.local/bin"
+WORK_DIR="$(mktemp -d)"
+case "$(uname -m)" in
+  arm64|aarch64) ASSET=mesen-agent-macos-arm64.tar.gz ;;
+  x86_64|amd64) ASSET=mesen-agent-macos-x64.tar.gz ;;
+  *) echo "Unsupported macOS architecture: $(uname -m)" &gt;&amp;2; exit 1 ;;
+esac
+BASE_URL=https://github.com/atonamy/mesen-agent/releases/latest/download
+curl -fL "$BASE_URL/$ASSET" -o "$WORK_DIR/$ASSET"
+curl -fL "$BASE_URL/SHA256SUMS" -o "$WORK_DIR/SHA256SUMS"
+(cd "$WORK_DIR" &amp;&amp; grep " $ASSET$" SHA256SUMS | shasum -a 256 -c -)
+tar -xzf "$WORK_DIR/$ASSET" -C "$WORK_DIR"
+mkdir -p "$INSTALL_DIR"
+install -m 755 "$WORK_DIR/mesen-agent" "$INSTALL_DIR/mesen-agent"
+install -m 755 "$WORK_DIR/MesenCore.dylib" "$INSTALL_DIR/MesenCore.dylib"
+"$INSTALL_DIR/mesen-agent" --help
+</code></pre>
+<p>Linux, automatically selecting arm64 or x86-64:</p>
+<pre><code>INSTALL_DIR="$HOME/.local/bin"
+WORK_DIR="$(mktemp -d)"
+case "$(uname -m)" in
+  arm64|aarch64) ASSET=mesen-agent-linux-arm64.tar.gz ;;
+  x86_64|amd64) ASSET=mesen-agent-linux-x64.tar.gz ;;
+  *) echo "Unsupported Linux architecture: $(uname -m)" &gt;&amp;2; exit 1 ;;
+esac
+BASE_URL=https://github.com/atonamy/mesen-agent/releases/latest/download
+curl -fL "$BASE_URL/$ASSET" -o "$WORK_DIR/$ASSET"
+curl -fL "$BASE_URL/SHA256SUMS" -o "$WORK_DIR/SHA256SUMS"
+(cd "$WORK_DIR" &amp;&amp; grep " $ASSET$" SHA256SUMS | sha256sum -c -)
+tar -xzf "$WORK_DIR/$ASSET" -C "$WORK_DIR"
+mkdir -p "$INSTALL_DIR"
+install -m 755 "$WORK_DIR/mesen-agent" "$INSTALL_DIR/mesen-agent"
+install -m 755 "$WORK_DIR/MesenCore.so" "$INSTALL_DIR/MesenCore.so"
+"$INSTALL_DIR/mesen-agent" --help
+</code></pre>
+<p>Windows x64 PowerShell:</p>
+<pre><code>$Asset = "mesen-agent-windows-x64.zip"
+$BaseUrl = "https://github.com/atonamy/mesen-agent/releases/latest/download"
+$WorkDir = Join-Path ([IO.Path]::GetTempPath()) ("mesen-agent-" + [guid]::NewGuid())
+$InstallDir = Join-Path $HOME ".local\bin"
+New-Item -ItemType Directory -Force $WorkDir, $InstallDir | Out-Null
+Invoke-WebRequest "$BaseUrl/$Asset" -OutFile "$WorkDir/$Asset"
+Invoke-WebRequest "$BaseUrl/SHA256SUMS" -OutFile "$WorkDir/SHA256SUMS"
+$ChecksumLine = Get-Content "$WorkDir/SHA256SUMS" |
+  Where-Object { $_ -match " $([regex]::Escape($Asset))$" }
+if (-not $ChecksumLine) { throw "Checksum for $Asset was not published" }
+$Expected = ($ChecksumLine -split '\s+')[0].ToLowerInvariant()
+$Actual = (Get-FileHash "$WorkDir/$Asset" -Algorithm SHA256).Hash.ToLowerInvariant()
+if ($Actual -ne $Expected) { throw "mesen-agent release checksum mismatch" }
+Expand-Archive "$WorkDir/$Asset" -DestinationPath "$WorkDir/extracted" -Force
+Copy-Item "$WorkDir/extracted/mesen-agent.exe" $InstallDir -Force
+Copy-Item "$WorkDir/extracted/MesenCore.dll" $InstallDir -Force
+&amp; "$InstallDir/mesen-agent.exe" --help
+</code></pre>
+<p>Add <code>$HOME/.local/bin</code> to the shell <code>PATH</code> after installation, but keep the
+binary and matching <code>MesenCore</code> library together in that directory.</p>
+<h3 id="install-the-ai-agent-skill-from-github">Install the AI-agent skill from GitHub</h3>
+<p>The repository uses the open Agent Skills layout, so the standard skills CLI
+discovers and installs it directly from GitHub:</p>
+<p>First verify that GitHub discovery finds the skill, then install it globally for
+all supported coding agents:</p>
+<pre><code>npx --yes skills@latest add atonamy/mesen-agent --list
+npx --yes skills@latest add atonamy/mesen-agent \
+  --skill mesen-agent --agent '*' --global --yes
+</code></pre>
+<p>The second command installs the canonical copy under
+<code>$HOME/.agents/skills/mesen-agent</code> and wires supported clients such as Codex,
+Claude Code, and Pi to it. Verify the registrations with:</p>
+<pre><code>npx --yes skills@latest list --global --json
+</code></pre>
+<p>The skill lives at <code>skills/mesen-agent</code>, follows the portable <code>SKILL.md</code>
+convention, always instructs agents to invoke
+<code>$HOME/.local/bin/mesen-agent</code>, and includes the full CLI contract plus advanced
+debugging examples.</p>
+<h3 id="prompt-examples-for-coding-agents">Prompt examples for coding agents</h3>
+<p>After installing the binary and skill, ask an agent to use the skill explicitly.
+These prompts are designed to produce commands, machine-readable evidence, and
+reproducible artifacts rather than opening a GUI.</p>
+<p>Investigate why a game does not leave its title screen:</p>
+<pre><code>Use the mesen-agent skill and $HOME/.local/bin/mesen-agent. Do not open any GUI.
+Run build/game.nes in an isolated home, press Start deterministically, inspect
+NES RAM before and after the input, and use Lua inputPolled callbacks if the
+simple schedule is insufficient. Save JSONL events, a final screenshot, AVI,
+WAV, and state JSON. Explain the exact state transition or why it failed.
+</code></pre>
+<p>Find and prove a gameplay regression:</p>
+<pre><code>Use the mesen-agent skill to compare build/good.nes and build/bad.nes. Give each
+run a separate --home directory and identical frame/input schedules. Compare
+zero-page RAM, complete state JSON, screenshots, and traces. Locate the first
+meaningful divergence and report exact commands and artifact paths.
+</code></pre>
+<p>Debug machine code at a suspected routine:</p>
+<pre><code>Use the mesen-agent skill on build/game.nes. Set an execute breakpoint at NES
+CPU address $C010, run until it hits, step one instruction, then return the PC,
+call stack, nearby disassembly with opcode bytes, relevant RAM, and a bounded
+trace. Confirm the final summary and do not infer success only from exit code.
+</code></pre>
+<p>Create a state-aware Lua test:</p>
+<pre><code>Use the mesen-agent skill. Write and run a Lua test that reads NES internal RAM,
+drives controller input from inputPolled, asserts the expected gameplay state,
+checks a RAM write/read round trip, and exits nonzero on failure. Keep Lua IO and
+network disabled unless the test genuinely requires them. Capture PNG, AVI,
+WAV, save state, and JSONL evidence from $HOME/.local/bin/mesen-agent.
+</code></pre>
+<h2 id="why-this-helps-coding-agents">Why this helps coding agents</h2>
+<p>Traditional emulator automation often stops at “launch the game and press some
+keys.” That is not enough for autonomous debugging. An agent needs stable input,
+structured observations, bounded execution, deep debugger control, and durable
+artifacts it can compare between builds.</p>
+<table>
+<thead>
+<tr>
+<th>Agent need</th>
+<th><code>mesen-agent</code> capability</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Deterministic tests</td>
+<td>Fixed relative frame budgets, isolated homes, explicit wall-clock watchdogs</td>
+</tr>
+<tr>
+<td>Gameplay automation</td>
+<td>Frame schedules and Lua state-dependent controller input</td>
+</tr>
+<tr>
+<td>Program understanding</td>
+<td>Breakpoints, stepping, disassembly, expressions, PC, call stacks, traces, CDL</td>
+</tr>
+<tr>
+<td>State inspection</td>
+<td>Memory reads/dumps, complete JSON state, save-state load/save</td>
+</tr>
+<tr>
+<td>Controlled experiments</td>
+<td>Memory writes, PC changes, Lua assertions, in-memory save-state round trips</td>
+</tr>
+<tr>
+<td>Visual evidence</td>
+<td>PNG screenshots and AVI/GIF gameplay capture</td>
+</tr>
+<tr>
+<td>Audio evidence</td>
+<td>Standalone WAV plus emulated audio in AVI</td>
+</tr>
+<tr>
+<td>Reliable orchestration</td>
+<td>JSON Lines stdout, explicit artifact paths, documented exit codes</td>
+</tr>
+<tr>
+<td>Safe scripting</td>
+<td>Lua IO/network disabled by default, callback watchdog, fail-fast errors</td>
+</tr>
+<tr>
+<td>CI operation</td>
+<td>No window, display server, host audio device, or interactive input backend</td>
+</tr>
+</tbody></table>
+<p>An effective agent loop looks like this:</p>
+<pre><code>flowchart LR
+    A["Edit NES source"] --&gt; B["Build ROM"]
+    B --&gt; C["Run mesen-agent"]
+    C --&gt; D{"Observe JSONL"}
+    D --&gt; E["Memory and state"]
+    D --&gt; F["Breakpoint and trace"]
+    D --&gt; G["PNG / AVI / WAV"]
+    E --&gt; H{"Expected behavior?"}
+    F --&gt; H
+    G --&gt; H
+    H -- "No" --&gt; A
+    H -- "Yes" --&gt; I["Report reproducible evidence"]
+</code></pre>
+<h2 id="supported-systems">Supported systems</h2>
+<p>ROM format selects the console automatically. Some systems or games require
+firmware placed in the selected <code>--home</code> directory.</p>
+<table>
+<thead>
+<tr>
+<th>System</th>
+<th>Typical ROMs</th>
+<th>Example CPU/memory types</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NES / Famicom</td>
+<td><code>.nes</code>, <code>.fds</code>, <code>.nsf</code></td>
+<td><code>Nes</code>, <code>NesMemory</code>, <code>NesInternalRam</code>, <code>NesPrgRom</code></td>
+</tr>
+<tr>
+<td>SNES / Super Famicom</td>
+<td><code>.sfc</code>, <code>.smc</code></td>
+<td><code>Snes</code>, <code>SnesMemory</code>, <code>SnesWorkRam</code>, <code>SnesPrgRom</code></td>
+</tr>
+<tr>
+<td>Game Boy / Game Boy Color</td>
+<td><code>.gb</code>, <code>.gbc</code></td>
+<td><code>Gameboy</code>, <code>GameboyMemory</code>, <code>GameboyWorkRam</code></td>
+</tr>
+<tr>
+<td>Game Boy Advance</td>
+<td><code>.gba</code></td>
+<td><code>Gba</code>, <code>GbaMemory</code>, <code>GbaIntWorkRam</code>, <code>GbaVideoRam</code></td>
+</tr>
+<tr>
+<td>PC Engine / TurboGrafx-16</td>
+<td><code>.pce</code> and CD images</td>
+<td><code>Pce</code>, <code>PceMemory</code>, <code>PceWorkRam</code>, <code>PceVideoRam</code></td>
+</tr>
+<tr>
+<td>Master System / Game Gear</td>
+<td><code>.sms</code>, <code>.gg</code></td>
+<td><code>Sms</code>, <code>SmsMemory</code>, <code>SmsWorkRam</code>, <code>SmsPrgRom</code></td>
+</tr>
+<tr>
+<td>WonderSwan</td>
+<td><code>.ws</code>, <code>.wsc</code></td>
+<td><code>Ws</code>, <code>WsMemory</code>, <code>WsWorkRam</code>, <code>WsPrgRom</code></td>
+</tr>
+</tbody></table>
+<p>Run <code>--frames 0 --list-memory --pc</code> on the actual ROM before assuming a memory
+layout. Multi-CPU systems also require the correct <code>--cpu</code> for expressions,
+stepping, disassembly, breakpoints, PC, and call-stack operations.</p>
+<h2 id="quick-start">Quick start</h2>
+<p>Inspect a newly built NES ROM without advancing emulation:</p>
+<pre><code>mesen-agent build/game.nes \
+  --home /tmp/mesen-game-home \
+  --frames 0 --list-memory --pc
+</code></pre>
+<p>Drive Start, run 300 frames, inspect zero page, and capture state and media:</p>
+<pre><code>mesen-agent build/game.nes \
+  --home /tmp/mesen-game-home \
+  --frames 300 --timeout 30 \
+  --input '0:start@40-46' \
+  --read-memory NesInternalRam:0:256 \
+  --state-json artifacts/state.json \
+  --screenshot artifacts/final.png \
+  --video artifacts/gameplay.avi \
+  --audio artifacts/audio.wav
+</code></pre>
+<p>Stop on an execute breakpoint, step one operation, and inspect the result:</p>
+<pre><code>mesen-agent build/game.nes \
+  --home /tmp/mesen-break-home \
+  --frames 10000 \
+  --breakpoint 'NesMemory:0xC010:x' \
+  --step 1 --pc --callstack \
+  --disassemble 0xC000:32 \
+  --read-memory NesInternalRam:0x20:32
+</code></pre>
+<p>Produce broad execution evidence:</p>
+<pre><code>mesen-agent build/game.nes \
+  --home /tmp/mesen-trace-home \
+  --frames 1800 \
+  --trace artifacts/trace.log \
+  --save-cdl NesPrgRom=artifacts/game.cdl \
+  --dump-memory NesInternalRam=artifacts/ram.bin \
+  --save-state artifacts/repro.mss
+</code></pre>
+<h2 id="lua-automation">Lua automation</h2>
+<p><code>--lua FILE</code> loads Mesen debugger Lua before execution and is repeatable. Scripts
+can observe memory/events, assert invariants, inject dynamic input, draw overlays,
+take screenshots, create/load in-memory save states, rewind, step, or terminate
+the run with <code>emu.stop(code)</code>.</p>
+<p>Example state-aware NES test:</p>
+<pre><code>local polls = 0
+
+emu.addEventCallback(function()
+  local state = emu.read(0x0E, emu.memType.nesInternalRam)
+  local shouldStart = state == 0 and polls &gt;= 40 and polls &lt;= 46
+  emu.setInput({ start = shouldStart }, 0, 0)
+  polls = polls + 1
+end, emu.eventType.inputPolled)
+
+emu.addEventCallback(function()
+  local state = emu.read(0x0E, emu.memType.nesRam)
+  if polls == 80 then
+    assert(state == 2, "expected PLAY state")
+    emu.log("PLAY reached with valid NES RAM reads")
+  end
+end, emu.eventType.endFrame)
+</code></pre>
+<p><code>nesInternalRam</code> is the canonical physical 2 KiB NES system RAM type;
+<code>nesRam</code> is a compatibility alias for FCEUX-style automation. <code>nesMemory</code>
+addresses the CPU-visible bus. Invalid memory enum names fail immediately rather
+than silently reading memory type zero.</p>
+<p>Although <code>inputPolled</code> is the most precise event for controller automation,
+explicit values passed to <code>emu.setInput()</code> from frame or memory callbacks are
+queued for the next poll, so the core cannot erase them before the ROM samples
+the controller.</p>
+<p>Lua is sandboxed by default:</p>
+<ul>
+<li>add <code>--lua-allow-io</code> only for trusted scripts that need <code>io</code>, <code>os</code>, or sibling
+<code>require()</code> modules;</li>
+<li>add <code>--lua-allow-network</code> only for trusted scripts that need LuaSocket;</li>
+<li>use <code>--lua-timeout</code> to bound each callback;</li>
+<li>require <code>summary.ok == true</code> and every <code>lua_log.error_count == 0</code> before
+trusting script-derived conclusions.</li>
+</ul>
+<h2 id="output-contract">Output contract</h2>
+<p>Standard output is JSON Lines: one complete JSON object per line. Diagnostics
+and usage errors go to stderr; binary artifacts only go to requested files.</p>
+<pre><code>{"event":"loaded","rom":"/work/game.nes","console":"Nes","cpu":"Nes"}
+{"event":"memory_read","type":"NesInternalRam","start":14,"length":1,"hex":"02"}
+{"event":"screenshot_saved","file":"/work/final.png"}
+{"event":"summary","ok":true,"reason":"frame_limit","frames_executed":80,"stop_code":0}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th align="right">Exit</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="right"><code>0</code></td>
+<td>Successful run</td>
+</tr>
+<tr>
+<td align="right">script code</td>
+<td>Value supplied to <code>emu.stop(code)</code></td>
+</tr>
+<tr>
+<td align="right"><code>2</code></td>
+<td>Invalid CLI arguments</td>
+</tr>
+<tr>
+<td align="right"><code>3</code></td>
+<td>ROM, runtime, or artifact failure</td>
+</tr>
+<tr>
+<td align="right"><code>4</code></td>
+<td>Overall wall-clock timeout</td>
+</tr>
+<tr>
+<td align="right"><code>5</code></td>
+<td>Lua load, callback, assertion, or watchdog failure</td>
+</tr>
+</tbody></table>
+<p>Do not treat every nonzero code as a crash: first inspect the final <code>summary</code>
+and determine whether Lua intentionally requested that status.</p>
+<h2 id="architecture">Architecture</h2>
+<p>The CLI is intentionally thin. It does not reimplement an emulator or maintain
+a second debugger. It calls a narrow native agent ABI in the same <code>MesenCore</code>
+used by the desktop application, then converts observations into stable JSONL.</p>
+<pre><code>flowchart TB
+    Agent["AI coding agent / CI / shell"]
+    CLI["mesen-agent\nargument parsing + JSONL + artifacts"]
+    ABI["Agent/debug/record ABI wrappers"]
+    Core["MesenCore"]
+    Consoles["NES · SNES · GB/GBC · GBA · PCE · SMS/GG · WS"]
+    Debugger["Debugger\nbreakpoints · steps · expressions · traces · CDL"]
+    Lua["Lua runtime\nevents · memory · input · assertions"]
+    Media["Video/audio pipeline\nPNG · AVI/GIF · WAV"]
+
+    Agent --&gt;|"ROM + bounded command"| CLI
+    CLI --&gt; ABI
+    ABI --&gt; Core
+    Core --&gt; Consoles
+    Core --&gt; Debugger
+    Core --&gt; Lua
+    Core --&gt; Media
+    Debugger --&gt;|"state and stops"| CLI
+    Lua --&gt;|"logs and stop code"| CLI
+    Media --&gt;|"requested files"| CLI
+    CLI --&gt;|"JSON Lines"| Agent
+</code></pre>
+<p>Execution follows a bounded, observable lifecycle:</p>
+<pre><code>sequenceDiagram
+    participant A as Agent
+    participant C as mesen-agent
+    participant M as MesenCore
+    participant L as Lua scripts
+
+    A-&gt;&gt;C: ROM, frame budget, input, debug requests
+    C-&gt;&gt;M: Initialize headless defaults and load ROM
+    C-&gt;&gt;L: Load scripts with sandbox/watchdog
+    loop Until frame limit, breakpoint, Lua stop, or timeout
+        C-&gt;&gt;M: Resume emulation
+        M-&gt;&gt;L: Emit memory/frame/input events
+        L--&gt;&gt;M: Assertions, input, memory changes
+    end
+    C-&gt;&gt;M: Inspect debugger and serialize artifacts
+    C--&gt;&gt;A: JSONL events and final summary
+</code></pre>
+<h2 id="what-changed-from-archived-mesen2">What changed from archived Mesen2</h2>
+<p>The guiding rule is “reuse the core, minimize the fork.” The changes are focused
+at existing extension points instead of duplicating console implementations.</p>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Native frontend</td>
+<td>Added <code>Headless/AgentCli.cpp</code> and native build targets; no Avalonia or .NET dependency</td>
+</tr>
+<tr>
+<td>Native runtime</td>
+<td>Agent builds omit unused SDL, X11, host-audio, and physical-input backends; capture stays inside <code>MesenCore</code></td>
+</tr>
+<tr>
+<td>Core ABI</td>
+<td>Added small wrappers for frames, console/CPU discovery, state JSON, screenshots, Lua policy, and deterministic input schedules</td>
+</tr>
+<tr>
+<td>Debugger</td>
+<td>Exposed breakpoint, step, expression, PC, call-stack, disassembly, trace, CDL, and memory operations to the CLI</td>
+</tr>
+<tr>
+<td>Lua reliability</td>
+<td>Added fail-fast error counts, callback watchdog behavior, safe teardown, strict required memory arguments, and <code>nesRam</code> compatibility</td>
+</tr>
+<tr>
+<td>Input timing</td>
+<td>Added deterministic CLI schedules and queued off-poll Lua input so frame callbacks cannot lose controller changes</td>
+</tr>
+<tr>
+<td>Media</td>
+<td>Reused Mesen's renderer and recorders without initializing a window, host audio device, or interactive input backend</td>
+</tr>
+<tr>
+<td>Video safety</td>
+<td>Ensured the NES software video filter can render and capture frames without a GUI renderer</td>
+</tr>
+<tr>
+<td>Automation</td>
+<td>Added isolated homes, machine-readable summaries, complete state dumps, artifact paths, and bounded execution</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Added a synthetic redistributable NES ROM and regression coverage for debug, state, Lua, input, sandboxing, and media</td>
+</tr>
+<tr>
+<td>Distribution</td>
+<td>Added agent-only macOS/Linux/Windows workflows, portable installers, checksums, and multi-agent skill packaging</td>
+</tr>
+</tbody></table>
+<h2 id="headless-design-guarantees">Headless design guarantees</h2>
+<ul>
+<li>No GUI window is created.</li>
+<li>No display server is required for capture.</li>
+<li>No host audio output device is opened; emulated audio can still be recorded.</li>
+<li>No keyboard, mouse, or physical controller backend is required.</li>
+<li>Maximum-speed execution is the default; <code>--no-max-speed</code> opts into pacing.</li>
+<li>Every independent run can use its own <code>--home</code> directory.</li>
+<li>A finite wall-clock timeout prevents wedged emulation or scripts.</li>
+<li>Lua IO and network capabilities are explicit trust-boundary expansions.</li>
+<li>Requested post-failure memory/state/screenshots remain available for diagnosis.</li>
+</ul>
+<h2 id="build-and-test">Build and test</h2>
+<p>Linux and macOS need a C++17 compiler. The agent target deliberately excludes
+the desktop SDL/display/audio/input backends, and does not need SDL2 or the .NET
+SDK:</p>
+<pre><code>make agent -j4
+bash Headless/tests/smoke.sh
+</code></pre>
+<p>Windows uses Visual Studio 2022:</p>
+<pre><code>msbuild Mesen.sln -m -p:Configuration=Release -p:Platform=x64 -t:Headless
+</code></pre>
+<p>See <a href="https://github.com/atonamy/mesen-agent/blob/dbc2c744ad52e1c89a8570d22d7fa92507ad4816/Headless/README.md">Headless/README.md</a> for the detailed native CLI guide,
+<a href="https://github.com/atonamy/mesen-agent/blob/dbc2c744ad52e1c89a8570d22d7fa92507ad4816/COMPILING.md">COMPILING.md</a> for platform prerequisites, and
+<a href="https://github.com/atonamy/mesen-agent/blob/dbc2c744ad52e1c89a8570d22d7fa92507ad4816/skills/mesen-agent/references/cli-reference.md">the skill CLI reference</a>
+for the complete option/event contract.</p>
+<p>The agent-only GitHub workflow builds and smoke-tests native release bundles on:</p>
+<ul>
+<li>macOS arm64 and Intel x64;</li>
+<li>Linux x64 and arm64;</li>
+<li>Windows x64.</li>
+</ul>
+<p>Tags matching <code>v*</code> publish those verified bundles and <code>SHA256SUMS</code> as a GitHub
+release. Workflow artifacts and release archives never contain the GUI app.</p>
+<h2 id="github-support">GitHub support</h2>
+<ul>
+<li>Report reproducible CLI problems in
+<a href="https://github.com/atonamy/mesen-agent/issues">Issues</a>.</li>
+<li>Attach the exact command, ROM SHA-1 from the <code>loaded</code> event, final <code>summary</code>,
+stderr, operating system/architecture, and relevant artifacts.</li>
+<li>Do not upload commercial ROMs or copyrighted firmware. Prefer a minimal
+homebrew reproduction or the synthetic test ROM generator.</li>
+<li>Pull requests should preserve headless operation and include a terminal-level
+regression in <code>Headless/tests</code> when behavior changes.</li>
+</ul>
+<h2 id="license-and-attribution">License and attribution</h2>
+<p>Mesen and this fork are available under GPL-3.0-or-later. See <a href="mesen-agent_LICENSE">LICENSE</a>.</p>
+<p>Copyright (C) 2014–2026 Sour and Mesen contributors. Agent-focused changes are
+maintained in this fork. This project is not affiliated with Nintendo or other
+console manufacturers.</p>
+</body>
+</html>

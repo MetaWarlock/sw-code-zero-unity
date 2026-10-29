@@ -1,0 +1,36 @@
+{
+  "result": "PASS",
+  "shortcuts": [
+    {
+      "name": "Darkwing Port - Плейтест 2.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ArtLayout\\DarkwingDuck.exe",
+      "arguments": "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -darkwing-replay \"D:\\Art\\SW Code Zero Unity\\Art\\Build\\UserStand\\Playtest2.json\"",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ArtLayout"
+    },
+    {
+      "name": "Darkwing Port.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ArtLayout\\DarkwingDuck.exe",
+      "arguments": "",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ArtLayout"
+    },
+    {
+      "name": "Mesen - БЕЗ ЗАПИСИ.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Tools\\DarkwingResearch\\vendor\\Mesen2\\Mesen.exe",
+      "arguments": "\"D:\\Art\\SW Code Zero Unity\\Art\\Darkwing Duck (USA).nes\"",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity\\Art"
+    },
+    {
+      "name": "Mesen - Плейтест 2.lnk",
+      "target": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "arguments": "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"D:\\Art\\SW Code Zero Unity\\Art\\Tools\\DarkwingResearch\\stand\\Start-Playthrough.ps1\" -ReplayMovie \"D:\\Art\\SW Code Zero Unity\\Art\\Playthroughs\\20261022T164819Z\\movie.mmo\"",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity"
+    },
+    {
+      "name": "Mesen - С ЗАПИСЬЮ.lnk",
+      "target": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "arguments": "-NoProfile -ExecutionPolicy Bypass -File \"D:\\Art\\SW Code Zero Unity\\Art\\Tools\\DarkwingResearch\\stand\\Start-Playthrough.ps1\"",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity"
+    }
+  ],
+  "replayOutput": "D:/Art/SW Code Zero Unity/Art/Temp/user-playtest2-layout"
+}

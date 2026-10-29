@@ -1,0 +1,30 @@
+:root { color-scheme: light; }
+html { background: #edf1f5; color: #202b3a; font: 17px/1.65 "Segoe UI", Arial, sans-serif; }
+body { max-width: 1040px; margin: 36px auto; padding: 42px 54px; background: #fff; border-top: 6px solid #305f8b; box-shadow: 0 8px 32px #172d4714; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.25; color: #193e61; scroll-margin-top: 24px; }
+h1 { font-size: 2rem; margin: 0 0 1.1em; }
+h2 { margin-top: 2em; border-bottom: 1px solid #dce3eb; padding-bottom: .4em; }
+h3 { margin-top: 1.6em; }
+p, ul, ol, dl, table, pre, blockquote { margin: 1em 0; }
+li + li { margin-top: .4em; }
+a { color: #165f9c; text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+a:visited { color: #675095; }
+a:hover { color: #0b3a62; }
+strong { color: #1a334b; }
+code, pre, kbd, samp { font-family: Consolas, "Cascadia Mono", monospace; font-size: .88em; }
+code { background: #f0f4f8; padding: .12em .3em; border-radius: 3px; overflow-wrap: anywhere; }
+pre { padding: 18px 22px; background: #152c42; color: #e5edf5; overflow-x: auto; border-left: 4px solid #7aaed8; line-height: 1.5; }
+pre code { background: transparent; padding: 0; color: inherit; overflow-wrap: normal; }
+blockquote { margin-left: 0; margin-right: 0; padding: 2px 20px; background: #f5f8fc; border-left: 4px solid #8faecb; }
+table { width: 100%; border-collapse: collapse; font-size: .9em; }
+th, td { border: 1px solid #d9e2eb; padding: 10px 13px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { background: #e7eef5; color: #193e61; font-weight: 650; }
+tbody tr:nth-child(even) { background: #f7f9fc; }
+dt { font-weight: bold; }
+dd { margin-bottom: .7em; }
+hr { border: 0; border-top: 1px solid #dce3eb; margin: 2em 0; }
+img { max-width: 100%; height: auto; image-rendering: pixelated; }
+caption { text-align: left; font-weight: bold; padding: .5em 0; }
+div > a + a { margin-left: 1em; }
+@media (max-width: 760px) { body { margin: 0; padding: 25px 20px; } table { display: block; overflow-x: auto; } h1 { font-size: 1.6rem; } }
+@media print { html, body { background: white; color: black; } body { max-width: none; margin: 0; padding: 0; box-shadow: none; border: 0; } pre { color: black; background: #f2f2f2; white-space: pre-wrap; } h1, h2, h3 { break-after: avoid; } tr, img { break-inside: avoid; } }

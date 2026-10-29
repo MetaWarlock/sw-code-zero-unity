@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Исторические процедуры восстановления cost-harness</title>
+    <link rel="stylesheet" type="text/css" href="../../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="исторические-процедуры-восстановления-cost-harness">Исторические процедуры восстановления cost-harness</h1>
+<p>Статус: <strong>ARCHIVED / HISTORICAL, не активный entry point</strong>. Исходники сохранены без изменений из восстановленного <code>Build/CostHarness/scratchpad-20261026</code>; это замороженные варианты исследования, а не закрытие городского блокера. Активный агрегатор и обработчики фаз — <a href="../../cost/">cost/</a>, команды — в <a href="../../README.xhtml">едином каталоге</a>.</p>
+<p><code>patch_*.py</code> — старые одноразовые преобразования игрового кода, не патчи для повторного запуска. <code>phase_*</code>, <code>check_thr*</code>, <code>edge_fit*</code>, <code>cov*</code>, <code>slots*</code>, <code>slack</code>, <code>thr_verify</code>, <code>ppu_variants</code> и <code>.orig.cs</code> сохраняют ход технических проверок; некоторые требуют утраченные Temp-входы или старую ревизию. Их воспроизводимость сейчас <strong>NOT RUN / частично отсутствуют зависимости</strong>. Не запускать массово и не создавать новый вариант лишь из-за неработающего исторического пути; сначала читать актуальные инструменты и свидетельства.</p>
+<p>Исходные текстовые дампы и единый <code>city_phase.pkl</code> лежат локально в <code>Research/DarkwingDuck/reference/cost-harness/data/</code>; происхождение, хеши, внешние копии и границы восстановления — в <a href="../../../../Research/DarkwingDuck/reference/cost-harness/evidence.json">evidence.json</a>. Дубликат <code>city.pkl</code> побайтово равен <code>city_phase.pkl</code>; в активных данных используется один файл. Полный исходный восстановленный каталог, включая этот дубликат, сохранён вне проекта, а не удалён.</p>
+<p>Правило дальнейшего жизненного цикла: завершённые blocker-specific инструменты архивируются только после доказанного закрытия блокера и проверки зависимостей, с причиной/ревизией/входами/командой проверки в каталоге. Общие востребованные инструменты остаются активными. Архив сохраняется в Git; при возврате задачи используем или дорабатываем этот источник.</p>
+</body>
+</html>

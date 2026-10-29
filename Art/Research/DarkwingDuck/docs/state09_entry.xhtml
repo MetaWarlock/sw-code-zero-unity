@@ -1,0 +1,62 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Вход уровня: $50 = $09 и «отпускание» игрока</title>
+    <link rel="stylesheet" type="text/css" href="../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="вход-уровня-50-09-и-отпускание-игрока">Вход уровня: <code>$50 = $09</code> и «отпускание» игрока</h1>
+<p>Замеры <code>reference/gold_w00</code>…<code>gold_w06</code> (<code>ram_frames.bin</code>, 2048 Б/кадр). Все 7 миссий одинаково:
+<code>$50=$09</code> виден с <strong>f328</strong>, первый тик диспетчера — <strong>f345</strong> (= f328+17), первый сдвиг <code>$0510</code> — <strong>f347</strong>.</p>
+<h2 id="h-1-пауза-даёт-не-счётчик-а-незавершённый-dd57">1. Пауза даёт не счётчик, а незавершённый <code>$DD57</code></h2>
+<p>Хвост загрузчика, <code>flat_bank7.txt:3695-3698</code>: <code>DDFE STA $50</code>(=$09) → <code>DE00 JSR $C158</code> →
+<code>DE03 JSR $FF06</code> (1 кадр = f328) → <code>DE06 JMP $C254</code> → fade-in <code>$C270</code> (строки 300-351):</p>
+<pre><code>C254 LDA #$05 / JSR $FF55 ; C259 JSR $8000 (банк-5 тик) ; C25C JMP $C270
+C270 LDA #$30 -&gt; $0F        ; старт fade-in
+C272 LDX #$F0 -&gt; $0D        ; шаг -$10 за раунд
+C281/C283 LDY #$04 / STY $0E; 4 yield-кадра на раунд (цикл C2A4..C2AE, JSR $FF06)
+C2B0 $0F += $0D ; C2B7 CMP #$50 BEQ exit ; C2BD BPL next ; C2BF RTS
+</code></pre>
+<p>Раунды <code>$0F</code>: 30(f329-332) → 20(333-336) → 10(337-340) → 00(341-344) → <code>$F0</code> (отриццательное) =
+выход на f345. 1 yield + 4×4 = <strong>17 кадров</strong>, всё это время <code>$DD57</code> не возвращает управление,
+поэтому <code>CB41</code>/анимация не выполняются (f329-344: <code>$0530/$0540 = 0</code>, <code>$0430</code> залип на 01).</p>
+<p>ПРАВИЛО: после <code>STA $50 = #$09</code> — 17 кадров заморозки (1 yield + fade-in <code>$C270</code>, затемнять
+палитру по <code>C292-C2A0</code>); на 18-м кадре (<code>f328+17</code>) обычный per-frame цикл с диспетчером <code>CB41</code>.</p>
+<h2 id="h-2-обработчик-09-падение">2. Обработчик <code>$09</code> = падение</h2>
+<p><code>CB4D LDA $50 / AND #$1F / TAY / CB52 LDA $CB5F,Y / CB57 LDA $CB75,Y / JMP ($00)</code>; индекс 9 →
+<strong><code>$D517</code></strong> (raw <code>$CB68=$17</code>, <code>$CB7E=$D5</code>). Строки 2630-2646: <code>D517 LDA $04D0 / AND #$0F / D51C BNE $D53F</code>
+(сид <code>$04D0=$80</code> → ветка 0); <code>D51E LDA $0560 / CMP #$FA / BCS $D539</code>; <code>D539 JSR $F5A4 / D53C JMP $F5DA</code>;
+<code>D525 LDA #$06 / LDY #$02 / JSR $F4D7</code> (= <code>F5A4</code>+<code>F5DA</code>+<code>EB52</code> пробник тайлов).</p>
+<pre><code>F5A4 (7423): $0460 -= $0550 ; $0510 -= $0560 (SEC/SBC, borrow от sub-pixel шага);
+             CMP #$F0 / BCC выход, иначе $0510 += $0F, $0520 += carry
+F5DA (7444): $0550:0560 -= #$0099  ($99 = $40 во всех 7 захватах)
+             CMP #$F9 / BCS ok, иначе $0560 = $F8, $0550 = $00 (терминальная скорость)
+F5FC (7459): $0550 = $AB, $0560 = $FF ; посев падения, вызов с DDF9
+</code></pre>
+<p>Численно (w00): f344 vel <code>FFAB</code> → f345 <code>$0460=55</code>,<code>Y=06</code>,<code>FF6B</code> → f346 <code>EA</code>,<code>06</code>,<code>FF2B</code> →
+f347 <code>BF</code>,<code>07</code>,<code>FEEB</code> → f348 <code>D4</code>,<code>08</code>,<code>FEAB</code> — бит в бит. Пробник <code>EB52</code> активен только при
+<code>$0560 &lt; $FA</code> (w00: f368-372), т.е. первые ~22 кадра падения коллизий нет.</p>
+<h2 id="h-3-вторичные-поля">3. Вторичные поля</h2>
+<ul>
+<li>f345: <code>$0460</code> 00→55, vel AB FF→6B FF, <code>$0530/$0540</code>=<code>80/01</code> (пишут <code>CB43/CB4A</code>, НЕ физика), <code>$97</code> 24→04, <code>$3E</code> +1/кадр.</li>
+<li>f347: <code>$0510</code> 06→07. f348: <code>$0410</code> 00→01, <code>$0430</code> 04→00 (период 5).</li>
+<li>Посадка: w00 f373 (<code>$0510=$74</code>), w01-04 f381 (<code>$B4</code>), w05-06 f377 (<code>$94</code>); в тот же кадр <code>$04D0</code>→<code>$81</code>,
+next кадр <code>$0420</code>→<code>$2B</code> (bank2 <code>$9600</code>: <code>LDA #$2B / JSR $FA78</code>), vel пересевается в <code>$FFAB</code> (<code>$F607</code>).
+<code>$50</code> остаётся <code>$09</code>: <code>$9600</code> крутит <code>JMP $9605</code> до <code>$0410==$11</code> и не доходит до <code>D556 STA $50=#$00</code>.</li>
+<li>НЕ условия (константы в окне f328-370): <code>$51=$3C</code>, <code>$3B=0</code>, <code>$65=0</code>, <code>$20=1</code>, <code>$6D=0</code>, <code>$9D=0</code>, <code>$5A=0</code>;
+<code>$F0</code> — глубина render-disable (<code>C14E/C158</code>, 1→0 на f328); <code>$92</code> — глобальный счётчик кадров (<code>C0A1</code>).</li>
+</ul>
+<h2 id="h-4-уверенность">4. Уверенность</h2>
+<p>Механизм паузы и физика f345-f348 подтверждены побайтово по 7 миссиям. Остатки: источник
+world-specific <code>$0520</code> (w00/01=<code>$03</code>, w03=<code>$0B</code>, остальные <code>$00</code>; не таблица <code>$DF80</code>) и высота
+посадки (геометрия vs константа); <code>D525</code>/<code>EB52</code> как детектор пола выведен из совпадения кадра
+с <code>$04D0</code>+1, без трассы.</p>
+<p>СТАТУС (смена 8, 2026-10-15): перенесено в порт и проверено <code>PhysCompare.WorldWalks</code> — сид
+теперь f328 + <code>EntryFreezeFrames=16</code> (17-й кадр приходится на сам сид, т.к. <code>STA $50</code> исполняется
+внутри загрузочного вызова), падение/посадка/зависание совпадают побайтово до f512 включительно.
+Правило терминальной скорости — побайтовое (<code>$80…$F8 → $F8:$00</code>), а не «16-бит &lt; −$0800»;
+одиночное касание <code>$10==1</code> при <code>$0560 &gt;= $FC</code> пола не даёт (<code>$F4E4-$F4F6</code>). Дальше по кадрам
+стоит <code>$9600</code> (банк 2, intro-карточка) = G29.</p>
+</body>
+</html>

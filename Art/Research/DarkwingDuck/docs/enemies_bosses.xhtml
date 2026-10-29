@@ -1,0 +1,1252 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Darkwing Duck (NES) — Enemy &amp; Boss Behavior Catalog</title>
+    <link rel="stylesheet" type="text/css" href="../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="darkwing-duck-nes-enemy-boss-behavior-catalog">Darkwing Duck (NES) — Enemy &amp; Boss Behavior Catalog</h1>
+<p>Reverse-engineered from <code>prg.bin</code> (banks 0-7; bank N at file offset <code>N*0x4000</code>).
+Generated 2026-10-11 by the enemy/boss research agent. Companion files:
+<code>object_catalog.csv</code> (per placed type), <code>labels_enemies.json</code> (named addresses).
+Related: <code>docs/player_mechanics.md</code> (player states, weapons), <code>docs/game_flow.md</code>, <code>FACTS.md</code>.</p>
+<p>All addresses are CPU addresses. <strong>Bank 6</strong> ($8000-$BFFF when switched) holds the
+enemy/gas behavior code; <strong>bank 1</strong> holds the boss code; both are dispatched from
+the per-frame main loop <code>$C9AC</code> (bank 7) in the order: enemies → bosses → object update.</p>
+<hr/>
+<h2 id="h-1-dispatch-architecture">1. Dispatch architecture</h2>
+<h3 id="h-11-enemy-dispatch-bank-6-8000-enemy6_dispatch">1.1 Enemy dispatch — bank 6 <code>$8000</code> (<code>Enemy6_Dispatch</code>)</h3>
+<pre><code>$99 = $40            ; gravity fraction for this frame (same value set by boss dispatch)
+X = 1 .. 15          ; object slots (0 = player)
+loop per slot:
+  $04D0,X bit7 clear            -&gt; skip (inactive)
+  Y = $04E0,X (behavior id)
+  id &gt;= $47                     -&gt; skip (bank-1 boss dispatch handles these)
+  target = $825F[Y] | $82A7[Y]&lt;&lt;8   ; jump tables, bank 6
+  push fake return $8027, JMP target
+$8027: INC $4D ... next slot
+</code></pre>
+<p><strong>Full behavior table (bank 6, ids <code>$00-$46</code>)</strong> — target addresses (verified from ROM bytes,
+see <code>extracted/behavior_tables.json</code>):</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>addr</th>
+<th>id</th>
+<th>addr</th>
+<th>id</th>
+<th>addr</th>
+<th>id</th>
+<th>addr</th>
+<th>id</th>
+<th>addr</th>
+<th>id</th>
+<th>addr</th>
+<th>id</th>
+<th>addr</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>00</td>
+<td>82EF</td>
+<td>0A</td>
+<td>8B80</td>
+<td>14</td>
+<td>92E6</td>
+<td>1E</td>
+<td>9ABE</td>
+<td>28</td>
+<td>A8BB</td>
+<td>32</td>
+<td>B007</td>
+<td>3C</td>
+<td>AEBC</td>
+</tr>
+<tr>
+<td>01</td>
+<td>82F0</td>
+<td>0B</td>
+<td>8BDA</td>
+<td>15</td>
+<td>A41E</td>
+<td>1F</td>
+<td>8812</td>
+<td>29</td>
+<td>9E85</td>
+<td>33</td>
+<td>AAD1</td>
+<td>3D</td>
+<td>B1D3</td>
+</tr>
+<tr>
+<td>02</td>
+<td>8385</td>
+<td>0C</td>
+<td>8C34</td>
+<td>16</td>
+<td>90D3</td>
+<td>20</td>
+<td>9A03</td>
+<td>2A</td>
+<td>9DBD</td>
+<td>34</td>
+<td>ADF2</td>
+<td>3E</td>
+<td>A28F</td>
+</tr>
+<tr>
+<td>03</td>
+<td>841C</td>
+<td>0D</td>
+<td>8C34</td>
+<td>17</td>
+<td>9424</td>
+<td>21</td>
+<td>9F4C</td>
+<td>2B</td>
+<td>A9BF</td>
+<td>35</td>
+<td>AC2C</td>
+<td>3F</td>
+<td>8A22</td>
+</tr>
+<tr>
+<td>04</td>
+<td>85BC</td>
+<td>0E</td>
+<td>8DAF</td>
+<td>18</td>
+<td>950B</td>
+<td>22</td>
+<td>9F4C</td>
+<td>2C</td>
+<td>AA82</td>
+<td>36</td>
+<td>A28F</td>
+<td>40</td>
+<td>B2FC</td>
+</tr>
+<tr>
+<td>05</td>
+<td>86A2</td>
+<td>0F</td>
+<td>8EA3</td>
+<td>19</td>
+<td>92E6</td>
+<td>23</td>
+<td>9BC9</td>
+<td>2D</td>
+<td>A53E</td>
+<td>37</td>
+<td>965D</td>
+<td>41</td>
+<td>B2FC</td>
+</tr>
+<tr>
+<td>06</td>
+<td>87E2</td>
+<td>10</td>
+<td>906A</td>
+<td>1A</td>
+<td>954B</td>
+<td>24</td>
+<td>9C8A</td>
+<td>2E</td>
+<td>A00A</td>
+<td>38</td>
+<td>A41E</td>
+<td>42</td>
+<td>B483</td>
+</tr>
+<tr>
+<td>07</td>
+<td>85FF</td>
+<td>11</td>
+<td>90D3</td>
+<td>1B</td>
+<td>95B8</td>
+<td>25</td>
+<td>A6B4</td>
+<td>2F</td>
+<td>ABBE</td>
+<td>39</td>
+<td>A164</td>
+<td>43</td>
+<td>B570</td>
+</tr>
+<tr>
+<td>08</td>
+<td>8837</td>
+<td>12</td>
+<td>9265</td>
+<td>1C</td>
+<td>92E6</td>
+<td>26</td>
+<td>A09C</td>
+<td>30</td>
+<td>AD5B</td>
+<td>3A</td>
+<td>9FCB</td>
+<td>44</td>
+<td>82EF</td>
+</tr>
+<tr>
+<td>09</td>
+<td>8A1A</td>
+<td>13</td>
+<td>92E6</td>
+<td>1D</td>
+<td>98EE</td>
+<td>27</td>
+<td>A7D9</td>
+<td>31</td>
+<td>883F</td>
+<td>3B</td>
+<td>A631</td>
+<td>45</td>
+<td>82EF</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>46</td>
+<td>9822</td>
+</tr>
+</tbody></table>
+<p>Ids <code>$00</code>, <code>$44</code>, <code>$45</code> are <code>RTS</code> no-ops. Behaviors <code>$01-$04</code> + <code>$08</code> are the player's gas
+weapons (already named in <code>labels_player.json</code>); the rest are enemies/debris/pickups.</p>
+<h3 id="h-12-per-slot-post-processing-bank-6-8032-816c-runs-before-each-behavior">1.2 Per-slot post-processing (bank 6 <code>$8032-$816C</code>, runs before each behavior)</h3>
+<ol>
+<li><code>$803C</code> <strong>hit-flash</strong>: if <code>$04C0,X</code> (flash timer) != 0: toggle <code>$0400,X</code> bit <code>$08</code>
+(sprite visible bit) from bit 3 of the timer, <code>DEC $04C0,X</code>. <code>$04C0 = $0F</code> is set
+whenever an enemy takes a gas hit.</li>
+<li><code>$8066</code> <code>JSR $FAAE</code> — <strong>player-projectile overlap</strong> (see §6). If a projectile overlaps:<ul>
+<li>ids <code>$1E</code>/<code>$34</code> (falling spikes): only take hits while below the player top (custom check <code>$8079</code>).</li>
+<li><code>$8096</code> <strong>weapon damage</strong>: <code>SFX $1D</code> (hit), then <code>DEC $05A0,X</code> by weapon power
+taken from the <em>projectile's</em> anim number <code>$0420,Y</code> (Y = projectile slot <code>$0F</code>):<table>
+<thead>
+<tr>
+<th>projectile anim</th>
+<th>damage</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$13 $14 $16 $19 $1A</code></td>
+<td>1</td>
+</tr>
+<tr>
+<td><code>$18</code></td>
+<td>2</td>
+</tr>
+<tr>
+<td><code>$17 $29</code></td>
+<td>3</td>
+</tr>
+<tr>
+<td>HP ≤ 0 → <code>$80F2</code> death. Otherwise <code>$04C0,X = $0F</code> (flash), spawn hit-puff</td>
+<td/>
+</tr>
+<tr>
+<td>(<code>$F872</code> = object anim <code>$14</code>, behavior 0), <code>JSR $F872</code>/<code>$F872</code>.</td>
+<td/>
+</tr>
+</tbody></table>
+</li>
+<li><code>$80F2</code> <strong>death</strong>: <code>$04D0,X = $80</code> (keep active, clear state), <code>$0590,X = $FF</code>,
+<code>$04E0,X = $05</code> (death-pop behavior), rise velocity <code>$0550,X = $44 / $0560,X = $03</code>,
+<code>SFX $1E</code> (enemy destroyed). Behavior <code>$05</code> ($86A2) then pops the corpse up, spawns
+1-2 debris (behavior <code>$0A</code>, <code>$8715</code>, velocities from RNG table <code>$87A2</code>/<code>$87C2</code>), falls off screen.</li>
+<li><strong>Special deaths</strong> <code>$81C0</code>: ids <code>{0F,17,1D,2A,30,32,34,42}</code> don't explode; when killed by
+the thunder/strong projectile (player anim <code>$14/$16</code>) they are <em>converted</em>: cleared, or
+re-tasked to behavior <code>$1F</code> (<code>$8812</code> "friendly", pops up and falls) — gas-lingers that
+touched them become pickups via <code>$08</code>.</li>
+</ul>
+</li>
+<li><code>$813B</code> <strong>enemy→player contact</strong>: skipped while <code>$7C != 0</code> (player invuln timer) or
+<code>JSR $FB7B</code> says not touching. If touching: <code>SFX $15</code>, <code>$7C = $3C</code> (60 frames),
+<code>JSR $F9C2</code> (player hurt/knockback). Special anim ids (<code>$40 $4E $9F $7D $62 $55 $A6</code>)
+do a distance check (<code>$F928 |dx| &lt; 8</code>) and can instead <em>bounce</em> the player
+(<code>SFX $1A</code>, retask enemy to behavior <code>$06</code>) — spiky armor enemies.</li>
+</ol>
+<h3 id="h-13-boss-dispatch-bank-1-8800-boss1_dispatch">1.3 Boss dispatch — bank 1 <code>$8800</code> (<code>Boss1_Dispatch</code>)</h3>
+<p>Identical structure; dispatches ids <code>&gt;= $47</code> through <code>$8836</code>/<code>$88B6</code> (bank 1) with fake
+return <code>$8827</code>. Verified table (ids <code>$47-$7F</code>):</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>addr</th>
+<th>role</th>
+<th>id</th>
+<th>addr</th>
+<th>role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>47</td>
+<td>8936</td>
+<td>RTS</td>
+<td>5B</td>
+<td>AC90</td>
+<td>Megavolt shot A</td>
+</tr>
+<tr>
+<td>48</td>
+<td>8989</td>
+<td>hop-lift (fowl)</td>
+<td>5C</td>
+<td>ACF2</td>
+<td>Megavolt shot B</td>
+</tr>
+<tr>
+<td>49</td>
+<td>A5F7</td>
+<td><strong>Bushroot</strong></td>
+<td>5D</td>
+<td>94E2</td>
+<td>orb-volley child</td>
+</tr>
+<tr>
+<td>4A</td>
+<td>A12C</td>
+<td><strong>Moliarty</strong></td>
+<td>5E</td>
+<td>9350</td>
+<td>orb-spawner core</td>
+</tr>
+<tr>
+<td>4B</td>
+<td>A846</td>
+<td>forest teleport shooter</td>
+<td>5F</td>
+<td>AF91</td>
+<td>Steelbeak minion A</td>
+</tr>
+<tr>
+<td>4C</td>
+<td>A4BD</td>
+<td>flamethrower 1/2</td>
+<td>60</td>
+<td>AF91</td>
+<td>Steelbeak minion B</td>
+</tr>
+<tr>
+<td>4D</td>
+<td>A4BD</td>
+<td>flamethrower 1/2</td>
+<td>61</td>
+<td>B1D4</td>
+<td>Steelbeak minion C</td>
+</tr>
+<tr>
+<td>4E</td>
+<td>A4B3</td>
+<td>flamethrower 3</td>
+<td>62</td>
+<td>AD6F</td>
+<td><strong>Steelbeak</strong></td>
+</tr>
+<tr>
+<td>4F</td>
+<td>B3F8</td>
+<td><strong>boss defeat pop</strong></td>
+<td>63</td>
+<td>933D</td>
+<td>orb spawner (forest)</td>
+</tr>
+<tr>
+<td>50</td>
+<td>9736</td>
+<td><strong>Quackerjack core</strong></td>
+<td>64</td>
+<td>AD23</td>
+<td>Steelbeak flame</td>
+</tr>
+<tr>
+<td>51</td>
+<td>9836</td>
+<td><strong>Quackerjack ball</strong></td>
+<td>65</td>
+<td>8CE6</td>
+<td>spawner</td>
+</tr>
+<tr>
+<td>52</td>
+<td>97E6</td>
+<td>Quackerjack child</td>
+<td>66</td>
+<td>8937</td>
+<td>ball child walker</td>
+</tr>
+<tr>
+<td>53</td>
+<td>9D4C</td>
+<td>Wolfduck controller</td>
+<td>67</td>
+<td>8CE6</td>
+<td>spawner</td>
+</tr>
+<tr>
+<td>54</td>
+<td>9971</td>
+<td><strong>Wolfduck</strong></td>
+<td>68</td>
+<td>8E7A</td>
+<td>stalactite drop</td>
+</tr>
+<tr>
+<td>55</td>
+<td>9BEC</td>
+<td>Wolfduck child</td>
+<td>69</td>
+<td>9694</td>
+<td>grabber verifier</td>
+</tr>
+<tr>
+<td>56</td>
+<td>8CE6</td>
+<td>spawner</td>
+<td>6A/6B</td>
+<td>90C5</td>
+<td>tower riser</td>
+</tr>
+<tr>
+<td>57</td>
+<td>9DA7</td>
+<td><strong>Liquidator</strong></td>
+<td>6C</td>
+<td>923E</td>
+<td>swinger child</td>
+</tr>
+<tr>
+<td>58</td>
+<td>9FDE</td>
+<td>Liquidator geyser</td>
+<td>6D-6F</td>
+<td>8989</td>
+<td>hop-lift variants</td>
+</tr>
+<tr>
+<td>59</td>
+<td>A05A</td>
+<td>Liquidator geyser 2</td>
+<td>70-7D</td>
+<td>96C9</td>
+<td><strong>mission-complete door</strong></td>
+</tr>
+<tr>
+<td>5A</td>
+<td>A977</td>
+<td><strong>Megavolt</strong></td>
+<td>7E</td>
+<td>9083</td>
+<td>door child</td>
+</tr>
+<tr>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>7F</td>
+<td>8F71</td>
+<td>fowl droid (city <code>$27</code>)</td>
+</tr>
+</tbody></table>
+<p>Ids <code>$80-$83</code> read garbage (<code>$6089/$BD89/$D089/$0489</code>) — table ends at <code>$7F</code>.</p>
+<p><strong>Boss ids skip the enemy post-processing block</strong> (<code>$8032</code> still runs for them: hit-flash,
+projectile overlap and player contact apply, but the weapon-damage branch at <code>$8096</code> is
+guarded by <code>LDA $05A0,X / BPL</code> — bosses carry <code>$05A0 = $80</code> in the type table, so gas
+cannot kill them through the generic path; they use their own <code>$B39E</code>).</p>
+<h3 id="h-14-boss-shared-framework-bank-1">1.4 Boss shared framework (bank 1)</h3>
+<table>
+<thead>
+<tr>
+<th>routine</th>
+<th>role</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$B39E</code> <code>BossTakeProjectileHit</code></td>
+<td><code>$FAAE</code> overlap + same 1/2/3 damage rule as enemies, but damage accumulates in <strong><code>$EE</code></strong> (global). <code>SFX $1D</code>, hit puff <code>$F872</code>, sets <code>$ED = $1E</code> (30-frame invulnerability), <code>$EF</code> = projectile slot. Returns CS while <code>$ED != 0</code>.</td>
+</tr>
+<tr>
+<td><code>$B36A</code> <code>BossHitFlashToggle</code></td>
+<td>blinks boss sprite from <code>$ED</code> (same pattern as <code>$04C0</code>); <strong>when <code>$EE &gt;= $10</code> (16 damage) → <code>JMP $B315</code></strong>.</td>
+</tr>
+<tr>
+<td><code>$B315/$B317</code> <code>BossDefeat</code></td>
+<td>sweeps slots 15..1: kills every object except the boss itself and ids <code>$51</code> (Quackerjack ball), <code>$54</code> (Wolfduck), <code>$57</code> (Liquidator) which persist; sets this boss's behavior to <code>$4F</code>, clears timers, calls <code>$F607</code> (knockback), player state ← <code>$0F</code> (unless 6/7).</td>
+</tr>
+<tr>
+<td><code>$B3F8</code> <code>BossBeh4F</code></td>
+<td>defeat pop: rise <code>$0550=$44/$0560=$03</code>, <code>$0400=$D0</code>, <code>SFX $1E</code>, walks while falling; at <code>Y &gt;= $E0</code> → player state <code>$15</code>.</td>
+</tr>
+<tr>
+<td><code>$3B</code></td>
+<td>global "boss death cinematic" timer; every boss routine checks it first and only runs <code>$F880</code> (restore player idle anim per world, table <code>$F893</code>) + <code>$F869</code> while it counts down.</td>
+</tr>
+<tr>
+<td><code>$B454</code>/<code>$B487</code></td>
+<td>clear arena edge metatile columns <code>$0600-$06FF</code> (open the boss room).</td>
+</tr>
+<tr>
+<td><code>$B4BA</code></td>
+<td>child-object projectile check: weak projectiles (anim <code>$14/$16</code>) are destroyed; others are <em>converted</em> to behavior <code>$1F</code> (<code>$B507</code> remaps <code>$0580</code> <code>{1,9,5}→$0A</code>, <code>{2,A,6}→$09</code>), <code>SFX $1A</code>.</td>
+</tr>
+<tr>
+<td><code>$FA4C</code></td>
+<td>find free slot (returns Y=$0F and C=1 if none).</td>
+</tr>
+<tr>
+<td><code>$FA84</code></td>
+<td>spawn object at slot Y with anim A.</td>
+</tr>
+<tr>
+<td><code>$FC29</code></td>
+<td>mark placement index <code>$0590,X</code> in the <code>$0340</code> "already spawned" bitmask (no respawn).</td>
+</tr>
+<tr>
+<td><code>$FA9A</code></td>
+<td>kill slot X.</td>
+</tr>
+</tbody></table>
+<p><strong>Universal boss HP = 16 damage points</strong> (<code>$EE &gt;= $10</code>), i.e. 6 strong (3-dmg) / 9 medium /
+17 weak gas hits, refreshed invulnerability 30 frames per hit.</p>
+<hr/>
+<h2 id="h-2-the-seven-bosses">2. The seven bosses</h2>
+<p>Boss identity ↔ behavior ↔ placed type ↔ mission (mission names from <code>levels.json</code>
+order 0-6; name mapping corroborated by published guides — see sources at bottom).</p>
+<h3 id="h-21-quackerjack-the-bridge-mission-0">2.1 Quackerjack — The Bridge (mission 0)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+<th>HP</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Quackerjack core</td>
+<td>73 ($49)</td>
+<td><code>$50</code></td>
+<td><code>$9736</code></td>
+<td><code>$92</code></td>
+<td><code>$80</code> (via <code>$EE</code>)</td>
+</tr>
+<tr>
+<td>Bouncing ball</td>
+<td>74 ($4A)</td>
+<td><code>$51</code></td>
+<td><code>$9836</code></td>
+<td><code>$99</code></td>
+<td><strong>0 — destroyable by one gas hit</strong></td>
+</tr>
+<tr>
+<td>Ball child</td>
+<td>spawned</td>
+<td><code>$52</code>/<code>$66</code></td>
+<td><code>$97E6</code>/<code>$8937</code></td>
+<td><code>$33</code></td>
+<td>0</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Core <code>$9736</code></strong>: state table <code>$9670/$9677</code>. State 0 <code>$967E</code>: init (<code>$0550=0 $0530=0 $0560=1 $0540=1</code>, timer <code>$0480=8</code>, <code>$0490=$0A</code>), reads <code>$F93F</code> (24-sector direction to
+player), <code>AND #$08</code> → bumps <code>$04A0,X</code>. State <code>$96A6</code>: waits until <code>$F928 |dx| &gt;= $60</code>
+(96 px), then <code>$05A0,X = 8</code>, next state. <code>$96B6/$96C2</code>: <strong>teleports to the player's X</strong>
+(<code>$04F0,X ← $04F0</code>) and re-arms <code>$0490 = $0A</code>; throws via <code>$97B0</code> (spawn child anim <code>$47</code>,
+behavior <code>$52</code>, param <code>$0A</code>, at own position) on the <code>$0490</code> cadence; <code>SFX $2A</code> every
+4th frame while active; anims <code>$A5</code> (idle) / <code>$A4</code> (attack, toggled by <code>$0490</code> bit 0).</li>
+<li><strong>Ball <code>$9836</code></strong>: <code>$3B</code>-gated; <code>JSR $B36A/$B39E</code> (can be destroyed — <code>$05A0 = 0</code> →
+generic death path); bounces with velocity pairs from RNG table <code>$9959/$9961/$9969</code>
+(<code>E5 += E4</code>, mask 7): <code>{8E/AB/06/FF, 06/FF}</code> — vertical vel ∈ {−82, −85, +6, …} × X vel
+{+6,−6,+2,−2}; jumps using <code>$F2D7</code> (vel <code>$28</code>), lands with probe offset <code>$40=$56,$41=2</code><ul>
+<li><code>$EDD2</code> snap; anims <code>$99</code> (roll) / <code>$9A</code> (land) / <code>$AB</code> (charge).</li>
+</ul>
+</li>
+<li><strong>Door</strong>: types 27/28 → behaviors <code>$70/$71</code> (§2.8).</li>
+</ul>
+<h3 id="h-22-wolfduck-the-city-mission-1">2.2 Wolfduck — The City (mission 1)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Wolfduck</td>
+<td>76 ($4C)</td>
+<td><code>$54</code></td>
+<td><code>$9971</code></td>
+<td><code>$6B</code></td>
+</tr>
+<tr>
+<td>Panic controller</td>
+<td>75 ($4B)</td>
+<td><code>$53</code></td>
+<td><code>$9D4C</code></td>
+<td><code>$6D</code></td>
+</tr>
+<tr>
+<td>Runner child</td>
+<td>spawned</td>
+<td><code>$55</code></td>
+<td><code>$9BEC</code></td>
+<td>—</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Wolfduck <code>$9971</code></strong>: state table <code>$9984/$9989</code> → <code>$998E</code> init (<code>$0530=$E6 $0540=3 $0550=$8E $0560=6 $0480=$14</code>, <code>$B454</code>); <code>$99AE</code> walks (<code>$F200/$F254</code> speed 3) and jumps
+(<code>$F2D7</code> vel <code>$56</code>), turning at walls (<code>$04FF &gt;= 4</code> → anim <code>$67</code>, <code>SFX $35</code> throw cue);
+anim frame <code>$0D</code> → <code>$1A = $8A</code> (screen effect trigger); frame <code>$08</code>+timer → <code>E6 += E7</code>
+RNG mask <code>$0F</code> → <code>$9A1F</code> table <code>{82,82,84,84,82,82,84,84,82,82,84,84,82,82,84,84}</code>
+chooses state <code>$82</code> (throw) or <code>$84</code> (charge) with anim <code>$6C</code>/<code>$68</code> — <strong>the panic/charge
+cycle</strong>; <code>$04A0,X = $3C</code> invuln timer between phases.</li>
+<li><strong>Controller <code>$9D4D</code></strong>: pure countdown (<code>$0480=$B4</code>, <code>$0490=$78</code>), re-arms <code>$0480=$B5</code>
+when expired — paces the fight.</li>
+<li><strong>Child <code>$9BEC</code></strong>: runs left/right (<code>$0490</code> bit0), hops <code>$F2D7</code> vel <code>$56</code>, throws at
+frame 1/timer 2 (<code>$F81D</code>, <code>JSR $9B93</code>), turns at <code>X = $E8/$18</code>; killed by <code>DEC $04AF</code>
+when it exits.</li>
+<li><strong>Door</strong>: types 29 (<code>$72</code>) + 89 (<code>$73</code>).</li>
+</ul>
+<h3 id="h-23-the-liquidator-the-sewers-mission-2">2.3 The Liquidator — The Sewers (mission 2)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Liquidator</td>
+<td>77 ($4D)</td>
+<td><code>$57</code></td>
+<td><code>$9DA7</code></td>
+<td><code>$4C</code></td>
+</tr>
+<tr>
+<td>Water geysers</td>
+<td>spawned</td>
+<td><code>$58</code>/<code>$59</code></td>
+<td><code>$9FDE</code>/<code>$A05A</code></td>
+<td>—</td>
+</tr>
+</tbody></table>
+<ul>
+<li><code>$9DA7</code>: state table <code>$9DBA/$9DBF</code> → <code>$9DC4</code> init (<code>$0530=0 $0540=1</code>, <code>$B454</code>,
+<code>$0480=$0F</code>); walk cycle <code>$9E3A</code> (<code>$0490</code> timer, <code>$F24B/$F2A6 + $F4FD/$F51B</code>), turns at
+arena marks <code>X = $C0/$80/$40</code> → <code>$9F43</code>: <code>E6 += E7</code> RNG mask <code>$0F</code> →
+<code>$9F5F</code> walk-time <code>{00,30,00,30,…}</code> (0 or 48 frames), <code>$9F6F</code> anim <code>{41,42,41,42,…}</code>,
+<code>$9F7F</code> timer <code>{00,01,…}</code>; attack anims <code>$41/$42</code> (water blast), frame 2/timer 8 →
+anim <code>$44</code> + <code>$0570=6</code>; frames 3/4 → <code>SFX $37</code>; <code>$9EC0</code>: if <code>$04A0,X == 0</code> and frame
+∈ {5,8,$0B} at timer 4 → <code>$9F8F</code> <strong>spawn geyser</strong> at player column (<code>$04F0/$0500</code> of
+player), Y <code>$F0</code>, anim <code>$45</code> (or <code>$46</code> when <code>$0480 != 0</code>), behavior <code>$59</code>/<code>$58</code>,
+<code>$0570=$44</code>, HP 1 — a water column that erupts from the floor.</li>
+<li><strong>Door</strong>: types 90/91 → <code>$74/$75</code>.</li>
+</ul>
+<h3 id="h-24-moliarty-the-tower-mission-3">2.4 Moliarty — The Tower (mission 3)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+<th>HP</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Moliarty</td>
+<td>71 ($47)</td>
+<td><code>$4A</code></td>
+<td><code>$A12C</code></td>
+<td><code>$48</code></td>
+<td><code>$80</code> (via <code>$EE</code>)</td>
+</tr>
+<tr>
+<td>Flamethrower 1</td>
+<td>70 ($46)</td>
+<td><code>$4C</code></td>
+<td><code>$A4BD</code></td>
+<td><code>$56</code></td>
+<td><strong>13</strong> (<code>$05A0=$0D</code>)</td>
+</tr>
+<tr>
+<td>Flamethrower 2</td>
+<td>84 ($54)</td>
+<td><code>$4E</code></td>
+<td><code>$A4B3</code></td>
+<td>0</td>
+<td><strong>13</strong></td>
+</tr>
+<tr>
+<td>Flamethrower 3</td>
+<td>85 ($55)</td>
+<td><code>$4D</code></td>
+<td><code>$A4BD</code></td>
+<td><code>$56</code></td>
+<td><strong>9</strong> (<code>$A4D4</code>: slot <code>$0D</code> gets 9)</td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Moliarty <code>$A12C</code></strong>: prologue <code>$A3F5</code> (<code>$B36A/$B39E</code>); state table <code>$A490/$A49A</code>.
+<code>$A148</code>: init — <code>$04BD=0</code>, <code>$B487</code>, <code>$04BC=1</code>, <code>$04BD=$0E</code>, <code>$04AC=8</code>, <code>$A414</code>.
+<code>$A166/$A170</code>: walks toward the post of flamethrower slot <code>$04AE</code> (<code>$A3D8</code> scans slots
+<code>$0C-$0E</code> for the lit one), steers with <code>$A296</code> against <code>$A4AD/$A4B0</code> X tables
+{<code>$20,$20,$E0,$E0,$88?</code>…}; at post → <code>$A2C9</code> (anim <code>$4B</code>, state <code>$87</code>, <code>$04B0=$78</code>).
+<code>$A318/$A1F8</code>: jump arcs (<code>$F2D7</code> vel <code>$06</code>) between floor levels; <code>$A33E</code>: <strong>if he lands
+on a lit flamethrower slot</strong> (<code>$A34D</code>: X == <code>$04AE</code> and its <code>$0480 != 0</code>) → douses it:
+<code>$0480[slot]=0</code>, <code>$05A0[slot]=$0D</code>, anim <code>$56</code>, <code>SFX $2C</code>. Throws bombs via <code>$A443</code>
+(spawn anim <code>$40</code>, <strong>behavior <code>$01</code></strong> — the gas-travel projectile routine used as an
+enemy bomb, param <code>$0A</code>) whenever his jump timer <code>$0490</code> matches <code>$0480,X</code> (<code>$A1AC</code>).</li>
+<li><strong>Flamethrowers <code>$A4BD/$A4B3</code></strong>: <code>$A51E</code> round-robins <code>$04BC</code> (100-frame period);
+<code>$A54E</code> shoots a flame: spawn anim <code>$4D</code>, behavior <code>$0B</code> (8-dir mover), param <code>$13</code>,
+velocity from the <code>$F93F</code> 24-sector direction code via tables <code>$A5B7/$A5C7/$A5D7/$A5E7</code>
+(<code>$0530/$0540/$0550/$0560/$0580</code>), <code>SFX $29</code>. Damage them via the <strong>generic enemy path</strong>
+(their <code>$05A0</code> is 13/9 — positive!) → destroyed at HP &lt; <code>$0A</code> (<code>$A503</code>: anim 0,
+<code>$0480=1</code>, <code>$05A0=$80</code>).</li>
+<li><strong>Door</strong>: types 92/93 → <code>$76/$77</code>.</li>
+</ul>
+<h3 id="h-25-bushroot-the-forest-mission-4">2.5 Bushroot — The Forest (mission 4)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bushroot</td>
+<td>79 ($4F)</td>
+<td><code>$49</code></td>
+<td><code>$A5F7</code></td>
+<td><code>$4F</code></td>
+</tr>
+<tr>
+<td>Teleport shooter add</td>
+<td>72 ($48)</td>
+<td><code>$4B</code></td>
+<td><code>$A846</code></td>
+<td>0</td>
+</tr>
+<tr>
+<td>Vine snappers</td>
+<td>35/36</td>
+<td><code>$21</code>/<code>$22</code></td>
+<td><code>$9F4C</code></td>
+<td><code>$30</code></td>
+</tr>
+<tr>
+<td>Orb spawner</td>
+<td>104 ($68)</td>
+<td><code>$63</code></td>
+<td><code>$933D</code></td>
+<td><code>$1E</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Bushroot <code>$A5F7</code></strong>: hit check <code>$A7D2</code> (saves <code>$EE</code>, <code>$B36A</code>, <code>$B39E</code>; a hit sets
+<code>$04B0,X = 1</code> unless <code>$04A0 == 2</code>). Hop loop <code>$A630</code>: anim <code>$50</code>, <code>DEC $04AE</code> (hop
+counter from 8), hops with <code>$F2D7</code> vel <code>$56</code>; on hops <code>$0490</code> ∈ {6,4,2} → <code>$A686</code>:
+RNG <code>$A7AB</code> (<code>E5 += E4 - $0490</code>, mask 3) table <code>$A83F {00,01,00,01}</code> → 50% chance to
+skip into the <strong>ceiling hop</strong> <code>$A6BB/$A6E1</code>: rises <code>$0550 += $40</code>/frame until above the
+ceiling table <code>$A843[$04A0]</code>, then probes up (offset <code>$40=$56</code>); on head-bonk → falls,
+<code>DEC $04A0</code>, <code>DEC $04D0</code> twice; at <code>$04A0 == 2</code> → <code>$A754</code>: <code>INC $04D0</code>, <code>$04B0=$80</code>,
+anim <code>$51</code>, sets globals <code>$048E=$88</code>, <code>$042E=$52</code> (<strong>drops vines/branches objects</strong>),
+then <code>$A777</code> counts <code>$04B0</code> down and returns to hopping. Walks between <code>X = $F0/$10</code>.</li>
+<li><strong>Teleport shooter <code>$A846</code></strong>: every <code>$0480</code> expiry (values <code>$6F/$41/$15</code> re-arm) spawns a
+flyer (anim <code>$4E</code>, behavior <code>$0B</code>, param <code>$0A</code>, <code>SFX $3A</code>) aimed by the <code>$F93F</code> sector
+tables <code>$A923/$A924/$A927…</code>; otherwise teleports: <code>E5 += E4</code> mask <code>$0F</code> → wait table
+<code>$A90B {00,01,02,03,…}</code>, position table <code>$A91B/$A91F</code> {<code>$20/$E0/$50/$98</code> × <code>$E0/$98</code>}.</li>
+<li><strong>Orb spawner <code>$933D</code></strong> (also behavior of type 104): when <code>|dx| &lt; $18</code> and <code>|dy| &lt; $10</code>
+(<code>$F928</code>/<code>$F919</code>), sets <code>$9E = $FF</code>; fires volleys <code>$93D6/$9440</code>: <code>E4 += E5 EOR $04F0</code>
+→ <code>$E4/$E6</code>, mask 7 → <code>$946E {00,01,02,03,04,05,01,04}</code> (no immediate repeat via
+<code>$049F</code>), spawns from 6 fixed points <code>X {18,18,18,$E8,$E8,$E8}</code> <code>Y {$28,$58,$88,…}</code>
+(tables <code>$94D6/$94DC</code>), child anim <code>$3D</code>, <strong>behavior <code>$5D</code></strong> (orb), param <code>$10</code>,
+max 5 alive (<code>$04AF</code>).</li>
+<li><strong>Door</strong>: types 94/95 → <code>$78/$79</code>.</li>
+</ul>
+<h3 id="h-26-megavolt-the-warehouse-mission-5">2.6 Megavolt — The Warehouse (mission 5)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Megavolt</td>
+<td>78 ($4E)</td>
+<td><code>$5A</code></td>
+<td><code>$A977</code></td>
+<td><code>$57</code></td>
+</tr>
+<tr>
+<td>Shots</td>
+<td>spawned</td>
+<td><code>$5B</code>/<code>$5C</code></td>
+<td><code>$AC90</code>/<code>$ACF2</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Door-adjacent spawner</td>
+<td>103 ($67)</td>
+<td><code>$67</code></td>
+<td><code>$8CE6</code></td>
+<td><code>$33</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Megavolt <code>$A977</code></strong>: init <code>$A97E</code> (<code>$0490=$1E</code>, <code>$B454</code>); states via <code>$A9BF/$A9C8</code>:
+<code>$A9D1</code> (anim frame 9/timer 2 → anim <code>$59</code>, next state), <code>$A9E8</code> <strong>walks</strong> between
+<code>X = $F0/$10</code> (speed 3), at <code>X = $DC/$24</code> → next state, anim <code>$58</code>, jump vel
+<code>$0550=$8E/$0560=6</code>; <code>$AA3E</code> rises (<code>$F5C9</code>); falling + floor probe (offset <code>$40=$56</code>)
+→ <code>$EDD2</code> snap + <code>$AA69</code>: <code>E6 += E7</code> mask <code>$0F</code> → <code>$AA86 {00,FF,00,FF,…}</code> picks attack
+(<code>SFX $3B</code> when attack) and anim <code>$58</code>/<code>$5A</code>; <code>$AAA6</code> attack phase: <code>$0490 = $1E</code>
+re-arm, RNG <code>$AAEC {00,FF,FF,00,…}</code> → pattern A <code>$AC20</code> (anim <code>$5C</code>) or B <code>$AB9B</code>
+(anim <code>$5B</code>), <code>SFX $3C</code>, state <code>$86</code>; <code>$AF52</code>-style <code>$04A0</code> counter paces the barrage.</li>
+<li><strong>Shot <code>$AC90</code></strong>: falls with <code>$F55E</code>, at <code>Y = 0</code> copies the player's X (<code>$04F0/$0500 ← player</code>) and spawns an orb (anim <code>$5D</code>, <strong>behavior <code>$5C</code></strong>, flags <code>$D8</code>).</li>
+<li><strong>Shot <code>$ACF2</code></strong>: rises 7/frame for <code>$1E</code> frames, then param <code>$0570=2</code>, flags <code>$D0</code>,
+<code>JMP $F539</code> (rise) — the aimed energy orb.</li>
+<li><strong>Door</strong>: types 96/97 → <code>$7A/$7B</code>.</li>
+</ul>
+<h3 id="h-27-steelbeak-fowl-fortress-mission-6">2.7 Steelbeak — Fowl Fortress (mission 6)</h3>
+<table>
+<thead>
+<tr>
+<th>object</th>
+<th>type</th>
+<th>behavior</th>
+<th>addr</th>
+<th>anim</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Steelbeak</td>
+<td>80 ($50)</td>
+<td><code>$62</code></td>
+<td><code>$AD6F</code></td>
+<td><code>$60</code></td>
+</tr>
+<tr>
+<td>Minion A/B</td>
+<td>81/83 ($51/$53)</td>
+<td><code>$5F</code>/<code>$60</code></td>
+<td><code>$AF91</code></td>
+<td><code>$61</code></td>
+</tr>
+<tr>
+<td>Minion C</td>
+<td>82 ($52)</td>
+<td><code>$61</code></td>
+<td><code>$B1D4</code></td>
+<td><code>$3E</code></td>
+</tr>
+<tr>
+<td>Flame</td>
+<td>spawned</td>
+<td><code>$64</code></td>
+<td><code>$AD23</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Cage droid (city <code>$27</code>)</td>
+<td>39 ($27)</td>
+<td><code>$7F</code></td>
+<td><code>$8F71</code></td>
+<td><code>$A4</code></td>
+</tr>
+</tbody></table>
+<ul>
+<li><strong>Steelbeak <code>$AD6F</code></strong>: state table <code>$AD82/$AD88</code> → <code>$AD8E</code> descend: falls (<code>$0560=0 $0550=$70 $0530=$80 $0540=2</code>), if <code>$63 != 0</code> also <code>$F539</code>; lands at <code>Y=$70</code> (clears
+flag bit <code>$20</code>), <strong>at <code>Y=$B0</code> → anim <code>$5F</code>, <code>$1A=$8B</code> (screen flash), <code>$0490=$1E</code>,
+<code>$04A0=$3C</code>, next state</strong>. <code>$ADD6</code> walk (<code>$F24B/$F2A6</code>) between <code>X = $E0/$20</code> with RNG
+hop gate <code>$AF74</code> (<code>E5 += E4</code> mask <code>$0F</code>, table <code>$AF81 {00,FF,FF,00,…}</code>); <code>$AE22</code> frame
+8 → anim <code>$63</code> (wind-up); <code>$AE49</code> walks + <code>$B4BA</code>, at <code>Y=$B4</code> → next; <code>$AE8D</code> waits on
+<code>$0490</code>, then <code>SFX $3D</code>, anim <code>$66</code>, spawns <strong>two flames</strong> (<code>$AEC5</code>: anim <code>$64</code>,
+behavior <code>$0B</code>, param <code>$10</code>, offset <code>±$12</code>, speed from <code>E4 += E6</code> mask <code>$0F</code> table
+<code>$AF2D {02,03,07,04,02,02,06,03,…}</code>, <code>SFX $5F</code>), state <code>$86</code>; <code>$AF3D</code> waits <code>$04A0</code>
+(60) frames then returns to walk. Damage via <code>$B39E</code>/<code>$EE</code> (HP=$80).</li>
+<li><strong>Minions <code>$AF91</code></strong> (two placed instances, anim <code>$61</code>): state table at <code>$AFB6+</code>;
+simple patrollers that throw (children <code>$B1D4</code>).</li>
+<li><strong>Door</strong>: types 98/99 → <code>$7C/$7D</code> — final door ends the game (script tables below).</li>
+</ul>
+<h3 id="h-28-mission-complete-doors-behaviors-70-7d-96c9">2.8 Mission-complete doors — behaviors <code>$70-$7D</code> → <code>$96C9</code></h3>
+<p>Placed types 27-29 and 89-99 (two per mission except city/bridge which have extras).
+<code>$96C9</code>: while <code>state &amp; $0F == 0</code>, waits for <code>JSR $FAAE</code> (a projectile to touch it —
+i.e. you must shoot the door); then <code>$0400,X = $90</code>, <code>SFX $1C</code>. On the next state,
+<code>JSR $FB7B</code> (player walk-in) → <strong>mission complete</strong>: <code>SFX $23</code>, player state <code>$50 = $14</code>
+(20 = level complete), then loads from tables indexed by <code>id &amp; $0F</code>:</p>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th><code>$5B</code> ← <code>$970C</code></th>
+<th><code>$9C</code> ← <code>$971A</code></th>
+<th><code>$66</code> ← <code>$9728</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$70</td>
+<td>$0F</td>
+<td>$10</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$71</td>
+<td>$11</td>
+<td>$12</td>
+<td>$F0</td>
+</tr>
+<tr>
+<td>$72</td>
+<td>$13</td>
+<td>$14</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$73</td>
+<td>$15</td>
+<td>$16</td>
+<td>$F0</td>
+</tr>
+<tr>
+<td>$74</td>
+<td>$17</td>
+<td>$18</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$75</td>
+<td>$19</td>
+<td>$1A</td>
+<td>$F0</td>
+</tr>
+<tr>
+<td>$76</td>
+<td>$1B</td>
+<td>$1C</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$77</td>
+<td>$1D</td>
+<td>$1E</td>
+<td>$F0</td>
+</tr>
+<tr>
+<td>$78</td>
+<td>$1F</td>
+<td>$20</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$79</td>
+<td>$21</td>
+<td>$22</td>
+<td>$F0</td>
+</tr>
+<tr>
+<td>$7A</td>
+<td>$23</td>
+<td>$24</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$7B</td>
+<td>$25</td>
+<td>$26</td>
+<td>$F0</td>
+</tr>
+<tr>
+<td>$7C</td>
+<td>$27</td>
+<td>$28</td>
+<td>$FF</td>
+</tr>
+<tr>
+<td>$7D</td>
+<td>$29</td>
+<td>$2A</td>
+<td>$F0</td>
+</tr>
+</tbody></table>
+<p><code>$5B</code>/<code>$9C</code> = next-script/cell pointers (odd = checkpoint per player doc), <code>$66</code> = mission
+flag (<code>$FF</code>/<code>$F0</code> alternate). Then <code>$FC29</code> + kill slot. Behavior <code>$7E</code> (<code>$9083</code>) is the
+door's spawned child (mini door prop).</p>
+<hr/>
+<h2 id="h-3-object-type-catalog-placed-types">3. Object type catalog (placed types)</h2>
+<p>See <strong><code>object_catalog.csv</code></strong> for all 105 types. Data sources:</p>
+<ul>
+<li><strong>Spawn</strong>: bank 4 <code>$8090</code> (spawner) → <code>$80FC</code> spawn routine. Placement arrays are five
+parallel lists (screenX, localX, screenY, localY, <strong>type</strong>) pointed to by <code>$72/$74/$76/$78/$7A</code>.</li>
+<li><strong>Type tables (bank 4)</strong>: <code>$8AB3</code> — 105 records × 4 bytes <code>[flags, behaviorId, animId, param]</code>
+→ loaded to <code>$0400,X</code> / <code>$04E0,X</code> / <code>$0420,X</code> / <code>$0570,X</code>; and <code>$8C57</code> — 105 × 4 bytes,
+first byte = starting HP → <code>$05A0,X</code>. Both tables are exactly 105 entries ($8AB3-$8C56,
+$8C57-$8E56) matching the 105 placed ids from <code>manifest.json</code>.</li>
+<li><code>$0570,X</code> param: <strong>low 5 bits = touch-class index</strong> into the hitbox tables (§6); upper
+bits are reused as scratch by behaviors. <code>$0400</code> flags: bit7 = active/on-screen, bit6 =
+h-flip, bit4 = overlap-calc path, bit3 = hit-blink clear, bit2 = "projectiles pass
+through" (checked at <code>$FAE4</code>).</li>
+<li><strong>HP <code>$05A0</code> semantics</strong>: <code>$80</code> (128) = gas-immune (bosses); 0 = dies to one hit;
+1-15 = normal enemies (flamethrowers 13/9, heavy shooter type 33 = 10, type 100 = 15).</li>
+<li>Type <code>$FF</code> (255) appears in placement arrays as the <strong>terminator/empty marker</strong>, not an object.</li>
+<li>Never placed but defined: types 20, 22, 55, 63, 100 (rows flagged <code>NEVER_PLACED</code> in the CSV).</li>
+</ul>
+<p>Field notes for slots (verified): <code>$0410/$0430</code> anim frame/timer, <code>$0420</code> anim id,
+<code>$0440/$0450</code> screen Y/X, <code>$0460</code> Y subpixel accumulator, <code>$0480/$0490/$04A0/$04B0</code>
+behavior-local timers/counters (frequently double as HP), <code>$04C0</code> hit-flash timer,
+<code>$04D0</code> bit7 active + low nibble state, <code>$04E0</code> behavior id, <code>$04F0/$0500</code> abs X (px/subpx),
+<code>$0510/$0520</code> abs Y, <code>$0530/$0540</code> Y vel int/frac (up-positive), <code>$0550/$0560</code> Y vel
+int/frac, <code>$0570</code> param/touch class, <code>$0580</code> direction (bit0 right, bit1 left, bits2-3 flip),
+<code>$0590</code> placement index ($FF = not placed), <code>$05A0</code> HP.</p>
+<hr/>
+<h2 id="h-4-rng">4. RNG</h2>
+<p><strong>No single LFSR.</strong> The generator is a set of four zero-page counters <code>$E4 $E5 $E6 $E7</code>
+(RAM, zero at power-on) advanced <em>in place at each use site</em> with the canonical step
+<code>state[i] += state[i-1] + carry</code>, then masked by the caller:</p>
+<pre><code>LDA $E4 / CLC-ish / ADC $E5 / STA $E5        ; E5 += E4+C   (most common; e.g. $8D2A, $94FA, $940D, $A03C, $A7AB, $A864, $AF74, $B119)
+LDA $E4 / ADC $E6 / STA $E6                  ; E6 += E4+C   ($AF0F, $9613 variant)
+LDA $E6 / ADC $E7 / STA $E7                  ; E7 += E6+C   ($AA69, $AAB7, $9EE9-region)
+LDA $E4 / ADC $E5 / SBC $E6 / STA $E4 / EOR $E7 / STA $E6   ; mixed ($9613-961D, Quackerjack)
+LDA $E4 / ADC $E5 / SBC $0490,X / STA $E5    ; perturbed ($A7AB, Bushroot)
+LDA $E4 / ADC $E5 / EOR $04F0 / STA $E4 / STA $E6           ; ($9447, orb spawner)
+INC $E6 / INC $E7                            ; cheap bump (bank 6 $BAD0)
+</code></pre>
+<p>All sites were found by scanning every bank for opcodes touching <code>$E4-$E7</code>
+(see <code>Art/Tools/DarkwingResearch</code> output in the run log): 8× <code>ADC E5</code> sites, 2× <code>ADC E7</code>,
+1× <code>ADC E4</code>, 1× <code>ADC E6</code>, 1× <code>INC E6/E7</code> pair. <strong>Seed</strong>: RAM init (all zero); state is
+therefore deterministic per run and advances only when one of these sites executes
+(no per-frame tick found). Typical consumption: <code>AND #$03/$07/$0F/$1F</code> → table index
+(drop tables, attack pattern choice, geyser columns, hop selection).</p>
+<p>Call-site classes: boss attack pattern choice (Wolfduck <code>$99EE</code>, Megavolt <code>$AA69</code>,
+Liquidator <code>$9F43</code>, Bushroot <code>$A686</code>, orb spawner <code>$9440</code>, Steelbeak <code>$AF74</code>), Moliarty
+hop decisions, enemy flash timers (<code>$8D2A</code>, <code>$94FA</code>, <code>$9648</code>), death debris velocities
+(<code>$8715</code>), flamethrower shot aim (uses <code>$F93F</code> sectors, not RNG).</p>
+<hr/>
+<h2 id="h-5-enemy-player-contact">5. Enemy ↔ player contact</h2>
+<h3 id="h-51-pairing-rule-f612f64a-push-out-called-from-player-state-handlers">5.1 Pairing rule <code>$F612</code>/<code>$F64A</code> (push-out, called from player state handlers)</h3>
+<pre><code>Y = X EOR 1     ; the partner slot — with X = 0 (player) this is slot 1
+</code></pre>
+<p>Both slots must be active (<code>$04D0</code> bit7), on-screen (<code>$0400</code> bit7) and partner behavior
+<code>$04E0,Y != 0</code>. <code>$F699</code> computes |dx| (16-bit; uses <code>$0400,X</code> bit4 to pick which slot is
+the reference), <code>$F6DF</code> |dy|. Horizontal push applies when overlap &lt; <code>$11</code> (17 px),
+vertical when &lt; <code>$18/$19</code> (24/25 px) — the returned value is the penetration depth used
+to push the player out (clamped; see player_mechanics.md §contact). Called from player
+walk (<code>$F20B</code>), crouch (<code>$D018/$D0B8</code>), air (<code>$D6B1</code>), hurt (<code>$D1AE</code>), transport (<code>$D59F</code>),
+fall (<code>$F3D2</code>). With X=0 the practical pair is (player, slot 1); other even/odd pairs
+<code>(2,3) (4,5)…</code> would only matter if the player occupied those slots, so in practice this
+is the player-vs-one-enemy push.</p>
+<h3 id="h-52-projectile-enemy-damage-faaefb08">5.2 Projectile → enemy damage <code>$FAAE</code>/<code>$FB08</code></h3>
+<p>For projectile slots Y = 4..1: both active + on-screen, projectile behavior != <code>$1F</code>,
+enemy behavior not in {0..4}, enemy on-screen, enemy <code>$0400,X</code> bit2 clear.
+Then <code>$FB08</code>: <code>|dx| &lt; XSize[$0570,X &amp; $1F]</code> <strong>and</strong> <code>|dy| &lt; YSize[...]</code> → CC = hit.</p>
+<h3 id="h-53-enemy-player-touch-fb7b">5.3 Enemy → player touch <code>$FB7B</code></h3>
+<p>Guards: player state != <code>$07/$0F</code>, player active, enemy active + on-screen, enemy
+behavior != <code>$07</code>, <code>$0570,X != 0</code> (touch class 0 = no touch). Y-half-height from
+<code>$FBE9[class]</code> (reduced by 8 if player anim is climb <code>$06/$07</code>), X-half-width from
+<code>$FC09[class]</code>. CC = touching → hurt path (<code>SFX $15</code>, <code>$7C=$3C</code>, <code>$F9C2</code>).</p>
+<h3 id="h-54-hitbox-tables-half-sizes-px-indexed-by-0570x-1f">5.4 Hitbox tables (half-sizes, px, indexed by <code>$0570,X &amp; $1F</code>)</h3>
+<pre><code>$FB39 YSize (32): 0F 0F 0D 0F 07 0B 0F 13 07 0B 04 09 13 07 07 07 0B 13 13 0D 0D 0F 04 13 03 03 03 03 03 03 03 03
+$FB59 XSize (32): 0E 0E 0A 12 0E 12 0E 06 06 0E 04 0E 0E 0A 06 0A 0A 0A 12 0A 0C 08 0C 03 0A 02 02 02 02 02 02 02
+$FBE9 YHalf (32): 16 0C 12 16 0E 14 16 1C 16 12 0C 10 16 0E 14 0E 12 1A 1A 12 14 16 16 16 0E 0A 0A 0A 0A 0A 0A 0A
+$FC09 XHalf (32): 16 0C 12 1A 0F 12 16 10 0C 16 10 1A 12 13 12 12 16 12 12 10 14 1A 16 10 0A 0A 0A 0A 0A 0A 0A 0A
+</code></pre>
+<p>(<code>$FB39/$FB59</code> are read by <code>$FB08</code> for projectile hits; <code>$FBE9/$FC09</code> by <code>$FB7B</code> for
+player touches. Values are compared against absolute deltas, i.e. full hitbox = 2×entry.)</p>
+<hr/>
+<h2 id="h-6-sound-effect-ids-used-by-enemyboss-code-via-f84ef850">6. Sound effect ids used by enemy/boss code (via <code>$F84E</code>/<code>$F850</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>context</th>
+<th>id</th>
+<th>context</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$12</td>
+<td>hop-lift boss grabs player</td>
+<td>$2A</td>
+<td>Quackerjack core tick</td>
+</tr>
+<tr>
+<td>$15</td>
+<td>player hurt by contact</td>
+<td>$2B</td>
+<td>Wolfduck child spawn</td>
+</tr>
+<tr>
+<td>$17</td>
+<td>bonus pickup (energy)</td>
+<td>$2C</td>
+<td>Moliarty douses flamethrower</td>
+</tr>
+<tr>
+<td>$18</td>
+<td>weapon pickup</td>
+<td>$2E</td>
+<td>Wolfduck/child phase</td>
+</tr>
+<tr>
+<td>$19</td>
+<td>bonus pickup (points)</td>
+<td>$2E</td>
+<td>—</td>
+</tr>
+<tr>
+<td>$1A</td>
+<td>convert/bounce</td>
+<td>$35</td>
+<td>Wolfduck throw cue</td>
+</tr>
+<tr>
+<td>$1C</td>
+<td>door shot</td>
+<td>$37</td>
+<td>Liquidator water attack</td>
+</tr>
+<tr>
+<td>$1D</td>
+<td>gas hit on enemy/boss</td>
+<td>$38</td>
+<td>death-pop child</td>
+</tr>
+<tr>
+<td>$1E</td>
+<td>enemy/boss destroyed</td>
+<td>$39</td>
+<td>Moliarty throw</td>
+</tr>
+<tr>
+<td>$23</td>
+<td>door entered / mission complete</td>
+<td>$3A</td>
+<td>teleport shooter fire</td>
+</tr>
+<tr>
+<td>$24</td>
+<td>lob-bomb split</td>
+<td>$3B</td>
+<td>Megavolt attack pick</td>
+</tr>
+<tr>
+<td>$27</td>
+<td>patroller HP tick</td>
+<td>$3C</td>
+<td>Megavolt barrage</td>
+</tr>
+<tr>
+<td>$29</td>
+<td>flamethrower shot</td>
+<td>$3D</td>
+<td>Steelbeak wind-up</td>
+</tr>
+</tbody></table>
+<hr/>
+<h2 id="h-7-open-questions">7. Open questions</h2>
+<ol>
+<li><strong>Behaviors <code>$15</code>/<code>$38</code> (<code>$A41E</code> bank 6)</strong> and the "state machine" family
+<code>$17-$2F</code> (<code>$9424</code>…<code>$AD5B</code>) are documented only at the dispatch/HP/child level;
+per-state timers need a second pass (the state tables and children they spawn are
+listed in <code>labels_enemies.json</code>).</li>
+<li>Boss name ↔ behavior mapping rests on mission placement (strong: each mission's
+placement arrays contain exactly one HP=$80 core object + doors) plus published
+guides; the ROM itself has no name strings. Anim ids per boss are listed for
+sprite-level confirmation against <code>metasprite_frames.json</code>.</li>
+<li><code>$9728</code> door table alternates <code>$FF/$F0</code> — the meaning of the two values
+(final-mission vs normal?) is unverified.</li>
+<li>Type 74 (Quackerjack ball, HP=0): dies through the <em>generic</em> path — including the
+<code>$81C0</code> special-death list check (id <code>$51</code> is not in it, so it explodes normally).</li>
+<li><code>$9E</code>/<code>$1A</code> global flags set by bosses (<code>$9E=$FF</code> orb spawner; <code>$1A=$8A/$8B</code> screen
+effect) — exact consumer (screen shake? palette flash in bank 5 update) not traced.</li>
+<li>RNG <code>$E4-$E7</code> initial value is RAM-zero, but a mission reload may reseed via
+<code>Flow_ClearObjRam</code>-class routines — not verified.</li>
+<li>Moliarty's third flamethrower HP of 9 comes from a slot-index check (<code>CPX #$0D</code>);
+TCRF notes a "broken flamethrower" in the final — likely this one; not confirmed dynamically.</li>
+</ol>
+<h2 id="sources-for-boss-mission-mapping">Sources for boss-mission mapping</h2>
+<ul>
+<li><a href="https://darkwingduck.fandom.com/wiki/Darkwing_Duck_(NES_game)">Darkwing Duck Wiki — NES game (boss/stage assignments)</a></li>
+<li><a href="https://strategywiki.org/wiki/Darkwing_Duck">StrategyWiki — Darkwing Duck stage guide</a></li>
+<li><a href="https://tcrf.net/Proto:Darkwing_Duck_(NES)">The Cutting Room Floor — Darkwing Duck prototype</a></li>
+</ul>
+<hr/>
+<h2 id="h-8-porting-status-c-artunitycodezerodarkwingcore-updated-2026-10-11">8. Porting status (C#, Art/Unity/CodeZero/Darkwing/Core) — updated 2026-10-11</h2>
+<p>Bank 6 (ids $00-$46) and bank 1 (ids $47-$7F) are ported to C# in
+<code>Art/Unity/CodeZero/Darkwing/Core/EnemyBehaviors.cs</code> (both the enemy behaviors and the
+<code>BossBehaviors</code> class), dispatched from <code>EnemyDispatcher.cs</code>
+(the $8000 loop + the full per-slot post-processing $8032-$816C, including
+$FAAE/$FB08 projectile overlap, the $80A0 damage table, $80F2 death pops,
+$81C0 special deaths, and the $813B/$816F contact/bounce pass with the
+$FBE9/$FC09 hitbox tables transcribed from §5.4).</p>
+<ul>
+<li><strong>Behaviors ported: 47/47 table entries (55 unique routines)</strong> — projectile
+weapons 1-4 ($82F0/$8385/$841C/$85BC), death pop $86A2 + debris $8715/$8B80,
+bounce $87E2, lingering gas/bonus pickups $8837 (+ the $8857 grant table),
+pickups $8A1A/$8A22 (+ the $8A39 grant table), 8-dir mover $8BDA, walker
+family $8C34/$8DAF/$8EA3/$906A/$90D3/$9265/$92E6(+states $9418)/$9424/$950B/
+$954B/$95B8/$98EE/$9ABE/$9A03/$9BC9/$9C8A/$9F4C/$9FCB/$A00A/$A09C/$A164/$A28F/
+$A41E/$A53E/$A631/$A6B4/$A7D9/$A8BB/$A9BF/$AA82/$AAD1/$ABBE/$AC2C/$AD5B/$ADF2/
+$AEBC/$B007/$B1D3/$B2FC/$B483/$B570, friendly pop $8812, Quackerjack core
+bank-6 copy $965D, grab-carry $9822, no-ops $82EF.</li>
+<li><strong>Bosses ported: 7/7</strong> — Quackerjack ($50/$51/$52), Wolfduck ($53/$54/$55),
+Liquidator ($57/$58/$59), Moliarty ($4A/$4C/$4D/$4E), Bushroot ($49/$4B/$63),
+Megavolt ($5A/$5B/$5C), Steelbeak ($62/$5F/$60/$61/$64), plus doors $70-$7D
+($96C9 with the $970C/$971A/$9728 script tables), defeat pop $4F ($B3F8),
+$B315 defeat sweep, $B39E/$B36A damage/flash (global $EE = 16 HP, $ED
+invuln), $B4BA projectile conversion, and the minor boss children
+($48/$56/$65/$66/$67/$68/$69/$6A-$6F/$7E/$7F).</li>
+<li><strong>RNG</strong>: the $E4-$E7 counter model lives on <code>EnemyBehaviors</code>
+(<code>RngE4-RngE7</code> + per-site step helpers for the $8D2A/$94FA/$9648/$A153/
+$ADCA/$8715/$9959/$A7AB/$9447/$AF74 sites); serialized through
+<code>DarkwingGame.SaveState</code> (schema version 2, which also captures all slot
+fields and boss globals).</li>
+<li><strong>Spawner</strong>: <code>ObjectSystem.SpawnFromPlacements</code> loads Flags/Behavior/
+AnimNumber/BehaviorParam/Health from the bank-4 type tables via
+<code>EnemyBehaviors.LoadTypeTable</code> (fed from <code>Art/Unity/CodeZero/Darkwing/Data/ object_types.bytes</code>, verified byte-identical to prg.bin bank4 $8AB3/$8C57).</li>
+<li><strong>Fidelity notes</strong>: positions/velocities use the validated 16.8 model
+(same as PlayerCore); the fixed-bank $F5xx "low byte in $F0-$FF" correction
+is subsumed by the 16-bit accumulator. RNG call sites use carry-in 0 where
+the 6502 carry could not be statically proven. Behavior $03's stuck-bolt
+player-pull branch ($8542) and the $8A8A HUD-cascade entry are simplified
+(documented inline).</li>
+<li><strong>Verification</strong>: <code>Art/AgentScripts/EnemyProbe.cs</code>
+(<code>unity command run_script --file Art/AgentScripts/EnemyProbe.cs --entry EnemyProbe.Run</code>) — 120-frame trajectories: type 0 walker walks 1 px/f with
+the $16/$3C/$32 timer cadence and anim $43 wind-up + turn; type 16 pickup
+idles; behavior 1 gas cloud travels 4 px/f and dies at the $8363 screen
+edge; type 15 ceiling spike patrols 1 px/f and flips every $18 frames;
+type 9 hopper idles on its 1E-frame RNG delay; boss $4F defeat pop rises
+3.27 px/f. Compile clean (unity recompile_status: completed).</li>
+</ul>
+</body>
+</html>

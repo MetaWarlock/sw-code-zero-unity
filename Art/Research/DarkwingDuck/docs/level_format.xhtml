@@ -1,0 +1,311 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Darkwing Duck (USA) — Level Geometry Format</title>
+    <link rel="stylesheet" type="text/css" href="../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="darkwing-duck-usa-level-geometry-format">Darkwing Duck (USA) — Level Geometry Format</h1>
+<p>Reverse-engineered 2026-10-11. Every claim below is verified either against
+the disassembly (bank 7 fixed at $C000) or bit-exactly against the captured
+gameplay state in <code>reference/probe_m1_enter/</code> (mission 1 / bridge).</p>
+<p>Verification result of <code>Art/Tools/DarkwingResearch/decode_room.py --verify</code>:
+room 0x01 of world 0 decodes to tile ids that match the captured nametable
+<code>$2000-$23BF</code> (rows 0-29, scroll $FA=0) at <strong>960/960 = 100.0%</strong>, and its PPU
+attribute bytes match <code>$23C0-$23FF</code> at <strong>64/64 = 100%</strong>.</p>
+<p>PRG layout: 8 x 16 KB banks. Bank 7 is fixed at $C000-$FFFF; banks 0-6 map to
+$8000-$BFFF through MMC1 ($FF55 writes bank A to $F1/$F4 and $FFF0).
+All offsets below are bank-relative unless noted.</p>
+<h2 id="h-1-mission-descriptor-tables-bank-7-indexed-by-world-id-31-0-6">1. Mission descriptor tables (bank 7, indexed by world id $31, 0-6)</h2>
+<p>Loader <code>$DD57</code> reads, for world X:</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Addr</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>set</td>
+<td><code>$DEAA+X</code></td>
+<td>-&gt; <code>$36</code>: levelset bank holding macrotile/metatile tables (0-6)</td>
+</tr>
+<tr>
+<td>start</td>
+<td><code>$DEB9+X</code></td>
+<td>-&gt; <code>$22</code>,<code>$23</code>: start cell index in the layout grid</td>
+</tr>
+<tr>
+<td>row Y</td>
+<td><code>$DEC8+X</code></td>
+<td>-&gt; <code>$FB</code> and <code>$0520</code>: starting grid row (world Y row)</td>
+</tr>
+<tr>
+<td>width</td>
+<td><code>$DED7+X</code></td>
+<td>-&gt; <code>$2C</code>; <code>$2E</code> = value+1 = <strong>grid row width</strong></td>
+</tr>
+<tr>
+<td>chr spr</td>
+<td><code>$DEE6+X</code></td>
+<td>-&gt; <code>$1A</code>: sprite CHR request, all worlds <code>$8E</code> (bank = value &amp; $7F = 14)</td>
+</tr>
+<tr>
+<td>chr bg</td>
+<td><code>$DEF5+X</code></td>
+<td>-&gt; <code>$1B</code>: bg CHR request, <code>$90..$96</code> (bank = value &amp; $7F = 16..22)</td>
+</tr>
+<tr>
+<td>bg pal</td>
+<td><code>$DF04+X</code></td>
+<td><strong>A-operand of <code>JSR $C2F9</code></strong> = BG palette index byte (NOT a music id — corrected 2026-10-15 by <code>$DD57</code> disasm: <code>LDA $DF04,X / JSR $C2F9</code>)</td>
+</tr>
+<tr>
+<td>ring</td>
+<td><code>$DF13+X</code></td>
+<td>-&gt; <code>$D9</code> + <code>JSR $F84E</code>, but only when <code>$D9 != 0</code> ($DDA0-$DDAA)</td>
+</tr>
+<tr>
+<td>sp pal</td>
+<td><code>$DF22+X</code></td>
+<td>A-operand of <code>JSR $C319</code> = sprite palette index byte</td>
+</tr>
+<tr>
+<td>flag 3D</td>
+<td><code>$DF31+X</code></td>
+<td>-&gt; <code>$3D</code> (per-world mode bit; <code>$80/$88/$8C/00</code>)</td>
+</tr>
+<tr>
+<td>top row</td>
+<td><code>$DF41+X</code></td>
+<td>-&gt; <code>$2D</code>: highest reachable grid row (scroll-up limit)</td>
+</tr>
+<tr>
+<td>grid</td>
+<td><code>$DF50/$DF60+X</code></td>
+<td>-&gt; <code>$32/$33</code>: layout grid pointer (bank 7)</td>
+</tr>
+<tr>
+<td>flags</td>
+<td><code>$DF70/$DF80+X</code></td>
+<td>-&gt; <code>$34/$35</code>: per-cell flag table (bank 7)</td>
+</tr>
+</tbody></table>
+<p>Grid pointers per world: bridge <code>$DF90</code>, city <code>$DFD4</code>, sewers <code>$E018</code>,
+tower <code>$E05C</code>, forest <code>$E0D4</code>, warehouse <code>$E10D</code>, fowl <code>$E146</code>, id 7 <code>$E17F</code>.</p>
+<p><strong>Array length</strong>: <code>$DD57</code> never stores a row count, so the grid/flag length is
+the gap between consecutive grid pointers: bridge/city/sewers <code>0x44</code> = 4x17,
+tower <code>0x78</code> = 12x10, forest/warehouse/fowl <code>0x39</code> = 3x19. Grid rows =
+length / $2E. <code>$2D</code> (<code>$DF41</code>) is the scroll-up limit and is NOT rows-1
+(bridge <code>$00</code>, city <code>$00</code>, sewers <code>$03</code>, tower <code>$00</code>, forest+ <code>$03</code>).
+Flag tables sit at grid + $01FC (bridge <code>$E18C</code>, city <code>$E1D0</code>, sewers <code>$E214</code>,
+tower <code>$E258</code>, forest <code>$E2D0</code>, warehouse <code>$E309</code>, fowl <code>$E342</code>).</p>
+<h2 id="h-2-layout-grid-world-map">2. Layout grid (world map)</h2>
+<ul>
+<li>Flat byte array in bank 7, row-major, <strong>row width W = $2E = $DED7[X]+1</strong>
+(bridge/city/sewers 17, tower 10, forest/warehouse/fowl 19).</li>
+<li>4 rows for bridge/city/sewers ($44 = 4<em>17 bytes); tower 12 rows (120 bytes);
+forest/warehouse 3 rows ($39 = 3</em>19); fowl 3 rows.</li>
+<li>Each byte = <strong>room id</strong> (1-0xC2); 0 = empty (blocked, no room data).</li>
+<li>Cell index <code>$22</code> = row*W + col. Start cell <code>$DEB9[X]</code> gives (row <code>$DEC8[X]</code>,
+col). Bridge: <code>$33</code> = row 3, col 0 -&gt; room <code>01</code>.</li>
+<li>Cell (row,col) = a 256x256 px world block at world position
+(col<em>256, row</em>256).</li>
+</ul>
+<p>Bridge mission map (17x4, verified start room 0x01 at row 3 col 0):</p>
+<pre><code>row0: 15 . 16 . . . . . . . . . . . . . .
+row1: . . . . . 08 09 0A 0B 0C 0D 0E . . . . .
+row2: . . . . . 07 . . . . . 0F 10 11 12 13 .
+row3: 01 02 03 04 05 06 . . . . . . . . . . .
+</code></pre>
+<h2 id="h-3-per-cell-flag-table-3435-same-shape-as-grid">3. Per-cell flag table ($34/$35, same shape as grid)</h2>
+<p><code>LDA ($34),Y</code> uses:</p>
+<ul>
+<li><strong>bit 6</strong> (<code>AND #$40</code>, $DBD3/$DC1D): horizontal scroll allowed out of this
+cell (0 = camera stops, scroll value snaps to 0).</li>
+<li><strong>bit 7</strong> ($DC9B/$DCEC, <code>BMI</code>): snap vertical scroll <code>$FA = 0</code> on row change
+(no smooth scroll into the next row).</li>
+<li><strong>bits 0-4</strong> (<code>AND #$1F</code>, $EBD4): door/exit id -&gt; <code>$5B</code>/<code>$6D</code> (door handler
+<code>$E388</code>).</li>
+</ul>
+<p>Observed values: <code>$40</code>=scroll only, <code>$C0</code>=scroll+snap, <code>$41/$42/$C1/$C2</code>
+add low bits (door ids).</p>
+<h2 id="h-4-room-data-64-bytes-per-room">4. Room data (64 bytes per room)</h2>
+<p>Pointer built by <code>$EB27</code>: <code>A = grid[cell]; ptr = $7FC0 + A*64</code>
+= **$8000 + (room-1)<em>64</em>*. Cell value 0 -&gt; pointer high byte $7F, bit7 clear
+-&gt; no room (empty cell).</p>
+<p>Bank holding room blocks (<code>$EAD7</code>): <strong>bank 0 for worlds 0-5, bank 1 for
+world 6</strong>. Rooms of all worlds share the id space: bank 0 offset
+(room-1)*64, room 0xC2 ends at $3080. Bank 0 also holds set-0 tables at
+$36E0+; bank 1 also holds set-1 tables (and fowl rooms).</p>
+<p>Format: <strong>64 bytes = 8x8 macrotiles, row-major.</strong> Byte i = macrotile
+(row i/8, col i%8). A macrotile is 32x32 px = 2x2 metatiles; a metatile is
+16x16 px = 2x2 tiles. A room is therefore 16x16 metatiles = 32x32 tiles =
+<strong>256x256 px = exactly one screen</strong>. No compression.</p>
+<h2 id="h-5-tile-set-tables-bank-36-deaax-ie-set-id">5. Tile set tables (bank = <code>$36</code> = <code>$DEAA[X]</code>, i.e. set id)</h2>
+<table>
+<thead>
+<tr>
+<th>Addr (bank offset)</th>
+<th>CPU when mapped</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$36E0</code></td>
+<td><code>$B6E0</code></td>
+<td>macrotile table: 256 entries x 4 metatile ids (TL,TR,BL,BR)</td>
+</tr>
+<tr>
+<td><code>$3AE0</code></td>
+<td><code>$BAE0</code></td>
+<td>metatile -&gt; top-left tile id (256)</td>
+</tr>
+<tr>
+<td><code>$3BE0</code></td>
+<td><code>$BBE0</code></td>
+<td>metatile -&gt; top-right tile id</td>
+</tr>
+<tr>
+<td><code>$3CE0</code></td>
+<td><code>$BCE0</code></td>
+<td>metatile -&gt; bottom-left tile id</td>
+</tr>
+<tr>
+<td><code>$3DE0</code></td>
+<td><code>$BDE0</code></td>
+<td>metatile -&gt; bottom-right tile id</td>
+</tr>
+<tr>
+<td><code>$3EE0</code></td>
+<td><code>$BEE0</code></td>
+<td>metatile -&gt; byte = (<strong>collision type &lt;&lt; 4</strong>) | <strong>bg palette (0-3)</strong></td>
+</tr>
+</tbody></table>
+<p>Expansion:</p>
+<pre><code>for mr in 0..7, mc in 0..7:
+    m = room[mr*8+mc]                      # macrotile id
+    for q in 0..3:                         # 0=TL 1=TR 2=BL 3=BR
+        met = macrotile_table[m*4 + q]
+        tile[r=mr*2+q/2*2 .. ][c=mc*2+q%2*2 ..] = tl[met],tr[met],bl[met],br[met]
+        collision[mr*2+q/2][mc*2+q%2] = type_table[met] &gt;&gt; 4
+        palette  [mr*2+q/2][mc*2+q%2] = type_table[met] &amp; 3
+</code></pre>
+<p>Collision types (player engine, <code>$0600</code> map nibble): 0 air, 1 one-way,
+2 solid, 3 wall, 4 spikes, 5 door, 7/8 grapple-ledge.</p>
+<p>PPU attribute byte for the 32x32 px block at metatile rows (2r,2r+1) x cols
+(2c,2c+1) = <code>TL | TR&lt;&lt;2 | BL&lt;&lt;4 | BR&lt;&lt;6</code> (each = palette of that metatile).
+Verified 64/64 against the capture.</p>
+<h2 id="h-6-rendering-scrolling-model-engine-behavior">6. Rendering / scrolling model (engine behavior)</h2>
+<ul>
+<li>NMI VRAM queue (buffer <code>$0360</code>, flag <code>$19</code>; second buffer at <code>$03B8</code>, flag
+<code>$1D</code>): entries <code>[addr_hi, addr_lo, count, data...]</code>, <code>count+1</code> bytes written
+linearly, terminated by a byte with bit7 set. Flush <code>$C119</code>.</li>
+<li>Room entry / vertical scroll redraw <code>$E7C6</code>: for tile row <code>$2A</code> (0-29) it
+queues one full tile row (<code>count=$1F</code> -&gt; 32 bytes) at PPU
+<code>$2000 + ($2A&gt;&gt;3)*$100 + ($2A&amp;7)*32</code> — i.e. hi byte <code>$20+($2A&gt;&gt;3)</code>,
+lo byte <code>($2A&amp;3)&lt;&lt;5 | (($2A&gt;&gt;2)&amp;1)&lt;&lt;7</code> — plus one attribute row entry
+(hi|<code>$03</code>, lo|<code>$C0</code> + attr-row index, count 7 -&gt; 8 bytes at <code>$23C0+attrrow*8</code>).
+The room's 32 tile rows live at <code>$2000-$23BF</code>; <strong>rows 30-31 of the ring
+overlay the attribute table</strong> ($23C0-$23FF) and are only displayed when the
+scroll ring wraps (rooms are 256 px tall, the window is 240 px).</li>
+<li>Horizontal scroll <code>$FC</code> (+carry <code>$FD</code>): camera pans inside a cell; on wrap
+<code>$22</code>++ (next cell) and the incoming cell <code>$23 = $22 +/- 1</code> ($DD17) is drawn
+into the other page. Blocked when the next grid byte is 0 or the cell flag
+bit6 is clear; then <code>$FC</code> snaps to 0.</li>
+<li>Vertical scroll <code>$FA</code> (0-$EF, +3 px/step) inside grid row <code>$FB</code>; on wrap
+<code>$FB +/- 1</code> and <code>$22 +/- $2E</code> (one grid row). Scrolling up stops at
+<code>$FB == $2D</code> (top row) or when the grid byte above is 0.</li>
+<li>World position: <code>worldY = $FB*256 + $FA + screenY</code>;
+player abs Y = <code>$0520:$0510</code> (hi:lo) = <code>$FB*256 + $FA + screenY</code>.
+Player abs X = <code>$0500:$04F0</code>; <code>$FD</code> = current column (0-based) used for
+object activation.</li>
+<li>RAM maps: <code>$0600</code> = metatile map for the current room (16x16, with collision
+nibble in the high bits of a 16-bit entry pair), <code>$0780</code> = attribute shadow
+(64 bytes = <code>$23C0</code> image). Tile probes <code>$EB52/$EBE8</code> with offset tables
+<code>$ED19/$ECAD</code> read these.</li>
+</ul>
+<h2 id="h-7-object-placement-5-parallel-arrays-bank-4">7. Object placement (5 parallel arrays, bank 4)</h2>
+<p>Pointers set by bank 4 <code>$8000</code> from per-world pointer tables (lo byte and hi
+byte stored $07 bytes apart), loaded into <code>$72-$7B</code>:</p>
+<table>
+<thead>
+<tr>
+<th>zp ptr</th>
+<th>lo table</th>
+<th>hi table</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>$74/$75</code></td>
+<td><code>$81F3+X</code></td>
+<td><code>$81FA+X</code></td>
+<td>screenX = <strong>cell column</strong> (0-based)</td>
+</tr>
+<tr>
+<td><code>$72/$73</code></td>
+<td><code>$8201+X</code></td>
+<td><code>$8208+X</code></td>
+<td>localX = pixel X within the 256px column</td>
+</tr>
+<tr>
+<td><code>$78/$79</code></td>
+<td><code>$820F+X</code></td>
+<td><code>$8216+X</code></td>
+<td>screenY = <strong>grid row</strong> (0-based)</td>
+</tr>
+<tr>
+<td><code>$76/$77</code></td>
+<td><code>$821D+X</code></td>
+<td><code>$8224+X</code></td>
+<td>localY = pixel Y within the 256px row</td>
+</tr>
+<tr>
+<td><code>$7A/$7B</code></td>
+<td><code>$822B+X</code></td>
+<td><code>$8232+X</code></td>
+<td>object type id</td>
+</tr>
+</tbody></table>
+<p>Bridge arrays: cellX <code>$8239</code>, localX <code>$826C</code>, rowY <code>$829F</code>, localY <code>$82D2</code>,
+type <code>$8305</code> (bank 4 offsets). <strong>World position of an object =
+(cellX<em>256 + localX, rowY</em>256 + localY)</strong> — exactly the grid geometry above.</p>
+<p>Activation (<code>$80DA</code>, called from the feeder <code>$8090</code>): object activates when
+<code>cellX == $FD</code> (current column) and <code>rowY == $FB</code> (current row); spawn-once
+bitmask <code>$0340[idx&amp;7] &amp; $81EB[idx&gt;&gt;3]</code>, dedup via <code>$0590</code>. Type id *4 indexes
+a 4-byte descriptor table at bank4 <code>$8AB3</code> (flags <code>$0400</code>, behavior <code>$04E0</code>,
+anim <code>$0420</code>, field <code>$0570</code>).</p>
+<h2 id="h-8-what-was-verified-evidence">8. What was verified (evidence)</h2>
+<ul>
+<li><code>$EB27</code> room pointer math, <code>$EAD7</code> room/set bank switch, <code>$EA36</code> metatile
+expansion — disassembly, bank 7.</li>
+<li>Room 0x01 (bridge) tile expansion == nametable <code>$2000-$23BF</code> at frame 660:
+960/960.</li>
+<li>Attribute bytes from <code>type_table &amp; 3</code> == <code>$23C0-$23FF</code>: 64/64.</li>
+<li>Grid width 17 (bridge) / 10 (tower): start cell $33=(3,0)-&gt;room 01 matches
+the capture; tower start $6E = 11*10+0 matches <code>$FB=11</code>.</li>
+<li>Zero page ground truth at frames 198-660: <code>$22=33 $23=33-&gt;34 $2C=10 $2E=11 $32/$33=$DF90 $34/$35=$E18C $36=00 $FB=03 $FA=$FC=$FD=00</code>.</li>
+<li>Object world coords == cell*256+local semantics: activation compare
+($74),Y-$FD / ($78),Y-$FB in bank 4 $80DA.</li>
+</ul>
+<h2 id="h-9-open-questions">9. Open questions</h2>
+<ul>
+<li>Exact meaning of flag bits 0-1 vs 2-4 (door id encoding) — needs the door
+handler <code>$E388</code> cross-check with the checkpoint table.</li>
+<li><code>$FB</code> start values &gt; 3 for worlds 3 (tower = 11) confirm rows, but the
+scroll direction conventions (<code>$FA</code> up vs down per <code>$2F</code> state bits) were
+only partially traced; the port can ignore them and use world Y directly.</li>
+<li>The second VRAM page ($2400) at frame 660 contains a partial screen that
+matches no room window; likely the interrupted first draw of the incoming
+cell or stale briefing-screen data. Does not affect the format.</li>
+<li>Attribute rows 6-7 (tile rows 24-31) of rooms wider than 30 tile rows are
+written through the same <code>$23C0</code> ring; only relevant for byte-exact PPU
+emulation, not for a Unity port.</li>
+<li>Metatile animation (flashing lights etc.) is handled outside this format
+(anim id tables in bank 5); not covered here.</li>
+</ul>
+</body>
+</html>

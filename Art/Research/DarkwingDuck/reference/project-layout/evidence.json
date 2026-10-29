@@ -1,0 +1,109 @@
+{
+  "schema": 1,
+  "date": "2026-10-29",
+  "sourceHead": "c740f1c3ee7f0204b3a3aa804d26c78032b10c85",
+  "sourceState": "inherited dirty changes plus Art layout migration; no commit made",
+  "issue": "ZERO-2",
+  "humanGateIssue": "ZERO-36",
+  "humanResult": "PASS",
+  "agent": "sh.codex@beholder.learn.su",
+  "human": "dima@iqseo.ru",
+  "build": "build_a9780eeca272",
+  "scene": "Packages/su.learn.codezero/Scenes/DarkwingMain.unity",
+  "buildSourceDifference": "only auto-added InputSystem preloadedAssets; inherited [] restored through Editor API after build; runtime C# behavior unchanged",
+  "beforeSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-before",
+  "afterSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-preserved",
+  "input": {
+    "path": "Art/Playthroughs/20261019T050329Z/input.bin",
+    "bytes": 24261,
+    "sha256": "50718e87aebd5798f72720e1f84dbe2531a79e8b459cf4a7fbcb43598fe1eb70",
+    "start": "recorded reset; poll1, pre-input snapshots; comparison f2033–24261",
+    "comparisonSource": "previous port Art/Playthroughs/20261019T050329Z/unity/buffers.bin",
+    "comparisonSourceSha256": "5a31e5ba2f2842beead9dc895a43f802dd2163864ab668b8f8ad47e2ec7faf62"
+  },
+  "commands": [
+    "python Art/Tools/DarkwingResearch/stand/stand.py unity Art/Playthroughs/20261019T050329Z --output Art/Temp/layout-m1-full --png 2033,2199,23000,24261 --timeout 300",
+    "python Art/Tools/DarkwingResearch/stand/stand.py states --original Art/Playthroughs/20261019T050329Z/unity/buffers.bin --port Art/Temp/layout-m1-full/buffers.bin --start 2033",
+    "python Art/Tools/DarkwingResearch/run_check.py --suite --out Art/Temp/layout-suite",
+    "python Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Contracts --out Art/Temp/layout-contracts"
+  ],
+  "records": [
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-build/build_final.json",
+      "bytes": 698086,
+      "sha256": "20c326c6bd46e98ddc7a9a2777a64d8852b53fb3a819c251e5347778c7b2dbe5"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-build/source_before.json",
+      "bytes": 186337,
+      "sha256": "0fe22e45429680ad8dfc9a3b5634bdc4ad9d67a765f2dbfc03fcaf3743135fc7"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-build/source_after.json",
+      "bytes": 30441,
+      "sha256": "c53c60374fe1b6fe46fec0290b45a68b2aa9f8f5fc437ccc371ecf000fa2e016"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-build/binary_manifest.json",
+      "bytes": 61804,
+      "sha256": "ae49bf7a79291e50555161d9691ffa8c51abf7eb870763ccef4287ebc90167bc"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-build/commands.json",
+      "bytes": 1906,
+      "sha256": "5709661d54d02a7b3f1b77fbf2bf20f4857ae5858db7b21e1642c43501d15943"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-player/report.json",
+      "bytes": 1938,
+      "sha256": "3038c1ef90a9e1db8212aa84f681b3e3c0daeb3e86cd037b6f2b0b83efd53ed5"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-contracts/returned.txt",
+      "bytes": 1342,
+      "sha256": "9aa6a5cd3a5d6ab8b406b9b3ba93210541c0e6bd94aa88b15bf43412da2551c1"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-suite/suite_result.json",
+      "bytes": 4019,
+      "sha256": "020ccbd953a17fbd007efcb7e0d6b48da5e05936311ea675512b8794a1538974"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-m1-port-comparison.json",
+      "bytes": 1642,
+      "sha256": "4135e334f70c93d4745d91f10bfeca2125fe55610a828fc5df8c86d0938ce23f"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-ownership.json",
+      "bytes": 7074,
+      "sha256": "3c4c639cdff497641e2fc1423a3f63ac31e64194c0352e1133804157fb6ef23f"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-xhtml-validation.json",
+      "bytes": 63,
+      "sha256": "cb25527da2bb7f98ace23e54fa6a643855117b4ed51b408c29f2955bd234326e"
+    },
+    {
+      "path": "Art/Research/DarkwingDuck/reference/project-layout/layout-shortcuts.json",
+      "bytes": 1931,
+      "sha256": "77bc7e90c995174bb682cf0f8c8c3293bd7b0b00bf2e8927b5387d5d4913030d"
+    }
+  ],
+  "followup": "reference-audit.json",
+  "currentSourceNote": "12 source citation updates after build checkpoint; six runtime files changed only comments/line endings; original build source manifests retained unchanged",
+  "latestSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261029-art-layout-human-accepted",
+  "humanTest": {
+    "issue": "ZERO-36",
+    "issueId": "6ae29fc3e5dbb5b6ddb77241",
+    "status": "Done",
+    "result": "PASS",
+    "commentId": "6ae2a9c9ca718e7e8ffa3132",
+    "commentAuthorId": "1222742759862304769",
+    "commentCreatedOn": 1793239512057,
+    "commentBody": "PASS",
+    "reportedBy": "warlock / dima@iqseo.ru; current chat explicitly confirms task closure",
+    "build": "build_a9780eeca272",
+    "scope": "aggregate PASS of the short launch/mission1-start/movement/jump/fire/F5/clean-exit checklist; no separate per-step measurements; not full game/image/audio equivalence"
+  },
+  "acceptanceRecordNote": "Human task text separated from developer information; ZERO-36 Done with PASS comment; Art/index.xhtml added to snapshot roots; finalize refuses to overwrite accepted evidence."
+}

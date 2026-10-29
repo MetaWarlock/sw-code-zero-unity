@@ -1,0 +1,163 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>COSIM.md — Differential Co-Simulation tooling</title>
+    <link rel="stylesheet" type="text/css" href="../../documentation.css"/>
+  </head>
+  <body><h1 id="cosimmd-differential-co-simulation-tooling">COSIM.md — Differential Co-Simulation tooling</h1>
+<p><strong>What it is.</strong> A recomp-vs-oracle <strong>first-divergence decision procedure</strong>: run
+the recompiled game and a reference NES emulator (Mesen, via <code>nesref</code>) over the
+same deterministic attract sequence, hash/compare full machine state per frame,
+and report where — and in which subsystem — they first disagree. It answers "is
+the recompiler faithful?" with measured state, not inspection.</p>
+<ul>
+<li><strong>Oracle B</strong> = <code>F:\Projects\nesref\</code> — an in-process libretro host running
+<code>mesen_libretro.dll</code>. No external Mesen.exe: the wide state channel is Mesen's
+<code>retro_serialize</code> blob (CPU cycle count, PPU OAM/palette/nametables, APU), from
+which <code>nesref</code> extracts per-frame traces.</li>
+<li><strong>What it is NOT.</strong> Not an emulator, not a renderer check. It measures <em>state
+convergence</em> across two implementations. It is blind to display/feel — see the
+owner rule below.</li>
+</ul>
+<h2 id="the-tool">The tool</h2>
+<p>Coordinator: <code>tools/nes_cosim.py</code>. All commands take <code>&lt;exe&gt; &lt;rom&gt; [frames]</code>;
+the A/B commands also take <code>&lt;nesref.exe&gt; &lt;core.dll&gt;</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>What it checks</th>
+<th>Reads</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>gate1 &lt;exe&gt; &lt;rom&gt; [f]</code></td>
+<td><strong>Recomp determinism</strong> — two recomp runs must be byte-identical (A-vs-A = 0). Catches nondeterminism leaks (uninit padding, host state).</td>
+<td>recomp cosim-hash JSONL ×2</td>
+</tr>
+<tr>
+<td><code>gate2 &lt;nesref&gt; &lt;core&gt; &lt;rom&gt; [f]</code></td>
+<td><strong>Oracle determinism</strong> — two nesref runs identical.</td>
+<td>nesref RAM trace ×2</td>
+</tr>
+<tr>
+<td><code>gate3 &lt;exe&gt; &lt;rom&gt; [f]</code></td>
+<td><strong>Fault injection</strong> — inject a 1-byte flip, the diff must halt at the injected frame in the injected subsystem (proves the hasher isn't blind).</td>
+<td>recomp cosim-hash JSONL</td>
+</tr>
+<tr>
+<td><code>abram &lt;exe&gt; &lt;rom&gt; &lt;nesref&gt; &lt;core&gt; [f]</code></td>
+<td><strong>RAM convergence</strong> (2 KB, stack-masked) vs Mesen. The strongest cross-impl signal the libretro oracle exposes.</td>
+<td>recomp WRAM trace + nesref RAM</td>
+</tr>
+<tr>
+<td><code>abcycle &lt;exe&gt; &lt;rom&gt; &lt;nesref&gt; &lt;core&gt; [f]</code></td>
+<td><strong>Cycle convergence</strong> — recomp <code>g_nes_cycles</code> per-frame advance vs Mesen's cycle counter. Drift → NTSC frame-length skew.</td>
+<td>recomp cosim-hash <code>bclk</code> + nesref cycle</td>
+</tr>
+<tr>
+<td><code>abppu &lt;exe&gt; &lt;rom&gt; &lt;nesref&gt; &lt;core&gt; [f]</code></td>
+<td><strong>PPU-internal memory</strong> — OAM, palette, nametables vs Mesen. The channel the libretro memory API can't reach (VIDEO_RAM is null on all NES cores).</td>
+<td>recomp PPU-mem trace + nesref PPU blob</td>
+</tr>
+<tr>
+<td><code>diff &lt;a.jsonl&gt; &lt;b.jsonl&gt;</code></td>
+<td>First-divergence report between two hash streams.</td>
+<td/>
+</tr>
+<tr>
+<td><code>run &lt;exe&gt; &lt;rom&gt; &lt;out&gt; [f] [inject]</code></td>
+<td>One instrumented run → JSONL.</td>
+<td/>
+</tr>
+</tbody></table>
+<p>Gates print PASS/FAIL and exit non-zero on FAIL (CI-gateable).</p>
+<h2 id="the-measurement-axes-convergence-ladder">The measurement axes (convergence ladder)</h2>
+<ul>
+<li><strong>Rung 0 — logic/RAM:</strong> converges by default; the regression floor.</li>
+<li><strong>Rung 1 — cycle accounting:</strong> monotonic <code>g_nes_cycles</code>, OAM-DMA charge,
+remainder carry. Done.</li>
+<li><strong>Rung 2 — dot-accurate frame length</strong> (<code>NESRECOMP_DOT_CLOCK</code>, <strong>default ON</strong>):
+frame boundary is a dot event (89342/89341 dots, odd-frame skip) → cycle drift
+~0. Done, live-validated (SMB, MM3). <code>=0</code> restores the legacy 29781 threshold.</li>
+<li><strong>Rung 3 — per-dot identity:</strong> sub-scanline sprite-0/A12, intra-instruction R/W
+placement. Deferred as gold-plating (see <code>ENHANCEMENTS.md</code> §3).</li>
+</ul>
+<h2 id="how-alignment-works-and-the-fire-count-fix">How alignment works (and the fire-count fix)</h2>
+<p>The recomp and oracle free-run; frame <code>N</code> of the recomp is compared to oracle
+frame <code>N + offset</code> (a constant boot latency). This is exact for a deterministic,
+phase-locked attract demo.</p>
+<p>The recomp co-sim trace is tagged with <strong><code>g_cosim_vframe</code></strong>, a video-frame index
+<strong>derived from the cycle ruler</strong> — <code>round(g_frame_boundary_cyc / 29780.5)</code> = the
+true NTSC video-frame number — computed at each emit, NOT counted per NMI. This
+matters because the oracle counts every video frame: a per-NMI counter (like
+<code>g_frame_count</code>) STALLS whenever the frame boundary is deferred or depth-suppressed
+(post-NMI work during boot/scene transitions), so real video frames elapse
+un-counted and byte-identical state looks phase-divergent — a pure measurement
+artifact (this was the entire Zelda "FrameCounter-phase" false alarm). Deriving the
+index from cycles removes it: whichever frames emit carry their true video-frame
+number and align to the oracle across suppressed gaps. Emission stays POST-NMI-handler
+(so the sampled phase matches the oracle's end-of-frame serialize); NMI-off frames
+emit at the boundary. The trace path is env-gated and <code>g_frame_count</code> (the
+game-logic clock) is untouched, so there is <strong>zero effect on shipped gameplay</strong>.</p>
+<p>When trajectories still drift (host-modeled state, RNG/FrameCounter phase), the
+coordinator's <code>adaptive_offset_*</code> (windowed piecewise offset) and, for scrolling
+attract, <code>scroll_phase_match</code> (per-frame horizontal column-shift on the visible
+nametable) <strong>classify</strong> the residual: a discrete shift that recovers a high match
+= alignment; a match that stays low = a genuine divergence or phase desync. See
+<code>ENHANCEMENTS.md</code> §1 for the state/phase-sync roadmap.</p>
+<h2 id="interpreting-a-verdict">Interpreting a verdict</h2>
+<ul>
+<li><strong>CONVERGED / byte-identical</strong> — faithful (bar documented benign flags, e.g.
+SMB <code>$1a</code> frame-sync).</li>
+<li><strong>CONVERGED once re-aligned</strong> — the spread was an NMI-off frame-count desync,
+not a divergence.</li>
+<li><strong>CONVERGED modulo scroll-phase</strong> — the visible screen matches under a scroll
+shift; off only by attract-demo timing.</li>
+<li><strong>still low after re-align → genuine divergence / FrameCounter-host-state
+phase</strong> — a real state difference to chase (Ghidra), or a phase desync needing
+a state-sync fixture (<code>ENHANCEMENTS.md</code> §1).</li>
+</ul>
+<h2 id="build-run">Build &amp; run</h2>
+<p>Build a game against the co-sim engine (msys cmake is broken — use the VS dev
+shell + VS-bundled cmake; see the build recipe in <code>CLAUDE.md</code>):</p>
+<pre><code>cmake -S . -B build_cosim   # first time
+cmake --build build_cosim --config Release
+</code></pre>
+<p>Run (from a game dir; dot clock is default-on; battery <code>.srm</code> is auto-cleared):</p>
+<pre><code>NESREF=/f/Projects/nesref/nesref.exe
+CORE=/f/Projects/nesref/cores/mesen_libretro.dll
+COORD=../nesrecomp/tools/nes_cosim.py
+python "$COORD" gate1   &lt;exe&gt; &lt;rom&gt; 900
+python "$COORD" abram   &lt;exe&gt; &lt;rom&gt; "$NESREF" "$CORE" 900
+python "$COORD" abcycle &lt;exe&gt; &lt;rom&gt; "$NESREF" "$CORE" 900
+python "$COORD" abppu   &lt;exe&gt; &lt;rom&gt; "$NESREF" "$CORE" 900   # auto-detects CHR-RAM
+# RNG-seeded games (Zelda): prefix both sides with a seed freeze:
+#   NESRECOMP_FREEZE="0x18=0x00" NESREF_FREEZE="0x18=0x00" python "$COORD" abram ...
+</code></pre>
+<h2 id="coverage-2026-07-02">Coverage (2026-07-02)</h2>
+<p>Cycle + RAM + PPU converge on <strong>SMB</strong> (NROM: RAM 99.94, drift +0.000, OAM 99.96,
+NT 99.97), <strong>Faxanadu</strong> (MMC1/CHR-RAM: OAM 100, NT 99.92), <strong>MM3</strong> (MMC3, logic-
+converges — coroutine ZP is host-modeled; OAM 99.48, NT 99.92); gates 1/2/3 pass
+across all. <strong>Zelda</strong> (MMC1/CHR-RAM): <strong>RAM 100.00% CONVERGED</strong> — the former
+"FrameCounter-phase block" was a stalled-index measurement artifact, fixed by the
+cycle-derived index; its <code>abppu</code> still reads low (animated-title alignment, RAM
+proves faithfulness — <code>ENHANCEMENTS.md</code> §1). <strong>Gumshoe</strong> (GxROM) converges on
+RAM/OAM/palette/cycle-mean; its attract nametable has one genuine ~1-frame
+cycle-timing lead through the NMI-off scene transition (<code>ENHANCEMENTS.md</code> §1).</p>
+<h2 id="rules">Rules</h2>
+<ul>
+<li><strong>Never ship / flip default-on on headless co-sim numbers alone.</strong> Headless is
+blind to display/feel; the owner must launch, play, and approve. (Co-sim
+<em>tooling</em> changes that are env-gated and don't touch gameplay are exempt —
+verify them headless.)</li>
+<li>Land each timing rung <strong>behind</strong> the co-sim: build the certifier, then change
+the timing, then measure. Never ship a timing change unmeasured.</li>
+<li>One runtime instance per game at a time.</li>
+</ul>
+<p>See <code>ENHANCEMENTS.md</code> for the deferred-capability roadmap and worked examples,
+and <code>recomp-template/NES/DIFFERENTIAL-COSIM-PROPOSAL.md</code> for the design rationale.</p>
+</body>
+</html>
