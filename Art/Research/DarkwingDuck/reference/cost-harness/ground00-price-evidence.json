@@ -1,0 +1,158 @@
+{
+  "task": "ZERO-54",
+  "date": "2026-10-30",
+  "executor": { "name": "Бублик Qoder", "email": "bu.qoder@beholder.learn.su", "employee": "6ae29d62d2f0aa1ff733a2b8", "confirmedBy": "own Qoder Beholder MCP get_user_profile + list_employees" },
+  "slot": {
+    "worktree": "D:/Art/SW Code Zero Unity Builds/Mission3-Liquidator",
+    "branch": "codex/orchestration-slot-b",
+    "headBefore": "3f11db8f29e882bda9130895e08f3203d6b62542",
+    "localMain": "3f11db8f29e882bda9130895e08f3203d6b62542",
+    "originMain": "3f11db8f29e882bda9130895e08f3203d6b62542",
+    "ancestryMainIsAncestorOfHead": true,
+    "commits": { "runtimeAndGate": "12901dd", "driverRepairs": ["01e9fe0", "f908b0c"] },
+    "publishing": "not performed by the worker; accepted integrations are pushed by the orchestrator"
+  },
+  "runtime": {
+    "changedFile": "Art/Unity/CodeZero/Darkwing/Core/PlayerCore.ReachedDispatchTiming.cs",
+    "sha256Before": "c6c40bf2fa0b6920b3c35e16e1c38551e136920cf382b4be19802756f3974ce8",
+    "sha256After": "7dcff07ec521647ba664e02cc89a93fbfa319a11ac5848bccb7fc21d905360b9",
+    "beforeBlobEqualsRevision6c310b7": true,
+    "onlySourceDeltaInCore": true,
+    "audioTreeIdenticalToBaseline": true,
+    "semanticChange": "read-only price only; game behaviour, shared 6+hook+18, card-release and RNG untouched",
+    "guardBounds": {
+      "accepted": "down = (held & 0x0F) == 0x04 and direction (held & 3) == 0",
+      "refused": ["up 0x08 (CBDD BEQ CC3A)", "up+down 0x0C", "down+direction 0x05/0x06 (walk CC53)", "fresh A pressed & 0x80 (jump CBBD, owned by the jump wrapper)"],
+      "keptUntouched": ["CB8B state outside00 slice", "CAFC inactive player", "CDD5 ground shot-air pose 0x0E/0x0F", "shot path audio-queue owner"],
+      "callersChecked": {
+        "productionPath": "PlayerCore.DispatchTiming.cs:22 TryMeasureGround00IncludingJumpCycles -> delegates to the queue-aware helper when no fresh A",
+        "conservativeWrapper": "TryMeasureGround00Cycles kept its former blanket held&12 refusal and is not reached by the clock; scope not extended"
+      },
+      "tail": "CBE3 JMP 3 + CC44 (LDA# 2, JSR FA78 6, FA78 body 20) + LDA# 2 + STA $50 3 + LDA# 2 + STA $0490 4 + RTS 6 = 48, plus BNE not taken 2 = 50 constant"
+    }
+  },
+  "bankedSourcePass": {
+    "tool": "Art/Tools/DarkwingResearch/cost/state09_source_price.py --ground00 (canonical, unchanged this task)",
+    "toolSha256": "d68af932810b2fa38e636febd77ca2436474c7f33a6e92a5258e1b5bebdda6ba",
+    "command": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ground00 \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Playthroughs/20261019T212535Z/input.bin 1924 6420 --json Art/Temp/ZERO-54/ground00_source_1924_6420.json",
+    "exitCode": 0,
+    "jsonSha256": "8021339d5e860f04ec25a4b6e1ec9fc61a27c2d8f668a546e2b700d25334e091",
+    "cc44Polls": [2379, 2699, 4930, 5675, 5957],
+    "sourcePrices": [1686, 1722, 1710, 1734, 1725],
+    "oracleStatus": "5/5 EXACT vs original CA59-CA40-18",
+    "preCbe1Prefixes": [1636, 1672, 1660, 1684, 1675],
+    "tailCbe1": [50],
+    "controls": "60/60 (11 input variants per CC44 poll plus comparator rejects source+1)",
+    "otherBranchesExact": { "CBEF": 988, "CC53": 515, "CBBD": 19, "CC3A": 1, "other": 2 },
+    "unsupportedPolls": { "opcode F9 at F6A4": 821, "opcode D9 at CF55": 2, "opcode D9 at CF70": 14 }
+  },
+  "actualCSharpGate": {
+    "mode": "ground00 (new mode of the existing cost entry point)",
+    "command": "dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- ground00 Art/Temp/ZERO-54/ground00_source_1924_6420.json Art/Temp/ZERO-54/ground00_gate.csv 2543",
+    "exitCode": 0,
+    "csvSha256": "92bd699fa91059906c7556e566a6fc7ba591ffabe719fc01a642e5937b30f38f",
+    "measuredRoute": { "nativeEqualsBankedSource": "5/5", "reproduciblePreFrameEqualsFrameCharge": "5/5", "inputIdentityHeldPressed": "5/5", "readOnlySnapshot": "5/5" },
+    "syntheticInputBranches": { "count": "55/55", "acceptedShapes": ["down fresh 04/04", "down held 04/00", "down+B pressed 44/44", "down A held 84/00", "down+select/start 34/04", "idle 00/00"], "refusedShapes": ["up 08/08", "up+down 0C/0C", "down+right 05/05", "down+left 06/06", "down+A pressed 84/84"], "refusalBasis": "reason starts with CBB7, i.e. the guard under test, not a foreign refusal" },
+    "guards": "20/20 refusals (state!=00, inactive slot, AnimNumber 0x0E, 0x0F)",
+    "ownerControls": { "crouchNeedsNoQueueOwner": "5/5 (same price with and without the queue owner)", "shotNeighbourOwnerKept": "5/5" },
+    "comparatorControl": "5/5 rows where the banked pass rejects its own source+1; explicitly NOT presented as a guard test",
+    "clockCoverageBoundary": {
+      "routePollsPricedByClock": "1/1 (poll 2379 only)",
+      "blockedRoutePolls": [2699, 4930, 5675, 5957],
+      "reason": "the clock stops pricing after the first unsupported frame at 2543, so no original CABB-FECF price exists for those polls",
+      "fixedVerificationDefect": "the first version of this gate demanded the original body prefix on all five CC44 polls and reported 1/5 FAIL; the expectation was wrong about coverage, not the price. Reworked into routePollsPricedByClock + everyClockPrefixAgainstOriginal + a printed blocked list; the actual route prices (5/5) were not relaxed."
+    }
+  },
+  "clockNative": {
+    "command": "dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- clock native 6420 Art/Temp/ZERO-54/clock_native_after.csv",
+    "csvSha256": "364f6f85a08510851b5019a64ef705de24afba9d4f26acd315cf51b356ce1b80",
+    "overrides": { "prefix": 0, "audio": 0, "publication": 0 },
+    "anchors": 140, "timedPasses": 462, "runningPasses": 0,
+    "prefixAt2379": 6744, "expected2379OriginalCabbMinusFecf": 6744,
+    "prefixAt2378": 6761, "unchanged2378": true,
+    "everyPricedPrefixEqualsOriginal": "462/462 (was 298/298 before this change)",
+    "newFirstBoundary": { "poll": 2543, "part": "CAFC player", "sourceReason": "D77C right steering", "nextGapInvestigated": false },
+    "unchangedBeforeBoundary": "479/479 rows with poll < 2379 byte-identical to the accepted ZERO-52 clock CSV (sha256 e6b35cf47925f8ad...)"
+  },
+  "previousGatesUnregressed": {
+    "state09Gate": { "exit": 0, "csvSha256": "5191305ca133d77c8e104a3c1adc49dcae107d42d0dd5e6f4444a07169f0068c", "result": "37/37 priced+exact+reproducible+comparator, 148/148 negatives, 1 landing-owner refusal" },
+    "state09Cases": { "exit": 0, "csvSha256": "1791da35c69a2fa6efab3f6b24a7eed7ffadaefe16ec1b1f5c80d5b2feb52b9f", "cases": 139, "formula": "53/53", "route": "86/86", "typeAt": "147/147", "audioPairs": "21/21", "missingOwner": "47/47", "comparator": "37/37", "fallbacks": 0, "uncoveredLabels": 0 },
+    "cardReleaseGate": { "exit": 0, "csvSha256": "6502266a1b5410e236637ad95800892aa939d2ebe4a21551b79a705127e85e81", "releaseFrame": 2117, "prefix": "4986/4986", "anchor": "986/986", "ordinary": "8/8", "holdUntimed": 7, "familyA": "flag=7/7 reason=7/7 span=7/7", "familyB": "polls=7 ownerSelection=7/7 negatives=49/49 flag=49/49 reason=49/49 span=49/49 headPrice=49/49 holdSpanExcludedFromBody=14/14", "assemblerRefusalMaskedByStaleHead": "7/7" },
+    "bufcontrols": "PASS on both sides (before-side city file and after-side city file)"
+  },
+  "mutationProof": {
+    "driver": "Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh",
+    "driverSha256": "2d5d51e882841862d8cfd288eeb05dfe70a53fc0ebf7bbd5ae9eeac31f6a326a",
+    "evidenceDir": "Art/Temp/ZERO-54/mutation-proof3",
+    "exitCode": 0,
+    "baseline": "pristine runtime gate PASS (route=5/5, 462/462, boundary 2543)",
+    "mutants": [
+      { "name": "mut1_oldBlanketGuard", "exit": 1, "named": "route=0/5, guards=10/20, synthetic=30/55, boundary back to 2379 CBB7 ground jump/up/down, everyClockPrefix=298/298 (reproduces the previously accepted state)" },
+      { "name": "mut2_tailMissingJump", "exit": 1, "named": "route=0/5, routePollsPricedByClock=0/1, everyClockPrefix=461/462" },
+      { "name": "mut3_branchAlwaysTaken", "exit": 1, "named": "route=0/5, routePollsPricedByClock=0/1, everyClockPrefix=461/462" },
+      { "name": "mut4_upAccepted", "exit": 1, "named": "synthetic=50/55 while route stays 5/5" },
+      { "name": "mut5_shotAirPoseGuardDropped", "exit": 1, "named": "guards=10/20" },
+      { "name": "mut6_inactiveOwnerDropped", "exit": 1, "named": "guards=15/20" }
+    ],
+    "noSideEffectOfProbes": "probe-free clock native: 5 priced route polls, 0 prefix mismatches, first refusal 2543 equals the probed gate run",
+    "integrity": "runtime restored byte-exact (7dcff07ec521647b...), git status -- Art/Unity/CodeZero empty",
+    "firstRunDefects": [
+      "set -u rejected a local-variable reference in the driver (fixed in 01e9fe0)",
+      "mut6 reported BUILD FAIL, not a gate verdict, because its build raced with the concurrent baseline export of the same tree; the mutant was made compile-safe (only the active-slot half is removed) and the whole proof was re-run serialized as mutation-proof3 (fixed in f908b0c)"
+    ]
+  },
+  "portToPortRegression": {
+    "scope": "4 inputs, 165914 records, 4384 bytes per frame, 727366976 bytes per side",
+    "singleExporterOnBothSides": {
+      "reached_body_aggregate.cs": "2d73b9100845b8e6eeb99ea92b27049e311278c53f34757362bebc0ac7426b44 (working tree and baseline copy, equal)",
+      "reached_body_aggregate.csproj": "84e1c4cd9d9147e3c75d4031dadd0a3a8fd38ecc9f5682982560e12881f6171b (unchanged since 3f11db8)"
+    },
+    "beforeSide": { "revision": "3f11db8", "tree": "git archive 3f11db8 extracted into Art/Temp/ZERO-54/baseline-3f11db8", "runtimeBlob": "c6c40bf2fa0b6920... equals 6c310b7", "inputsCopiedAndCmpVerified": true },
+    "afterSide": { "revision": "f908b0c", "runtimeBlob": "7dcff07ec521647b..." },
+    "routes": [
+      { "route": "m1", "session": "20261019T050329Z", "frames": 24261, "bytes": 106360224, "inputSha256": "50718e87aebd5798f72720e1f84dbe2531a79e8b459cf4a7fbcb43598fe1eb70", "beforeSha256": "fdeaee59c45d4b946212550dacc07cfdeb993cf259dca16ef45355645a181b27", "afterSha256": "fdeaee59c45d4b946212550dacc07cfdeb993cf259dca16ef45355645a181b27", "diffRecords": 0, "diffBytes": 0, "equalsAcceptedZero46Value": true },
+      { "route": "human", "session": "20261022T164819Z", "frames": 38886, "bytes": 170476224, "inputSha256": "137190299728c9ea6285ebf057fa25b1efaf916b9aeb2ad6d21fa46efb7f6275", "beforeSha256": "f92418b431b616eb61f2f5fbd02da2c3bac046e09bfc366b21b9132919396fbb", "afterSha256": "f92418b431b616eb61f2f5fbd02da2c3bac046e09bfc366b21b9132919396fbb", "diffRecords": 0, "diffBytes": 0, "equalsAcceptedZero46Value": true },
+      { "route": "city", "session": "20261019T212535Z", "frames": 29360, "bytes": 128714240, "inputSha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100", "beforeSha256": "ec9d566c6a13bebe8e1210e8b9287f94de92a6081d2c7b6c29f192fd9c8bcac6", "afterSha256": "ec9d566c6a13bebe8e1210e8b9287f94de92a6081d2c7b6c29f192fd9c8bcac6", "diffRecords": 0, "diffBytes": 0, "equalsAcceptedZero46Value": true },
+      { "route": "m3", "session": "20261024T183247Z", "frames": 73407, "bytes": 321816288, "inputSha256": "fe01e37d28252b79ee80098c70c2f9a29a03f35a765558f5e0afc7d4f34b20e4", "beforeSha256": "f7177daff9c0b8e1f8e4863863182cb9c83ed08439fa16fe3467ef01559bdc89", "afterSha256": "f7177daff9c0b8e1f8e4863863182cb9c83ed08439fa16fe3467ef01559bdc89", "diffRecords": 0, "diffBytes": 0, "equalsAcceptedZero46Value": true }
+    ],
+    "firstCausalDifference": "none: no record byte changed, so there is nothing to bless",
+    "callDefectFixed": "the first after-run called bufdiff with buffers_before_<route>.bin instead of buffers_before_<route>/buffers.bin (FileNotFoundException: Missing baseline record file). Caller path error, not a tool defect; re-run with correct paths, all four routes PASS.",
+    "comparatorAndCompletenessControls": "bufcontrols PASS on the before-side and the after-side city record file (identical-must-pass, missing file, empty/unaligned/truncated streams, extra and missing whole record, single changed RAM/NT/OAM/PAL byte named with poll+offset+section)"
+  },
+  "unityEditorGates": {
+    "ownEditor": { "pid": 442056, "port": 7801, "projectPath": "D:\\Art\\SW Code Zero Unity Builds\\Mission3-Liquidator", "batchmode": true },
+    "foreignEditorUntouched": "Mission2-Wolfduck pid 279708 (port 7800) was never driven",
+    "recompileAfterRestoringRuntime": { "errors": 0, "warnings": 0 },
+    "suite": {
+      "command": "python Art/Tools/DarkwingResearch/run_check.py --suite --out Art/Temp/ZERO-54/suite",
+      "verdict": "FAIL", "resultPassed": "18/24", "strictPassed": "8/24", "errors": 0,
+      "equalsKnownBaseline": "all 24 rows and all totals identical to reference/project-layout/layout-suite/suite_result.json; new sha256 020ccbd953a17fbd..., reference a896e8c8a65bd8f7..., byte-equal after normalising CRLF to LF (the Editor writes CRLF in this worktree)",
+      "firstAttempt": "socket hang up while the Editor was still domain-reloading; retried successfully. Not a test result."
+    },
+    "contracts": { "command": "python Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Contracts --out Art/Temp/ZERO-54/contracts", "groups": "16/16 PASS" },
+    "editorShutdown": "own Editor left running or closed is recorded in the task comment; no foreign instance affected"
+  },
+  "immutableInputs": {
+    "rom": "Art/Darkwing Duck (USA).nes sha256 1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+    "cityPhases": "34ca5369...dbe6 (accepted ZERO-53 citation)",
+    "originalReplayBuffers": "7c123d27...cb70",
+    "notModified": ["UserStand and shortcuts", "build_9bc298e1e2e0/ZERO-48", "goldens", "recordings", "palette runtime", "f6388", "other branches and mission worktrees"]
+  },
+  "scopeLimits": [
+    "The price of the reached crouch-entry branch and its guard bounds are proved; full frame price, PCM and image do not follow from this.",
+    "Original prices exist only for city (WorldId 1, weapon 0); on m1/human/m3 preservation is proved by port-to-port records, not by price.",
+    "Shapes 04/00, 44/44, 84/00, 34/04 are walker-verified and were never carried by the route; AnimNumber 0x0E/0x0F, other WorldId/weapon and CC44 with a foreign queue owner are not covered.",
+    "The next native boundary (poll 2543, D77C right steering) is named and deliberately not investigated.",
+    "This is a component/clock acceptance: mission acceptance and ZERO-12 remain open; the task status stays In Progress until the orchestrator accepts it."
+  ],
+  "docsValidation": {
+    "structuralCheck": "project_layout.py validate requires lxml, which is not available in this worktree session; ran the stdlib equivalent: XML well-formed, no class/style/on* attributes, unique ids, all local link targets exist (README.xhtml 560 elements, FACTS.xhtml 14441, AGENTS.xhtml 272)",
+    "gap": "full XHTML 1.0 Strict DTD validation with the bundled lxml Python is NOT RUN here and can be repeated by the orchestrator with $BUNDLED_PYTHON"
+  },
+  "usageLimit": { "source": "own Qoder usage API", "value": "UNKNOWN", "note": "no get_usage_limits tool is reachable in this session; no other harness value was substituted" },
+  "preservation": {
+    "canonicalSourcesTracked": ["Art/Unity/CodeZero/Darkwing/Core/PlayerCore.ReachedDispatchTiming.cs", "Art/Tools/DarkwingResearch/cost/reached_body_aggregate.cs", "Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh", "Art/Tools/DarkwingResearch/README.xhtml", "Art/Research/DarkwingDuck/FACTS.xhtml", "Art/Research/DarkwingDuck/COVERAGE.csv", "Art/Research/DarkwingDuck/reference/cost-harness/ground00-price-evidence.json"],
+    "temporaryArtifacts": "Art/Temp/ZERO-54/ (ignored), exported to a verified additive external snapshot with --include .acpxrc.json; the extracted baseline tree is a reproducible copy and is not the only copy of anything",
+    "sequence": "preserve.py snapshot -> verify -> audit against the assigned backup root"
+  }
+}
