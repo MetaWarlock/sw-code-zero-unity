@@ -1,0 +1,91 @@
+{
+  "schema": 1,
+  "date": "2026-10-30",
+  "issue": "ZERO-54",
+  "review": "ZERO-57",
+  "runtimeCommit": "12901dd",
+  "workerFinal": "858dd46",
+  "independentReviewCommits": [
+    "a6d14a6",
+    "346a192"
+  ],
+  "integrationHead": "bea51acedcf73e21e859615ca210023b063bd3cb",
+  "runtimeSha256": "7dcff07ec521647ba664e02cc89a93fbfa319a11ac5848bccb7fc21d905360b9",
+  "runtimeReviewChanges": false,
+  "nativeClock": {
+    "poll2378Prefix": 6761,
+    "poll2379Prefix": 6744,
+    "exactPricedPolls": 462,
+    "firstUnsupportedPoll": 2543,
+    "reason": "CAFC player / D77C right steering",
+    "anchors": 140,
+    "timed": 462,
+    "running": false,
+    "oracleOverrides": 0
+  },
+  "sourcePrice": {
+    "routePolls": [
+      2379,
+      2699,
+      4930,
+      5675,
+      5957
+    ],
+    "prices": [
+      1686,
+      1722,
+      1710,
+      1734,
+      1725
+    ],
+    "exact": 5,
+    "synthetic": 55,
+    "guards": 20,
+    "scope": "Only poll2379 is clock-priced; remaining four route cases prove the player slice against bank7 walker, not the whole body"
+  },
+  "portToPort": {
+    "records": 165914,
+    "bytesPerRecord": 4384,
+    "bytesPerSide": 727366976,
+    "differingBytes": 0,
+    "comparedByOrchestrator": true,
+    "source": "slotB Art/Temp/ZERO-54/buffers_before_<route>/buffers.bin and buffers_after_<route>/buffers.bin",
+    "sourceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261030-ZERO-54f-slot-b",
+    "scope": "Exported RAM/NT/OAM/PAL only; no PCM or original-game acceptance"
+  },
+  "unity": {
+    "version": "6000.6.5f1",
+    "editorPid": 279708,
+    "project": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "sourceHead": "44fe832",
+    "projectSettingsCommit": "74d3943",
+    "recompileErrors": 0,
+    "suite": {
+      "verdict": "FAIL",
+      "result": 18,
+      "strict": 8,
+      "errors": 0,
+      "fullJsonEqualsBaseline": "state09-suite.json",
+      "sha256": "020ccbd953a17fbd007efcb7e0d6b48da5e05936311ea675512b8794a1538974"
+    },
+    "mission1ContractsGroupsPass": 16,
+    "contractsSha256": "9aa6a5cd3a5d6ab8b406b9b3ba93210541c0e6bd94aa88b15bf43412da2551c1"
+  },
+  "independentMutationProof": {
+    "mutants": 12,
+    "driverExit": 0,
+    "sourceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261030-ZERO-57-slot-b",
+    "scope": "Guard/tail/input/queue-owner mutations and probe-free checks; reviewer ran them serially, restored runtime"
+  },
+  "limits": {
+    "claudeReportedAtReviewEnd": {
+      "fiveHourUsedPercent": 0,
+      "weeklyUsedPercent": 11,
+      "source": "Claude own API, verified by the reviewer; not Codex usage"
+    },
+    "qoder": "UNKNOWN",
+    "kimi": "UNKNOWN",
+    "opencode": "UNKNOWN"
+  },
+  "remaining": "No new playable delivered; human ZERO-48 PASS remains scoped to build9bc/runtime8f. Full native clock, mission/image/audio acceptance open."
+}
