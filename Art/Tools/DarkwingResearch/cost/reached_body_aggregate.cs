@@ -56,8 +56,8 @@ public static class ReachedBodyAggregate
         LegacyReferenceDir = Path.GetFullPath(options.GetValueOrDefault("--legacy-reference-dir", Path.Combine(ReferenceDir, "legacy-m1")), ProjectRoot);
         OutputRoot = Path.GetFullPath(options.GetValueOrDefault("--output-root", "Art/Temp/cost-harness"), ProjectRoot);
         if (rest.Count > 0 && mode == "m1") rest.RemoveAt(0);
-        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols"))
-            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, dispatch, buffers, bufdiff, bufcontrols, m1 (legacy inputs missing)");
+        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols" or "paletteprofile"))
+            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, dispatch, buffers, bufdiff, bufcontrols, paletteprofile, m1 (legacy inputs missing)");
         return rest.ToArray();
     }
     static byte[] Data(string name) => File.ReadAllBytes("Art/Unity/CodeZero/Darkwing/Data/" + name + ".bytes");
@@ -104,6 +104,7 @@ public static class ReachedBodyAggregate
         if (args.Length > 0 && args[0] == "buffers") { Buffers(args); return; }
         if (args.Length > 0 && args[0] == "bufdiff") { BufferDiff(args); return; }
         if (args.Length > 0 && args[0] == "bufcontrols") { BufferControls(args); return; }
+        if (args.Length > 0 && args[0] == "paletteprofile") { PaletteProfile(args); return; }
         if (args.Length > 0 && args[0] == "census") { Census(args); return; }
         if (args.Length > 0 && args[0] == "slots") { Slots(args); return; }
         if (args.Length > 0 && args[0] == "audiodiff") { AudioDiff(args); return; }
@@ -732,6 +733,49 @@ public static class ReachedBodyAggregate
     }
 
     static string Report(int ok, int all) => all == 0 ? "NOT RUN (0 cases)" : ok + "/" + all + (ok == all ? " PASS" : " FAIL");
+
+    /// <summary>Read the real Core palette model beside original records on the same pre-input poll.
+    /// The original bytes are observations only; they never seed or drive the native game.</summary>
+    static void PaletteProfile(string[] args)
+    {
+        if (args.Length != 4) throw new ArgumentException("paletteprofile needs <first> <last> <out.csv>");
+        int first = int.Parse(args[1]), last = int.Parse(args[2]);
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (first < 2 || last < first || last >= input.Length)
+            throw new ArgumentException("Need 2 <= first <= last < input length, including real predecessor/successor samples");
+        string originalPath = SessionFile("replay1/buffers.bin");
+        using var original = File.OpenRead(originalPath);
+        if (original.Length != (long)input.Length * 4384)
+            throw new InvalidDataException("Original capture length must equal input length * 4384");
+        string output = Output(args[3]);
+        var (game, flow) = NewGame();
+        var ramRecord = new byte[4384];
+        var mirror = new byte[32]; var source = new byte[32];
+        using (var rows = new StreamWriter(new FileStream(output, FileMode.CreateNew, FileAccess.Write)))
+        {
+            rows.WriteLine("poll,nativeState,nativeX,nativeY,original18,native18,original0300,native0300,original0320,native0320,original3f00,native3f00");
+            for (int poll = 1; poll <= last + 1; poll++)
+            {
+                if (poll >= first - 1)
+                {
+                    original.Position = (poll - 1L) * 4384;
+                    original.ReadExactly(ramRecord);
+                    game.GetPaletteModel(mirror, source);
+                    rows.WriteLine(string.Join(",", poll, game.Player.State.ToString("X2"), game.Player.X, game.Player.Y,
+                        ramRecord[0x18].ToString("X2"), game.PaletteUploadFlag.ToString("X2"),
+                        Convert.ToHexString(ramRecord.AsSpan(0x300, 32)), Convert.ToHexString(mirror),
+                        Convert.ToHexString(ramRecord.AsSpan(0x320, 32)), Convert.ToHexString(source),
+                        Convert.ToHexString(ramRecord.AsSpan(4352, 32)), Convert.ToHexString(game.Ppu.PaletteRam)));
+                }
+                game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            }
+        }
+        original.Position = 0;
+        string originalSha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(original)).ToLowerInvariant();
+        string inputSha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant();
+        Console.WriteLine($"paletteprofile samples={last - first + 3} pre-input polls={first - 1}..{last + 1} inputSha={inputSha} originalSha={originalSha} output={output}");
+        Console.WriteLine("Scope: observed palette/model bytes only; no CPU write or C059 invocation count, no state seed or original-to-port equivalence claim.");
+    }
 
     /// <summary>ZERO-46 full-record exporter. Replays any available route input from reset and writes,
     /// for every poll, the same 4384-byte record the existing stand comparator reads

@@ -1,0 +1,131 @@
+{
+  "schema": 1,
+  "issue": "ZERO-23",
+  "producer": "Art/Tools/DarkwingResearch/cost/reached_body_aggregate.cs paletteprofile",
+  "inputSha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100",
+  "originalSha256": "7c123d27f8f678e25fa812a8b6dbf599f49b93b2c6dbb467ca848f64a9f1cb70",
+  "nativeRuntime": "8f3bbe197e5d44102b8aea1ba46f20eb526c7650",
+  "unitControls": "5/5 PASS, no original state seed; missing/incomplete/invalid range/existing output rejected",
+  "producerCrossCheck": "native PAL 19/19 equal immutable accepted ZERO-46 city export ec9d566c6a13bebe8e1210e8b9287f94de92a6081d2c7b6c29f192fd9c8bcac6",
+  "observations": [
+    {
+      "file": "early-profile.csv",
+      "sha256": "fc9d6f4c4ca947a5eb77c6a5800c5dd5d42a24f43e1787e2f7df6dd6786e298d",
+      "samples": 39,
+      "firstPoll": 1906,
+      "lastPoll": 1944,
+      "exactSamples": {
+        "18": 39,
+        "0300": 39,
+        "0320": 39,
+        "3f00": 39
+      },
+      "observedChanges": {
+        "original": {
+          "18": [
+            1909,
+            1910,
+            1926,
+            1927,
+            1930,
+            1931,
+            1934,
+            1935,
+            1938,
+            1939,
+            1942
+          ],
+          "0300": [
+            1909,
+            1915,
+            1926,
+            1930,
+            1934,
+            1938
+          ],
+          "3f00": [
+            1910,
+            1927,
+            1931,
+            1935,
+            1939
+          ]
+        },
+        "native": {
+          "18": [
+            1909,
+            1910,
+            1926,
+            1927,
+            1930,
+            1931,
+            1934,
+            1935,
+            1938,
+            1939,
+            1942
+          ],
+          "0300": [
+            1909,
+            1915,
+            1926,
+            1930,
+            1934,
+            1938
+          ],
+          "3f00": [
+            1910,
+            1927,
+            1931,
+            1935,
+            1939
+          ]
+        }
+      }
+    },
+    {
+      "file": "profile.csv",
+      "sha256": "30da28bd6443bd3262a185993d56eeba2a5d074c43c69e3518e592549c1af866",
+      "samples": 19,
+      "firstPoll": 10282,
+      "lastPoll": 10300,
+      "exactSamples": {
+        "18": 6,
+        "0300": 0,
+        "0320": 0,
+        "3f00": 0
+      },
+      "observedChanges": {
+        "original": {
+          "18": [
+            10283,
+            10286,
+            10287,
+            10290,
+            10291,
+            10294,
+            10295,
+            10299
+          ],
+          "0300": [
+            10286,
+            10290,
+            10294
+          ],
+          "3f00": [
+            10283,
+            10287,
+            10291,
+            10295
+          ]
+        },
+        "native": {
+          "18": [],
+          "0300": [],
+          "3f00": []
+        }
+      }
+    }
+  ],
+  "scope": "Changes in sampled values, not CPU writes/C059 calls. Sparse port RAM was not used as shadow. Original and native routes are already divergent in the late window."
+}
