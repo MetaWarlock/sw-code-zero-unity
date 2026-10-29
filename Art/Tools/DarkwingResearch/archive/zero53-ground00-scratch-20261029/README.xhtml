@@ -1,0 +1,21 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ru" lang="ru">
+  <head>
+    <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8"/>
+    <title>Scratch-прототипы ZERO-53 (ground state 00, CC44) из рабочего Temp слота A</title>
+    <link rel="stylesheet" type="text/css" href="../../../../Docs/documentation.css"/>
+  </head>
+  <body><h1 id="scratch-zero-53">Scratch-прототипы ZERO-53 (ground state 00, CC44) из рабочего Temp слота A</h1>
+<p>Статус: <strong>ARCHIVED / HISTORICAL</strong>, не ACTIVE tools. Это два разовых прототипа, по которым найден источник цены 2379. Их процедура целиком перенесена в канонический режим <a href="../../README.xhtml#ground00-source-price"><code>state09_source_price.py --ground00</code></a>, поэтому для повторения использовать его. Результаты — <a href="../../../../Research/DarkwingDuck/FACTS.xhtml#zero-53-cbb7-crouch-entry">FACTS ZERO-53</a>.</p>
+<p>Происхождение: Claude/Пельмень (<code>pel.claude@beholder.learn.su</code>), слот A, ветка <code>codex/orchestration-slot-a</code>, коммит исследования <code>a9f323014705ae2267842ecc3e5993d73bb81ac6</code>. Файлы лежали в <code>Art/Temp/ZERO-53/</code> и перенесены сюда байт-в-байт. Исходные байты есть в VERIFIED snapshot <code>D:/Art/SW Code Zero Unity - Git Backups/20261029-ZERO-53-slot-a</code> (3069 файлов, manifest SHA-256 <code>b40aae4198e7d448bacbf9ce4840b58bbf0709358b51fdb7798ba5427cc78ae7</code>). <code>.gitattributes</code> <code>* -text</code> только отключает eol-конверсию (файлы LF-only).</p>
+<table>
+<thead><tr><th>Путь</th><th>Байт</th><th>SHA-256</th><th>Назначение</th></tr></thead>
+<tbody>
+<tr><td><code>source/probe.py</code></td><td>1710</td><td><code>21fd004afe10ff2e02cc80441def3f463d1ad239a46c782f403e4b07093072fd</code></td><td><code>LO HI STATE [v]</code>: walk() по поллам окна с заданным <code>$50</code>. <code>$16/$14</code> берутся из input.bin, выводятся ветвь, oracle и post-diff.</td></tr>
+<tr><td><code>source/scan.py</code></td><td>1784</td><td><code>90b35562e45e2b55f4504448e35f25c63f2edc058b508a22894152d59a3db244</code></td><td><code>LO HI</code>: таблица state 00 по ветвям/статусам и строки CC44 с хвостом от CBE1.</td></tr>
+</tbody>
+</table>
+<p>Пути к ROM, input.bin, buffers.bin и city_phases.csv жёстко заданы относительно корня проекта, а walker импортируется из <code>Art/Tools/DarkwingResearch/cost</code>. Запуск: из корня проекта <code>python -I …/source/scan.py 1924 6420</code>. Ни один из них ничего не пишет.</p>
+</body>
+</html>
