@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 ROOT = next(p for p in Path(__file__).resolve().parents if (p / 'ProjectSettings').is_dir())
 ROOTS = ("AGENTS.md", ".gitignore", ".vscode", ".claude", "Assets", "Packages", "ProjectSettings",
-         "Art/AGENTS.xhtml", "Art/index.xhtml", "Art/Docs", "Art/Tools", "Art/AgentScripts", "Art/Research", "Art/Playthroughs", "Art/Unity",
+         "Art/AGENTS.xhtml", "Art/index.xhtml", "Art/team.xhtml", "Art/Docs", "Art/Tools", "Art/AgentScripts", "Art/Research", "Art/Playthroughs", "Art/Unity",
          "Art/Darkwing Duck (USA).nes")
 DISPOSABLE = ("Art/Temp", "Art/Build", "Temp", "Build", "Builds", "Library", "Logs", "obj")
 SOURCE_SUFFIXES = {".py", ".ps1", ".lua", ".cs", ".csproj", ".sh", ".cmd", ".bat"}
