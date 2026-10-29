@@ -15,8 +15,11 @@
 #               and the same first CAFC refusal poll as the probed gate run.
 #
 # Usage (from the assigned project root, or any cwd):
-#   bash Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh [EVIDENCE_DIR] [BANKED_JSON] [OUT_DIR_PREFIX]
-# Defaults: EVIDENCE_DIR=Art/Temp/ZERO-54/mutation-proof, BANKED_JSON=Art/Temp/ZERO-54/ground00_source_1924_6420.json.
+#   bash Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh [EVIDENCE_DIR] [BANKED_JSON] [EXPECTED_BOUNDARY] [REFERENCE_CLOCK_CSV]
+# Defaults: EVIDENCE_DIR=Art/Temp/ZERO-54/mutation-proof, BANKED_JSON=Art/Temp/ZERO-54/ground00_source_1924_6420.json,
+# EXPECTED_BOUNDARY=2543 (the first CAFC refusal measured after the new branch), REFERENCE_CLOCK_CSV=
+# Art/Temp/ZERO-52/clock_native_after.csv (accepted evidence: every probe-free row before the first priced
+# route poll must equal it byte for byte, so "nothing changed before the boundary" is measured, not claimed).
 # The banked JSON must come from cost/state09_source_price.py --ground00; the gate refuses a JSON
 # that does not report its own PASS. Requires .NET 10 and the preserved city session input.
 # Must not run while any runtime source is edited, and never at the same time as
@@ -29,6 +32,7 @@ cd "$ROOT" || exit 1
 EVIDENCE="${1:-Art/Temp/ZERO-54/mutation-proof}"
 BANKED="${2:-Art/Temp/ZERO-54/ground00_source_1924_6420.json}"
 BOUNDARY="${3:-2543}"
+REF_CLOCK="${4:-Art/Temp/ZERO-52/clock_native_after.csv}"
 AGG=Art/Tools/DarkwingResearch/cost/reached_body_aggregate.cs
 RT=Art/Unity/CodeZero/Darkwing/Core/PlayerCore.ReachedDispatchTiming.cs
 GATE=Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh
@@ -99,7 +103,7 @@ mutate mut3_branchAlwaysTaken 'ScrollBranch(0xCBE1, 0xCBE6, !down)' 'ScrollBranc
 mutate mut4_upAccepted '((held & 0x0C) != 0 && !down))' '((held & 0x04) != 0 && !down))' 1 'synthetic=50/55'
 mutate mut5_shotAirPoseGuardDropped 'if (Objects.Slots[0].AnimNumber is 0x0E or 0x0F) throw new NotSupportedException("CDD5 ground shot-air pose");' '' 1 'guards=10/20'
 mutate mut6_inactiveOwnerDropped 'if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
-                if ((pressed & 0x80)' 'if ((pressed & 0x80)' 1 'guards=15/20'
+                // $CBDF compares' '// $CBDF compares' 1 'guards=15/20'
 
 echo "### 2 no side effect: probe-free cold replay vs the probed gate run"
 restore_runtime
@@ -124,7 +128,26 @@ print('  NO SIDE EFFECT priced route polls: %d, first refusal probe-free: %d, ga
 sys.exit(1 if bad or refused != int(sys.argv[3]) or not gate else 0)
 PY
 
-echo "### 3 integrity"
+echo "### 3 unchanged before the boundary: probe-free rows vs the accepted reference clock CSV"
+[ -f "$REF_CLOCK" ] || { echo "missing reference clock CSV $REF_CLOCK"; exit 1; }
+FIRST_ROUTE="$(python -c "import json,sys;print(json.load(open(sys.argv[1],encoding='utf-8'))['summary']['cc44_polls'][0])" "$BANKED")"
+python - "$EVIDENCE/clock_probe_free.csv" "$REF_CLOCK" "$FIRST_ROUTE" <<'PY' | tee -a "$EVIDENCE/unchanged_before.txt"
+import csv, sys
+new = list(csv.DictReader(open(sys.argv[1], encoding='utf-8')))
+ref = list(csv.DictReader(open(sys.argv[2], encoding='utf-8')))
+if [c for c in new[0]] != [c for c in ref[0]]:
+    sys.exit('column schemas differ: %s vs %s' % (list(new[0]), list(ref[0])))
+lim, byPoll = int(sys.argv[3]), {r['poll']: r for r in ref}
+rows = [r for r in new if int(r['poll']) < lim]
+below = [r['poll'] for r in ref if int(r['poll']) < lim]
+missing = [r['poll'] for r in rows if r['poll'] not in byPoll]
+differing = [r['poll'] for r in rows if r['poll'] in byPoll and ','.join(r.values()) != ','.join(byPoll[r['poll']].values())]
+print('  UNCHANGED BEFORE poll %d: rows=%d reference=%d missing=%d differing=%d %s'
+      % (lim, len(rows), len(below), len(missing), len(differing), (missing + differing)[:8]))
+sys.exit(0 if rows and len(rows) == len(below) and not missing and not differing else 1)
+PY
+
+echo "### 4 integrity"
 restore_runtime
 echo "  runtime $RT $(hash_of "$RT")"
 echo "  gate    $AGG $(hash_of "$AGG")"
