@@ -72,7 +72,7 @@ mutate() { # label, old, new, expected exit, required diagnostic
   run_gate "$1" "$4" "$5"; restore_runtime
 }
 run_gate() { # label, expected exit, required diagnostic
-  local label="$1" expected="$2" diagnostic="$3" out="$EVIDENCE/$label"
+  local label="$1" expected="$2" diagnostic="$3" out="$EVIDENCE/$1"
   dotnet build Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release >/dev/null 2>&1 \
     || { echo "  BUILD FAIL"; return 1; }
   local code=0
