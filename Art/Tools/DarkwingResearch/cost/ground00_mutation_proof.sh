@@ -108,6 +108,19 @@ mutate mut5_shotAirPoseGuardDropped 'if (Objects.Slots[0].AnimNumber is 0x0E or 
 mutate mut6_inactiveOwnerDropped 'if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
                 // $CBDF compares' 'if (Objects == null) throw new NotSupportedException("CAFC inactive player");
                 // $CBDF compares' 1 'guards=15/20'
+# ZERO-57: the remaining listing bounds of the guard, each through the column that must name it.
+mutate mut7_downWithDirection 'bool down = (held & 0x0F) == 0x04 && (held & 3) == 0;' 'bool down = (held & 0x0C) == 0x04;' 1 'synthetic=45/55'
+mutate mut8_freshAPassed 'if ((pressed & 0x80) != 0 || ((held & 0x0C) != 0 && !down))' 'if (((held & 0x0C) != 0 && !down))' 1 'synthetic=50/55'
+mutate mut9_upDownAccepted 'if ((pressed & 0x80) != 0 || ((held & 0x0C) != 0 && !down))' 'if ((pressed & 0x80) != 0 || ((held & 0x0C) != 0 && !down && (held & 0x0F) != 0x0C))' 1 'synthetic=50/55'
+mutate mut10_bReadBeforeCrouch '                    if (down)' '                    if (down && (pressed & 0x40) == 0)' 1 'synthetic=50/55'
+mutate mut11_crouchNeedsQueueOwner '                    if (down)
+                    {' '                    if (down)
+                    {
+                        if (!audioQueueAccepts.HasValue) throw new NotSupportedException("F850 native audio queue owner unavailable");' 1 'crouchNeedsNoQueueOwner=0/5'
+mutate mut12_stateGuardDropped '                if (State != 0) throw new NotSupportedException("CB8B state outside00 slice");
+                if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
+                // $CBDF' '                if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
+                // $CBDF' 1 'guards=15/20'
 
 echo "### 2 no side effect: probe-free cold replay vs the probed gate run"
 restore_runtime
@@ -121,15 +134,18 @@ gate = {int(r['poll']): r for r in csv.DictReader(open(sys.argv[1])) if r['kind'
 clock = {int(r['poll']): r for r in csv.DictReader(open(sys.argv[2]))}
 refused = min(int(r['unsupportedPoll']) for r in clock.values() if int(r['unsupportedPoll'] or -1) > 0)
 bad = []
+# Only route polls the clock actually priced carry a body-prefix claim; the blocked ones compare -1
+# with -1 and are reported separately so the count is never read as clock coverage (ZERO-57).
+priced = sorted(p for p, r in gate.items() if int(r['clockPrefix']) >= 0)
 for poll, row in gate.items():
     native = int(clock[poll]['prefixNative']) if poll in clock else None
     if native is None:
         bad.append('poll %d missing from the probe-free replay' % poll)
     elif int(row['clockPrefix']) != native:
         bad.append('poll %d gate %s vs probe-free %d' % (poll, row['clockPrefix'], native))
-print('  NO SIDE EFFECT priced route polls: %d, first refusal probe-free: %d, gate: %s, mismatches: %d %s'
-      % (len(gate), refused, sys.argv[3], len(bad), '; '.join(bad)))
-sys.exit(1 if bad or refused != int(sys.argv[3]) or not gate else 0)
+print('  NO SIDE EFFECT route polls: %d, clock-priced: %d %s, first refusal probe-free: %d, gate: %s, mismatches: %d %s'
+      % (len(gate), len(priced), priced, refused, sys.argv[3], len(bad), '; '.join(bad)))
+sys.exit(1 if bad or refused != int(sys.argv[3]) or not priced else 0)
 PY
 
 echo "### 3 unchanged before the boundary: probe-free rows vs the accepted reference clock CSV"
