@@ -153,6 +153,14 @@
   "preservation": {
     "canonicalSourcesTracked": ["Art/Unity/CodeZero/Darkwing/Core/PlayerCore.ReachedDispatchTiming.cs", "Art/Tools/DarkwingResearch/cost/reached_body_aggregate.cs", "Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh", "Art/Tools/DarkwingResearch/README.xhtml", "Art/Research/DarkwingDuck/FACTS.xhtml", "Art/Research/DarkwingDuck/COVERAGE.csv", "Art/Research/DarkwingDuck/reference/cost-harness/ground00-price-evidence.json"],
     "temporaryArtifacts": "Art/Temp/ZERO-54/ (ignored), exported to a verified additive external snapshot with --include .acpxrc.json; the extracted baseline tree is a reproducible copy and is not the only copy of anything",
-    "sequence": "preserve.py snapshot -> verify -> audit against the assigned backup root"
+    "recordFilesInProjectProper": "Art/Temp/ZERO-54/buffers_before_<route>/ and Art/Temp/ZERO-54/buffers_after_<route>/ (before-side relocated with cp and cmp-verified; bufdiff re-run on the relocated copies gave the same diffRecords=0 and the same per-route SHAs)",
+    "firstSnapshot": { "name": "20261030-ZERO-54-slot-b", "additive": true, "includes": [".acpxrc.json", "Build/UserStand"], "manifestSha256": "a66cbc55d80fd095d1a7fa0f809368555b606af2421aab69ca9329b59270f999", "files": 6378, "bytes": 7092363773, "head": "07624ddc57277fff0fc141ef4510277512a9e106", "verify": "PASS, 0 issues" },
+    "firstAudit": {
+      "result": "FAIL", "issues": 377, "allInsideExtractedReproducibleCopy": true,
+      "measurement": "2767 files byte-equal to their tracked blob at 3f11db8, 4 copies of gitignored session inputs (cmp-verified), 8 generated exports; the only non-matching tracked path is the exporter copy, whose working bytes equal my HEAD content (sha256 2d73b9100845b8e6... on both sides) while its git blob id differs from 3f11db8 because it is later content and working-tree text files carry CRLF under the configured content filters",
+      "noUniqueToolSourceWasDisposable": true,
+      "resolution": "evidence relocated and cmp-verified, snapshot verified first, then the reproducible extracted tree (the catalog allows removing it after runs) was deleted from the working tree; it stays byte-held in the verified snapshot and is reproducible with git archive 3f11db8"
+    },
+    "finalSequence": "preserve.py snapshot -> verify -> audit against D:/Art/SW Code Zero Unity - Git Backups, recorded from the actual runs"
   }
 }
