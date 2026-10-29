@@ -8,9 +8,33 @@
     "headBefore": "3f11db8f29e882bda9130895e08f3203d6b62542",
     "localMain": "3f11db8f29e882bda9130895e08f3203d6b62542",
     "originMain": "3f11db8f29e882bda9130895e08f3203d6b62542",
-    "ancestryMainIsAncestorOfHead": true,
+    "ancestryMainIsAncestorOfHead": "true at the checkpoint and against origin/main; see ancestryRecheckAfterSnapshot for the later state",
     "commits": { "runtimeAndGate": "12901dd", "driverRepairs": ["01e9fe0", "f908b0c"] },
-    "publishing": "not performed by the worker; accepted integrations are pushed by the orchestrator"
+    "publishing": "not performed by the worker; accepted integrations are pushed by the orchestrator",
+    "headFinal": "fe44a7dc4f62fb99a0499f847c659ce9ac8c1f7d",
+    "ancestryRecheckAfterSnapshot": {
+      "measuredOn": "2026-10-30, after the terminal snapshot 20261030-ZERO-54c-slot-b",
+      "localMainNow": "ecfff7bac07ba8dfc20e7dfaa8e67249208536b6",
+      "originMainStill": "3f11db8f29e882bda9130895e08f3203d6b62542",
+      "mainCommitsAddedElsewhere": ["501ef15 team indices/limits/rules", "74d3943 preloaded-assets settings", "ecfff7b team document in preservation coverage"],
+      "mergeBaseMainHead": "3f11db8f29e882bda9130895e08f3203d6b62542",
+      "mainIsAncestorOfHeadNow": false,
+      "baseIsAncestorOfHeadStill": true,
+      "worktreesObserved": { "primary": "ecfff7b", "slotA": "ecfff7b", "slotB": "fe44a7d" },
+      "cause": "the primary tree advanced local main after this checkpoint was taken; no ZERO-54 source changed",
+      "sourceHashesReverifiedUnchanged": {
+        "PlayerCore.ReachedDispatchTiming.cs": "7dcff07ec521647ba664e02cc89a93fbfa319a11ac5848bccb7fc21d905360b9",
+        "PlayerCore.CardTiming.cs": "c65e7cbe3563e32ff8213c5698d9d25daf67b61684e699ec1ee6fe5c6469685a",
+        "DarkwingGame.MissionClock.cs": "2f5036aac99a1ea1faa116b4c067894f4acf2ca6ae46ae11dd58781aa1e2c77d",
+        "reached_body_aggregate.cs": "2d73b9100845b8e6eeb99ea92b27049e311278c53f34757362bebc0ac7426b44",
+        "ground00_mutation_proof.sh": "2d5d51e882841862d8cfd288eeb05dfe70a53fc0ebf7bbd5ae9eeac31f6a326a"
+      },
+      "dryMergeOfMainAndHead": { "command": "git merge-tree --write-tree main HEAD", "exit": 0, "tree": "b3384b310591eeac385dd2b092459a7c0bf1b0c9", "conflicts": 0, "note": "both sides edited README.xhtml in non-overlapping regions" },
+      "pathsDifferingBetweenHeadAndMain": ["Art/AGENTS.xhtml", "Art/Tools/DarkwingResearch/README.xhtml", "Art/Tools/DarkwingResearch/preserve.py", "Art/index.xhtml", "ProjectSettings/ProjectSettings.asset"],
+      "onlyOnMain": ["Art/team.xhtml"],
+      "consequenceForRecordedEvidence": "the Suite run recorded here used the base ProjectSettings.asset; 74d3943 changed preloaded assets main-side, so a Suite re-run on the merged tree is an orchestrator acceptance decision",
+      "actionByWorker": "none - no switch to main, no merge, no push, no change to the primary tree or slot A"
+    }
   },
   "runtime": {
     "changedFile": "Art/Unity/CodeZero/Darkwing/Core/PlayerCore.ReachedDispatchTiming.cs",
