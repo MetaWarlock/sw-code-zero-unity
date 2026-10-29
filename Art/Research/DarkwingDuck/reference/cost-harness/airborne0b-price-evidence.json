@@ -1,0 +1,108 @@
+{
+  "task": "ZERO-56",
+  "date": "2026-10-30",
+  "executor": {
+    "name": "Китаец Kimi",
+    "email": "kit.kimi@beholder.learn.su",
+    "personUuid": "8b19dab4-3f78-4d4d-9f40-45f55d4a14fb",
+    "usageRemaining": "UNKNOWN"
+  },
+  "slot": {
+    "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "branch": "codex/orchestration-slot-a",
+    "assignedHead": "44fe83230e52a456b419eb643e345ccfa578e3c3",
+    "assignedMain": "44fe83230e52a456b419eb643e345ccfa578e3c3",
+    "ancestryAtAssignment": "PASS",
+    "foreignDirtyFile": ".vscode/settings.json",
+    "foreignDirtySha256": "29051ac5829ac16ef275904820030c36f94d552a78378878bac09c6628598dd1",
+    "preservedByExistingStash": "0ce0298308ad7ad18945e283ed88bcff133e3de8",
+    "foreignDirtyIncludedInCommit": false
+  },
+  "scope": "Independent bank-7 source cost for reached CAFC state 0B, especially D77C right steering; research/verification/docs only. No runtime, ROM-in-game, Editor, UserStand or build changes.",
+  "tool": {
+    "path": "Art/Tools/DarkwingResearch/cost/state09_source_price.py",
+    "mode": "--airborne0b",
+    "sha256": "d8c459aa88913fcfc14b5b48981fe93fd2c7a492701526903c2f8c11cb359c9e",
+    "newCpuOrOracleRuntime": false
+  },
+  "inputs": {
+    "rom": {
+      "path": "Art/Darkwing Duck (USA).nes",
+      "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00"
+    },
+    "input": {
+      "path": "Art/Playthroughs/20261019T212535Z/input.bin",
+      "bytes": 29360,
+      "sha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100"
+    },
+    "originalBuffers": {
+      "path": "Art/Playthroughs/20261019T212535Z/replay1/buffers.bin",
+      "recordBytes": 4384,
+      "records": 29360,
+      "sha256": "7c123d27f8f678e25fa812a8b6dbf599f49b93b2c6dbb467ca848f64a9f1cb70"
+    },
+    "phases": {
+      "path": "Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv",
+      "sha256": "34ca53697c00a3e018d15c881aa9f76437a1d67a70f8734fe2bd8545ba53dbe6"
+    },
+    "frameConvention": "Pre-input record p is the first 2048 bytes at (p-1)*4384. held=input[p-1]; pressed=held & ~input[p-2]. Post record only verifies input and resulting RAM."
+  },
+  "commands": [
+    "C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --airborne0b \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Playthroughs/20261019T212535Z/input.bin 2538 2553 --json Art/Temp/ZERO-56/airborne0b_2538_2553_verified.json",
+    "C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --selftest \"Art/Darkwing Duck (USA).nes\" Art/Playthroughs/20261019T212535Z/replay1/buffers.bin",
+    "C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -I Art/Tools/DarkwingResearch/cost/state09_source_price.py \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin 1941 1977 --json Art/Temp/ZERO-56/state09_1941_1977.json"
+  ],
+  "results": {
+    "airborne0b": {
+      "verdict": "PASS",
+      "range": [2538, 2553],
+      "routeExact": 16,
+      "routeRows": 16,
+      "rightPolls": [2543, 2544, 2545, 2546, 2547, 2548, 2549, 2550, 2551, 2552],
+      "rightPrices": [2507, 2891, 2869, 2869, 2878, 2878, 2878, 2878, 2869, 2869],
+      "landing2553": {
+        "source": 1254,
+        "oracle": 1254,
+        "queueOwner": "accepts",
+        "enqueued": true,
+        "syntheticBusySource": 1239,
+        "syntheticBusyDelta": -15,
+        "syntheticBusyEnqueued": false
+      },
+      "controls": 91,
+      "controlsFailed": 0,
+      "formulaOrdinaryRight": "pre_D76E + 35 + F200 + 14",
+      "formulaF200Reached": "56 + F4FD + F612/F724 + EB52 = 56 + 37 + 277 + (933 or 942) = 1303 or 1312",
+      "formulaVeto": "pre_D76E + 38 for flags50; pre_D76E + 42 for flags10; no F200 and no B test",
+      "json": {
+        "path": "Art/Temp/ZERO-56/airborne0b_2538_2553_verified.json",
+        "sha256": "b0a81878968df6ab4e09220b471420e6911deab9923aa7cf4ee1b233d2ba3b6b"
+      },
+      "log": {
+        "path": "Art/Temp/ZERO-56/airborne0b_2538_2553_verified.log",
+        "sha256": "52aa755e938b3bf22ab7c575ee2e00eede3bc5d0e5fd6806ac0b3c9b2b563535"
+      }
+    },
+    "selftest": "PASS 7/7",
+    "state09Regression": {
+      "verdict": "PASS 37/37 EXACT",
+      "json": "Art/Temp/ZERO-56/state09_1941_1977.json",
+      "sha256": "c75410d3179c43b834f68caffa710ff80931608b596a408e4e90ef4ccd0052be"
+    }
+  },
+  "notCoveredByOriginalRoute": [
+    "fresh B ordinary shot and veto+B",
+    "checkpoint veto and right+left (synthetic source only)",
+    "solid side probes and actor-contact geometry",
+    "F4FD low-byte carry and other page-cross cases outside the reached trace",
+    "other WorldId, weapons and queue owners",
+    "native C# implementation and the next full clock boundary"
+  ],
+  "checks": {
+    "sourceCostReachedWindow": "PASS",
+    "syntheticContracts": "PASS; not original-route evidence",
+    "runtimeImplementation": "NOT RUN",
+    "clockAfter2543": "NOT RUN",
+    "editorSuiteStandalonePlaytest": "NOT RUN"
+  }
+}
