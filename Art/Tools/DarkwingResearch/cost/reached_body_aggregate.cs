@@ -54,8 +54,8 @@ public static class ReachedBodyAggregate
         LegacyReferenceDir = Path.GetFullPath(options.GetValueOrDefault("--legacy-reference-dir", Path.Combine(ReferenceDir, "legacy-m1")), ProjectRoot);
         OutputRoot = Path.GetFullPath(options.GetValueOrDefault("--output-root", "Art/Temp/cost-harness"), ProjectRoot);
         if (rest.Count > 0 && mode == "m1") rest.RemoveAt(0);
-        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe"))
-            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, m1 (legacy inputs missing)");
+        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "dispatch"))
+            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, dispatch, m1 (legacy inputs missing)");
         return rest.ToArray();
     }
     static byte[] Data(string name) => File.ReadAllBytes("Art/Unity/CodeZero/Darkwing/Data/" + name + ".bytes");
@@ -96,6 +96,8 @@ public static class ReachedBodyAggregate
         args = Configure(args);
         if (args.Length > 0 && args[0] == "city") { City(args); return; }
         if (args.Length > 0 && args[0] == "clock") { ClockRun(args); return; }
+        if (args.Length > 0 && args[0] == "state09") { State09(args); return; }
+        if (args.Length > 0 && args[0] == "dispatch") { Dispatch(args); return; }
         if (args.Length > 0 && args[0] == "census") { Census(args); return; }
         if (args.Length > 0 && args[0] == "slots") { Slots(args); return; }
         if (args.Length > 0 && args[0] == "audiodiff") { AudioDiff(args); return; }
@@ -395,6 +397,95 @@ public static class ReachedBodyAggregate
         }
         Console.WriteLine($"clock {mode} written {output}; overrides prefix={prefixOverrides} audio={audioOverrides} publication={pubOverrides}");
     }
+
+    /// <summary>ZERO-43 focused gate for $D517 (city route, polls 1941..1977). Positive: the native
+    /// price equals the original CA59−CA40−18, and the same pre-frame call reproduces the price the
+    /// frame itself charged (the measure is read-only). Negative: state, slot activity, landing nibble
+    /// and hook bit are perturbed and restored before the frame runs, so every condition outside the
+    /// slice must refuse. A shifted expectation must not pass, otherwise the gate is vacuous.</summary>
+    static void State09(string[] args)
+    {
+        string output = Output(args.Length > 1 ? args[1] : Path.Combine(OutputRoot, "state09_gate.csv"));
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != 29360 || Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant() != "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100")
+            throw new Exception("Unexpected city input");
+        var source = SourcePoints(ReferenceFile("phases/city_phases.csv"));
+        var player = game.Player;
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("poll,state,fallByte,native,oracle,verdict,shifted,reproducible,negative,refused");
+        int exact = 0, reproduced = 0, refused = 0, shiftedMiss = 0, priced = 0, queueRefusals = 0;
+        for (int poll = 1; poll <= 1977; poll++)
+        {
+            bool gate = poll >= 1941;
+            byte savedState = player.State, savedFlags = player.Flags, savedLow = player.Objects.Slots[0].StateLow;
+            bool savedActive = player.Objects.Slots[0].Active;
+            var slot = player.Objects.Slots[0];
+            long oracle = gate ? source[poll]["CA59"][0] - source[poll]["CA40"][0] - 18 : -1;
+            int preFrame = -1;
+            var negatives = new List<string>();
+            if (gate)
+            {
+                preFrame = player.TryMeasureWorldEntryFall09Cycles(true, out int measured, out _) ? measured : -1;
+                void Control(string name, Action perturb)
+                {
+                    perturb();
+                    bool accepted = player.TryMeasureWorldEntryFall09Cycles(true, out _, out string why);
+                    player.State = savedState; player.Flags = savedFlags; slot.StateLow = savedLow; slot.Active = savedActive;
+                    negatives.Add(name + "=" + (accepted ? "ACCEPTED" : Safe(why)));
+                    if (!accepted && why != null) refused++;
+                }
+                Control("state0B", () => player.State = 0x0B);
+                Control("inactive", () => slot.Active = false);
+                Control("landed", () => slot.StateLow = (byte)(savedLow | 0x01));
+                Control("hookbit", () => player.Flags = (byte)(savedFlags | 0x20));
+                if (player.TryMeasureWorldEntryFall09Cycles(null, out _, out string noQueue)) negatives.Add("noQueueOwner=ACCEPTED");
+                else { negatives.Add("noQueueOwner=" + Safe(noQueue)); queueRefusals++; }
+            }
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            if (!gate) continue;
+            int native = player.LastPlayerDispatchCycles;
+            bool ok = native == oracle && native >= 0;
+            if (ok) { exact++; if (preFrame == native) reproduced++; }
+            if (oracle + 1 != native) shiftedMiss++;
+            if (native >= 0) priced++;
+            rows.WriteLine(string.Join(",", poll, savedState.ToString("X2"), ((byte)player.YVelInt).ToString("X2"), native, oracle,
+                ok ? "exact" : "MISMATCH", oracle + 1 == native ? "PASS-AS-TRUE" : "rejected", preFrame == native ? 1 : 0,
+                Safe(string.Join(";", negatives))));
+        }
+        Console.WriteLine($"state09 gate: priced={priced}/37 exact={exact}/37 reproducible={reproduced}/37 shiftedRejected={shiftedMiss}/37 " +
+            $"negativeRefusals={refused}/148 landingOwnerRefusals={queueRefusals} output={output}");
+        if (exact != 37 || reproduced != 37 || shiftedMiss != 37 || refused != 148 || queueRefusals != 1)
+        { Console.Error.WriteLine("state09 gate FAIL"); Environment.ExitCode = 1; }
+        else Console.WriteLine("state09 gate PASS");
+    }
+
+    /// <summary>Shared-timing regression column: replays any available route input from reset and writes
+    /// the native player-dispatch price and refusal per poll. Diffing two columns is the preservation check.</summary>
+    static void Dispatch(string[] args)
+    {
+        int frames = args.Length > 1 ? int.Parse(args[1]) : throw new ArgumentException("dispatch needs <frames> <out.csv>");
+        string output = Output(args.Length > 2 ? args[2] : Path.Combine(OutputRoot, "dispatch_column.csv"));
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != frames) throw new Exception("Session input is " + input.Length + " bytes, requested " + frames + " frames");
+        Console.WriteLine("dispatch session=" + Session + " bytes=" + input.Length +
+            " sha256=" + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant());
+        var head = Metric(game, "LastMissionHeadCycles");
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("poll,ran,state,player,playerWhy");
+        for (int poll = 1; poll <= frames; poll++)
+        {
+            head.SetValue(game, int.MinValue);
+            byte state = game.Player.State;
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            rows.WriteLine(string.Join(",", poll, game.LastMissionHeadCycles != int.MinValue ? 1 : 0, state.ToString("X2"),
+                game.Player.LastPlayerDispatchCycles, Safe(game.Player.PlayerDispatchTimingUnsupported)));
+        }
+        Console.WriteLine("dispatch column written " + output + " frames=" + frames);
+    }
+
+    static string Safe(string s) => s == null ? "" : s.Replace(',', ';');
 
     /// <summary>Reached actor behaviours/states and player states per poll window (pre-frame).</summary>
     static void Census(string[] args)
