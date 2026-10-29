@@ -23,7 +23,10 @@
 # The banked JSON must come from cost/state09_source_price.py --ground00; the gate refuses a JSON
 # that does not report its own PASS. Requires .NET 10 and the preserved city session input.
 # Must not run while any runtime source is edited, and never at the same time as
-# cardrelease_mutation_proof.sh, which patches runtime sources too.
+# cardrelease_mutation_proof.sh, which patches runtime sources too. It also owns the mutable build
+# directory: no other dotnet build/export of THIS tree may overlap (a baseline copy in its own tree
+# is fine), because MSBuild contention can fail one mutant build - measured on the first ZERO-54 run,
+# where the sixth mutant hit exactly that race and reported BUILD FAIL, not a gate result.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 cd "$ROOT" || exit 1
@@ -103,7 +106,8 @@ mutate mut3_branchAlwaysTaken 'ScrollBranch(0xCBE1, 0xCBE6, !down)' 'ScrollBranc
 mutate mut4_upAccepted '((held & 0x0C) != 0 && !down))' '((held & 0x04) != 0 && !down))' 1 'synthetic=50/55'
 mutate mut5_shotAirPoseGuardDropped 'if (Objects.Slots[0].AnimNumber is 0x0E or 0x0F) throw new NotSupportedException("CDD5 ground shot-air pose");' '' 1 'guards=10/20'
 mutate mut6_inactiveOwnerDropped 'if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
-                // $CBDF compares' '// $CBDF compares' 1 'guards=15/20'
+                // $CBDF compares' 'if (Objects == null) throw new NotSupportedException("CAFC inactive player");
+                // $CBDF compares' 1 'guards=15/20'
 
 echo "### 2 no side effect: probe-free cold replay vs the probed gate run"
 restore_runtime
