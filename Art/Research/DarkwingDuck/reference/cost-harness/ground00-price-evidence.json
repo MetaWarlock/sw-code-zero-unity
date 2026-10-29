@@ -34,7 +34,18 @@
       "pathsDifferingBetweenHeadAndMain": ["Art/AGENTS.xhtml", "Art/Tools/DarkwingResearch/README.xhtml", "Art/Tools/DarkwingResearch/preserve.py", "Art/index.xhtml", "ProjectSettings/ProjectSettings.asset"],
       "onlyOnMain": ["Art/team.xhtml"],
       "consequenceForRecordedEvidence": "the Suite run recorded here used the base ProjectSettings.asset; 74d3943 changed preloaded assets main-side, so a Suite re-run on the merged tree is an orchestrator acceptance decision",
-      "actionByWorker": "none - no switch to main, no merge, no push, no change to the primary tree or slot A"
+      "actionByWorker": "none - no switch to main, no merge, no push, no change to the primary tree or slot A",
+      "pointInTimeNote": "the primary tree keeps advancing main, so the values above are the observation taken right after snapshot 54c",
+      "reobservedAtReportTime": {
+        "localMain": "a27abdffdc46993c8df349de535801e8cd9bf699",
+        "originMain": "ecfff7bac07ba8dfc20e7dfaa8e67249208536b6",
+        "mainCommitsSinceBase": ["74d3943", "501ef15", "ecfff7b", "a27abdf"],
+        "mergeBaseMainHead": "3f11db8f29e882bda9130895e08f3203d6b62542",
+        "baseIsAncestorOfHead": true,
+        "dryMergeAgainstCurrentMain": { "tree": "865e29383316a4b64c5f7810b4ae57518f37dd2d", "exit": 0, "conflicts": 0 },
+        "ownEditorClosed": true,
+        "note": "refs move because the primary tree is active; acceptance re-checks ancestry at integration time, this file records only what slot B measured"
+      }
     }
   },
   "runtime": {
