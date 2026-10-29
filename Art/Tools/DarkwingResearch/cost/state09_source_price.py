@@ -11,9 +11,16 @@ only AFTER the walk, for comparison. Nothing here is used by the game runtime.
 
 usage: state09_source_price.py ROM CITY_PHASES_CSV ORIGINAL_BUFFERS FIRST LAST [--json OUT]
        state09_source_price.py --selftest ROM ORIGINAL_BUFFERS
+       state09_source_price.py --dump-cases ROM ORIGINAL_BUFFERS OUT_JSON [CAP] [SEED] [POOL]
+
+--dump-cases (ZERO-47) writes the fixture the C# controls read: expected prices taken from
+walk() over bank-7, the class/coordinates each executed $EBE8 returned, and the branch labels
+proved by the walk's own instruction addresses. It reads no C# value and no oracle.
 """
 import hashlib
 import json
+import os
+import random
 import sys
 
 RECORD = 4384
@@ -175,14 +182,31 @@ def step(cpu, pc):
     return pc + ln, cyc
 
 
-def walk(ram, bank7):
+def walk(ram, bank7, events=None):
+    """Run the dispatch. When `events` is a list, record every return from the real $EBE8
+    point routine: the point index it was entered with, the class it computed, and the probe
+    coordinates it left in its scratch ($03/$06 = X, $07/$08 = Y). Everything in an event comes
+    from executed bank-7 bytes, nothing from a transcription."""
     cpu = Cpu(ram, bank7)
     cpu.push(0xCA); cpu.push(0x42)  # JSR $CAFC from CA40 returns to CA43
     base_s = cpu.s
     pc = 0xCAFC
+    inside = None  # (entry stack pointer, point index) while $EBE8 is running
     for _ in range(5000):
         if pc == 0xCA43 and cpu.s == (base_s + 2) & 0xFF:
             return cpu
+        if events is not None:
+            if pc == 0xEBE8:
+                inside = (cpu.s, cpu.y, len(cpu.trace))
+            elif inside is not None and cpu.rd(pc) == 0x60 and cpu.s == inside[0]:
+                # $EC6D is the BEQ target that leads into the $0600 read: a probe that never
+                # reaches it is off the camera page and returns class 0 without touching the map.
+                window = [p for p, _ in cpu.trace[inside[2]:]]
+                reads = (0xEC6D, 0xEC6F) in list(zip(window, window[1:]))
+                events.append({'point': inside[1], 'class': cpu.a, 'read': reads,
+                               'x': cpu.ram[0x06] | cpu.ram[0x03] << 8,
+                               'y': cpu.ram[0x07] | cpu.ram[0x08] << 8})
+                inside = None
         nxt, c = step(cpu, pc)
         cpu.trace.append((pc, c))
         cpu.cyc += c
@@ -211,6 +235,331 @@ def segments(trace):
 
 def verdict(source, oracle):
     return 'EXACT' if source == oracle else 'MISMATCH'
+
+
+# ---------------------------------------------------------------------------
+# ZERO-47 fixture dump: executable C# controls need expected values that come
+# only from executed bank-7 bytes. Each case below is (input RAM, expected
+# outcome) where the expected outcome is walk() on that RAM; refusal categories
+# come from the RAM condition or from a real $EBE8 return value, never from the
+# C# under test. Scenario selection is a search over generated inputs filtered
+# by the branch labels the WALKER's own trace shows, so no case is claimed to
+# exercise a branch on the strength of a hand-written label.
+# ---------------------------------------------------------------------------
+
+FIELD_ADDR = [0x50, 0x99, 0x400, 0x460, 0x4D0, 0x4F0, 0x500, 0x510, 0x520, 0x550, 0x560, 0xFA, 0xFB]
+FIELD_NAME = ['50', '99', '400', '460', '4d0', '4f0', '500', '510', '520', '550', '560', 'fa', 'fb']
+
+# $EBE8 indexes its point offsets with LDA $ED19,Y / LDA $ECAD,Y: read the tables
+# out of the bank-7 slice so the fixture carries original coordinates.
+def point_offsets(bank7):
+    def table(address, count=16):
+        base = address - 0xC000
+        return [v - 256 if v & 0x80 else v for v in bank7[base:base + count]]
+    return table(0xED19), table(0xECAD)
+
+
+def labels_of(trace):
+    """Branch labels proven by the executed instruction addresses of this walk."""
+    seen = {pc for pc, _ in trace}
+    pairs = list(zip([pc for pc, _ in trace], [pc for pc, _ in trace][1:]))
+    out = []
+    for name, test in LABELS:
+        if test(seen, pairs):
+            out.append(name)
+    return out
+
+
+LABELS = [
+    ('D539 plain branch', lambda s, p: 0xD539 in s),
+    ('F5BB F5A4 row wrap', lambda s, p: 0xF5BB in s),
+    ('F5ED slow fall past clamp', lambda s, p: 0xF5ED in s and 0xF5EF in s),
+    ('F5EB BPL rising result', lambda s, p: 0xF5EB in s and 0xF5ED not in s),
+    ('F5F1 F5DA clamp', lambda s, p: 0xF5F1 in s),
+    ('EC2D probe row wrap', lambda s, p: 0xEC2D in s),
+    ('EC62 off-camera probe', lambda s, p: 0xEC62 in s),
+    ('EC6D probe same page', lambda s, p: 0xEC6D in s),
+    ('EB93 row below camera row (+$2E)', lambda s, p: 0xEB93 in s),
+    ('EB9A via EB70 lower class', lambda s, p: (0xEB70, 0xEB9A) in p),
+    ('F4E8 hit 0', lambda s, p: 0xF4E8 in s and 0xF4EA not in s),
+    ('F4EC class 1', lambda s, p: 0xF4EC in s),
+    ('F4EC class 1, $0560>=FC no landing', lambda s, p: 0xF4EC in s and 0xF4F3 not in s),
+    ('F4EA class >=2 landing', lambda s, p: (0xF4EA, 0xF4F3) in p),
+    ('F4F3 landing', lambda s, p: 0xF4F3 in s),
+    ('F5FC land vel', lambda s, p: 0xF5FC in s),
+    ('EDE3 EDD2 borrow', lambda s, p: 0xEDE3 in s),
+    ('F85C audio enqueued', lambda s, p: 0xF85C in s),
+    ('F866 audio queue busy', lambda s, p: 0xF850 in s and 0xF85C not in s),
+]
+
+
+def refusal_of(ram, events):
+    """Why the state-09 measure must refuse this input, read off the input and off the
+    real $EBE8 returns. None means the case is expected to be priced."""
+    if ram[0x50] != 0x09:
+        return 'state $%02X is not 09' % ram[0x50]
+    if not ram[0x4D0] & 0x80:
+        return '$04D0 bit7 clear: CAFC player inactive'
+    if ram[0x4D0] & 0x0F:
+        return '$04D0 low nibble %X: D51C leaves for $D53F' % (ram[0x4D0] & 0x0F)
+    if ram[0x400] & 0x20:
+        return '$0400 bit5 set: EB52 pre-hook path'
+    for event in events:
+        if event['x'] > 0x7FFF:
+            return 'point %d probe X $%04X: EC03 negative-X scratch' % (event['point'], event['x'])
+    for event in events:
+        if event['class'] > 3:
+            return 'point %d returned class %d: outside the verified 0..3 slice' % (
+                event['point'], event['class'])
+    return None
+
+
+def audio_of(ram):
+    return 'accepts' if ram[0xDC + ram[0xDA]] == 0x88 else 'busy'
+
+
+def set_audio(ram, mode):
+    ram[0xDC + ram[0xDA]] = 0x88 if mode == 'accepts' else 0x10
+
+
+def fields_of(ram):
+    return ' '.join('%02X' % ram[a] for a in FIELD_ADDR)
+
+
+def price_of(ram, bank7):
+    """Walk once and package the case: expected price or expected refusal, the real
+    $EBE8 returns, and the branch labels the executed trace shows."""
+    events = []
+    try:
+        cpu = walk(bytes(ram), bank7, events)
+        rom = 'price %d' % cpu.cyc
+        unsupported = None
+    except Unsupported as error:
+        cpu, rom, unsupported = None, 'unsupported %s' % error, str(error)
+    return {'events': events, 'rom': rom, 'unsupported': unsupported,
+            'refusal': refusal_of(ram, events),
+            'labels': labels_of(cpu.trace) if cpu else []}
+
+
+def case_row(name, kind, ram, bank7, poll, fill, audio, pair=''):
+    got = price_of(ram, bank7)
+    # [point index, class $EBE8 returned, probe X, probe Y, did that probe read the map].
+    # All five come out of executed ROM instructions: they are the map data a synthetic case
+    # injects, and what the port's own TileMap.TypeAt is compared against on a route case.
+    probes = [[e['point'], e['class'], e['x'], e['y'], 1 if e['read'] else 0] for e in got['events']]
+    if got['refusal']:
+        expect = {'refuse': got['refusal'] + (' (walker: %s)' % got['rom'] if got['unsupported'] else '')}
+    elif got['unsupported']:
+        expect = {'unsupported': got['rom']}  # the walk left the reached state-09 code
+    else:
+        expect = {'price': int(got['rom'].split()[1])}
+    return {'id': name, 'kind': kind, 'poll': poll, 'fields': fields_of(ram),
+            'map': 'route' if fill == 'route' else {'fill': fill, 'fallback': 0},
+            'audio': audio, 'expect': expect, 'rom': got['rom'], 'probes': probes,
+            'labels': got['labels'], 'pair': pair}
+
+
+def synth_combos(records):
+    """Parameter grid of generated inputs: physics bytes that make the integrate/gravity
+    branches reachable, a tile-map fill (uniform, or per-byte nibbles so the three points of
+    one probe set can carry different classes), and a camera candidate that steers the probe
+    on or off the window page (only then does $EBE8 read the map at all)."""
+    combos = []
+    for base in (1955, 1965, 1970):
+        for vel in (0x00, 0x01, 0x05, 0x80, 0xF6, 0xF8, 0xF9, 0xFB, 0xFC, 0xFF):
+            for vfrac in (0x00, 0x20, 0x40, 0x80, 0xC0):
+                for yfrac in (0x00, 0x80):
+                    for ylow in (0x00, 0x03, 0x80, 0xE9, 0xF5, 0xF9, 0xFE):
+                        for fill in ('uniform 0', 'uniform 1', 'uniform 2', 'uniform 3', 'mixed 0'):
+                            for audio in ('accepts', 'busy'):
+                                for step, frac in ((0, 0x00), (0, 0x80), (-1, 0x80), (1, 0x00)):
+                                    combos.append((base, vel, vfrac, yfrac, ylow, fill,
+                                                   audio, step, frac))
+    return combos
+
+
+def synth_ram(records, combo, index):
+    base, vel, vfrac, yfrac, ylow, fill, audio, step, frac = combo
+    ram = bytearray(records[base])
+    ram[0x50], ram[0x4D0], ram[0x400] = 0x09, 0x80, 0xD0
+    ram[0x560], ram[0x550], ram[0x460], ram[0x99] = vel, vfrac, yfrac, 0x40
+    ram[0x510], ram[0x520] = ylow, 0x0A
+    ram[0x4F0], ram[0x500] = 0x20, 0x01
+    if fill.startswith('uniform'):
+        cls = int(fill.split()[1])
+        for a in range(0x600, 0x700):
+            ram[a] = cls * 0x11  # both nibbles agree, so the class $EBE8 returns does not
+    else:                        # depend on which half of $0600,Y the index math picked
+        dice = random.Random(index)
+        for a in range(0x600, 0x700):
+            ram[a] = dice.randrange(4) * 0x10 + dice.randrange(4)
+    set_audio(ram, audio)
+    ram[0xFB] = (0x0A + step) & 0xFF
+    ram[0xFA] = frac
+    return ram, base, fill, audio
+
+
+# Input errors for the comparator's negative control. Each one can change the branch structure:
+# $0550/$0460 flip the $F5A4 and $F5DA borrows, $0510 the row wrap, $0560 the $D523 plain branch
+# and the $F5EF clamp, the $DC+$DA slot byte the $F85A queue branch.
+MUTATIONS = [
+    ('0550', '$0550 +$80 (fraction borrow)', lambda r: r.__setitem__(0x550, (r[0x550] + 0x80) & 0xFF)),
+    ('0460', '$0460 +$80 (fraction borrow)', lambda r: r.__setitem__(0x460, (r[0x460] + 0x80) & 0xFF)),
+    ('0510', '$0510 +$20 (row position)', lambda r: r.__setitem__(0x510, (r[0x510] + 0x20) & 0xFF)),
+    ('0560', '$0560 plain<->falling', lambda r: r.__setitem__(0x560, 0x05 if r[0x560] >= 0xFA else 0xFA)),
+    ('dc+da', '$DC+$DA queue slot', lambda r: r.__setitem__(
+        0xDC + r[0xDA], 0x10 if r[0xDC + r[0xDA]] == 0x88 else 0x88)),
+]
+
+
+def emit_cases(rom_path, buf_path, out_path, cap, seed, pool_size):
+    rom = open(rom_path, 'rb').read()
+    if hashlib.sha256(rom).hexdigest() != ROM_SHA:
+        sys.exit('ROM SHA-256 mismatch')
+    bank7 = rom[16 + 16384 * (rom[4] - 1):16 + 16384 * rom[4]]
+    records = {}
+    with open(buf_path, 'rb') as f:
+        for p in range(1941, 1978):
+            f.seek((p - 1) * RECORD)
+            records[p] = bytearray(f.read(2048))
+    cases, wanted = [], {name for name, _ in LABELS}
+
+    for p, record in records.items():
+        cases.append(case_row('route-%d' % p, 'route', bytearray(record), bank7, p, 'route',
+                              audio_of(record)))
+        # Comparator negative control: one deliberately relevant input error per route poll.
+        # A mutation is kept only when the ROM's own price for it differs, so the expectation
+        # the port has to miss by is proven relevant instead of asserted by construction.
+        for field, desc, mutate in MUTATIONS:
+            neg = bytearray(record)
+            mutate(neg)
+            if neg == record:
+                continue
+            before, after = price_of(bytearray(record), bank7), price_of(neg, bank7)
+            if before['refusal'] or after['refusal'] or before['rom'] == after['rom']:
+                continue
+            row = case_row('route-%d-neg%s' % (p, field), 'negative', neg, bank7, p, 'route',
+                           audio_of(neg), pair='route-%d' % p)
+            row['mutation'] = desc
+            cases.append(row)
+            break
+
+    explicit = []
+    for p in (1965, 1977):
+        for what, fill, edit in (
+                ('state0B', 'route', lambda r: r.__setitem__(0x50, 0x0B)),
+                ('state12', 'route', lambda r: r.__setitem__(0x50, 0x12)),
+                ('inactive', 'route', lambda r: r.__setitem__(0x4D0, 0x00)),
+                ('landed', 'route', lambda r: r.__setitem__(0x4D0, 0x81)),
+                ('hookbit', 'route', lambda r: r.__setitem__(0x400, 0xF0)),
+                ('class5', 'uniform 5', None)):
+            ram = bytearray(records[p])
+            if what == 'class5':
+                # A fixed setup so $EBE8 really reads the injected nibble: the probe lands on
+                # the camera page, and $0560 < $FA keeps the $D525 probe call in play.
+                ram[0x50], ram[0x4D0], ram[0x400] = 0x09, 0x80, 0xD0
+                ram[0x560], ram[0x550], ram[0x460], ram[0x99] = 0xF0, 0x00, 0x00, 0x40
+                ram[0x510], ram[0x520] = 0x20, 0x0A
+                ram[0x4F0], ram[0x500] = 0x20, 0x01
+                ram[0xFA], ram[0xFB] = 0x00, 0x0A
+                for a in range(0x600, 0x700):
+                    ram[a] = 0x55
+            else:
+                edit(ram)
+            row = case_row('refuse-%s-%d' % (what, p), 'refusal', ram, bank7, p, fill,
+                           audio_of(ram))
+            row['condition'] = what
+            explicit.append(row)
+    cases.extend(explicit)
+
+    rng = random.Random(seed)
+    combos = synth_combos(records)
+    generated = len(combos)
+    rng.shuffle(combos)
+    combos = combos[:pool_size]
+    rows, walked, unassertable = {}, 0, 0
+    for index, combo in enumerate(combos):
+        ram, base, fill, audio = synth_ram(records, combo, index)
+        row = case_row('synth-%04d' % index, 'synthetic', ram, bank7, base, fill, audio)
+        walked += 1
+        if 'unsupported' in row['expect']:
+            unassertable += 1  # the walk left the reached state-09 code: no expected value to assert
+            continue
+        rows[row['id']] = (ram, row)
+    by_label, selected, pool_ram, extra = {}, {}, {}, {}
+    for key, (ram, row) in sorted(rows.items(), key=lambda kv: (-len(kv[1][1]['labels']), kv[0])):
+        new = [label for label in row['labels'] if label not in by_label]
+        if not new or len(selected) >= cap:
+            continue
+        selected[row['id']] = row
+        pool_ram[row['id']] = ram
+        for label in new:
+            by_label[label] = row
+    # Breadth on top of branch coverage: keep adding rows whose branch-label signature is new
+    # until the cap, so the formula is asserted on many different paths, not only on the
+    # minimum set that touches every label.
+    signatures = {frozenset(row['labels']) for row in selected.values()}
+    for key in sorted(rows):
+        if key in selected or len(selected) + len(extra) >= cap:
+            continue
+        row = rows[key][1]
+        signature = frozenset(row['labels'])
+        if signature in signatures:
+            continue
+        signatures.add(signature)
+        extra[key] = row
+        pool_ram[key] = rows[key][0]
+    cases.extend(selected[key] for key in sorted(selected))
+    cases.extend(extra[key] for key in sorted(extra))
+    # Every selected case that reaches the $F850 queue also gets its opposite audio sibling,
+    # so the busy/free pair is asserted on identical physics bytes rather than on two draws.
+    siblings = 0
+    chosen = dict(selected)
+    chosen.update(extra)
+    for key in sorted(chosen):
+        row = chosen[key]
+        if not any(label.startswith('F85C') or label.startswith('F866') for label in row['labels']):
+            continue
+        ram = pool_ram[key]
+        other = 'busy' if row['audio'] == 'accepts' else 'accepts'
+        alt = bytearray(ram)
+        set_audio(alt, other)
+        sibling = case_row('%s-audio' % key, 'audio', alt, bank7, row['poll'],
+                           row['map']['fill'], other, pair=key)
+        if 'price' in sibling['expect'] and sibling['expect'] != row['expect']:
+            cases.append(sibling)
+            siblings += 1
+    covered = {label for row in chosen.values() for label in row['labels']}
+    document = {
+        'tool': 'state09_source_price.py --dump-cases',
+        'provenance': 'expected prices/refs come from walk() over bank-7 $C000-$FFFF and the '
+                      'pre-frame original RAM record of the named poll; $EBE8 probe classes and '
+                      'coordinates are the values the executed ROM left in its scratch, and the '
+                      'point offsets come from the ROM tables $ED19/$ECAD. Nothing here reads the '
+                      'C# under test.',
+        'rom_sha256': ROM_SHA, 'seed': seed, 'cap': cap,
+        'bank7_sha256': hashlib.sha256(bank7).hexdigest(),
+        'records_sha256': hashlib.sha256(b''.join(records[p] for p in sorted(records))).hexdigest(),
+        'records': 'the 2048 RAM bytes of the pre-frame record of polls 1941..1977 in %s'
+                   % buf_path.replace('\\', '/'),
+        'pool': {'generated': generated, 'walked': walked, 'left the slice': unassertable,
+                 'label cover': len(selected), 'breadth': len(extra),
+                 'audio siblings': siblings},
+        'fields': FIELD_NAME,
+        'labels': [name for name, _ in LABELS],
+        'point_offsets_x': [v for v in point_offsets(bank7)[0]],
+        'point_offsets_y': [v for v in point_offsets(bank7)[1]],
+        'uncovered_labels': sorted(wanted - covered),
+        'cases': cases,
+    }
+    with open(out_path, 'x') as f:
+        json.dump(document, f, separators=(',', ':'), sort_keys=True)
+    print('cases=%d synthetic chosen=%d walked=%d left-slice=%d covered=%d/%d' % (
+        len(cases), len(chosen), walked, unassertable, len(covered), len(LABELS)))
+    for name, _ in LABELS:
+        print('%-38s %s' % (name, 'covered' if name in covered else 'UNCOVERED'))
+    print('fixture', out_path, os.path.getsize(out_path), 'bytes')
+    return 0 if not (wanted - covered) else 1
 
 
 def selftest(bank7, buf_path):
@@ -259,6 +608,15 @@ def main(argv):
         if hashlib.sha256(rom).hexdigest() != ROM_SHA:
             sys.exit('ROM SHA-256 mismatch')
         return selftest(rom[16 + 16384 * (rom[4] - 1):16 + 16384 * rom[4]], argv[3])
+    if argv[1] == '--dump-cases':
+        # --dump-cases ROM ORIGINAL_BUFFERS OUT_JSON [CAP] [SEED] [POOL]
+        rest = argv[2:]
+        cap = int(rest[3]) if len(rest) > 3 else 48
+        seed = int(rest[4]) if len(rest) > 4 else 47
+        pool = int(rest[5]) if len(rest) > 5 else 4000
+        if os.path.exists(rest[2]):
+            sys.exit('fixture exists; --dump-cases will not overwrite: ' + rest[2])
+        return emit_cases(rest[0], rest[1], rest[2], cap, seed, pool)
     out = None
     if '--json' in argv:
         i = argv.index('--json'); out = argv[i + 1]; argv = argv[:i] + argv[i + 2:]

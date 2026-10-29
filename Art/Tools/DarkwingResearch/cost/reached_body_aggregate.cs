@@ -56,8 +56,8 @@ public static class ReachedBodyAggregate
         LegacyReferenceDir = Path.GetFullPath(options.GetValueOrDefault("--legacy-reference-dir", Path.Combine(ReferenceDir, "legacy-m1")), ProjectRoot);
         OutputRoot = Path.GetFullPath(options.GetValueOrDefault("--output-root", "Art/Temp/cost-harness"), ProjectRoot);
         if (rest.Count > 0 && mode == "m1") rest.RemoveAt(0);
-        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols"))
-            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, dispatch, buffers, bufdiff, bufcontrols, m1 (legacy inputs missing)");
+        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols"))
+            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, dispatch, buffers, bufdiff, bufcontrols, m1 (legacy inputs missing)");
         return rest.ToArray();
     }
     static byte[] Data(string name) => File.ReadAllBytes("Art/Unity/CodeZero/Darkwing/Data/" + name + ".bytes");
@@ -99,6 +99,7 @@ public static class ReachedBodyAggregate
         if (args.Length > 0 && args[0] == "city") { City(args); return; }
         if (args.Length > 0 && args[0] == "clock") { ClockRun(args); return; }
         if (args.Length > 0 && args[0] == "state09") { State09(args); return; }
+        if (args.Length > 0 && args[0] == "state09cases") { State09Cases(args); return; }
         if (args.Length > 0 && args[0] == "dispatch") { Dispatch(args); return; }
         if (args.Length > 0 && args[0] == "buffers") { Buffers(args); return; }
         if (args.Length > 0 && args[0] == "bufdiff") { BufferDiff(args); return; }
@@ -417,11 +418,17 @@ public static class ReachedBodyAggregate
         return accepted;
     }
 
+    /// <summary>The one comparator both gates use: agreement only on a real, non-negative price.
+    /// Its own negative control lives in state09 (perturbed input) and state09cases (paired
+    /// fixture mutation), so a shifted expectation cannot pass it by construction.</summary>
+    public static string Verdict(int actual, int expected) => actual == expected && actual >= 0 ? "exact" : "MISMATCH";
+
     /// <summary>ZERO-43 focused gate for $D517 (city route, polls 1941..1977). Positive: the native
     /// price equals the original CA59−CA40−18, and the same pre-frame call reproduces the price the
     /// frame itself charged (the measure is read-only). Negative: state, slot activity, landing nibble
     /// and hook bit are perturbed and restored before the frame runs, so every condition outside the
-    /// slice must refuse. A shifted expectation must not pass, otherwise the gate is vacuous.</summary>
+    /// slice must refuse; and the $D523 plain branch is flipped to feed the comparator an input it
+    /// must reject. A shifted expectation must not pass, otherwise the gate is vacuous.</summary>
     static void State09(string[] args)
     {
         string output = Output(args.Length > 1 ? args[1] : Path.Combine(OutputRoot, "state09_gate.csv"));
@@ -432,7 +439,7 @@ public static class ReachedBodyAggregate
         var source = SourcePoints(ReferenceFile("phases/city_phases.csv"));
         var player = game.Player;
         using var rows = new StreamWriter(output);
-        rows.WriteLine("poll,state,fallByte,native,oracle,verdict,shifted,reproducible,negative,refused");
+        rows.WriteLine("poll,state,fallByte,native,oracle,verdict,perturbedInputControl,reproducible,negative,refused");
         int exact = 0, reproduced = 0, refused = 0, shiftedMiss = 0, priced = 0, queueRefusals = 0;
         for (int poll = 1; poll <= 1977; poll++)
         {
@@ -441,7 +448,8 @@ public static class ReachedBodyAggregate
             bool savedActive = player.Objects.Slots[0].Active;
             var slot = player.Objects.Slots[0];
             long oracle = gate ? source[poll]["CA59"][0] - source[poll]["CA40"][0] - 18 : -1;
-            int preFrame = -1;
+            int preFrame = -1, perturbed = -1;
+            string control = "NOT RUN";
             var negatives = new List<string>();
             if (gate)
             {
@@ -460,24 +468,270 @@ public static class ReachedBodyAggregate
                 Control("hookbit", () => player.Flags = (byte)(savedFlags | 0x20));
                 if (Measure09(player, null, out _, out string noQueue)) negatives.Add("noQueueOwner=ACCEPTED");
                 else { negatives.Add("noQueueOwner=" + Safe(noQueue)); queueRefusals++; }
+                // Zero-47: a real negative control of the same comparator, replacing the old
+                // "oracle + 1 != native". On this very pre-frame state one input byte is made
+                // deliberately wrong in a branch-relevant way ($D523 plain <-> $D525 probe), the
+                // measure runs again and Verdict must reject it against the untouched price.
+                // Relevance is required too: a perturbation that leaves the price alone proves
+                // nothing, so such a row is reported instead of passing.
+                byte velBefore = unchecked((byte)player.YVelInt);
+                player.YVelInt = unchecked((sbyte)(velBefore >= 0xFA ? 0x05 : 0xFA));
+                if (Measure09(player, true, out int measuredPerturbed, out _)) perturbed = measuredPerturbed;
+                player.YVelInt = unchecked((sbyte)velBefore);
+                control = Verdict(perturbed, preFrame);
+                if (control == "MISMATCH" && perturbed != preFrame) shiftedMiss++;
+                negatives.Add("velBefore=" + velBefore.ToString("X2") + " perturbedVel=" +
+                    (velBefore >= 0xFA ? "05" : "FA") + " perturbed=" + perturbed);
             }
             game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
             if (!gate) continue;
             int native = player.LastPlayerDispatchCycles;
-            bool ok = native == oracle && native >= 0;
-            if (ok) { exact++; if (preFrame == native) reproduced++; }
-            if (oracle + 1 != native) shiftedMiss++;
+            string verdict = Verdict(native, (int)oracle);
+            if (verdict == "exact") { exact++; if (preFrame == native) reproduced++; }
             if (native >= 0) priced++;
             rows.WriteLine(string.Join(",", poll, savedState.ToString("X2"), ((byte)player.YVelInt).ToString("X2"), native, oracle,
-                ok ? "exact" : "MISMATCH", oracle + 1 == native ? "PASS-AS-TRUE" : "rejected", preFrame == native ? 1 : 0,
+                verdict, control, preFrame == native ? 1 : 0,
                 Safe(string.Join(";", negatives))));
         }
-        Console.WriteLine($"state09 gate: priced={priced}/37 exact={exact}/37 reproducible={reproduced}/37 shiftedRejected={shiftedMiss}/37 " +
+        Console.WriteLine($"state09 gate: priced={priced}/37 exact={exact}/37 reproducible={reproduced}/37 comparatorRejectsPerturbedInput={shiftedMiss}/37 " +
             $"negativeRefusals={refused}/148 landingOwnerRefusals={queueRefusals} output={output}");
         if (exact != 37 || reproduced != 37 || shiftedMiss != 37 || refused != 148 || queueRefusals != 1)
         { Console.Error.WriteLine("state09 gate FAIL"); Environment.ExitCode = 1; }
         else Console.WriteLine("state09 gate PASS");
     }
+
+    /// <summary>Map data for the synthetic cases: the class the executed $EBE8 returned at each of
+    /// its own probe coordinates, handed back to the port's probe. This is map data, not ROM
+    /// behaviour — the geometry, branch structure and cycle totals still come from the C# under
+    /// test, and every expected value comes from the bank-7 walk. A coordinate the original never
+    /// probed is counted as a fallback rather than quietly answered with a plausible class.</summary>
+    sealed class FixtureMap : ITileMap
+    {
+        readonly Dictionary<long, byte> classes = new();
+        public byte Fallback;
+        public int Calls, Hits, Fallbacks;
+        public long LastFallback;
+        static long Key(int x, int y) => ((long)(uint)x << 32) | (uint)y;
+        public void Add(int x, int y, int cls) => classes[Key(x, y)] = (byte)cls;
+        public byte TypeAt(int x, int y)
+        {
+            Calls++;
+            if (classes.TryGetValue(Key(x, y), out byte cls)) { Hits++; return cls; }
+            Fallbacks++; LastFallback = Key(x, y);
+            return Fallback;
+        }
+    }
+
+    /// <summary>One fixture case, flattened from what the walker wrote.</summary>
+    sealed class Case
+    {
+        public string Id, Kind, Fields, Audio, Fill, Expect, Refuse, Mutation, Pair;
+        public int Poll, ExpectPrice, Fallback;
+        public int[][] Probes;
+        public string[] Labels;
+        public bool RouteMap => Fill == "route";
+        public bool Priced => Expect == "price";
+        public int Actual = -1;
+        public bool Accepted;
+        public string Why = "", VerdictText = "NOT RUN";
+    }
+
+    record PlayerSnapshot(byte State, byte Gravity, byte Flags, byte YFrac, bool Active, byte Low,
+                          ushort X, ushort Y, byte YVelFrac, sbyte YVelInt, byte ScrollY, byte ScrollYRow);
+
+    static PlayerSnapshot Snapshot(PlayerCore p, ObjectSystem.Slot s) =>
+        new(p.State, p.GravityFrac, p.Flags, p.YFrac, s.Active, s.StateLow, p.X, p.Y,
+            p.YVelFrac, p.YVelInt, p.ScrollY, p.ScrollYRow);
+
+    static void Restore(PlayerCore p, ObjectSystem.Slot s, ITileMap map, PlayerSnapshot v)
+    {
+        p.State = v.State; p.GravityFrac = v.Gravity; p.Flags = v.Flags; p.YFrac = v.YFrac;
+        s.Active = v.Active; s.StateLow = v.Low; p.X = v.X; p.Y = v.Y; p.YVelFrac = v.YVelFrac;
+        p.YVelInt = v.YVelInt; p.ScrollY = v.ScrollY; p.ScrollYRow = v.ScrollYRow; p.TileMap = map;
+    }
+
+    /// <summary>Writes the fixture's own input fields onto the live player, byte for byte, using
+    /// the same $04D0 split the exporter reads (bit7 active, bits 0-6 state) and the same
+    /// $04F0/$0500, $0510/$0520 little-endian pairs.</summary>
+    static void Apply(PlayerCore p, ObjectSystem.Slot s, Case c)
+    {
+        var v = c.Fields.Split(' ');
+        byte B(int i) => Convert.ToByte(v[i], 16);
+        p.State = B(0); p.GravityFrac = B(1); p.Flags = B(2); p.YFrac = B(3);
+        s.Active = (B(4) & 0x80) != 0; s.StateLow = (byte)(B(4) & 0x7F);
+        p.X = (ushort)(B(5) | B(6) << 8); p.Y = (ushort)(B(7) | B(8) << 8);
+        p.YVelFrac = B(9); p.YVelInt = unchecked((sbyte)B(10)); p.ScrollY = B(11); p.ScrollYRow = B(12);
+    }
+
+    static Case ReadCase(System.Text.Json.JsonElement e)
+    {
+        var expect = e.GetProperty("expect");
+        var map = e.GetProperty("map");
+        return new Case
+        {
+            Id = e.GetProperty("id").GetString(),
+            Kind = e.GetProperty("kind").GetString(),
+            Poll = e.GetProperty("poll").GetInt32(),
+            Fields = e.GetProperty("fields").GetString(),
+            Audio = e.GetProperty("audio").GetString(),
+            Fill = map.ValueKind == System.Text.Json.JsonValueKind.String ? map.GetString()
+                 : map.GetProperty("fill").GetString(),
+            Fallback = map.ValueKind == System.Text.Json.JsonValueKind.Object
+                ? map.GetProperty("fallback").GetInt32() : 0,
+            Pair = e.GetProperty("pair").GetString(),
+            Expect = expect.EnumerateObject().First().Name,
+            Refuse = expect.TryGetProperty("refuse", out var r) ? r.GetString() : "",
+            ExpectPrice = expect.TryGetProperty("price", out var p) ? p.GetInt32() : -1,
+            Mutation = e.TryGetProperty("mutation", out var m) ? m.GetString() : "",
+            Labels = e.GetProperty("labels").EnumerateArray().Select(x => x.GetString()).ToArray(),
+            Probes = e.GetProperty("probes").EnumerateArray()
+                .Select(x => x.EnumerateArray().Select(n => n.GetInt32()).ToArray()).ToArray(),
+        };
+    }
+
+    /// <summary>ZERO-47: executable controls of TryMeasureWorldEntryFall09Cycles on inputs the
+    /// bank-7 walker priced. Three tallies stay separate on purpose: the cycle formula (fixture
+    /// map data, so a disagreement cannot be blamed on the tile map), LevelTileMap.TypeAt itself
+    /// (the port's class at the coordinates the executed $EBE8 used), and the audio-queue owner
+    /// (free, busy, and no owner at all). Nothing here computes an expected value from the C#:
+    /// every expectation was written by state09_source_price.py from original RAM plus bank 7.</summary>
+    static void State09Cases(string[] args)
+    {
+        string fixture = Required(args.Length > 1 ? args[1]
+            : "Art/Tools/DarkwingResearch/cost/fixtures/state09_csharp_cases.json");
+        string output = Output(args.Length > 2 ? args[2] : Path.Combine(OutputRoot, "state09_cases.csv"));
+        var cases = new List<Case>();
+        var labelSeen = new List<string>();
+        string bank7Wanted, tool;
+        using (var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(fixture)))
+        {
+            var root = doc.RootElement;
+            foreach (var item in root.GetProperty("cases").EnumerateArray()) cases.Add(ReadCase(item));
+            foreach (var label in root.GetProperty("labels").EnumerateArray()) labelSeen.Add(label.GetString());
+            bank7Wanted = root.GetProperty("bank7_sha256").GetString();
+            tool = root.GetProperty("tool").GetString();
+        }
+        var byId = cases.ToDictionary(c => c.Id);
+        var byPoll = cases.GroupBy(c => c.Poll).ToDictionary(g => g.Key, g => g.ToList());
+        int maxPoll = cases.Max(c => c.Poll);
+        var (game, flow) = NewGame();
+        string bank7Got = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(game.Bank7)).ToLowerInvariant();
+        if (bank7Got != bank7Wanted)
+            throw new Exception("Fixture bank-7 provenance mismatch: harness " + bank7Got + ", " + tool + " wrote " + bank7Wanted);
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != 29360) throw new Exception("Unexpected city input length " + input.Length);
+        var player = game.Player;
+        int formulaOk = 0, formulaAll = 0, routeOk = 0, routeAll = 0;
+        int typeAtOk = 0, typeAtAll = 0, typeAtCases = 0;
+        int audioOk = 0, audioAll = 0, ownerOk = 0, ownerAll = 0;
+        int controlOk = 0, controlAll = 0, fallbackCases = 0, unassertable = 0;
+        var asserted = new Dictionary<string, int>();
+        using var rows = new StreamWriter(output);
+        rows.WriteLine("id,kind,poll,map,audio,expect,actual,verdict,probeCalls,fallbacks,labels,note");
+        for (int poll = 1; poll <= maxPoll; poll++)
+        {
+            if (byPoll.TryGetValue(poll, out var batch))
+                foreach (var c in batch)
+                {
+                    // Re-read the slot every case: the level load can hand the player a new
+                    // ObjectSystem, and a slot captured before the replay would then be stale.
+                    var slot = player.Objects.Slots[0];
+                    var saved = Snapshot(player, slot);
+                    var liveMap = player.TileMap;   // the row/world load may have replaced it
+                    Apply(player, slot, c);
+                    var fake = c.RouteMap ? null : new FixtureMap { Fallback = (byte)c.Fallback };
+                    if (fake != null)
+                    {
+                        foreach (var probe in c.Probes) fake.Add(probe[2], probe[3], probe[1]);
+                        player.TileMap = fake;
+                    }
+                    bool? accepts = c.Audio == "accepts" ? true : c.Audio == "busy" ? false : (bool?)null;
+                    c.Accepted = Measure09(player, accepts, out c.Actual, out c.Why);
+                    if (c.Priced)
+                        c.VerdictText = c.Accepted ? Verdict(c.Actual, c.ExpectPrice)
+                                                   : "REFUSED-WHERE-PRICED " + Safe(c.Why);
+                    else if (c.Expect == "refuse")
+                        c.VerdictText = c.Accepted ? "PRICED-WHERE-REFUSED " + c.Actual : "refused";
+                    else c.VerdictText = "UNASSERTABLE " + Safe(c.Expect);
+                    if (c.Expect == "unsupported") unassertable++;
+                    bool agreed = c.VerdictText == "exact" || c.VerdictText == "refused";
+                    if (c.Kind is "route" or "negative" or "refusal") { routeAll++; if (agreed) routeOk++; }
+                    else { formulaAll++; if (agreed) formulaOk++; }
+                    if (agreed) foreach (string label in c.Labels) asserted[label] = asserted.GetValueOrDefault(label) + 1;
+                    // The port's own tile map, at the coordinates the executed $EBE8 used.
+                    if (c.RouteMap && c.Probes.Any(p => p[4] == 1))
+                    {
+                        typeAtCases++;
+                        foreach (var probe in c.Probes.Where(p => p[4] == 1))
+                        {
+                            typeAtAll++;
+                            byte got = liveMap.TypeAt(probe[2], probe[3]);
+                            if (got == probe[1]) typeAtOk++;
+                            else rows.WriteLine(string.Join(",", c.Id, "TYPEAT-MISMATCH", poll, "route", c.Audio,
+                                probe[1], got, "class at $" + probe[2].ToString("X") + "/$" + probe[3].ToString("X"),
+                                "", "", Safe(string.Join(";", c.Labels)), ""));
+                        }
+                    }
+                    // The landing sound has to be refused outright when no owner was wired.
+                    if (agreed && c.Priced && c.Labels.Any(l => l.StartsWith("F85C") || l.StartsWith("F866")))
+                    {
+                        ownerAll++;
+                        bool refused = !Measure09(player, null, out _, out string why) && why != null;
+                        if (refused) ownerOk++;
+                        else rows.WriteLine(string.Join(",", c.Id, "OWNER-ACCEPTED", poll, c.Fill, "none",
+                            "refuse", c.Actual, "ACCEPTED", "", "", Safe(string.Join(";", c.Labels)), Safe(why)));
+                    }
+                    if (fake != null && fake.Fallbacks > 0) fallbackCases++;
+                    rows.WriteLine(string.Join(",", c.Id, c.Kind, poll, c.Fill, c.Audio,
+                        c.Priced ? c.ExpectPrice.ToString() : Safe(c.Expect), c.Accepted ? c.Actual.ToString() : "",
+                        c.VerdictText, fake?.Calls ?? 0, fake?.Fallbacks ?? 0,
+                        Safe(string.Join(";", c.Labels)), Safe(c.Mutation + (c.Refuse == "" ? "" : " | " + c.Refuse))));
+                    Restore(player, slot, liveMap, saved);
+                }
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+        }
+        // Pairs: every audio sibling and every fixture mutation is checked against its own case,
+        // so the comparator sees a deliberate relevant error on real measured numbers.
+        foreach (var c in cases.Where(c => c.Kind == "audio"))
+        {
+            audioAll++;
+            var other = byId[c.Pair];
+            if (c.VerdictText == "exact" && other.VerdictText == "exact" && c.Actual != other.Actual) audioOk++;
+        }
+        foreach (var c in cases.Where(c => c.Kind == "negative"))
+        {
+            controlAll++;
+            var original = byId[c.Pair];
+            string againstUntouched = Verdict(c.Actual, original.ExpectPrice);
+            string againstOwn = Verdict(c.Actual, c.ExpectPrice);
+            if (againstUntouched == "MISMATCH" && againstOwn == "exact" && c.Actual != original.Actual &&
+                original.VerdictText == "exact") controlOk++;
+            else rows.WriteLine(string.Join(",", c.Id, "COMPARATOR-FAIL", c.Poll, c.Fill, c.Audio,
+                original.ExpectPrice, c.Actual, againstUntouched + "/" + againstOwn, "", "",
+                Safe(string.Join(";", c.Labels)), "paired " + original.VerdictText + "/" + original.Actual));
+        }
+        rows.Flush();
+        var uncovered = labelSeen.Where(l => !asserted.ContainsKey(l)).ToList();
+        Console.WriteLine("state09cases " + tool + " cases=" + cases.Count + " output=" + output);
+        Console.WriteLine("  formula (fixture map data, expected from bank-7 walk) " +
+            Report(formulaOk, formulaAll) + "; route (real LevelTileMap, native price) " + Report(routeOk, routeAll));
+        Console.WriteLine("  TileMap.TypeAt vs executed $EBE8 class " + Report(typeAtOk, typeAtAll) +
+            " over " + typeAtCases + " cases; audio busy/free pairs " + Report(audioOk, audioAll) +
+            ", missing-owner refusals " + Report(ownerOk, ownerAll));
+        Console.WriteLine("  comparator negative controls " + Report(controlOk, controlAll) +
+            "; fixture-coordinate fallbacks " + fallbackCases + "; unassertable cases " + unassertable);
+        foreach (string label in labelSeen.OrderBy(l => l))
+            Console.WriteLine("  branch " + label.PadRight(40) + (asserted.GetValueOrDefault(label) == 0
+                ? "UNCOVERED by an agreeing case" : "asserted by " + asserted[label] + " case(s)"));
+        if (uncovered.Count > 0) Console.Error.WriteLine("uncovered branches: " + string.Join("; ", uncovered));
+        bool pass = formulaAll > 0 && routeAll > 0 && typeAtAll > 0 && audioAll > 0 && ownerAll > 0 && controlAll > 0
+            && formulaOk == formulaAll && routeOk == routeAll && typeAtOk == typeAtAll && audioOk == audioAll
+            && ownerOk == ownerAll && controlOk == controlAll && unassertable == 0 && uncovered.Count == 0;
+        Console.WriteLine("state09cases " + (pass ? "PASS" : "FAIL"));
+        Environment.ExitCode = pass ? 0 : 1;
+    }
+
+    static string Report(int ok, int all) => all == 0 ? "NOT RUN (0 cases)" : ok + "/" + all + (ok == all ? " PASS" : " FAIL");
 
     /// <summary>ZERO-46 full-record exporter. Replays any available route input from reset and writes,
     /// for every poll, the same 4384-byte record the existing stand comparator reads
@@ -532,12 +786,28 @@ public static class ReachedBodyAggregate
         catch { return ""; }
     }
 
-    /// <summary>Strict record comparison over any two streams: rejects a missing file, a length that is
-    /// not a whole number of 4384-byte records and unequal record counts; otherwise reports the first
-    /// mismatch (poll, byte offset, section, before/after value) plus per-section diff counts.</summary>
+    /// <summary>Pair-level sanity before any byte comparison: both sides must hold at least one whole
+    /// 4384-byte record and the same number of them, so a missing tail, an empty export or an extra
+    /// complete record fails as a length error instead of silently comparing fewer frames.</summary>
+    static void ValidateRecordPair(long beforeLength, long afterLength)
+    {
+        if (beforeLength == 0 || afterLength == 0)
+            throw new Exception("Empty record stream: before=" + beforeLength + " after=" + afterLength + " bytes");
+        if (beforeLength != afterLength)
+            throw new Exception("Record length differs: " + beforeLength + " vs " + afterLength +
+                " (" + (Math.Abs(afterLength - beforeLength) % 4384 == 0
+                    ? (Math.Abs(afterLength - beforeLength) / 4384) + " whole record(s) extra"
+                    : "not a whole number of records") + ")");
+        if (beforeLength % 4384 != 0) throw new Exception("Truncated record stream: " + beforeLength + " bytes is not a multiple of 4384");
+    }
+
+    /// <summary>Strict record comparison over any two streams: rejects an empty stream, a length that is
+    /// not a whole number of 4384-byte records; otherwise reports the first mismatch (poll, byte offset,
+    /// section, before/after value) plus per-section diff counts.</summary>
     static (long records, long diffRecords, long diffBytes, string first) CompareRecords(
         Stream before, Stream after, long length, StreamWriter report)
     {
+        if (length == 0) throw new Exception("Empty record stream: 0 bytes");
         if (length % 4384 != 0) throw new Exception("Truncated record stream: " + length + " bytes is not a multiple of 4384");
         const int ram = 2048, nt = 2048, oam = 256, pal = 32;
         long records = length / 4384, diffRecords = 0, diffBytes = 0;
@@ -569,7 +839,7 @@ public static class ReachedBodyAggregate
         if (!File.Exists(beforePath)) throw new FileNotFoundException("Missing baseline record file", beforePath);
         if (!File.Exists(afterPath)) throw new FileNotFoundException("Missing after record file", afterPath);
         long beforeLength = new FileInfo(beforePath).Length, afterLength = new FileInfo(afterPath).Length;
-        if (beforeLength != afterLength) throw new Exception("Record length differs: " + beforeLength + " vs " + afterLength);
+        ValidateRecordPair(beforeLength, afterLength);
         string output = args.Length > 3 ? Output(args[3]) : null;
         using var report = output == null ? null : new StreamWriter(output);
         if (report != null) report.WriteLine("poll,offset,section,before,after");
@@ -608,13 +878,30 @@ public static class ReachedBodyAggregate
         catch (FileNotFoundException) { missingRejected = true; missingDetail = "FileNotFound"; }
         catch (Exception error) { missingRejected = true; missingDetail = error.GetType().Name; }
         Check("missing-file", missingRejected, missingDetail);
-        Check("nonempty-input", data.Length > 0 && data.Length % 4384 == 0, "length=" + data.Length);
+        Check("reference-file-shaped", data.Length > 0 && data.Length % 4384 == 0, "length=" + data.Length + " records=" + data.Length / 4384);
+
+        // Length/pair controls run on in-memory slices of the same comparator; no mutated large files.
+        bool Rejected(Action action)
+        {
+            try { action(); return false; } catch (Exception) { return true; }
+        }
+        Check("empty-pair", Rejected(() => ValidateRecordPair(0, 0)), "empty both sides must throw");
+        Check("empty-vs-records", Rejected(() => ValidateRecordPair(0, data.Length)), "empty before a full export must throw");
+        Check("records-vs-empty", Rejected(() => ValidateRecordPair(data.Length, 0)), "empty after a full export must throw");
+        Check("extra-complete-record", Rejected(() => ValidateRecordPair(data.Length, data.Length + 4384)), "one extra whole record must throw");
+        Check("missing-complete-record", Rejected(() => ValidateRecordPair(data.Length, data.Length - 4384)), "one dropped whole record must throw");
+        Check("truncated-pair", Rejected(() => ValidateRecordPair(data.Length, data.Length - 1)), "off-by-one tail must throw");
+        Check("unaligned-self", Rejected(() => { using var a = new MemoryStream(data); using var b = new MemoryStream(data); CompareRecords(a, b, data.Length - 1, null); }), "unaligned length must throw");
+        Check("empty-stream-compare", Rejected(() => { using var a = new MemoryStream(); using var b = new MemoryStream(); CompareRecords(a, b, 0, null); }), "zero-byte compare must throw");
+
         var truncated = new byte[data.Length - 1];
         Array.Copy(data, truncated, truncated.Length);
         bool truncatedRejected = false; string truncatedDetail = "accepted";
         try { using var a = new MemoryStream(truncated); using var b = new MemoryStream(truncated); CompareRecords(a, b, truncated.Length, null); }
         catch (Exception error) { truncatedRejected = true; truncatedDetail = error.Message.Substring(0, Math.Min(52, error.Message.Length)); }
         Check("truncated-record", truncatedRejected, truncatedDetail);
+
+        // A relevant change on exactly one poll must be found and named, not averaged away.
         foreach (var (name, offset) in new[] { ("changed-oam-byte", 2048 + 2048 + 8), ("changed-pal-byte", 2048 + 2048 + 256 + 1), ("changed-nt-byte", 2048 + 5), ("changed-ram-byte", 0x4D0) })
         {
             var mutated = (byte[])data.Clone();
