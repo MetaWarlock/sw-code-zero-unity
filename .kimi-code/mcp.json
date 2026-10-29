@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "godai": {
+      "command": "C:\\Users\\Warlock\\AppData\\Local\\Programs\\godai\\godai.exe",
+      "args": [
+        "--global",
+        "mcp",
+        "--toolsets=all"
+      ],
+      "enabled": false
+    },
+    "rea": {
+      "command": "cmd.exe",
+      "args": [
+        "/d",
+        "/c",
+        "npx",
+        "-y",
+        "rea-agents@6.5.0",
+        "mcp"
+      ],
+      "enabled": false
+    }
+  }
+}
