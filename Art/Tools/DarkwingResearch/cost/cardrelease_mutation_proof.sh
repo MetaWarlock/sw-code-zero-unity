@@ -19,7 +19,7 @@
 # revision, whose cardrelease form bundled flag and price into one verdict).
 # Requires .NET 10 and the preserved city session input; writes only new files under EVIDENCE_DIR.
 # Runtime sources are restored and hash-checked on every path, including failure and Ctrl-C.
-set -u
+set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 cd "$ROOT" || exit 1
 [ -f AGENTS.md ] && [ -d Art/Unity/CodeZero/Darkwing ] || { echo "not the assigned project root: $ROOT"; exit 1; }
@@ -29,12 +29,25 @@ OLD_REF="${2:-49998cc}"
 AGG=Art/Tools/DarkwingResearch/cost/reached_body_aggregate.cs
 CT=Art/Unity/CodeZero/Darkwing/Core/PlayerCore.CardTiming.cs
 MC=Art/Unity/CodeZero/Darkwing/Core/DarkwingGame.MissionClock.cs
-CS=Art/Unity/CodeZero/Darkwing/Core/PlayerCore.cs
 PIN_CT=c65e7cbe3563e32ff8213c5698d9d25daf67b61684e699ec1ee6fe5c6469685a
 PIN_MC=2f5036aac99a1ea1faa116b4c067894f4acf2ca6ae46ae11dd58781aa1e2c77d
-mkdir -p "$EVIDENCE"
+git diff --quiet HEAD -- "$CT" "$MC" "$AGG" || { echo 'Refusing to overwrite changed runtime or gate source'; exit 1; }
+EVIDENCE="$(python - "$ROOT" "$EVIDENCE" <<'PY'
+from pathlib import Path
+import sys
+root = Path(sys.argv[1]).resolve()
+out = Path(sys.argv[2]).resolve()
+if not out.is_relative_to(root / 'Art' / 'Temp') or out == root / 'Art' / 'Temp':
+    sys.exit('Evidence must be a new directory below Art/Temp')
+if out.exists():
+    sys.exit('Evidence directory exists; choose a new path')
+print(out.as_posix())
+PY
+)"
 
 hash_of() { sha256sum "$1" | cut -d' ' -f1; }
+[ "$(hash_of "$CT")" = "$PIN_CT" ] && [ "$(hash_of "$MC")" = "$PIN_MC" ] || { echo 'Runtime differs from the supported revision'; exit 1; }
+mkdir -p "$EVIDENCE"
 restore_runtime() {
   git show "HEAD:$CT" > "$CT" && git show "HEAD:$MC" > "$MC"
   [ "$(hash_of "$CT")" = "$PIN_CT" ] || { echo "FATAL: $CT not restored to the pinned hash"; exit 1; }
@@ -43,7 +56,8 @@ restore_runtime() {
 restore_aggregate() {
   git show "HEAD:$AGG" > "$AGG" || { echo "FATAL: cannot restore $AGG from HEAD"; exit 1; }
 }
-trap 'restore_runtime' EXIT
+trap 'restore_runtime; restore_aggregate' EXIT
+trap 'exit 130' INT TERM
 
 patch() { # file, old, new - byte exact, aborts unless the target occurs exactly once
   python - "$1" "$2" "$3" <<'PY'
@@ -56,45 +70,48 @@ open(path, 'wb').write(data.replace(old, new))
 PY
 }
 
-run_gate() { # gate(old|new), label -> prints exit, verdict and the named assertion lines
-  local gate="$1" label="$2" out="$EVIDENCE/$2_$1"
+run_gate() { # gate, label, expected exit, required diagnostic
+  local gate="$1" label="$2" expected="$3" diagnostic="$4" out="$EVIDENCE/$2_$1"
   if [ "$gate" = old ]; then git show "$OLD_REF:$AGG" > "$AGG" || return 1; else restore_aggregate; fi
-  rm -f "$out.csv"
   dotnet build Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release >/dev/null 2>&1 \
     || { echo "$label/$gate: BUILD FAIL"; return 1; }
+  local code=0
   dotnet run --no-build --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release \
-    -- cardrelease "$out.csv" 6420 2110 2125 > "$out.txt" 2>&1
-  local code=$?
-  echo "  DETECTION exit=$code verdict=$(grep -oE 'cardrelease gate (PASS|FAIL)' "$out.txt" | tail -1) $(grep -oE 'ERROR: [^:]+: [^$]+' "$out.txt" | head -1)"
+    -- cardrelease "$out.csv" 6420 2110 2125 > "$out.txt" 2>&1 || code=$?
+  echo "  DETECTION exit=$code verdict=$(grep -oE 'cardrelease gate (PASS|FAIL)' "$out.txt" | tail -1 || true) $(grep -oE 'ERROR: [^:]+: [^$]+' "$out.txt" | head -1 || true)"
   if [ "$gate" = new ]; then
-    grep -E "release-frame negatives|valid-context assembler" "$out.txt" | sed 's/^/  ASSERTION   /'
-    grep -m 2 "CONTROL FAIL" "$out.txt" | sed 's/^/  NAMED       /'
+    grep -E "release-frame negatives|valid-context assembler" "$out.txt" | sed 's/^/  ASSERTION   /' || true
+    grep -m 2 "CONTROL FAIL" "$out.txt" | sed 's/^/  NAMED       /' || true
   else
-    grep -E "negativeRefusals=" "$out.txt" | sed 's/^/  OLD-FORM    /'
+    grep -E "negativeRefusals=" "$out.txt" | sed 's/^/  OLD-FORM    /' || true
   fi
-  [ "$gate" = new ] && restore_aggregate
+  if [ "$code" -ne "$expected" ] || ! grep -Fq "$diagnostic" "$out.txt"; then
+    echo "  PROOF FAIL: $label/$gate expected exit=$expected and diagnostic=$diagnostic"
+    return 1
+  fi
+  if [ "$gate" = new ]; then restore_aggregate; fi
   return 0
 }
 
 case_new() { # label, file, old, new
   echo "== $1 (new gate)"; patch "$2" "$3" "$4" || exit 1
-  run_gate new "$1"; restore_runtime
+  run_gate new "$1" "$5" "$6"; restore_runtime
 }
 case_pair() { # label, file, old, new, old-gate expectation
   echo "== $1 (old gate at $OLD_REF, same mutation)"; patch "$2" "$3" "$4" || exit 1
   echo "$5" > "$EVIDENCE/$1.expect.txt"
-  run_gate old "$1"; restore_runtime; restore_aggregate
+  run_gate old "$1" 0 'cardrelease gate PASS'; restore_runtime; restore_aggregate
 }
 
 echo "### 0 baseline: pristine runtime, strengthened gate must PASS"
-restore_aggregate; run_gate new baseline_pristine; restore_runtime
+restore_aggregate; run_gate new baseline_pristine 0 'cardrelease gate PASS'; restore_runtime
 
 echo "### 1 mutants"
-case_new mut1_guardDroppedWhole "$CT" 'if (WorldId > 6 || WeaponSelected > 3)' 'if (false && (WorldId > 6 || WeaponSelected > 3))'
-case_new mut1b_worldGuardDropped "$CT" 'if (WorldId > 6 || WeaponSelected > 3)' 'if (WeaponSelected > 3)'
-case_new mut2_reasonDropped "$CT" 'CardTimingUnsupported = "D554 mission release context";' 'CardTimingUnsupported = null;'
-case_new mut3_holdSpanDropped "$CT" 'LastCardContinuationCycles = 2 + 4 + 6 + 49;' 'LastCardContinuationCycles = -1;'
-case_new mut4_flagAgnosticOwner "$MC" 'bool cardRelease = Player.LastCardContinuationReleased;' 'bool cardRelease = Player.LastCardContinuationCycles >= 0;'
+case_new mut1_guardDroppedWhole "$CT" 'if (WorldId > 6 || WeaponSelected > 3)' 'if (false && (WorldId > 6 || WeaponSelected > 3))' 2 'C850 weapon selection'
+case_new mut1b_worldGuardDropped "$CT" 'if (WorldId > 6 || WeaponSelected > 3)' 'if (WeaponSelected > 3)' 1 'CONTROL FAIL: release-frame@2117 worldId7 flag=True'
+case_new mut2_reasonDropped "$CT" 'CardTimingUnsupported = "D554 mission release context";' 'CardTimingUnsupported = null;' 1 'CONTROL FAIL: release-frame@2117 worldId7 flag=False reason=-'
+case_new mut3_holdSpanDropped "$CT" 'LastCardContinuationCycles = 2 + 4 + 6 + 49;' 'LastCardContinuationCycles = -1;' 1 'CONTROL FAIL: release-frame@2117 holdWait2 flag=False reason=- span=-1'
+case_new mut4_flagAgnosticOwner "$MC" 'bool cardRelease = Player.LastCardContinuationReleased;' 'bool cardRelease = Player.LastCardContinuationCycles >= 0;' 1 'CONTROL FAIL: valid-context@2119 holdWait2'
 
 echo "### 2 blindness of the pre-ZERO-52 form on the same mutants"
 case_pair mut2_reasonDropped "$CT" 'CardTimingUnsupported = "D554 mission release context";' 'CardTimingUnsupported = null;' 'OLD GATE PASSED THIS MUTANT (masked by the stale head)'
@@ -103,7 +120,6 @@ case_pair mut3_holdSpanDropped "$CT" 'LastCardContinuationCycles = 2 + 4 + 6 + 4
 echo "### 3 no side effect of the probes: probe-free replay vs probed window"
 restore_runtime; restore_aggregate
 dotnet build Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release >/dev/null 2>&1 || exit 1
-rm -f "$EVIDENCE/clock_probe_free.csv" "$EVIDENCE/cardrelease_probed.csv"
 dotnet run --no-build --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release \
   -- clock native 6420 "$EVIDENCE/clock_probe_free.csv" > "$EVIDENCE/clock_probe_free.txt" 2>&1 || exit 1
 dotnet run --no-build --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release \
@@ -111,7 +127,7 @@ dotnet run --no-build --project Art/Tools/DarkwingResearch/cost/reached_body_agg
 join -t'|' \
   <(awk -F, 'NR>1 && $1>=2110 && $1<=2125 {print $1"|"$23"|"$16}' "$EVIDENCE/cardrelease_probed.csv") \
   <(awk -F, 'NR>1 {d=$9-p; p=$9; if($1>=2110 && $1<=2125) print $1"|"d"|"$15}' "$EVIDENCE/clock_probe_free.csv") \
-  | awk -F'|' '{ok=($2==$4 && $3==$5); if(!ok){bad++; print "  WINDOW MISMATCH",$0}} END{print "  NO SIDE EFFECT rows:",NR,"matched:",NR-bad,"mismatches:",bad+0}'
+  | awk -F'|' '{ok=($2==$4 && $3==$5); if(!ok){bad++; print "  WINDOW MISMATCH",$0}} END{print "  NO SIDE EFFECT rows:",NR,"matched:",NR-bad,"mismatches:",bad+0; if(NR!=16 || bad) exit 1}'
 grep -oE "overrides prefix=[0-9]+ audio=[0-9]+ publication=[0-9]+" "$EVIDENCE/clock_probe_free.txt" | sed 's/^/  OVERRIDES   /'
 tail -1 "$EVIDENCE/clock_probe_free.csv" | cut -d, -f8,9,10,11,16 | sed 's/^/  BOUNDARY    anchors,timed,running,firstRefusal,prefixWhy: /'
 
