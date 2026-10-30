@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "task": "ZERO-68",
+  "parent": "ZERO-60",
+  "date": "2026-10-30",
+  "sourceCommit": "9a09f3d2914d0c63efc609bfe9017a05294af21f",
+  "author": "Китаец Kimi <kit.kimi@beholder.learn.su>",
+  "committer": "Codex Шнырь <sh.codex@beholder.learn.su>",
+  "integrationHead": "eb1c917820d918b5101bdf32d7248734616dfeb1",
+  "runtimeChanged": false,
+  "runtimeSha256": "bc97f9850e100cc4382edc3fdff6388d78aabd45f70f00b3d5dfdaa4a4a74a89",
+  "historicalFailure": "airborne0b-host.json: expected3 observed6; original raw failure retained",
+  "cause": "The listing-correct fresh-B guard move lets the price estimator read three floor points before refusal on the synthetic support case. Step computes this price first, then performs its physical pass. The spy map counts all reads.",
+  "contract": "An explicit price call observes0or3 reads and unchanged PlayerCore/slot field values; Step repeats those reads once. Total minus two measured price passes must equal3 physical reads. Hook/side/fire suppression and support geometry assertions remain.",
+  "snapshotScope": "Field values, array element values and other reference identity, not the deep graph or map cache",
+  "independentMutation": {
+    "runner": "Art/Tools/DarkwingResearch/cost/g92_probe_mutation_proof.sh",
+    "cwd": "D:\\Art\\SW Code Zero Unity Builds\\Mission3-Liquidator",
+    "shell": "C:/Program Files/Git/bin/bash.exe",
+    "result": "PASS",
+    "cases": [
+      {
+        "label": "baseline_current",
+        "executionExit": 0,
+        "stdoutSha256": "6e9c0b8748a24cf6b0a7727d2ecce96026a54046aac2c8ff5281ecfef8c98f6a",
+        "error": []
+      },
+      {
+        "label": "baseline_pre_zero60",
+        "executionExit": 0,
+        "stdoutSha256": "7f80de73fa42fdf4492eb1761274d5ed90e991fe98363a2445fdbcd289179bd2",
+        "error": []
+      },
+      {
+        "label": "mutant_ProbeHook",
+        "executionExit": 2,
+        "stdoutSha256": "07027c30e7781536407da324fc2e693a6e7c909839986d971d32fb9f784be9f9",
+        "error": [
+          "Exception: G92: physical pass only initial floor probes; no hook/side probe (expected 3, observed 6; total 12, two price passes 6)"
+        ]
+      },
+      {
+        "label": "mutant_ProbeSide",
+        "executionExit": 2,
+        "stdoutSha256": "e26df13a245db55a5788c01fc2d0f0b891e7f6ae7af4d57f4c6569986060ce09",
+        "error": [
+          "Exception: G92: physical pass only initial floor probes; no hook/side probe (expected 3, observed 6; total 12, two price passes 6)"
+        ]
+      }
+    ],
+    "runtimeRestoredByteExact": true
+  },
+  "unity": {
+    "project": "D:\\Art\\SW Code Zero Unity",
+    "pid": 312656,
+    "version": "6000.6.5f1",
+    "mission1ContractGroupsPass": 16,
+    "g92Checks": 41,
+    "contractsSha256": "a9ffd4f2cd4405e343d5aeb2e5d4dbb988b08561e4b26330d89f3e0bfd9514b1",
+    "suiteFullJsonEqualsBaseline": true,
+    "suiteSha256": "020ccbd953a17fbd007efcb7e0d6b48da5e05936311ea675512b8794a1538974",
+    "suiteResultPassed": 18,
+    "suiteStrictPassed": 8,
+    "suiteCases": 24,
+    "suiteErrors": 0,
+    "suiteVerdict": "FAIL"
+  },
+  "nativeEvidence": {
+    "airborneGateSha256": "21778747cf69e74dbbc6082164f7bc1c4069ab55b1790d0b73f2d6810d5d41cc",
+    "clockSha256": "27965fac6d70bb9ad31a535002c02b6f9e1e51e26708393819f3eef36114e014",
+    "prefixesExact": 585,
+    "firstUnsupportedPoll": 2666,
+    "overrides": 0,
+    "scope": "Kimi terminal outputs independently hashed; full4input regression and independent source review remain ZERO-60/67 evidence"
+  },
+  "limits": {
+    "kimi": "provider429five-hourquotaexhausted; no numeric remaining API; stopped until human command",
+    "qoder": "credit usage limit reached; no auto retry",
+    "claudeLastMeasuredRemaining": 32,
+    "codexLastMeasuredRemaining": 30
+  },
+  "human": "Current build9e53/runtime12901dd and ZERO-63 remain separate; no new native60 playable delivered, full clock/mission/image/PCM acceptance OPEN"
+}
