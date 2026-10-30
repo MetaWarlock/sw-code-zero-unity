@@ -2602,7 +2602,7 @@ public static class PhysCompare
             Check(p.State == 0, "successful support branch reached");
             Check(p.X == 0x0100 && p.XFrac == 0, "RTS suppresses steering");
             Check(!p.HasPendingFire, "RTS suppresses airborne fire");
-            Check(map.Reads == 3, "only initial floor probes; no hook/side probe");
+            Check(map.Reads == 3, $"only initial floor probes; no hook/side probe (expected 3, observed {map.Reads})");
             Check(p.Y == (y == 0x0300 ? 0x02ED : 0x035D), "lift clamp and 240px row borrow");
             Check(p.AirSubState == 2, "$56 preserved");
             // Same geometry without an active support must reach normal airborne control.
