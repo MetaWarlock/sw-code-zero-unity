@@ -153,7 +153,7 @@ mutate mut5_tailRtsMissing 'if ((pressed & 0x40) != 0) throw new NotSupportedExc
                 dispatch += 3 + 2 + ScrollBranch(0xD79E, 0xD7B6, true);' 1 'routeRight=0/10'
 mutate mut6_leftUsesRightBody '                    if (direction == 2)' '                    if (direction == 3)' 1 'synthetic=60/80'
 mutate mut7_rightLeftGoesLeft 'int direction = held & 3;
-                dispatch += 2 + 3 + 2' 'int direction = held & 3 == 3 ? 2 : held & 3;
+                dispatch += 2 + 3 + 2' 'int direction = (held & 3) == 3 ? 2 : (held & 3);
                 dispatch += 2 + 3 + 2' 1 'synthetic=70/80'
 mutate mut8_vetoIgnoresCheckpoint 'if (CheckpointId == 0x0E)
                         {
