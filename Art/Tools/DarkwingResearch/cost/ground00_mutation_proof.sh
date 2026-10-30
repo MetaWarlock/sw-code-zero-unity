@@ -165,7 +165,7 @@ mutate mut9_vetoIgnoresFlags 'dispatch += 4 + 2 + ScrollBranch(0xD787, 0xD7B6, F
                             if (true) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }' 1 'synthetic=60/80'
 mutate mut10_vetoSecondFlagAsFirst 'dispatch += 2 + ScrollBranch(0xD78B, 0xD7B6, Flags == 0x10);
                             if (Flags == 0x10) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }' 'dispatch += ScrollBranch(0xD78B, 0xD7B6, Flags == 0x10);
-                            if (Flags == 0x10) { cycles = dispatch + vertical + probeCost + pair + 4; return true; }' 1 'synthetic=70/80'
+                            if (Flags == 0x10) { cycles = dispatch + vertical + probeCost + pair + 4; return true; }' 1 'synthetic=60/80'
 mutate mut11_freshBCharged 'if ((pressed & 0x40) != 0) throw new NotSupportedException("D79E airborne shot");
                 dispatch += 3 + 2' 'dispatch += 3 + 2' 1 'freshB=10/40'
 mutate mut12_solidSideCharged 'horizontal = ExpandedHorizontalSimple(X, nextY, true, XVelFrac, XVelInt, 0, true);' 'horizontal = ExpandedHorizontalSimple(X, nextY, true, XVelFrac, XVelInt, 0, false);' 1 'geometry=5/8'
