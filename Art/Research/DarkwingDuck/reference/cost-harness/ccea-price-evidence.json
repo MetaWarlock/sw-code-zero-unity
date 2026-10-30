@@ -1,0 +1,129 @@
+{
+  "task": "ZERO-64",
+  "parent": "ZERO-12 (not closed by this task)",
+  "date": "2026-10-30",
+  "executor": {
+    "name": "Пельмень Claude",
+    "email": "pel.claude@beholder.learn.su",
+    "personUuid": "a48b2e74-4bbb-4bd8-89d9-9a1409fb35bd",
+    "identityCheck": "own Beholder MCP get_user_profile + list_employees",
+    "usageLimit": {
+      "source": "own Claude OAuth usage API, five_hour window (300 min)",
+      "usedPercentAtStart": 19,
+      "remainingPercentAtStart": 81
+    }
+  },
+  "slot": {
+    "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "branch": "codex/orchestration-slot-a",
+    "assignedHead": "9248296c0f22b9e7615b97e95ec40a33019e4fe7",
+    "assignedMain": "9248296c0f22b9e7615b97e95ec40a33019e4fe7",
+    "ancestry": "PASS",
+    "runtimeUnchanged": "Art/Unity has no diff against main; last runtime commit 12901dd",
+    "foreignDirtyFile": ".vscode/settings.json",
+    "foreignDirtySha256": "29051ac5829ac16ef275904820030c36f94d552a78378878bac09c6628598dd1",
+    "preservedByExistingStash": "5a625ba0030e0573ac0d9e4d6bedb44b9b946e6c",
+    "foreignDirtyIncludedInCommit": false
+  },
+  "scope": "Independent bank-7 source price of the reached horizontal side probe CCBA -> F200/F254 -> CCEA, first refused by the native clock at city poll 2666 ('CCEA nonempty air horizontal side'), and every CCEA poll of city 1924..6420. Research/verification/docs only: no runtime, Editor, scene, settings, UserStand or build change; no native implementation; no state or price substituted into the runtime. The phase-60 terminal numbers (clock 585/585 EXACT, first refusal 2666) were only the pointer to the original poll; nothing of phase 60 was read.",
+  "tool": {
+    "path": "Art/Tools/DarkwingResearch/cost/state09_source_price.py",
+    "mode": "--ccea",
+    "sha256": "736d8baac21974de0456341da231383c6194148870cdfd3a4036e88543a3d65c",
+    "sameWalk": "walk() with an opt-in marks list (EC91 map read, CCEA); three NMOS read opcodes F9 SBC abs,Y / CD CMP abs / D9 CMP abs,Y enabled only inside --ccea",
+    "newCpuOrStand": false
+  },
+  "inputs": {
+    "rom": { "path": "Art/Darkwing Duck (USA).nes", "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00" },
+    "input": { "path": "Art/Playthroughs/20261019T212535Z/input.bin", "bytes": 29360, "sha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100" },
+    "originalBuffers": { "path": "Art/Playthroughs/20261019T212535Z/replay1/buffers.bin", "recordBytes": 4384, "sha256": "7c123d27f8f678e25fa812a8b6dbf599f49b93b2c6dbb467ca848f64a9f1cb70" },
+    "phases": { "path": "Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv", "sha256": "34ca53697c00a3e018d15c881aa9f76437a1d67a70f8734fe2bd8545ba53dbe6" },
+    "frameConvention": "Pre-input record p = first 2048 bytes at (p-1)*4384; held=input[p-1], pressed=held & ~input[p-2]; record p+1 only verifies input and the resulting RAM. Oracle CA59-CA40-18 (when $65<80 and $30==0) is read only after the walk."
+  },
+  "commands": {
+    "cwd": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "python": "C:/Users/Warlock/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -I",
+    "route": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Playthroughs/20261019T212535Z/input.bin 1924 6420 --json Art/Temp/ZERO-64/ccea_1924_6420.json",
+    "mutants": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea <same four inputs> 2660 2810 [--mutant tail-no-page-cross|update-46|ed85-43|ed9d-as-ed85|class7-exit-as-6|equal-class-skips]",
+    "regression": [
+      "--selftest ROM BUFFERS",
+      "ROM PHASES BUFFERS 1941 1977 --json Art/Temp/ZERO-64/regress/state09_1941_1977.json",
+      "--ground00 ROM PHASES BUFFERS INPUT 1924 6420 --json Art/Temp/ZERO-64/regress/ground00_source.json",
+      "--airborne0b ROM PHASES BUFFERS INPUT 2538 2553 --json Art/Temp/ZERO-64/regress/airborne0b_2538_2553.json",
+      "--dump-cases ROM BUFFERS Art/Temp/ZERO-64/regress/state09_cases.json 32 47 6000"
+    ]
+  },
+  "results": {
+    "route": {
+      "verdict": "PASS",
+      "exit": 0,
+      "json": { "path": "Art/Temp/ZERO-64/ccea_1924_6420.json", "bytes": 2253112, "sha256": "041ac192c2d433cc3a55e82c566a91f423dde2cbf04e008b7e3fe2c41ee1dd54" },
+      "log": { "path": "Art/Temp/ZERO-64/ccea_1924_6420.log", "sha256": "ef685c63cb3ba52abd75e5002259eb9533d6fcded95a9b769cd9c5a3ffd11a0b" },
+      "rows": 1399,
+      "tally": { "CCB4 ground/empty/EXACT": 812, "CCB4 ground/nonempty/EXACT": 21, "CD18 air01/empty/EXACT": 520, "CD18 air01/nonempty/EXACT": 46 },
+      "mismatch": 0,
+      "unsupported": 0,
+      "inputMismatch": 0,
+      "leftRows": 245,
+      "actorPairRows": 0,
+      "edgeFlipRows": 0,
+      "hurtRows": 0,
+      "cceaTail": "15 on all 1399 rows",
+      "integrate": "37 on 1391 rows, 47 on 2478/3098/3342/3442/3674/3913/4037/4871 (F510 carry into $0500)",
+      "postHardFieldsWrittenByWalkDiffering": 0,
+      "postExternal": { "5313": "$50 00 -> 13 ($51 = 78) written after CAFC in the same frame; the walk never touched $50 and the price is EXACT" },
+      "postSoft": "$10 (538 external + 50 written then reused as scratch), $DA (84 external + 3 where CAFC enqueued and a later owner enqueued again), $7C 73, $0400 bit7 2, $51 1: all rewritten later in the frame",
+      "nonemptyPolls": [[2666,"01","81","r","100","-",2959,2959],[2792,"00","01","r","333","ED85",3118,3118],[2793,"00","01","r","333","ED85",3118,3118],[2794,"00","01","r","333","ED85",3118,3118],[2795,"00","01","r","333","ED85",3118,3118],[2796,"00","01","r","333","ED85",3118,3118],[2797,"00","01","r","333","ED85",3118,3118],[2798,"00","81","r","333","ED85",4690,4690],[2799,"01","81","r","333","ED85",3097,3097],[2800,"01","81","r","333","ED85",3097,3097],[2801,"01","81","r","033","ED85",3106,3106],[2802,"01","81","r","033","ED85",3097,3097],[2803,"01","81","r","003","ED85",3079,3079],[2804,"01","81","r","003","ED85",3070,3070],[2805,"01","81","r","003","ED85",3070,3070],[3927,"01","02","l","100","-",3158,3158],[4204,"00","01","r","333","ED85",3325,3325],[4205,"00","01","r","333","ED85",3325,3325],[4206,"00","01","r","333","ED85",3325,3325],[4207,"00","01","r","333","ED85",3325,3325],[4749,"00","01","r","333","ED85",3094,3094],[4750,"00","01","r","333","ED85",3094,3094],[4751,"00","01","r","333","ED85",3094,3094],[4752,"00","81","r","333","ED85",4618,4618],[4753,"01","81","r","333","ED85",3049,3049],[4754,"01","81","r","333","ED85",3049,3049],[4755,"01","81","r","033","ED85",3058,3058],[4756,"01","81","r","033","ED85",3049,3049],[4757,"01","81","r","003","ED85",3031,3031],[4758,"01","81","r","003","ED85",3031,3031],[4759,"01","81","r","003","ED85",3022,3022],[5630,"01","01","r","033","ED85",3037,3037],[5631,"01","01","r","333","ED85",3073,3073],[5632,"01","01","r","333","ED85",3064,3064],[5633,"01","01","r","333","ED85",3073,3073],[5634,"01","01","r","333","ED85",3190,3190],[5635,"00","01","r","333","ED85",3164,3164],[5636,"00","01","r","333","ED85",3137,3137],[5637,"00","01","r","333","ED85",3137,3137],[5638,"00","01","r","333","ED85",3137,3137],[5639,"00","01","r","333","ED85",3126,3126],[5640,"00","01","r","333","ED85",3126,3126],[5817,"01","81","r","003","ED85",3049,3049],[5818,"01","81","r","003","ED85",3049,3049],[5819,"01","81","r","003","ED85",3040,3040],[5820,"01","81","r","033","ED85",3022,3022],[5821,"01","81","r","033","ED85",3013,3013],[5822,"01","81","r","333","ED85",3022,3022],[5823,"01","81","r","333","ED85",3040,3040],[5824,"01","81","r","333","ED85",3049,3049],[5825,"01","81","r","333","ED85",3157,3157],[5826,"00","81","r","333","ED85",3140,3140],[5827,"00","81","r","333","ED85",3113,3113],[5840,"01","81","r","333","ED85",3073,3073],[5841,"01","81","r","333","ED85",3082,3082],[5842,"01","81","r","333","ED85",3073,3073],[5843,"01","81","r","333","ED85",3055,3055],[5844,"01","81","r","333","ED85",3055,3055],[5845,"01","81","r","033","ED85",3046,3046],[5846,"01","81","r","033","ED85",3055,3055],[5847,"01","81","r","033","ED85",3055,3055],[5848,"01","81","r","003","ED85",3046,3046],[5849,"01","81","r","003","ED85",3073,3073],[5850,"01","81","r","003","ED85",3082,3082],[5851,"01","81","r","003","ED85",3082,3082],[5852,"01","81","r","003","ED85",3082,3082],[5853,"01","81","r","003","ED85",3082,3082]],
+      "nonemptyColumns": ["poll", "state", "held", "direction r/l", "side classes in probe order", "push", "source", "oracle"]
+    },
+    "poll2666": {
+      "state": "01", "held": "81", "pressed": "00", "xBefore": "0173", "xAtCcea": "0175",
+      "path": "CAFC -> CD0E state 01 -> CD16 direction -> JSR CD18/CCBA ($52=1) -> CCBE right -> CCC2 $9E=00 -> CCC8 $6D=00 -> CCD5 A=0,Y=2 -> JSR F200 -> F4FD (37) -> F612 carry clear + F724 scan (301) -> F23F EB52 points 0,1,2 (848) -> F246 BCC taken (class 1 < 3) -> F24B $0400|=40 -> RTS -> CCDC JMP CCEA -> CCEE BNE CD0D across page (15 tail) -> CD1B ...",
+      "sidePoints": [
+        { "point": 0, "x": "0181", "y": "035D", "cell": "06A8", "nibble": "high", "class": 1, "update": true, "rowTail": 5 },
+        { "point": 1, "x": "0181", "y": "0368", "cell": "06B8", "nibble": "low", "class": 0, "update": false, "rowTail": 5 },
+        { "point": 2, "x": "0181", "y": "0373", "cell": "06B8", "nibble": "high", "class": 0, "update": false, "rowTail": 5 }
+      ],
+      "price": { "preSide": 97, "side": 1242, "sideParts": { "wrapper": 56, "integrate": 37, "pair": 301, "probe": 848, "push": 0 }, "jmpCcea": 3, "cceaTail": 15, "afterCcea": 1602, "source": 2959, "oracle": 2959, "status": "EXACT" },
+      "emptySideSynthetic": { "slice": 1354, "source": 3053, "delta": "-94 = 2 x -(45 + 5 - 3): points 1 and 2 skip the update block" }
+    },
+    "controls": {
+      "total": 1213, "failed": 0,
+      "byKind": { "comparator": 67, "synthetic-geometry": 545, "synthetic-input": 490, "synthetic-owner": 111 },
+      "note": "Synthetic rows edit the real map cells/RAM of route polls; their expectations come from the listing and are not original-route evidence."
+    },
+    "mutationProof": {
+      "range": [2660, 2810],
+      "none": { "verdict": "PASS", "failed": 0, "controls": 256, "logSha256": "082c51f9fb3e00a63a0530e27201f8b8c3e4924eb2881c8faa1b5a246c2bff17" },
+      "tail-no-page-cross": { "verdict": "FAIL", "failed": 93, "logSha256": "3a55ce3e240c93a21097fbae45936260a7972e55ddf66b64dd35d457bd956aaa" },
+      "update-46": { "verdict": "FAIL", "failed": 72, "logSha256": "444542da24ee9a23c546b13bf4a1b3038b9041e0114b1897bd26f438cb3dd5b8" },
+      "ed85-43": { "verdict": "FAIL", "failed": 13, "logSha256": "f03f16efb6f22a2e60baa074aee5127b9f6d5becaa5439883ff1b90e68b62f74" },
+      "ed9d-as-ed85": { "verdict": "FAIL", "failed": 12, "logSha256": "3f4886801e765ab7acde0c156b2ba01cf8e735215b0acac9eaf22c4e443ab283" },
+      "class7-exit-as-6": { "verdict": "FAIL", "failed": 8, "logSha256": "f121633366951f4c5f678708fa117ef614fb4f1739f551ba0de9c793b3caeca0" },
+      "equal-class-skips": { "verdict": "FAIL", "failed": 1, "logSha256": "8a560ac95fed3527ac4d5d593f27446276a59f17e9f2ff1aaffa8cc2c9b71859" },
+      "firstSurvivor": "tail-no-page-cross survived while the tail was asserted only as a difference; an absolute CCEA tail check was added and the proof rerun in full"
+    },
+    "regression": {
+      "selftest": "PASS 7/7",
+      "state09": { "sha256": "c75410d3179c43b834f68caffa710ff80931608b596a408e4e90ef4ccd0052be", "byteEqualToZERO56": true },
+      "ground00": { "sha256": "8021339d5e860f04ec25a4b6e1ec9fc61a27c2d8f668a546e2b700d25334e091", "byteEqualToZERO54_57": true },
+      "airborne0b": { "sha256": "b0a81878968df6ab4e09220b471420e6911deab9923aa7cf4ee1b233d2ba3b6b", "byteEqualToZERO56": true },
+      "dumpCases": { "sha256": "92415328b30271218c73e6d88998e6e958e2c99b57324fce2a9ad20186b2f175", "byteEqualToTrackedFixture": "Art/Tools/DarkwingResearch/cost/fixtures/state09_csharp_cases.json" }
+    }
+  },
+  "escalation": {
+    "blocker": "actor pair / edge flip F210..F23C (reachable only when F612 returns carry set)",
+    "attempts": [
+      "flip through ($6E,$6F) alone: refuted by the listing, F20E BCC $F23F skips F228..F23C when F612 clears carry",
+      "slot 1 active ($04D1=80, $0401=80, $04E1=01) at dX 2 and 14 with equal Y: F612 still returned carry clear; cause not established"
+    ],
+    "decision": "stopped after two hypotheses; no third speculative cycle. Route 1924..6420 has 0 such CCEA polls. A native price must refuse a carry-set F612. Resolving it needs a focused original state where the pair test passes (or an independent review of F612/F699/F6DF guards), not a human playtest."
+  },
+  "checks": {
+    "sourceCostReachedWindow": "PASS",
+    "syntheticContracts": "PASS; not original-route evidence",
+    "nativeImplementation": "NOT RUN (out of scope)",
+    "clockAfter2666": "NOT RUN",
+    "editorSuiteStandalonePlaytest": "NOT RUN"
+  }
+}

@@ -14,6 +14,7 @@ usage: state09_source_price.py ROM CITY_PHASES_CSV ORIGINAL_BUFFERS FIRST LAST [
        state09_source_price.py --dump-cases ROM ORIGINAL_BUFFERS OUT_JSON [CAP] [SEED] [POOL]
        state09_source_price.py --ground00 ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
        state09_source_price.py --airborne0b ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
+       state09_source_price.py --ccea ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--focus P,..] [--mutant NAME] [--json OUT]
 
 --dump-cases (ZERO-47) writes the fixture the C# controls read: expected prices taken from
 walk() over bank-7, the class/coordinates each executed $EBE8 returned, and the branch labels
@@ -189,11 +190,14 @@ def step(cpu, pc):
     return pc + ln, cyc
 
 
-def walk(ram, bank7, events=None):
+def walk(ram, bank7, events=None, marks=None):
     """Run the dispatch. When `events` is a list, record every return from the real $EBE8
     point routine: the point index it was entered with, the class it computed, and the probe
     coordinates it left in its scratch ($03/$06 = X, $07/$08 = Y). Everything in an event comes
-    from executed bank-7 bytes, nothing from a transcription."""
+    from executed bank-7 bytes, nothing from a transcription.
+
+    `marks` (ZERO-64, opt-in so the older modes' outputs stay byte-identical) is a list that
+    receives (trace index, pc, $10, Y, $04, player X) at $EC91 (the $0600,Y map read) and at $CCEA."""
     cpu = Cpu(ram, bank7)
     cpu.push(0xCA); cpu.push(0x42)  # JSR $CAFC from CA40 returns to CA43
     base_s = cpu.s
@@ -202,6 +206,9 @@ def walk(ram, bank7, events=None):
     for _ in range(5000):
         if pc == 0xCA43 and cpu.s == (base_s + 2) & 0xFF:
             return cpu
+        if marks is not None and pc in (0xEC91, 0xCCEA):
+            marks.append((len(cpu.trace), pc, cpu.ram[0x10], cpu.y, cpu.ram[0x04],
+                          cpu.ram[0x500] << 8 | cpu.ram[0x4F0]))
         if events is not None:
             if pc == 0xEBE8:
                 inside = (cpu.s, cpu.y, len(cpu.trace))
@@ -914,7 +921,438 @@ def airborne0b(rom_path, phases_path, buf_path, input_path, first, last, out):
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------------------
+# ZERO-64 --ccea: the reached horizontal side probe $CCBA -> $F200/$F254 -> $CCEA.
+# State 01 reaches it from $CD18 (any held left/right), ground walking from $CCB4.
+# $F200/$F254 integrate X ($F4FD/$F51B), try the actor pair ($F612; its $F699 uses
+# SBC abs,Y, outside the walk), probe three side points through $EB52 (right 0..2,
+# left 3..5), push back by ($06 & $0F) through $ED85/$ED9D when the class is >= 3,
+# set $0400 bit6 and return; $CCEA then turns class 4 with $7C == 0 into state 06.
+# Same walk(), same input convention as --ground00; the original price is read only
+# after the walk. Synthetic controls edit the real map cells the walk itself read
+# and carry expectations derived from the listing, not from the walk.
+# ---------------------------------------------------------------------------
+
+CCEA_POST_HARD = (0x50, 0x4F0, 0x500, 0x470, 0x510, 0x520, 0x560, 0x550, 0x460)
+CCEA_POST_SOFT = (0x400, 0x10, 0x52, 0x56, 0x7C, 0x51, 0xDA, 0x6D)
+# EB52 per-point bookkeeping for X = 0, hand-counted from EB6E..EB9A: the update block
+# (BCC not taken, STA $10, CPX/BNE, $4C/$4B, $4A) is 45 cycles plus the $08 vs $FB tail
+# (BCC taken 3 / BEQ taken 5 / +$2E add 15); a point whose class is below the running
+# maximum takes BCC $EB9A for 3. An all-empty side therefore updates on every point.
+EB52_UPDATE = 45
+EB52_SKIP = 3
+# EBAA..EBBC exit for X = 0 is 25 cycles; class 6 (BEQ $EBE3, $10 := 0) costs 27 and
+# class 7 (BEQ $EBDB, $0400 |= $20, $10 := 0) costs 42. Class 5 reads ($34),Y: not built.
+EB52_EXIT = {6: 2, 7: 17}
+# F242 BCC taken (3) -> not taken (2) + JSR $ED85 (6) + ED85 body to RTS (39) = +44.
+ED85_EXTRA = 44
+# F2A1 BCC taken (3) -> not taken (2) + JSR $ED9D (6) + ED9D body to RTS (35) = +40.
+ED9D_EXTRA = 40
+# CCEA..CD0D when not hurt: LDA zp 3, CMP 2, BNE $CD0D taken across the page CCF0->CD0D 4,
+# RTS 6 = 15; class 4 with $7C != 0: BNE not taken 2, LDA zp 3, BNE CCF4->CD0D crossing 4 = 20.
+CCEA_TAIL = 15
+CCEA_TAIL_TIMER = 20
+# --mutant NAME: one deliberately wrong listing assumption; the controls must then FAIL.
+CCEA_MUTANTS = {
+    'tail-no-page-cross': lambda g: g.update(CCEA_TAIL=14, CCEA_TAIL_TIMER=19),
+    'update-46': lambda g: g.update(EB52_UPDATE=46),
+    'ed85-43': lambda g: g.update(ED85_EXTRA=43),
+    'ed9d-as-ed85': lambda g: g.update(ED9D_EXTRA=44),
+    'class7-exit-as-6': lambda g: g.update(EB52_EXIT={6: 2, 7: 2}),
+    'equal-class-skips': lambda g: g.update(SKIP_ON_EQUAL=True),
+}
+SKIP_ON_EQUAL = False
+
+
+# Read opcodes the reached CCEA polls need beyond the older slices: $F6A4 SBC $04F0,Y in the
+# $F699 actor-pair distance, $CDAE CMP $0420 and $CF55 CMP $CFD3,Y. They are enabled only
+# by --ccea so the earlier modes keep their recorded UNSUPPORTED rows byte for byte.
+CCEA_OPS = {0xF9: ('SBC', 'absy'), 0xCD: ('CMP', 'abs'), 0xD9: ('CMP', 'absy')}
+
+
+def row_tail(y_high, fb):
+    return 3 if y_high < fb else (5 if y_high == fb else 15)
+
+
+def ccea_walk(ram, bank7):
+    events, marks = [], []
+    cpu = walk(bytes(ram), bank7, events, marks)
+    pcs = [pc for pc, _ in cpu.trace]
+    if 0xCCEA not in pcs:
+        return cpu, None
+    k_ccea = pcs.index(0xCCEA)
+    k_side = max(i for i in range(k_ccea) if pcs[i] in (0xF200, 0xF254))
+    k_ret = next(i for i in range(k_side, len(pcs)) if pcs[i] in (0xCCDC, 0xCCEA))
+    k_end = next(i for i in range(k_ccea, len(pcs)) if pcs[i] == 0xCD0D)
+    entries = [i for i, pc in enumerate(pcs) if pc == 0xEBE8]
+    reads = {k: (y, d04) for k, pc, _, y, d04, _ in marks if pc == 0xEC91}
+    side = []
+    for n, (entry, event) in enumerate(zip(entries, events)):
+        if not k_side <= entry < k_ret:
+            continue
+        stop = entries[n + 1] if n + 1 < len(entries) else len(pcs)
+        window = pcs[entry:stop]
+        read = next(((k, v) for k, v in reads.items() if entry <= k < stop), None)
+        cell = nibble = None
+        if read:
+            cell = 0x600 + read[1][0]
+            nibble = 'low' if bank7[0xECA9 - 0xC000 + read[1][1]] else 'high'
+        side.append({'point': event['point'], 'class': event['class'], 'x': event['x'],
+                     'y': event['y'], 'read': event['read'], 'cell': cell, 'nibble': nibble,
+                     'update': 0xEB72 in window, 'row_tail': row_tail(event['y'] >> 8, ram[0xFB])})
+    side_trace = cpu.trace[k_side:k_ret]
+    parts = {'integrate': 0, 'pair': 0, 'probe': 0, 'push': 0}
+    for pc, c in side_trace:
+        if 0xF4FD <= pc <= 0xF538:
+            parts['integrate'] += c
+        elif 0xF612 <= pc <= 0xF647 or 0xF699 <= pc <= 0xF7FF:
+            parts['pair'] += c
+        elif 0xEB52 <= pc <= 0xECA6:
+            parts['probe'] += c
+        elif 0xED85 <= pc <= 0xEDB2:
+            parts['push'] += c
+    total_side = sum(c for _, c in side_trace)
+    parts['other'] = total_side - sum(parts.values())
+    window = set(pcs[k_side:k_ret])
+    info = {
+        'caller': 'CD18 air01' if 0xCD18 in pcs[:k_side] else ('CCB4 ground' if 0xCCB4 in pcs[:k_side] else 'other'),
+        'direction': 'right F200' if pcs[k_side] == 0xF200 else 'left F254',
+        'side': side, 'side_max': next(v for k, pc, v, _, _, _ in marks if pc == 0xCCEA),
+        'x_at_ccea': next(x for k, pc, _, _, _, x in marks if pc == 0xCCEA),
+        'pre_side': sum(c for _, c in cpu.trace[:k_side]),
+        'side_cycles': total_side, 'side_parts': parts,
+        'between': sum(c for _, c in cpu.trace[k_ret:k_ccea]),
+        'ccea_tail': sum(c for _, c in cpu.trace[k_ccea:k_end + 1]),
+        'after_ccea': sum(c for _, c in cpu.trace[k_end + 1:]),
+        'actor_pair_hit': 0xF210 in window or 0xF264 in window,
+        'push': 'ED85' if 0xED85 in window else ('ED9D' if 0xED9D in window else None),
+        'hurt': 0xCCF4 in pcs,
+        'edge_flip': 0xF235 in window or 0xF290 in window,
+        'eb_exit': 'EBDB' if 0xEBDB in window else ('EBE3' if 0xEBE3 in window else 'EBBC'),
+        'skipped': [s['point'] for s in side if not s['update']],
+    }
+    # The priced CCEA slice: the side call (from its first instruction to the return), the
+    # right-hand JMP $CCEA and the CCEA..CD0D tail. Hurt rows continue into CCF4..F9C2.
+    info['slice'] = total_side + info['between'] + info['ccea_tail']
+    return cpu, info
+
+
+def ccea_expect(side, edits_classes, fb):
+    """Listing expectation for the side point classes: which points take the update block,
+    whether the push and the hurt test run, and the probe delta from an all-update set."""
+    running, skipped, delta = 0, [], 0
+    for s, cls in zip(side, edits_classes):
+        if cls > running or (cls == running and not (SKIP_ON_EQUAL and cls)):
+            running = cls
+        else:
+            skipped.append(s['point'])
+            delta -= EB52_UPDATE + row_tail(s['y'] >> 8, fb) - EB52_SKIP
+    delta += EB52_EXIT.get(running, 0)
+    return {'skipped': skipped, 'probe_delta': delta, 'max': running,
+            'side_max': 0 if running in (6, 7) else running}
+
+
+def set_class(ram, s, cls):
+    if s['nibble'] == 'low':
+        ram[s['cell']] = (ram[s['cell']] & 0xF0) | cls
+    else:
+        ram[s['cell']] = (ram[s['cell']] & 0x0F) | cls << 4
+
+
+def ccea_controls(p, ram, bank7, cpu, info):
+    """Synthetic controls on one CCEA poll. Every expectation is written before the walk
+    from the listing (CCBA..CD0D, F200/F254, EB52..EBE7, ED85/ED9D, CD0E..CD3E); the walk
+    only has to agree. None of these rows are original-route evidence."""
+    out = []
+
+    def run(r):
+        try:
+            c, i = ccea_walk(r, bank7)
+            return c, i, None
+        except Unsupported as e:
+            return None, None, str(e)
+
+    def add(kind, name, ok, **extra):
+        row = {'poll': p, 'kind': kind, 'variant': name, 'ok': bool(ok)}
+        row.update(extra)
+        out.append(row)
+
+    def geometry(ram, info, tag):
+        """Class patterns on the three map cells this walk's side probes read."""
+        side = info['side']
+        cells = [(s['cell'], s['nibble']) for s in side]
+        distinct = all(s['read'] for s in side) and len(set(cells)) == len(cells)
+        fb = ram[0xFB]
+        base_classes = [s['class'] for s in side]
+        # --- geometry: class patterns on the same three map cells the route poll read ---
+        if distinct:
+            zero = bytearray(ram)
+            for s in side:
+                set_class(zero, s, 0)
+            zc, zi, ze = run(zero)
+            add('synthetic-geometry', tag + 'side 000 (all update)',
+                zi is not None and zi['skipped'] == [] and zi['side_max'] == 0 and zi['push'] is None,
+                source=zc.cyc if zc else ze)
+            if zi is not None:
+                patterns = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (2, 1, 0), (1, 2, 0), (2, 0, 0),
+                            (3, 0, 0), (0, 0, 3), (4, 0, 0), (7, 0, 0), (6, 0, 0)]
+                if tuple(base_classes) not in patterns:
+                    patterns.insert(0, tuple(base_classes))
+                # The $7C damage timer only matters for class 4: keep it nonzero for the price rows
+                # so the hurt path stays an explicit owner control below.
+                timer = ram[0x7C] if ram[0x7C] else 0x3C
+                # Points 0..2 are the right set (push ED85), 3..5 the left set (ED9D); an
+                # edge flip (F235/F290) probes the other set, so the set decides, not $16.
+                right = side[0]['point'] < 3
+                for pat in patterns:
+                    r = bytearray(zero)
+                    for s, cls in zip(side, pat):
+                        set_class(r, s, cls)
+                    r[0x7C] = timer
+                    exp = ccea_expect(side, pat, fb)
+                    c, i, err = run(r)
+                    name = 'side %d%d%d' % pat
+                    if i is None:
+                        add('synthetic-geometry', tag + name, False, source=err)
+                        continue
+                    got = [s['class'] for s in i['side']]
+                    push = exp['max'] in (3, 4)
+                    # Listing expectation for the slice: all-update base, minus the skipped
+                    # points, plus the EBAA exit, the F242 push call and the CCEA timer tail.
+                    want = (zi['slice'] + exp['probe_delta'] + ((ED85_EXTRA if right else ED9D_EXTRA) if push else 0)
+                            + (CCEA_TAIL_TIMER - CCEA_TAIL if exp['max'] == 4 else 0))
+                    ok = got == list(pat) and i['skipped'] == exp['skipped']
+                    ok &= i['side_max'] == exp['side_max'] and not i['hurt']
+                    ok &= (i['push'] == ('ED85' if right else 'ED9D')) if push else i['push'] is None
+                    ok &= i['slice'] == want
+                    ok &= i['ccea_tail'] == (CCEA_TAIL_TIMER if exp['max'] == 4 else CCEA_TAIL)
+                    # Class 7 sets $0400 bit5 at EBDB; the later vertical EB52 clears it again
+                    # (EB58), so the proof is the executed EBDB, not the final RAM byte.
+                    ok &= (i['eb_exit'] == {6: 'EBE3', 7: 'EBDB'}.get(exp['max'], 'EBBC'))
+                    add('synthetic-geometry', tag + name, ok, classes=got, skipped=i['skipped'],
+                        want_skipped=exp['skipped'], slice=i['slice'],
+                        want_slice=want,
+                        slice_vs_000=i['slice'] - zi['slice'], source=c.cyc, push=i['push'],
+                        side_max=i['side_max'], x_post='%02X%02X' % (c.ram[0x500], c.ram[0x4F0]))
+                # Class 4 with $7C == 0: CCF4 sets $50=06/$51=0F, FA78 animation 09, F850 sound $15,
+                # $7C=3C, F9C2 saves $58=06; in state 01 CE22..CE36 then writes $50 back to 01
+                # (06 is not 04/0E/0D/07). A busy queue skips F85C..F864: 15 cycles cheaper.
+                hurt = {}
+                for owner in ('accepts', 'busy'):
+                    r = bytearray(zero)
+                    set_class(r, side[0], 4)
+                    r[0x7C] = 0
+                    set_audio(r, owner)
+                    c, i, err = run(r)
+                    name = 'side 400, $7C=0, queue %s (hurt)' % owner
+                    if i is None:
+                        add('synthetic-owner', tag + name, False, source=err)
+                        continue
+                    pcs = [pc for pc, _ in c.trace]
+                    enq = pcs.count(0xF85C)
+                    hurt[owner] = (c.cyc, enq)
+                    # A poll that also lands (CE08..CE19) queues sound $10 after the hurt $15 and
+                    # writes $50 = 00; otherwise state 01 is restored. The edited cell can also be
+                    # under the feet, so landing is read from the same map with $7C = 3C.
+                    same_map = bytearray(r)
+                    same_map[0x7C] = 0x3C
+                    landed = 0xCE17 in [pc for pc, _ in walk(bytes(same_map), bank7).trace]
+                    want_state = (0x00 if landed else 0x01) if info['caller'] == 'CD18 air01' else None
+                    ok = i['hurt'] and c.ram[0x58] == 0x06 and c.ram[0x7C] == 0x3C and c.ram[0x51] == 0x0F
+                    ok &= want_state is None or c.ram[0x50] == want_state
+                    ok &= (enq >= 1) if owner == 'accepts' else enq == 0
+                    ok &= pcs.count(0xF850) == (2 if landed else 1) or want_state is None
+                    add('synthetic-owner', tag + name, ok, source=c.cyc, state='%02X' % c.ram[0x50],
+                        saved58='%02X' % c.ram[0x58], timer7C='%02X' % c.ram[0x7C], enqueued=enq,
+                        queue_calls=pcs.count(0xF850), landed=landed)
+                if len(hurt) == 2:
+                    # Each enqueue that a busy slot refuses saves F85C..F864 (15 cycles).
+                    delta = hurt['accepts'][0] - hurt['busy'][0]
+                    add('synthetic-owner', tag + 'hurt queue busy is 15 cycles cheaper per enqueue',
+                        delta == 15 * hurt['accepts'][1], delta=delta, enqueues=hurt['accepts'][1])
+        else:
+            add('synthetic-geometry', tag + 'side cells not distinct/read: geometry controls not built', True,
+                cells=cells)
+    geometry(ram, info, '')
+    if info['caller'] == 'CD18 air01' and info['direction'] == 'right F200':
+        # The route never shows a nonempty left side: build it on the same RAM with Left held.
+        left = bytearray(ram)
+        left[0x16] = (ram[0x16] & ~3 & 0xFF) | 2
+        left[0x14] = ram[0x14] & ~3 & 0xFF
+        try:
+            _, linfo = ccea_walk(left, bank7)
+        except Unsupported as e:
+            linfo = None
+            add('synthetic-geometry', 'left: walk unsupported', False, source=str(e))
+        if linfo is not None:
+            geometry(left, linfo, 'left ')
+    # Not built (ZERO-64 boundary): the actor pair and edge flip F210..F23C run only when
+    # $F612 returns carry set. The route has no such CCEA poll; two synthetic attempts (flip
+    # through ($6E,$6F) alone - refuted by F20E BCC $F23F - and slot 1 at dX 2/14 with
+    # $04D1/$0401/$04E1 set - F612 still returned carry clear) gave no controlled case, so
+    # a native price must refuse a carry-set F612 instead of extrapolating this slice.
+    # --- input/owner gates on CCBA..CCE7 and CD0E..CD3E ---
+    direction = ram[0x16] & 3
+    gates = []
+    if info['caller'] == 'CD18 air01':
+        gates += [('no direction (A only)', {0x16: ram[0x16] & ~3 & 0xFF, 0x14: 0}, 'no CCEA'),
+                  ('right+left uses right', {0x16: (ram[0x16] | 3), 0x14: 0}, 'right F200'),
+                  ('left', {0x16: (ram[0x16] & ~3 & 0xFF) | 2, 0x14: 0}, 'left F254'),
+                  ('right', {0x16: (ram[0x16] & ~3 & 0xFF) | 1, 0x14: 0}, 'right F200'),
+                  ('$9E bit7 blocks', {0x9E: 0x80}, 'no CCEA'),
+                  ('fresh B -> CF3A', {0x14: 0x40, 0x16: ram[0x16] | 0x40}, 'CF3A')]
+        if ram[0x50] == 0x01 and ram[0x560] & 0x80:  # a state-00 jump poll reads A at CBB7
+            gates.append(('A released while falling: same price', {0x16: ram[0x16] & 0x7F, 0x14: 0},
+                          'same'))
+    if direction & 1:
+        gates += [('checkpoint 0E + flags 50 veto', {0x6D: 0x0E, 0x400: 0x50}, 'no CCEA'),
+                  ('checkpoint 0E + flags 10 veto', {0x6D: 0x0E, 0x400: 0x10}, 'no CCEA'),
+                  ('checkpoint 0E, route flags', {0x6D: 0x0E}, 'right F200' if ram[0x400] not in (0x50, 0x10)
+                   else 'no CCEA')]
+    for name, edits, want in gates:
+        r = bytearray(ram)
+        for a, v in edits.items():
+            r[a] = v
+        c, i, err = run(r)
+        if err:
+            got = 'unsupported %s' % err
+        elif want == 'CF3A':
+            got = 'CF3A' if 0xCF3A in [pc for pc, _ in c.trace] else 'no CF3A'
+        elif i is None:
+            got = 'no CCEA'
+        elif want == 'same':
+            got = 'same' if c.cyc == cpu.cyc else 'differs %d' % (c.cyc - cpu.cyc)
+        else:
+            got = i['direction']
+        add('synthetic-input', name, got == want, want=want, got=got,
+            source=c.cyc if c else err)
+    add('comparator', 'comparator rejects source+1', verdict(cpu.cyc, cpu.cyc + 1) == 'MISMATCH')
+    return out
+
+
+def ccea(rom_path, phases_path, buf_path, input_path, first, last, out, focus, mutant=None):
+    OPS.update(CCEA_OPS)
+    if mutant:
+        CCEA_MUTANTS[mutant](globals())
+    rom = open(rom_path, 'rb').read()
+    if hashlib.sha256(rom).hexdigest() != ROM_SHA:
+        sys.exit('ROM SHA-256 mismatch')
+    bank7 = rom[16 + 16384 * (rom[4] - 1):16 + 16384 * rom[4]]
+    inp = open(input_path, 'rb').read()
+    if first < 2 or last >= len(inp):
+        sys.exit('range needs a previous input byte and a next RAM record')
+    pts = {}
+    with open(phases_path) as f:
+        next(f)
+        for line in f:
+            p, c, pc = line.rstrip().split(',')
+            p = int(p)
+            if first <= p <= last and pc in ('CA40', 'CA59'):
+                pts.setdefault(p, {}).setdefault(pc, int(c))
+    rows, controls, unsupported = [], [], {}
+    with open(buf_path, 'rb') as buf:
+        def rec(p):
+            buf.seek((p - 1) * RECORD)
+            r = bytearray(buf.read(2048))
+            if len(r) != 2048:
+                sys.exit('missing record for poll %d' % p)
+            return r
+        for p in range(first, last + 1):
+            ram, post = rec(p), rec(p + 1)
+            if not ram[0x4D0] & 0x80 or not inp[p - 1] & 3:
+                continue  # $CCBA needs the active player and a held left/right
+            held = inp[p - 1]
+            pressed = held & ~inp[p - 2] & 0xFF
+            ram[0x16], ram[0x14] = held, pressed
+            try:
+                cpu, info = ccea_walk(ram, bank7)
+            except Unsupported as e:
+                key = 'state %02X: %s' % (ram[0x50], e)
+                unsupported[key] = unsupported.get(key, 0) + 1
+                continue
+            if info is None:
+                continue
+            row = {'poll': p, 'state': '%02X' % ram[0x50], 'held': '%02X' % held,
+                   'pressed': '%02X' % pressed,
+                   'input_equal': post[0x16] == held and post[0x14] == pressed,
+                   'source': cpu.cyc}
+            row.update(info)
+            # A hard field the dispatch never changed but the next record did was written later
+            # in the frame, outside CAFC (5313: $50 00 -> 13, $51 = 78); that is reported apart.
+            diff = {k for k in CCEA_POST_HARD if cpu.ram[k] != post[k]}
+            row['post_diff'] = {'%04X' % k: ['%02X' % cpu.ram[k], '%02X' % post[k]]
+                                for k in sorted(diff) if cpu.ram[k] != ram[k]}
+            row['post_external'] = {'%04X' % k: ['%02X' % cpu.ram[k], '%02X' % post[k]]
+                                    for k in sorted(diff) if cpu.ram[k] == ram[k]}
+            # Soft fields are shared scratch/queue/timer bytes that later frame code may rewrite;
+            # split them the same way so a value the dispatch itself wrote stays visible.
+            soft = [k for k in CCEA_POST_SOFT if cpu.ram[k] != post[k]]
+            row['post_soft_diff'] = {'%04X' % k: ['%02X' % cpu.ram[k], '%02X' % post[k]]
+                                     for k in soft if cpu.ram[k] != ram[k]}
+            row['post_soft_external'] = {'%04X' % k: ['%02X' % cpu.ram[k], '%02X' % post[k]]
+                                         for k in soft if cpu.ram[k] == ram[k]}
+            m = pts.get(p, {})
+            if not row['input_equal']:
+                row['status'] = 'INPUT_MISMATCH'
+            elif 'CA40' in m and 'CA59' in m and ram[0x65] < 0x80 and ram[0x30] == 0:
+                row['oracle'] = m['CA59'] - m['CA40'] - 18
+                row['status'] = verdict(cpu.cyc, row['oracle'])
+            else:
+                row['status'] = 'NO_ORACLE'
+            rows.append(row)
+            nonempty = row['side_max'] != 0 or any(s['class'] for s in info['side'])
+            if p in focus or (nonempty and not focus):
+                controls.extend(ccea_controls(p, ram, bank7, cpu, info))
+    for r in rows:
+        print(json.dumps(r, sort_keys=True))
+    for c in controls:
+        print('control', json.dumps(c, sort_keys=True))
+    nonempty = [r for r in rows if any(s['class'] for s in r['side'])]
+    tally = {}
+    for r in rows:
+        k = '%s/%s/%s' % (r['caller'], 'nonempty' if r in nonempty else 'empty', r['status'])
+        tally[k] = tally.get(k, 0) + 1
+    by_kind = {}
+    for c in controls:
+        k = c['kind']
+        by_kind.setdefault(k, [0, 0])
+        by_kind[k][0] += 1
+        by_kind[k][1] += not c['ok']
+    route_ok = all(r['status'] in ('EXACT', 'NO_ORACLE') and not r['post_diff'] for r in rows)
+    ok = bool(rows) and route_ok and all(c['ok'] for c in controls)
+    summary = {'rows': len(rows), 'tally': tally, 'unsupported': unsupported,
+               'nonempty_polls': [r['poll'] for r in nonempty],
+               'nonempty': [{'poll': r['poll'], 'state': r['state'], 'held': r['held'],
+                             'classes': [s['class'] for s in r['side']], 'skipped': r['skipped'],
+                             'push': r['push'], 'hurt': r['hurt'], 'source': r['source'],
+                             'oracle': r.get('oracle'), 'status': r['status'],
+                             'side_cycles': r['side_cycles'], 'side_parts': r['side_parts']}
+                            for r in nonempty],
+               'mismatch_polls': [r['poll'] for r in rows if r['status'] == 'MISMATCH'],
+               'edge_flip_polls': [r['poll'] for r in rows if r['edge_flip']],
+               'actor_pair_polls': [r['poll'] for r in rows if r['actor_pair_hit']],
+               'left_polls': len([r for r in rows if r['direction'] == 'left F254']),
+               'post_external': {r['poll']: r['post_external'] for r in rows if r['post_external']},
+               'post_diff_polls': [r['poll'] for r in rows if r['post_diff']],
+               'controls': len(controls), 'controls_by_kind': by_kind,
+               'controls_failed': sum(not c['ok'] for c in controls),
+               'mutant': mutant, 'verdict': 'PASS' if ok else 'FAIL'}
+    print('summary', json.dumps(summary, sort_keys=True))
+    if out:
+        with open(out, 'x') as f:
+            json.dump({'rows': rows, 'controls': controls, 'summary': summary}, f, indent=1,
+                      sort_keys=True)
+    return 0 if ok else 1
+
+
 def main(argv):
+    if len(argv) >= 8 and argv[1] == '--ccea':
+        # --ccea ROM PHASES BUFFERS INPUT FIRST LAST [--focus P,P] [--mutant NAME] [--json OUT]
+        out = argv[argv.index('--json') + 1] if '--json' in argv else None
+        focus = ({int(v) for v in argv[argv.index('--focus') + 1].split(',')}
+                 if '--focus' in argv else set())
+        mutant = argv[argv.index('--mutant') + 1] if '--mutant' in argv else None
+        return ccea(argv[2], argv[3], argv[4], argv[5], int(argv[6]), int(argv[7]), out, focus, mutant)
     if len(argv) >= 8 and argv[1] == '--airborne0b':
         # --airborne0b ROM PHASES BUFFERS INPUT FIRST LAST [--json OUT]
         out = argv[argv.index('--json') + 1] if '--json' in argv else None
