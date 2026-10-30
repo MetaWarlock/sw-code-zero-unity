@@ -15,6 +15,7 @@ usage: state09_source_price.py ROM CITY_PHASES_CSV ORIGINAL_BUFFERS FIRST LAST [
        state09_source_price.py --ground00 ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
        state09_source_price.py --airborne0b ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
        state09_source_price.py --ccea ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--focus P,..] [--mutant NAME] [--json OUT]
+       state09_source_price.py --ccea-pair ROM ORIGINAL_BUFFERS OUT_JSON [POLL]
 
 --dump-cases (ZERO-47) writes the fixture the C# controls read: expected prices taken from
 walk() over bank-7, the class/coordinates each executed $EBE8 returned, and the branch labels
@@ -1345,7 +1346,243 @@ def ccea(rom_path, phases_path, buf_path, input_path, first, last, out, focus, m
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------------------
+# ZERO-65 --ccea-pair: direct source-instruction fixtures for F612 and the two
+# push/edge-flip tails. F612 cannot return carry set: after CMP #$18, every
+# accepted A=0..23 has N=1 at F642, so BMI $F646 rejects it. Direct F210/F264
+# entries price the otherwise unreachable tails without patching the ROM; they
+# are synthetic instruction fixtures, not a reachable actor-pair or route PASS.
+# ---------------------------------------------------------------------------
+
+CCEA_PAIR_OPS = {0xF5: ('SBC', 'zpx')}
+CCEA_PAIR_REJECTIONS = (0xF619, 0xF61E, 0xF623, 0xF628, 0xF62F, 0xF63E, 0xF642)
+CCEA_PAIR_MARKERS = {
+    0xF207, 0xF209, 0xF20B, 0xF210, 0xF216, 0xF218, 0xF21B, 0xF228, 0xF233, 0xF235,
+    0xF23F, 0xF24B, 0xF253, 0xF264, 0xF26A, 0xF26C, 0xF26F, 0xF27D, 0xF281, 0xF28C,
+    0xF28E, 0xF290, 0xF29A, 0xF2A6, 0xF2AE, 0xF612, 0xF616, 0xF619, 0xF61B, 0xF61E,
+    0xF620, 0xF623, 0xF625, 0xF628, 0xF62A, 0xF62D, 0xF62F, 0xF631, 0xF639, 0xF63C,
+    0xF63E, 0xF640, 0xF642, 0xF644, 0xF645, 0xF646, 0xF647, 0xF699, 0xF69E, 0xF6A0,
+    0xF6C6, 0xF6DF, 0xF6E9, 0xF6F0, 0xF6FF, 0xF70B, 0xF718, 0xF722, 0xF723,
+}
+
+
+def ccea_pair_fragment(ram, bank7, entry, a=0, x=0, stops=(0xCA43, 0xF647)):
+    cpu = Cpu(ram, bank7)
+    cpu.a, cpu.x = a, x
+    cpu.push(0xCA)
+    cpu.push(0x42)
+    pc = entry
+    for _ in range(5000):
+        if pc in stops:
+            return cpu
+        old = pc
+        pc, cycles = step(cpu, pc)
+        cpu.trace.append((old, cycles))
+        cpu.cyc += cycles
+    raise Unsupported('fragment did not reach its stop within 5000 instructions')
+
+
+def ccea_pair_fixture(rom_path, buf_path, out_path, poll):
+    OPS.update(CCEA_OPS)
+    OPS.update(CCEA_PAIR_OPS)
+    rom = open(rom_path, 'rb').read()
+    buffers = open(buf_path, 'rb').read()
+    if hashlib.sha256(rom).hexdigest() != ROM_SHA:
+        sys.exit('ROM SHA-256 mismatch')
+    bank7 = rom[16 + 16384 * (rom[4] - 1):16 + 16384 * rom[4]]
+    start = (poll - 1) * RECORD
+    if poll < 1 or start + 2048 > len(buffers):
+        sys.exit('missing record for poll %d' % poll)
+    base = bytearray(buffers[start:start + 2048])
+    cases = []
+
+    def diff(before, after, map_zero=False):
+        edits = {'%04X' % a: '%02X' % after[a] for a in range(2048)
+                 if before[a] != after[a] and not (map_zero and 0x600 <= a < 0x700)}
+        if map_zero:
+            edits['0600..06FF'] = '00'
+        return edits
+
+    def path_of(cpu):
+        return ['%04X' % pc for pc, _ in cpu.trace if pc in CCEA_PAIR_MARKERS]
+
+    def pair_ram(direction, dx, dy, direct, camera_correction):
+        ram = bytearray(base)
+        px = (ram[0x4F0] | ram[0x500] << 8) + (2 if direction == 'right' else -2)
+        py = ram[0x510] | ram[0x520] << 8
+        ram[0x4D0] |= 0x80
+        ram[0x4D1] = 0x80
+        ram[0x400] = (ram[0x400] | 0x80 | (0x10 if direct else 0)) & (0xFF if direct else ~0x10)
+        ram[0x401] = 0x80
+        ram[0x4E1] = 1
+        ox = px + dx if direct else px + dx + (ram[0xFC] if camera_correction else 0)
+        oy = py + dy
+        for address, value in ((0x4F0, px), (0x4F1, ox), (0x510, py), (0x511, oy)):
+            ram[address] = value & 0xFF
+        for address, value in ((0x500, px), (0x501, ox), (0x520, py), (0x521, oy)):
+            ram[address] = value >> 8 & 0xFF
+        return ram
+
+    def add_pair(name, direction='right', dx=2, dy=0, direct=True, camera_correction=True,
+                 want='F642', edits=None, required=()):
+        ram = pair_ram(direction, dx, dy, direct, camera_correction)
+        for address, value in (edits or {}).items():
+            ram[address] = value
+        cpu = ccea_pair_fragment(ram, bank7, 0xF612)
+        pcs = [pc for pc, _ in cpu.trace]
+        successors = dict(zip(pcs, pcs[1:]))
+        reject = next(('%04X' % pc for pc in CCEA_PAIR_REJECTIONS
+                       if successors.get(pc) == 0xF646), None)
+        carry_set = 0xF644 in pcs and 0xF645 in pcs
+        ok = reject == want and not carry_set and all(pc in pcs for pc in required)
+        cases.append({'id': name, 'kind': 'F612 guard', 'entry': 'F612',
+                      'edits': diff(base, ram), 'want_reject': want, 'reject': reject,
+                      'want_path': ['%04X' % pc for pc in required], 'path': path_of(cpu),
+                      'carry_set': carry_set, 'cycles': cpu.cyc, 'ok': ok})
+
+    add_pair('right direct dX=2 dY=0 reaches final BMI', required=(0xF6A0,))
+    add_pair('Claude ZERO64 direct dX=14 dY=0 reaches final BMI', dx=14, required=(0xF6A0,))
+    add_pair('left direct dX=2 dY=0 reaches final BMI', direction='left', required=(0xF6A0,))
+    add_pair('right direct signed dX=-2 dY=-2', dx=-2, dy=-2, required=(0xF6A0,))
+    add_pair('right camera-aware dX=2 reaches final BMI', direct=False, required=(0xF6C6,))
+    add_pair('right camera-unadjusted dX=2 also reaches final BMI because F699 returns zero',
+             direct=False, camera_correction=False, required=(0xF6C6,))
+    add_pair('camera branch dX=17 bypasses horizontal CMP but fails BMI', dx=17,
+             direct=False, camera_correction=False, required=(0xF6C6,))
+    for name, direct, correction, want_a, want_scratch in (
+            ('direct F699 returns dX in A and scratch', True, True, 2, 2),
+            ('camera F699 returns zero with corrected scratch dX', False, True, 0, 2),
+            ('camera F699 returns zero while scratch contains camera-adjusted value 23',
+             False, False, 0, 23)):
+        ram = pair_ram('right', 2, 0, direct, correction)
+        cpu = ccea_pair_fragment(ram, bank7, 0xF612, stops=(0xF62D,))
+        ok = cpu.a == want_a and cpu.ram[0] == want_scratch
+        cases.append({'id': name, 'kind': 'F699 return', 'entry': 'F612 stop before F62D',
+                      'edits': diff(base, ram), 'want_a': want_a, 'a': cpu.a,
+                      'want_scratch00': want_scratch, 'scratch00': cpu.ram[0],
+                      'path': path_of(cpu), 'carry_set': False, 'cycles': cpu.cyc, 'ok': ok})
+    add_pair('horizontal distance 16 passes CMP but fails BMI', dx=16)
+    add_pair('horizontal distance 17 rejected at F62F', dx=17, want='F62F')
+    add_pair('vertical distance 23 passes CMP but fails BMI', dy=23)
+    add_pair('vertical distance 24 rejected at F63E', dy=24, want='F63E')
+    add_pair('other actor inactive rejected at F619', want='F619', edits={0x4D1: 0})
+    add_pair('self flags bit7 clear rejected at F61E', want='F61E', edits={0x400: 0x10})
+    add_pair('other flags bit7 clear rejected at F623', want='F623', edits={0x401: 0})
+    add_pair('other object zero rejected at F628', want='F628', edits={0x4E1: 0})
+    ram = pair_ram('right', 2, 0, True, True)
+    for address, value in ((0x510, 0x00), (0x520, 0x03), (0x511, 0xF8), (0x521, 0x02)):
+        ram[address] = value
+    cpu = ccea_pair_fragment(ram, bank7, 0xF612)
+    pcs = [pc for pc, _ in cpu.trace]
+    ok = 0xF6FF in pcs and 0xF642 in pcs and 0xF644 not in pcs
+    cases.append({'id': 'vertical lower-high wrap adds 16 then fails BMI', 'kind': 'F6DF guard',
+                  'entry': 'F612', 'edits': diff(base, ram), 'want_reject': 'F642',
+                  'reject': 'F642' if 0xF642 in pcs else None, 'want_path': ['F6FF'],
+                  'path': path_of(cpu), 'carry_set': 0xF644 in pcs, 'cycles': cpu.cyc, 'ok': ok})
+    ram = pair_ram('right', 2, 0, True, True)
+    for address, value in ((0x510, 0xF8), (0x520, 0x03), (0x511, 0x00), (0x521, 0x04)):
+        ram[address] = value
+    cpu = ccea_pair_fragment(ram, bank7, 0xF612)
+    pcs = [pc for pc, _ in cpu.trace]
+    ok = 0xF6F0 in pcs and 0xF642 in pcs and 0xF644 not in pcs
+    cases.append({'id': 'vertical higher-high wrap subtracts 16 then fails BMI', 'kind': 'F6DF guard',
+                  'entry': 'F612', 'edits': diff(base, ram), 'want_reject': 'F642',
+                  'reject': 'F642' if 0xF642 in pcs else None, 'want_path': ['F6F0'],
+                  'path': path_of(cpu), 'carry_set': 0xF644 in pcs, 'cycles': cpu.cyc, 'ok': ok})
+
+    cpu = ccea_pair_fragment(base, bank7, 0xF207, x=2, stops=(0xF23F,))
+    pcs = [pc for pc, _ in cpu.trace]
+    ok = pcs == [0xF207, 0xF209] and 0xF612 not in pcs
+    cases.append({'id': 'actor index X=2 skips F612 at F207/F209', 'kind': 'index guard',
+                  'entry': 'F207 X=2', 'edits': {}, 'want_path': ['F207', 'F209'],
+                  'path': path_of(cpu), 'carry_set': False, 'cycles': cpu.cyc, 'ok': ok})
+
+    final_guard = []
+    for value in range(256):
+        cpu = ccea_pair_fragment(base, bank7, 0xF63C, a=value)
+        pcs = [pc for pc, _ in cpu.trace]
+        successors = dict(zip(pcs, pcs[1:]))
+        want = 0xF642 if value < 0x18 else 0xF63E
+        ok = (successors.get(want) == 0xF646 and 0xF644 not in pcs
+              and 0xF645 not in pcs and 0xF646 in pcs)
+        final_guard.append({'a': value, 'reject': '%04X' % want, 'ok': ok})
+
+    side_specs = (
+        ('right', 15, 'no', 1027), ('right', 4, 'no', 1025), ('right', 3, 'no', 1025),
+        ('right', 15, 'flip', 1069), ('right', 15, 'equal', 1027),
+        ('left', 15, 'no', 1049), ('left', 4, 'no', 1047), ('left', 3, 'no', 1047),
+        ('left', 15, 'flip', 1067), ('left', 15, 'equal', 1047),
+    )
+    for direction, push, edge_mode, want_cycles in side_specs:
+        ram = bytearray(base)
+        ram[0x40], ram[0x41], ram[0x10] = 0 if direction == 'right' else 3, 2, push
+        for address in range(0x600, 0x700):
+            ram[address] = 0
+        pre = 0x175 if direction == 'right' else 0x171
+        actual_shift = 5 if direction == 'right' and push > 4 else min(push, 4)
+        want_x = pre - actual_shift if direction == 'right' else pre + actual_shift
+        edge = {'no': 0 if direction == 'right' else 0xFFFF,
+                'flip': want_x + 1 if direction == 'right' else want_x - 1,
+                'equal': want_x}[edge_mode]
+        ram[0x4F0], ram[0x500] = pre & 0xFF, pre >> 8
+        ram[0x6E], ram[0x6F] = edge & 0xFF, edge >> 8
+        entry = 0xF210 if direction == 'right' else 0xF264
+        cpu = ccea_pair_fragment(ram, bank7, entry)
+        pcs = [pc for pc, _ in cpu.trace]
+        post = cpu.ram[0x4F0] | cpu.ram[0x500] << 8
+        flip_pc = 0xF235 if direction == 'right' else 0xF290
+        clamp_pc = 0xF216 if direction == 'right' else 0xF26A
+        flipped = flip_pc in pcs
+        clamped = clamp_pc in pcs
+        returned = pcs[-1] == (0xF253 if direction == 'right' else 0xF2AE)
+        ok = (post == want_x and cpu.cyc == want_cycles and flipped == (edge_mode == 'flip')
+              and clamped == (push > 4) and returned)
+        cases.append({'id': '%s push=%d edge=%s' % (direction, push, edge_mode),
+                      'kind': 'direct downstream fragment (not reachable through F612)',
+                      'entry': '%04X' % entry, 'edits': diff(base, ram, map_zero=True),
+                      'pre_x': '%04X' % pre, 'want_x': '%04X' % want_x, 'post_x': '%04X' % post,
+                      'actual_shift': actual_shift, 'clamp4': clamped, 'edge_flip': flipped,
+                      'returned': returned, 'want_cycles': want_cycles, 'cycles': cpu.cyc,
+                      'path': path_of(cpu), 'carry_set': False, 'ok': ok})
+
+    controls = len(cases) + len(final_guard)
+    failed = sum(not c['ok'] for c in cases) + sum(not c['ok'] for c in final_guard)
+    carry_cases = sum(c.get('carry_set', False) for c in cases)
+    document = {
+        'task': 'ZERO-65', 'mode': 'state09_source_price.py --ccea-pair',
+        'scope': 'Synthetic bank-7 RAM/instruction fixtures on one original pre-frame RAM record; '
+                 'not a continuous route, original actor-pair observation, native implementation or mission PASS.',
+        'base': {'poll': poll, 'record_sha256': hashlib.sha256(base).hexdigest()},
+        'rom_sha256': ROM_SHA, 'bank7_sha256': hashlib.sha256(bank7).hexdigest(),
+        'buffers_sha256': hashlib.sha256(buffers).hexdigest(),
+        'carry_set_fixture_possible': False,
+        'reason': 'F63C CMP #$18 leaves N=1 for every A=0..23 accepted by F640 BCC; '
+                  'F642 BMI $F646 therefore rejects all of them. A>=24 is rejected at F63E. '
+                  'No RAM value can reach F644 SEC/F645 RTS through this listing.',
+        'claude_zero64_explanation': 'The active slot-1 dX=2/14 equal-Y setup can pass the active, flags, '
+                                     'object and distance tests, but is rejected by F642 BMI. With $0400 bit4 '
+                                     'clear, F6C6 computes otherX-$FC-playerX into scratch $00, but F6DA '
+                                     'loads zero before RTS: F62D sees A=0 regardless of that scratch distance.',
+        'downstream_cycle_basis': {
+            'right_no_flip_clamped': '60 + 942 + 25 = 1027; unclamped removes STA but takes BCS: -2',
+            'left_no_flip_clamped': '70 + 954 + 25 = 1049; unclamped: -2; equal-edge BEQ path: 1047',
+            'right_edge_flip_clamped': '70 + 954 + 45 = 1069',
+            'left_edge_flip_clamped': '80 + 942 + 45 = 1067',
+        },
+        'final_guard_exhaustive': final_guard, 'cases': cases,
+        'summary': {'controls': controls, 'failed': failed, 'carry_set_cases': carry_cases,
+                    'final_guard_values': len(final_guard), 'verdict': 'PASS' if not failed and not carry_cases else 'FAIL'},
+    }
+    with open(out_path, 'x') as f:
+        json.dump(document, f, indent=1, sort_keys=True)
+    print('summary', json.dumps(document['summary'], sort_keys=True))
+    print('fixture', out_path)
+    return 0 if document['summary']['verdict'] == 'PASS' else 1
+
+
 def main(argv):
+    if argv[1] == '--ccea-pair' and len(argv) in (5, 6):
+        return ccea_pair_fixture(argv[2], argv[3], argv[4], int(argv[5]) if len(argv) == 6 else 2666)
     if len(argv) >= 8 and argv[1] == '--ccea':
         # --ccea ROM PHASES BUFFERS INPUT FIRST LAST [--focus P,P] [--mutant NAME] [--json OUT]
         out = argv[argv.index('--json') + 1] if '--json' in argv else None

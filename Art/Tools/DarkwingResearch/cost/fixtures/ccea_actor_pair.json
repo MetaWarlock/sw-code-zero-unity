@@ -1,0 +1,2547 @@
+{
+ "bank7_sha256": "96cc6beafb7bcdf753657887fedf5c1dfbc590588a692100a4fee7da5b73b9f5",
+ "base": {
+  "poll": 2666,
+  "record_sha256": "f270bad6026b7efcd89242b03883128afa3194c7aa889dac8e6b54395fb00952"
+ },
+ "buffers_sha256": "7c123d27f8f678e25fa812a8b6dbf599f49b93b2c6dbb467ca848f64a9f1cb70",
+ "carry_set_fixture_possible": false,
+ "cases": [
+  {
+   "carry_set": false,
+   "cycles": 192,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "right direct dX=2 dY=0 reaches final BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6A0"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 192,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "83",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "Claude ZERO64 direct dX=14 dY=0 reaches final BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6A0"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 192,
+   "edits": {
+    "04E1": "01",
+    "04F0": "71",
+    "04F1": "73",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "left direct dX=2 dY=0 reaches final BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6A0"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 173,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "73",
+    "0501": "01",
+    "0511": "66"
+   },
+   "entry": "F612",
+   "id": "right direct signed dX=-2 dY=-2",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6A0"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 173,
+   "edits": {
+    "0400": "C0",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "62",
+    "0501": "02",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "right camera-aware dX=2 reaches final BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6C6",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6C6"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 173,
+   "edits": {
+    "0400": "C0",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "right camera-unadjusted dX=2 also reaches final BMI because F699 returns zero",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6C6",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6C6"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 173,
+   "edits": {
+    "0400": "C0",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "86",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "camera branch dX=17 bypasses horizontal CMP but fails BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6C6",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6C6"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "a": 2,
+   "carry_set": false,
+   "cycles": 99,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612 stop before F62D",
+   "id": "direct F699 returns dX in A and scratch",
+   "kind": "F699 return",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0"
+   ],
+   "scratch00": 2,
+   "want_a": 2,
+   "want_scratch00": 2
+  },
+  {
+   "a": 0,
+   "carry_set": false,
+   "cycles": 80,
+   "edits": {
+    "0400": "C0",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "62",
+    "0501": "02",
+    "0511": "68"
+   },
+   "entry": "F612 stop before F62D",
+   "id": "camera F699 returns zero with corrected scratch dX",
+   "kind": "F699 return",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6C6"
+   ],
+   "scratch00": 2,
+   "want_a": 0,
+   "want_scratch00": 2
+  },
+  {
+   "a": 0,
+   "carry_set": false,
+   "cycles": 80,
+   "edits": {
+    "0400": "C0",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612 stop before F62D",
+   "id": "camera F699 returns zero while scratch contains camera-adjusted value 23",
+   "kind": "F699 return",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6C6"
+   ],
+   "scratch00": 23,
+   "want_a": 0,
+   "want_scratch00": 23
+  },
+  {
+   "carry_set": false,
+   "cycles": 192,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "85",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "horizontal distance 16 passes CMP but fails BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 106,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "86",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "horizontal distance 17 rejected at F62F",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F646"
+   ],
+   "reject": "F62F",
+   "want_path": [],
+   "want_reject": "F62F"
+  },
+  {
+   "carry_set": false,
+   "cycles": 197,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "7F"
+   },
+   "entry": "F612",
+   "id": "vertical distance 23 passes CMP but fails BMI",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 192,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "80"
+   },
+   "entry": "F612",
+   "id": "vertical distance 24 rejected at F63E",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F646"
+   ],
+   "reject": "F63E",
+   "want_path": [],
+   "want_reject": "F63E"
+  },
+  {
+   "carry_set": false,
+   "cycles": 15,
+   "edits": {
+    "04D1": "00",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "other actor inactive rejected at F619",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F646"
+   ],
+   "reject": "F619",
+   "want_path": [],
+   "want_reject": "F619"
+  },
+  {
+   "carry_set": false,
+   "cycles": 21,
+   "edits": {
+    "0400": "10",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "self flags bit7 clear rejected at F61E",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F646"
+   ],
+   "reject": "F61E",
+   "want_path": [],
+   "want_reject": "F61E"
+  },
+  {
+   "carry_set": false,
+   "cycles": 27,
+   "edits": {
+    "0401": "00",
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "other flags bit7 clear rejected at F623",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F646"
+   ],
+   "reject": "F623",
+   "want_path": [],
+   "want_reject": "F623"
+  },
+  {
+   "carry_set": false,
+   "cycles": 33,
+   "edits": {
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0511": "68"
+   },
+   "entry": "F612",
+   "id": "other object zero rejected at F628",
+   "kind": "F612 guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F646"
+   ],
+   "reject": "F628",
+   "want_path": [],
+   "want_reject": "F628"
+  },
+  {
+   "carry_set": false,
+   "cycles": 214,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0510": "00",
+    "0511": "F8",
+    "0521": "02"
+   },
+   "entry": "F612",
+   "id": "vertical lower-high wrap adds 16 then fails BMI",
+   "kind": "F6DF guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F6FF",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6FF"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 211,
+   "edits": {
+    "04E1": "01",
+    "04F0": "75",
+    "04F1": "77",
+    "0501": "01",
+    "0510": "F8",
+    "0511": "00",
+    "0521": "04"
+   },
+   "entry": "F612",
+   "id": "vertical higher-high wrap subtracts 16 then fails BMI",
+   "kind": "F6DF guard",
+   "ok": true,
+   "path": [
+    "F612",
+    "F616",
+    "F619",
+    "F61B",
+    "F61E",
+    "F620",
+    "F623",
+    "F625",
+    "F628",
+    "F62A",
+    "F699",
+    "F69E",
+    "F6A0",
+    "F62D",
+    "F62F",
+    "F631",
+    "F639",
+    "F6DF",
+    "F6E9",
+    "F6F0",
+    "F70B",
+    "F718",
+    "F722",
+    "F723",
+    "F63C",
+    "F63E",
+    "F640",
+    "F642",
+    "F646"
+   ],
+   "reject": "F642",
+   "want_path": [
+    "F6F0"
+   ],
+   "want_reject": "F642"
+  },
+  {
+   "carry_set": false,
+   "cycles": 5,
+   "edits": {},
+   "entry": "F207 X=2",
+   "id": "actor index X=2 skips F612 at F207/F209",
+   "kind": "index guard",
+   "ok": true,
+   "path": [
+    "F207",
+    "F209"
+   ],
+   "want_path": [
+    "F207",
+    "F209"
+   ]
+  },
+  {
+   "actual_shift": 5,
+   "carry_set": false,
+   "clamp4": true,
+   "cycles": 1027,
+   "edge_flip": false,
+   "edits": {
+    "0010": "0F",
+    "0040": "00",
+    "0041": "02",
+    "006E": "00",
+    "006F": "00",
+    "04F0": "75",
+    "0600..06FF": "00"
+   },
+   "entry": "F210",
+   "id": "right push=15 edge=no",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F210",
+    "F216",
+    "F218",
+    "F21B",
+    "F228",
+    "F233",
+    "F23F",
+    "F24B",
+    "F253"
+   ],
+   "post_x": "0170",
+   "pre_x": "0175",
+   "returned": true,
+   "want_cycles": 1027,
+   "want_x": "0170"
+  },
+  {
+   "actual_shift": 4,
+   "carry_set": false,
+   "clamp4": false,
+   "cycles": 1025,
+   "edge_flip": false,
+   "edits": {
+    "0010": "04",
+    "0040": "00",
+    "0041": "02",
+    "006E": "00",
+    "006F": "00",
+    "04F0": "75",
+    "0600..06FF": "00"
+   },
+   "entry": "F210",
+   "id": "right push=4 edge=no",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F210",
+    "F218",
+    "F21B",
+    "F228",
+    "F233",
+    "F23F",
+    "F24B",
+    "F253"
+   ],
+   "post_x": "0171",
+   "pre_x": "0175",
+   "returned": true,
+   "want_cycles": 1025,
+   "want_x": "0171"
+  },
+  {
+   "actual_shift": 3,
+   "carry_set": false,
+   "clamp4": false,
+   "cycles": 1025,
+   "edge_flip": false,
+   "edits": {
+    "0010": "03",
+    "0040": "00",
+    "0041": "02",
+    "006E": "00",
+    "006F": "00",
+    "04F0": "75",
+    "0600..06FF": "00"
+   },
+   "entry": "F210",
+   "id": "right push=3 edge=no",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F210",
+    "F218",
+    "F21B",
+    "F228",
+    "F233",
+    "F23F",
+    "F24B",
+    "F253"
+   ],
+   "post_x": "0172",
+   "pre_x": "0175",
+   "returned": true,
+   "want_cycles": 1025,
+   "want_x": "0172"
+  },
+  {
+   "actual_shift": 5,
+   "carry_set": false,
+   "clamp4": true,
+   "cycles": 1069,
+   "edge_flip": true,
+   "edits": {
+    "0010": "0F",
+    "0040": "00",
+    "0041": "02",
+    "006E": "71",
+    "04F0": "75",
+    "0600..06FF": "00"
+   },
+   "entry": "F210",
+   "id": "right push=15 edge=flip",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F210",
+    "F216",
+    "F218",
+    "F21B",
+    "F228",
+    "F233",
+    "F235",
+    "F29A",
+    "F2A6",
+    "F2AE",
+    "F24B",
+    "F253"
+   ],
+   "post_x": "0170",
+   "pre_x": "0175",
+   "returned": true,
+   "want_cycles": 1069,
+   "want_x": "0170"
+  },
+  {
+   "actual_shift": 5,
+   "carry_set": false,
+   "clamp4": true,
+   "cycles": 1027,
+   "edge_flip": false,
+   "edits": {
+    "0010": "0F",
+    "0040": "00",
+    "0041": "02",
+    "006E": "70",
+    "04F0": "75",
+    "0600..06FF": "00"
+   },
+   "entry": "F210",
+   "id": "right push=15 edge=equal",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F210",
+    "F216",
+    "F218",
+    "F21B",
+    "F228",
+    "F233",
+    "F23F",
+    "F24B",
+    "F253"
+   ],
+   "post_x": "0170",
+   "pre_x": "0175",
+   "returned": true,
+   "want_cycles": 1027,
+   "want_x": "0170"
+  },
+  {
+   "actual_shift": 4,
+   "carry_set": false,
+   "clamp4": true,
+   "cycles": 1049,
+   "edge_flip": false,
+   "edits": {
+    "0010": "0F",
+    "0040": "03",
+    "0041": "02",
+    "006E": "FF",
+    "006F": "FF",
+    "04F0": "71",
+    "0600..06FF": "00"
+   },
+   "entry": "F264",
+   "id": "left push=15 edge=no",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F264",
+    "F26A",
+    "F26C",
+    "F26F",
+    "F27D",
+    "F281",
+    "F28C",
+    "F28E",
+    "F29A",
+    "F2A6",
+    "F2AE"
+   ],
+   "post_x": "0175",
+   "pre_x": "0171",
+   "returned": true,
+   "want_cycles": 1049,
+   "want_x": "0175"
+  },
+  {
+   "actual_shift": 4,
+   "carry_set": false,
+   "clamp4": false,
+   "cycles": 1047,
+   "edge_flip": false,
+   "edits": {
+    "0010": "04",
+    "0040": "03",
+    "0041": "02",
+    "006E": "FF",
+    "006F": "FF",
+    "04F0": "71",
+    "0600..06FF": "00"
+   },
+   "entry": "F264",
+   "id": "left push=4 edge=no",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F264",
+    "F26C",
+    "F26F",
+    "F27D",
+    "F281",
+    "F28C",
+    "F28E",
+    "F29A",
+    "F2A6",
+    "F2AE"
+   ],
+   "post_x": "0175",
+   "pre_x": "0171",
+   "returned": true,
+   "want_cycles": 1047,
+   "want_x": "0175"
+  },
+  {
+   "actual_shift": 3,
+   "carry_set": false,
+   "clamp4": false,
+   "cycles": 1047,
+   "edge_flip": false,
+   "edits": {
+    "0010": "03",
+    "0040": "03",
+    "0041": "02",
+    "006E": "FF",
+    "006F": "FF",
+    "04F0": "71",
+    "0600..06FF": "00"
+   },
+   "entry": "F264",
+   "id": "left push=3 edge=no",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F264",
+    "F26C",
+    "F26F",
+    "F27D",
+    "F281",
+    "F28C",
+    "F28E",
+    "F29A",
+    "F2A6",
+    "F2AE"
+   ],
+   "post_x": "0174",
+   "pre_x": "0171",
+   "returned": true,
+   "want_cycles": 1047,
+   "want_x": "0174"
+  },
+  {
+   "actual_shift": 4,
+   "carry_set": false,
+   "clamp4": true,
+   "cycles": 1067,
+   "edge_flip": true,
+   "edits": {
+    "0010": "0F",
+    "0040": "03",
+    "0041": "02",
+    "006E": "74",
+    "04F0": "71",
+    "0600..06FF": "00"
+   },
+   "entry": "F264",
+   "id": "left push=15 edge=flip",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F264",
+    "F26A",
+    "F26C",
+    "F26F",
+    "F27D",
+    "F281",
+    "F28C",
+    "F28E",
+    "F290",
+    "F23F",
+    "F24B",
+    "F253",
+    "F2A6",
+    "F2AE"
+   ],
+   "post_x": "0175",
+   "pre_x": "0171",
+   "returned": true,
+   "want_cycles": 1067,
+   "want_x": "0175"
+  },
+  {
+   "actual_shift": 4,
+   "carry_set": false,
+   "clamp4": true,
+   "cycles": 1047,
+   "edge_flip": false,
+   "edits": {
+    "0010": "0F",
+    "0040": "03",
+    "0041": "02",
+    "006E": "75",
+    "04F0": "71",
+    "0600..06FF": "00"
+   },
+   "entry": "F264",
+   "id": "left push=15 edge=equal",
+   "kind": "direct downstream fragment (not reachable through F612)",
+   "ok": true,
+   "path": [
+    "F264",
+    "F26A",
+    "F26C",
+    "F26F",
+    "F27D",
+    "F281",
+    "F28C",
+    "F29A",
+    "F2A6",
+    "F2AE"
+   ],
+   "post_x": "0175",
+   "pre_x": "0171",
+   "returned": true,
+   "want_cycles": 1047,
+   "want_x": "0175"
+  }
+ ],
+ "claude_zero64_explanation": "The active slot-1 dX=2/14 equal-Y setup can pass the active, flags, object and distance tests, but is rejected by F642 BMI. With $0400 bit4 clear, F6C6 computes otherX-$FC-playerX into scratch $00, but F6DA loads zero before RTS: F62D sees A=0 regardless of that scratch distance.",
+ "downstream_cycle_basis": {
+  "left_edge_flip_clamped": "80 + 942 + 45 = 1067",
+  "left_no_flip_clamped": "70 + 954 + 25 = 1049; unclamped: -2; equal-edge BEQ path: 1047",
+  "right_edge_flip_clamped": "70 + 954 + 45 = 1069",
+  "right_no_flip_clamped": "60 + 942 + 25 = 1027; unclamped removes STA but takes BCS: -2"
+ },
+ "final_guard_exhaustive": [
+  {
+   "a": 0,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 1,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 2,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 3,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 4,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 5,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 6,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 7,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 8,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 9,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 10,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 11,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 12,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 13,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 14,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 15,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 16,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 17,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 18,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 19,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 20,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 21,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 22,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 23,
+   "ok": true,
+   "reject": "F642"
+  },
+  {
+   "a": 24,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 25,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 26,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 27,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 28,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 29,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 30,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 31,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 32,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 33,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 34,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 35,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 36,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 37,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 38,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 39,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 40,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 41,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 42,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 43,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 44,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 45,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 46,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 47,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 48,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 49,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 50,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 51,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 52,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 53,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 54,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 55,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 56,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 57,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 58,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 59,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 60,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 61,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 62,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 63,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 64,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 65,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 66,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 67,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 68,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 69,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 70,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 71,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 72,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 73,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 74,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 75,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 76,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 77,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 78,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 79,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 80,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 81,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 82,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 83,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 84,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 85,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 86,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 87,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 88,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 89,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 90,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 91,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 92,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 93,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 94,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 95,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 96,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 97,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 98,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 99,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 100,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 101,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 102,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 103,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 104,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 105,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 106,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 107,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 108,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 109,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 110,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 111,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 112,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 113,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 114,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 115,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 116,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 117,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 118,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 119,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 120,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 121,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 122,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 123,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 124,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 125,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 126,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 127,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 128,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 129,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 130,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 131,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 132,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 133,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 134,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 135,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 136,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 137,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 138,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 139,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 140,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 141,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 142,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 143,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 144,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 145,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 146,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 147,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 148,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 149,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 150,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 151,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 152,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 153,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 154,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 155,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 156,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 157,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 158,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 159,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 160,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 161,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 162,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 163,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 164,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 165,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 166,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 167,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 168,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 169,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 170,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 171,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 172,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 173,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 174,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 175,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 176,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 177,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 178,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 179,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 180,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 181,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 182,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 183,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 184,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 185,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 186,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 187,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 188,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 189,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 190,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 191,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 192,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 193,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 194,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 195,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 196,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 197,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 198,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 199,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 200,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 201,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 202,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 203,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 204,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 205,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 206,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 207,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 208,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 209,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 210,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 211,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 212,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 213,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 214,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 215,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 216,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 217,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 218,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 219,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 220,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 221,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 222,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 223,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 224,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 225,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 226,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 227,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 228,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 229,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 230,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 231,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 232,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 233,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 234,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 235,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 236,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 237,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 238,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 239,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 240,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 241,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 242,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 243,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 244,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 245,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 246,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 247,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 248,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 249,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 250,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 251,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 252,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 253,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 254,
+   "ok": true,
+   "reject": "F63E"
+  },
+  {
+   "a": 255,
+   "ok": true,
+   "reject": "F63E"
+  }
+ ],
+ "mode": "state09_source_price.py --ccea-pair",
+ "reason": "F63C CMP #$18 leaves N=1 for every A=0..23 accepted by F640 BCC; F642 BMI $F646 therefore rejects all of them. A>=24 is rejected at F63E. No RAM value can reach F644 SEC/F645 RTS through this listing.",
+ "rom_sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+ "scope": "Synthetic bank-7 RAM/instruction fixtures on one original pre-frame RAM record; not a continuous route, original actor-pair observation, native implementation or mission PASS.",
+ "summary": {
+  "carry_set_cases": 0,
+  "controls": 287,
+  "failed": 0,
+  "final_guard_values": 256,
+  "verdict": "PASS"
+ },
+ "task": "ZERO-65"
+}
