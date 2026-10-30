@@ -1,0 +1,31 @@
+{
+  "before": [
+    {
+      "name": "Darkwing Port - Плейтест 2.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\State09\\DarkwingDuck.exe",
+      "arguments": "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -darkwing-replay \"D:\\Art\\SW Code Zero Unity\\Art\\Build\\UserStand\\Playtest2.json\"",
+      "workingDirectory": "D:/Art/SW Code Zero Unity/Art/Build/State09"
+    },
+    {
+      "name": "Darkwing Port.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\State09\\DarkwingDuck.exe",
+      "arguments": "",
+      "workingDirectory": "D:/Art/SW Code Zero Unity/Art/Build/State09"
+    }
+  ],
+  "after": [
+    {
+      "name": "Darkwing Port - Плейтест 2.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch\\DarkwingDuck.exe",
+      "arguments": "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -darkwing-replay \"D:\\Art\\SW Code Zero Unity\\Art\\Build\\UserStand\\Playtest2.json\"",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch"
+    },
+    {
+      "name": "Darkwing Port.lnk",
+      "target": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch\\DarkwingDuck.exe",
+      "arguments": "",
+      "workingDirectory": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch"
+    }
+  ],
+  "argumentsUnchanged": true
+}

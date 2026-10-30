@@ -1,0 +1,143 @@
+{
+  "schema": 1,
+  "scope": "Exact build copy and source-manifest verification; no runtime acceptance",
+  "source": "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck\\Art\\Build\\ClockCrouch",
+  "output": "D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch",
+  "sourceProject": "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck",
+  "sourceFilesVerified": 242,
+  "localSourceByteExact": 217,
+  "localUtf8LineEndingOnly": [
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Audio/Apu.cs",
+      "sourceSha256": "4867e99f242c14cacdf6da84cb3b3e0b000ed9db180fb2a0ec2ffcbe2d9eab28",
+      "localSha256": "905d5cbd285d3f9f9de9609fa8b7112d90a366d609480434c87d2e195a628dce"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Audio/AudioSequencer.Timing.cs",
+      "sourceSha256": "b0c56c13d0a47d171dfb56c923c3c3ca843003d9fe7b8833441df7d53997cf12",
+      "localSha256": "2ac7b90815deb2a32f8782d38bc99b664af9eae0f005cf050cf51d20241372ad"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ActorBank6Timing.cs",
+      "sourceSha256": "8a8ddd1eb3c527234d48deeae2a32fd4bbdfc747850bf164fe1a7406dbffa91f",
+      "localSha256": "68dfdeef647b6da6a28a063fc288c215d81560697bc8f50c217132b16e2b32ce"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ActorEventTiming.cs",
+      "sourceSha256": "b22df0bc2ad6fd366de051ea23b5a0e409bcaa967341ff6604dfabb4f1cb1916",
+      "localSha256": "77635b68986b1c593b780393166ae115bc3c24df887e40d24047d2486aeb290a"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ActorMotionTiming.cs",
+      "sourceSha256": "e2f3e5c40bcb06139e17fa2870fed24f955d45601597f83799c2570c032eb075",
+      "localSha256": "033863e9b554bf9e9d2d40390442e882ee8fd949ebdbc6c213b9fc864d1e04dd"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ActorProbeTiming.cs",
+      "sourceSha256": "7e3d082ce02f3b5667dc8dfb35aca3007dd174fb2700d92d7bb913449b377104",
+      "localSha256": "14900e82823154d9d3801a4d19f4f602fe5febebe3e8607d8d2c845cddbf7098"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ActorTailTiming.cs",
+      "sourceSha256": "b96f1c1d168b37f0d3958751985332f84a232a7e8d335f80a258279c9d2a3674",
+      "localSha256": "425980cd228b5aec3566ba753a599839afa64e3f854a33b630fcb286dc918b69"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/DarkwingGame.Boot.cs",
+      "sourceSha256": "060ed72be77c7d162b2a61b9ce44b9925708067c8daf17b243547717967505b1",
+      "localSha256": "8e8e6d46ff98193b233877f48db7ae28e455fa5bf494f1ac0dddfbc4c73cc0c7"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/DarkwingGame.ZonePaletteTiming.cs",
+      "sourceSha256": "214ecd11540d9c5ba9b24354a099fb5cdfae3b74f3b0e846369a5704d19ec46c",
+      "localSha256": "07ddff6a3a84a3bf9d4f16730d6fe03da4b7c8995408005223b4a423e9198ef2"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/EnemyDispatcher.cs",
+      "sourceSha256": "fc85e578147c53d438785b8f97a70f2042222c50b29327e97ab735a4782da91d",
+      "localSha256": "81506a3d264c478e89e44ba52db8f54af1628de39ccf8227d64b91599a19a2c8"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/EnemyDispatcher.Timing.cs",
+      "sourceSha256": "906f810aca1aaacd81e618ce4f11e59d09964702b9a3276d82f31a6fb24a7527",
+      "localSha256": "3f782248df6d82440fa0c8ee3c1634b33d090b7530a95c7cecc51cb6d2958b3c"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/GameFlow.cs",
+      "sourceSha256": "e28c68196d105bbc6803273043d7d1d33e45c6c8d9410dc31e4eaea6f33727ad",
+      "localSha256": "84e3ae3922cc948b93ad6f2f0e8d01461349544f58588f53faada8d832ebe407"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/GameFlow.PowerOn.cs",
+      "sourceSha256": "e205aebefba034bfc5c3dc95d9e5207a2362a90ee10f4f28f0743e934834131d",
+      "localSha256": "93f1026a387e3e37d45ab6519933ae6ae7d02de602af134eca7051a9095a0830"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/LevelTileMap.cs",
+      "sourceSha256": "90b2ff7b2eec2efac3c699831ae91c7445dfba9da5422321ae03cc4902962a53",
+      "localSha256": "76d569490be67b13cecdd81fedd1b6cbb6ba1468f4c93d3bbb5c37e2e763cb82"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/LevelTileMap.StagingTiming.cs",
+      "sourceSha256": "b83f797229ab18c8b24e2293b3faeb56084830e6893375ac953fb5935f39d45a",
+      "localSha256": "ab5c6870f86849477229943977f4fdfe0be63e87bf0e2c1ef035e858beb73d7c"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/OamDispatcher.Walk.cs",
+      "sourceSha256": "998622a9eefc0f0d8e601086d77f49f47deaab745bb0b76b7a2d76e83cf5c514",
+      "localSha256": "0126a3b3aeccadfc25f714a9c96a8e7b2501c9ebd0f0965bbb413b1bf18004ca"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ObjectSystem.cs",
+      "sourceSha256": "d80888834d16b93d42b75605bc6b6319d61417a7d96da5bd01730b2baa533d3d",
+      "localSha256": "35eaea0bb3d38e11c0967be1b32933f5fdf31327a3318ff8d98ee471562946c0"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/PhysicalFrameClock.cs",
+      "sourceSha256": "fae102c1ec0c0acb8b4469d79966bde13577aa8c34195db3068934156644b8ba",
+      "localSha256": "f74ab7cabe15d21da0773c5e2fffec826b7fe7e8b637fc982a2e5af112021573"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/PlayerCore.Air01Timing.cs",
+      "sourceSha256": "4367a10792f5babb7d97e86211e81e3b6d110c3ef7b3b105c7afd2a727127833",
+      "localSha256": "9048230057e876cfa8e321ee1eff226e719569834299a870839b239684517fef"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/PlayerCore.StateTiming.cs",
+      "sourceSha256": "b1b12879d8d0e7b793bf513e8030dbc9a47d9ebd148fe141df485b68e5799a9b",
+      "localSha256": "0c9f106283fb5179d722c910d60778227d4b1e1d0ac720286dbeda331d603473"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/ResetProcessClock.cs",
+      "sourceSha256": "665422d96b1d95703a8cc9c03049298089946d511eea5137bdbf4a76a4314c6c",
+      "localSha256": "babb835637e3fd8907ddf3290fd18428853190481ce0a2e2ddc160e8569890dd"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Core/TextEngine.cs",
+      "sourceSha256": "3ec227cd455052e589316b91f1600b2e8d2d4f8a2ab29c2b1bd93f10ae7509ae",
+      "localSha256": "9c7c52d0d7aaddf0b55b4646589ffd979e732a3ad96f972e74a1ea9644c8d9b2"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Data/anims.json",
+      "sourceSha256": "7ad458c5405d3963429d78d1a92bf704fa2b5a23e565ba54061abaabca871547",
+      "localSha256": "52a6aa0021851a5c3e29598f2ee48a90cb787cbc3d635c0e33b7f7e1db742206"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/Data/levels.json",
+      "sourceSha256": "a0af8ac333eb1b6025ecc3ac130e98809e15211996c32679cdf555448436818c",
+      "localSha256": "ea4196818dffb59c02889a57327c1e78b65961172c0d89f0e5ef19a1a55abd93"
+    },
+    {
+      "path": "Art/Unity/CodeZero/Darkwing/UnityApp/DarkwingLauncher.cs",
+      "sourceSha256": "53f620b2d26ab9d9d5faf24370f886043e8a2cffb823b1c7bdcf497daf705969",
+      "localSha256": "78ec33b5ee1a1a35832f4dacaab9c0f759d6d32bf504713e1028b52d676ffbc5"
+    }
+  ],
+  "binaryFilesVerified": 354,
+  "binaryBytes": 188623941,
+  "binaryManifestSha256": "3c63a9c86a07b8535ee612514ed3e1d6fcc8413d3f7111efb7e2af581fde1540",
+  "sourceManifestSha256": "d708575136e50f07a56889030785cca6909a26ea71c3436a47fe38155a5bb475",
+  "head": "644ea698fbb97af4bbb765aec078cf1ddfd739c8",
+  "verifiedUtcEpoch": 1793353520.4295526,
+  "result": "PASS"
+}

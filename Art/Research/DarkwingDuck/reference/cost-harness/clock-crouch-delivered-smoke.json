@@ -1,0 +1,42 @@
+{
+  "scope": "standalone boot/render/clean exit only; no playthrough or ROM comparison",
+  "exe": "D:/Art/SW Code Zero Unity/Art/Build/ClockCrouch/DarkwingDuck.exe",
+  "startedUtc": "2026-10-30T09:45:20.5339436Z",
+  "success": true,
+  "arguments": "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -logFile \"D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-62-acceptance\\Player.log\"",
+  "pid": 175840,
+  "captureA": {
+    "path": "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-62-acceptance\\window_a.png",
+    "width": 784,
+    "height": 759,
+    "clientWidth": 768,
+    "clientHeight": 720,
+    "clientLeft": 8,
+    "clientTop": 31,
+    "samples": 34560,
+    "nonBlack": 26923,
+    "colors": 26,
+    "sha256": "DFC97CCA1E2DA0FCB6458E762FC9473B596FEA8FD799CA752D1AAFFF2169CCC3"
+  },
+  "captureB": {
+    "path": "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-62-acceptance\\window_b.png",
+    "width": 784,
+    "height": 759,
+    "clientWidth": 768,
+    "clientHeight": 720,
+    "clientLeft": 8,
+    "clientTop": 31,
+    "samples": 34560,
+    "nonBlack": 26864,
+    "colors": 37,
+    "sha256": "265A3B0A2396F5AF510B00DA6E3FFA65F0EC39A24DE586A23BF2F8301798BF9E"
+  },
+  "framesDiffer": true,
+  "playerExitCode": 0,
+  "cleanExit": true,
+  "log": "D:\\Art\\SW Code Zero Unity\\Art\\Temp\\ZERO-62-acceptance\\Player.log",
+  "exceptions": [],
+  "bloomWarnings": 17,
+  "finishedUtc": "2026-10-30T09:46:12.4183691Z",
+  "exitCode": 0
+}

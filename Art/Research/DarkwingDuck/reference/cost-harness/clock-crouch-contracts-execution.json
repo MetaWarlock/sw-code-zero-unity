@@ -1,0 +1,29 @@
+{
+  "command": [
+    "C:\\Users\\Warlock\\AppData\\Local\\Unity\\bin\\unity.EXE",
+    "command",
+    "run_script",
+    "--file",
+    "Art/AgentScripts/PhysCompare.cs",
+    "--entry",
+    "PhysCompare.Mission1Contracts",
+    "--project-path",
+    "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck",
+    "--caller",
+    "plugin",
+    "--skill",
+    "unity-cli",
+    "--timeout",
+    "270",
+    "--timeout_ms",
+    "240000",
+    "--format",
+    "json"
+  ],
+  "scope": "execution only",
+  "startedUtcEpoch": 1793353288.6709461,
+  "cliExitCode": 0,
+  "execution": "EXECUTED",
+  "exitCode": 0,
+  "elapsedSeconds": 1.692
+}

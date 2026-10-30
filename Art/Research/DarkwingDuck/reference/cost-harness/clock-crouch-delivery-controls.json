@@ -1,0 +1,62 @@
+[
+  {
+    "control": "traversal",
+    "exit": 1,
+    "command": [
+      "C:\\Users\\Warlock\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+      "Art/Tools/DarkwingResearch/build_player.py",
+      "deliver",
+      "--from",
+      "Art/Build/ClockCrouch",
+      "--source-manifest",
+      "Art/Research/DarkwingDuck/reference/cost-harness/clock-crouch-source-after.json",
+      "--manifest",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\traversal.json",
+      "--out",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\traversal-output",
+      "--evidence",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\traversal-evidence.json"
+    ],
+    "error": "ValueError: Unsafe manifest path: ../outside.bin"
+  },
+  {
+    "control": "missing",
+    "exit": 1,
+    "command": [
+      "C:\\Users\\Warlock\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+      "Art/Tools/DarkwingResearch/build_player.py",
+      "deliver",
+      "--from",
+      "Art/Build/ClockCrouch",
+      "--source-manifest",
+      "Art/Research/DarkwingDuck/reference/cost-harness/clock-crouch-source-after.json",
+      "--manifest",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\missing.json",
+      "--out",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\missing-output",
+      "--evidence",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\missing-evidence.json"
+    ],
+    "error": "ValueError: Missing/changed manifest file: D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch\\missing.bin"
+  },
+  {
+    "control": "tampered",
+    "exit": 1,
+    "command": [
+      "C:\\Users\\Warlock\\AppData\\Local\\Python\\pythoncore-3.14-64\\python.exe",
+      "Art/Tools/DarkwingResearch/build_player.py",
+      "deliver",
+      "--from",
+      "Art/Build/ClockCrouch",
+      "--source-manifest",
+      "Art/Research/DarkwingDuck/reference/cost-harness/clock-crouch-source-after.json",
+      "--manifest",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\tampered.json",
+      "--out",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\tampered-output",
+      "--evidence",
+      "Art\\Temp\\ZERO-62-acceptance\\negative-controls\\tampered-evidence.json"
+    ],
+    "error": "ValueError: Missing/changed manifest file: D:\\Art\\SW Code Zero Unity\\Art\\Build\\ClockCrouch\\DarkwingDuck.exe"
+  }
+]
