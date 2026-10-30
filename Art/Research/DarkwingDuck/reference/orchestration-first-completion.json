@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "date": "2026-10-30",
+  "issue": "ZERO-59",
+  "incident": "Waited only on OpenCode58; completed Kimi56/Claude57 not delivered during that wait; about9hours",
+  "activeSource": "Art/Tools/DarkwingResearch/acpx_wait_first.ps1",
+  "verificationSource": "Art/Tools/DarkwingResearch/test_acpx_wait_first.ps1",
+  "nativeControl": {
+    "first": "fast",
+    "remaining": "slow",
+    "addedTaskReturnedBeforeSlow": true,
+    "pidReuseRefused": true
+  },
+  "liveHostControl": {
+    "fastExecSessionId": 8805,
+    "slowExecSessionId": 62118,
+    "addedExecSessionId": 92410,
+    "firstCompleted": "fixture-fast-host",
+    "firstActive": "fixture-slow-host",
+    "secondCompleted": "fixture-added-host",
+    "secondActive": "fixture-slow-host",
+    "completedSessionOutputsRetrieved": true
+  },
+  "prototype": "archive/completion-waiter-prototype-20261030",
+  "limits": "No agent deadline or model polling; use all active processes; retrieve final stdout only for completed sessions."
+}
