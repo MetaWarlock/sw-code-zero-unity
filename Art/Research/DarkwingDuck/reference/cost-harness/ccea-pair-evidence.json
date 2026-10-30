@@ -78,14 +78,18 @@
   "results": {
     "fixture": {
       "verdict": "PASS",
-      "controls": 287,
+      "controls": 300,
       "failed": 0,
       "finalGuardValues": 256,
-      "carrySetCases": 0,
+      "carrySetCases": 9,
+      "fullCallCarrySetCases": 4,
+      "actualSideCarrySetCases": 2,
+      "directPairF644Cases": 0,
       "downstreamCases": 10,
-      "canonical": {"path": "Art/Tools/DarkwingResearch/cost/fixtures/ccea_actor_pair.json", "sha256": "6550048268bc4d8a5b3398c212405ed5f20665555d6974ce1a94d6c2d0e4cac3"},
-      "reproduction": {"path": "Art/Temp/ZERO-65/ccea_actor_pair_repro.json", "sha256": "6550048268bc4d8a5b3398c212405ed5f20665555d6974ce1a94d6c2d0e4cac3", "byteEqualToCanonical": true},
-      "log": {"path": "Art/Temp/ZERO-65/ccea_actor_pair_final_verified.log", "sha256": "55939f9cd15b756e4fdd9eff22260d9eaa11f83573ac5b05a687aea1f37a4eeb"},
+      "canonical": {"path": "Art/Tools/DarkwingResearch/cost/fixtures/ccea_actor_pair.json", "sha256": "0ae03c4f6a53d2f161512c069dea5a83484a9d7f87107c5d5460697b11844dc7"},
+      "reproduction": {"path": "Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.json", "sha256": "0ae03c4f6a53d2f161512c069dea5a83484a9d7f87107c5d5460697b11844dc7", "byteEqualToCanonical": true},
+      "log": {"path": "Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.log", "sha256": "a6a24726d0658d33cc096c83ff9414fe5e7c7b92c48f26a07cd0db57a4aec186"},
+      "sha256Basis": "Windows working-tree bytes (CRLF) written by the tool; git blob is LF-normalized (autocrlf=input).",
       "cycleBasis": {"rightNoFlipClamp": 1027, "rightNoFlipUnclamped": 1025, "leftNoFlipClamp": 1049, "leftNoFlipUnclampedOrEqual": 1047, "rightFlipClamp": 1069, "leftFlipClamp": 1067}
     },
     "route": {
@@ -119,5 +123,19 @@
     "nativeImplementation": "NOT RUN (out of scope)",
     "editorSuiteStandalonePlaytest": "NOT RUN",
     "zero12OrGoal12Closed": false
+  },
+  "review": {
+    "task": "ZERO-69",
+    "reviewer": {"name": "Пельмень Claude", "email": "pel.claude@beholder.learn.su", "personUuid": "a48b2e74-4bbb-4bd8-89d9-9a1409fb35bd", "identityCheck": "own Beholder MCP get_user_profile + list_employees", "usageLimit": "own Claude OAuth usage API, five_hour: 24% remaining before review"},
+    "head": "9ad7a90a475835bd0a16e3fe0a90b386f0b7851d", "main": "503bff8", "ancestry": "PASS",
+    "verdict": "PASS (scoped: synthetic bank-7 instruction fixtures; not continuous route, not native actor-contact support)",
+    "romListing": "ROM bytes F642..F649, F724..F783, F7DE..F7DF match disasm/flat_bank7.txt; FC09[0..3]=22,12,18,26, FBE9[0..3]=22,12,18,22; F20B/F25F JSR F612 followed by F20E/F262 BCC.",
+    "fixtureRepro": {"path": "Art/Temp/ZERO-69/ccea_actor_pair_claude.json", "sha256": "0ae03c4f6a53d2f161512c069dea5a83484a9d7f87107c5d5460697b11844dc7", "byteEqualToCanonical": true, "summary": "300/300 PASS, full-call carry 4, actual side carry 2, direct F644 0"},
+    "independentNegatives": {"script": {"path": "Art/Temp/ZERO-69/scripts/independent_negatives.py", "sha256": "61f41ab7e21f069c0e75c7198f7367f9d9a34e320e760791cd3e1e2d49e4088f"}, "json": {"path": "Art/Temp/ZERO-69/independent_negatives.json", "sha256": "edd6d298dd0684a932596f24911fa118cc79f0f9d67652f19372b25893524f52"}, "summary": "11/11 PASS: slot15 and slot3 hits (loop continuation), size class 2 dX18/19 dY17/18, class 0 dX22/23, slot1 not scanned, mutant F744->F74C loses carry, mutant F642 BMI->BPL reaches F644 SEC"},
+    "regressionsReused": "Art/Temp/ZERO-65/fullreturn JSON/log and six mutant logs hash-equal to this evidence; not re-run without reason.",
+    "historyPreserved": "784c8ae fixture blob afd53786 == Art/Temp/ZERO-65/ccea_actor_pair_784c8ae.json (287 controls, CRLF sha 65500482...); snapshot 873f756f... recorded in Art/Temp/ZERO-65-preserve/snapshot.log.",
+    "correctionsMade": ["results.fixture still described the retracted 784c8ae fixture (287 controls, carry 0, sha 65500482..., ZERO-65 root repro path); replaced with the corrected 300-control fixture."],
+    "residualNotes": ["actual F200/F254 cases record stop_pc 'CA43' as a literal and derive carry from F210/F264 entry; completion is still enforced by exact CAFC cycles/slice/post-X, so no verdict change.", "Negative scan cases report only the first rejecting PC (slot 2); slots 3..15 are disabled by the fixture."],
+    "notClosed": "ZERO-65, ZERO-69 and goal 12 are not closed by the reviewer."
   }
 }
