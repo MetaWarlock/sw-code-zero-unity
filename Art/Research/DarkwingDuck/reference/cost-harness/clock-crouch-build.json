@@ -1,0 +1,2007 @@
+{
+  "status": "completed",
+  "buildId": "build_9e53ed926784",
+  "result": "Succeeded",
+  "platform": "StandaloneWindows64",
+  "outputPath": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck.exe",
+  "totalSizeBytes": 188623941,
+  "buildTimeMs": 33230,
+  "buildStartedAt": "2026-10-30T08:16:31.1740209Z",
+  "buildEndedAt": "2026-10-30T08:17:04.4042605Z",
+  "totalWarnings": 6,
+  "totalErrors": 0,
+  "files": [
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/globalgamemanagers",
+      "role": "globalgamemanagers",
+      "sizeBytes": 128996
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/globalgamemanagers.assets",
+      "role": "assets",
+      "sizeBytes": 1011684
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/globalgamemanagers.assets.resS",
+      "role": "resS",
+      "sizeBytes": 3094752
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/level0",
+      "role": "level0",
+      "sizeBytes": 2892
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/resources.assets",
+      "role": "assets",
+      "sizeBytes": 3736
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Resources/unity_builtin_extra",
+      "role": "unity_builtin_extra",
+      "sizeBytes": 527988
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/RuntimeInitializeOnLoads.json",
+      "role": "GlobalGameManagers",
+      "sizeBytes": 7036
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/ScriptingAssemblies.json",
+      "role": "json",
+      "sizeBytes": 5658
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/sharedassets0.assets",
+      "role": "assets",
+      "sizeBytes": 341312
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/sharedassets0.assets.resS",
+      "role": "resS",
+      "sizeBytes": 524288
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/boot.config",
+      "role": "BootConfig",
+      "sizeBytes": 464
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Plugins/x86_64/libonigwrap.dll",
+      "role": "dll",
+      "sizeBytes": 551336
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Darkwing.Audio.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 30720
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Darkwing.Core.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 367616
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Darkwing.UnityApp.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 14848
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Mono.Security.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 241152
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/mscorlib.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 4632064
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/netstandard.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 90112
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Newtonsoft.Json.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 691712
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Buffers.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 4608
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Collections.Immutable.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 252680
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.ComponentModel.Composition.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 257024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Configuration.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 124928
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Core.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 1113088
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Data.DataSetExtensions.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 29696
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Data.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 2125312
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 2641920
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Drawing.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 489984
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.EnterpriseServices.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 44544
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.IO.Compression.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 114688
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.IO.Compression.FileSystem.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 18432
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Memory.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 4608
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Net.Http.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 122880
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Numerics.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 119296
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Reflection.Metadata.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 487584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Runtime.CompilerServices.Unsafe.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 19256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Runtime.Serialization.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 934400
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Security.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 320000
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.ServiceModel.Internals.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 215040
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Text.Encoding.CodePages.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 5120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Threading.Tasks.Extensions.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 5120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Transactions.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 35328
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Xml.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 3160064
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/System.Xml.Linq.dll",
+      "role": "DependentManagedLibrary",
+      "sizeBytes": 136704
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Animation.Profiler.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 7168
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Animation.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 91648
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Common.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 55808
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.IK.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 38912
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.SpriteShape.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 110592
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Tilemap.Extras.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 37888
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Welcome.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 3584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Burst.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 442880
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.LowLevel.ILSupport.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 4608
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PrivateJobNested.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 4096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 4096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 4608
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InputSystem.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 1132544
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InputSystem.ForUI.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 15360
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.001.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.004.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 4096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.ObjectDispatcher.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 3584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Mathematics.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.PathTracing.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 159744
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Pipeline.Attributes.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 6144
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Pipeline.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 329216
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Pipeline.IlInterpreter.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 350720
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Profiling.Core.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 10240
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipeline.Universal.ShaderLibrary.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 7680
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 1093632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.Shared.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 11264
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.ShaderLibrary.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 3584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.GPUDriven.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 299520
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 3584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.2D.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 221184
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Config.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 4096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 759296
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Shaders.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 3584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Scripting.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 70568
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.SurfaceCache.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 36864
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.TextMeshPro.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 443904
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Timeline.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 121344
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Tutorials.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.UnifiedRayTracing.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 105984
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.Antlr3.Runtime.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 86016
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.Core.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 550400
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.DocCodeExamples.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 6144
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.Flow.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 335872
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.State.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 27136
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AccessibilityModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 49584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AdaptivePerformanceModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 122288
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AIModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 87472
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AMDModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 21936
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AndroidJNIModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 121256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AnimationModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 218024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ARModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 27568
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AssetBundleModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 42928
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AudioModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 142256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.BurstModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 337840
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ClothModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 38320
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ClusterInputModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 30128
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ClusterRendererModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 28592
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ContentLoadModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 56232
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.CoreModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 2030504
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.CrashReportingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 28584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.DirectorModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 42928
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 226224
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.DSPGraphModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 33704
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GameCenterModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 46512
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GIModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 26024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 14256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GridModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 32680
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.HierarchyCoreModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 113584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.HierarchyModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 115120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.HotReloadModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 26024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.IdentifiersModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 16816
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ImageConversionModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 34216
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.IMGUIModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 191920
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InputForUIModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 56744
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InputLegacyModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 42928
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InputModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 32688
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InsightsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 15792
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.JSONSerializeModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 29096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.LocalizationModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 29096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ManagedKernelModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 14256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.MarshallingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 100784
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.MathematicsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 740776
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.MultiplayerModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 18344
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.NVIDIAModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 41384
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ParticleSystemModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 169392
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PerformanceReportingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 27048
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.Physics2DModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 222640
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 14256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PhysicsCore2DModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 482728
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PhysicsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 181680
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PropertiesModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 124848
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.RenderAs2DModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 27568
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 26024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ScreenCaptureModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 28080
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ScriptingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 65968
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 26024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SpriteMaskModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 30632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SpriteShapeModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 34216
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.StreamingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 28080
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SubstanceModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 31152
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SubsystemsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 42920
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TerrainModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 132528
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TerrainPhysicsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 27568
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TetgenModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 26032
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 86440
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TextCoreTextEngineModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 314792
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TextRenderingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 39336
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TilemapModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 75688
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TimelineFoundationModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 167336
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TLSModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 34224
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.U2DRuntimeModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 73648
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UI.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 269824
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UIElementsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 2545064
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UIModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 57256
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UmbraModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 26024
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 36776
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 61872
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityConnectModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 29616
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityConsentModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 16296
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityCurlModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 28080
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 30632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAudioModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 30632
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 81320
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestTextureModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 29616
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestWWWModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 35240
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VectorGraphicsModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 231336
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VehiclesModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 33200
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VFXModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 82352
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VideoModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 48552
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VirtualTexturingModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 43944
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.WindModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 28584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.XRModule.dll",
+      "role": "ManagedEngineAPI",
+      "sizeBytes": 96168
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityPipeline.Microsoft.CodeAnalysis.CSharp.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 5758464
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityPipeline.Microsoft.CodeAnalysis.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 2589696
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityPipeline.System.Collections.Immutable.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 243712
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityPipeline.System.Reflection.Metadata.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 517120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityPipeline.System.Runtime.CompilerServices.Unsafe.dll",
+      "role": "ManagedLibrary",
+      "sizeBytes": 6656
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Darkwing.Audio.pdb",
+      "role": "pdb",
+      "sizeBytes": 24648
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Darkwing.Core.pdb",
+      "role": "pdb",
+      "sizeBytes": 171164
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Darkwing.UnityApp.pdb",
+      "role": "pdb",
+      "sizeBytes": 19800
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Newtonsoft.Json.pdb",
+      "role": "pdb",
+      "sizeBytes": 2174464
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Animation.Profiler.pdb",
+      "role": "pdb",
+      "sizeBytes": 17628
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Animation.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 52232
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Common.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 44012
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.IK.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 32416
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.SpriteShape.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 66348
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Tilemap.Extras.pdb",
+      "role": "pdb",
+      "sizeBytes": 29416
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.2D.Welcome.pdb",
+      "role": "pdb",
+      "sizeBytes": 17228
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Burst.pdb",
+      "role": "pdb",
+      "sizeBytes": 17156
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.pdb",
+      "role": "pdb",
+      "sizeBytes": 233520
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.pdb",
+      "role": "pdb",
+      "sizeBytes": 17440
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PrivateJobNested.pdb",
+      "role": "pdb",
+      "sizeBytes": 17424
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.ProtectedJobNested.pdb",
+      "role": "pdb",
+      "sizeBytes": 17428
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.pdb",
+      "role": "pdb",
+      "sizeBytes": 17548
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InputSystem.ForUI.pdb",
+      "role": "pdb",
+      "sizeBytes": 20748
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InputSystem.pdb",
+      "role": "pdb",
+      "sizeBytes": 429236
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.001.pdb",
+      "role": "pdb",
+      "sizeBytes": 17864
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.004.pdb",
+      "role": "pdb",
+      "sizeBytes": 17436
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.ObjectDispatcher.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 17784
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.pdb",
+      "role": "pdb",
+      "sizeBytes": 17268
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Mathematics.pdb",
+      "role": "pdb",
+      "sizeBytes": 17168
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.PathTracing.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 67332
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Pipeline.Attributes.pdb",
+      "role": "pdb",
+      "sizeBytes": 18120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Pipeline.IlInterpreter.pdb",
+      "role": "pdb",
+      "sizeBytes": 150784
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Pipeline.pdb",
+      "role": "pdb",
+      "sizeBytes": 109792
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Profiling.Core.pdb",
+      "role": "pdb",
+      "sizeBytes": 20000
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipeline.Universal.ShaderLibrary.pdb",
+      "role": "pdb",
+      "sizeBytes": 17500
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 325104
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.Runtime.Shared.pdb",
+      "role": "pdb",
+      "sizeBytes": 19692
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Core.ShaderLibrary.pdb",
+      "role": "pdb",
+      "sizeBytes": 17196
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.GPUDriven.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 118148
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.pdb",
+      "role": "pdb",
+      "sizeBytes": 17196
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.2D.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 111284
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Config.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 17280
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 255436
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.RenderPipelines.Universal.Shaders.pdb",
+      "role": "pdb",
+      "sizeBytes": 17184
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Scripting.pdb",
+      "role": "pdb",
+      "sizeBytes": 29032
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.SurfaceCache.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 27016
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.TextMeshPro.pdb",
+      "role": "pdb",
+      "sizeBytes": 184340
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Timeline.pdb",
+      "role": "pdb",
+      "sizeBytes": 67588
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.Tutorials.pdb",
+      "role": "pdb",
+      "sizeBytes": 18028
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.UnifiedRayTracing.Runtime.pdb",
+      "role": "pdb",
+      "sizeBytes": 52188
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.Core.pdb",
+      "role": "pdb",
+      "sizeBytes": 247288
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.DocCodeExamples.pdb",
+      "role": "pdb",
+      "sizeBytes": 17304
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.Flow.pdb",
+      "role": "pdb",
+      "sizeBytes": 168004
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/Unity.VisualScripting.State.pdb",
+      "role": "pdb",
+      "sizeBytes": 26872
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AccessibilityModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 20772
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AdaptivePerformanceModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 48720
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AIModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 23060
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AMDModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 12376
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AndroidJNIModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 40944
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AnimationModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 49452
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ARModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10812
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AssetBundleModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 13948
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.AudioModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 31032
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.BurstModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 170492
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ClothModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11392
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ClusterInputModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10260
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ClusterRendererModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10728
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ContentLoadModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 18096
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.CoreModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 499932
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.CrashReportingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10892
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.DirectorModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 13808
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.DSPGraphModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10472
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GameCenterModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 16572
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GIModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10132
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GraphicsStateCollectionSerializerModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10164
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.GridModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10912
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.HierarchyCoreModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 35260
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.HierarchyModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 46656
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.HotReloadModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10132
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.IdentifiersModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10564
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ImageConversionModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11344
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.IMGUIModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 65780
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InputForUIModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 24260
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InputLegacyModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 14284
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InputModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 13440
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.InsightsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10924
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.JSONSerializeModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10620
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.LocalizationModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10560
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ManagedKernelModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10164
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.MarshallingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 17104
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.MathematicsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 324472
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.MultiplayerModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11320
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.NVIDIAModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 15572
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ParticleSystemModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 36116
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.pdb",
+      "role": "pdb",
+      "sizeBytes": 13180
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PerformanceReportingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10380
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.Physics2DModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 43444
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PhysicsBackendPhysXModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10156
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PhysicsCore2DModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 115088
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PhysicsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 39968
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.PropertiesModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 51876
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.RenderAs2DModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10192
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10200
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ScreenCaptureModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10664
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ScriptingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 24592
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.ShaderVariantAnalyticsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10264
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SpriteMaskModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10480
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SpriteShapeModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11528
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.StreamingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10220
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SubstanceModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 12088
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.SubsystemsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 16104
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TerrainModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 29136
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TerrainPhysicsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10580
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TetgenModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10132
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TextCoreFontEngineModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 26484
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TextCoreTextEngineModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 117020
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TextRenderingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 14660
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TilemapModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 22984
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TimelineFoundationModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 81040
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.TLSModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10320
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.U2DRuntimeModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 34080
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UI.pdb",
+      "role": "pdb",
+      "sizeBytes": 139744
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UIElementsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 1009504
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UIModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 15704
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UmbraModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10132
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsCommonModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 13908
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityAnalyticsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 18588
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityConnectModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10700
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityConsentModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10704
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityCurlModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10528
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAssetBundleModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11420
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestAudioModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11472
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 27880
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestTextureModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11476
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.UnityWebRequestWWWModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 13112
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VectorGraphicsModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 104812
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VehiclesModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 11200
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VFXModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 18680
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VideoModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 14416
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.VirtualTexturingModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 13288
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.WindModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 10276
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Managed/UnityEngine.XRModule.pdb",
+      "role": "pdb",
+      "sizeBytes": 23548
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Plugins/x86_64/lib_burst_generated.dll",
+      "role": "dll",
+      "sizeBytes": 806912
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Plugins/x86_64/lib_burst_generated.pdb",
+      "role": "pdb",
+      "sizeBytes": 4489216
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_BackUpThisFolder_ButDontShipItWithYourGame/x86_64/lib_burst_generated.txt",
+      "role": "txt",
+      "sizeBytes": 280392
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/app.info",
+      "role": "info",
+      "sizeBytes": 33
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck_Data/Resources/unity default resources",
+      "role": "unity default resources",
+      "sizeBytes": 5919584
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck.exe",
+      "role": "exe",
+      "sizeBytes": 667136
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/dstorage.dll",
+      "role": "dll",
+      "sizeBytes": 206904
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/dstoragecore.dll",
+      "role": "dll",
+      "sizeBytes": 1482784
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/EmbedRuntime/mono-2.0-bdwgc.dll",
+      "role": "dll",
+      "sizeBytes": 7834536
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/EmbedRuntime/MonoPosixHelper.dll",
+      "role": "dll",
+      "sizeBytes": 611240
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/2.0/Browsers/Compat.browser",
+      "role": "browser",
+      "sizeBytes": 1605
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/2.0/DefaultWsdlHelpGenerator.aspx",
+      "role": "aspx",
+      "sizeBytes": 60575
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/2.0/machine.config",
+      "role": "config",
+      "sizeBytes": 29066
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/2.0/settings.map",
+      "role": "map",
+      "sizeBytes": 2622
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/2.0/web.config",
+      "role": "config",
+      "sizeBytes": 11635
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.0/Browsers/Compat.browser",
+      "role": "browser",
+      "sizeBytes": 1605
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.0/DefaultWsdlHelpGenerator.aspx",
+      "role": "aspx",
+      "sizeBytes": 60575
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.0/machine.config",
+      "role": "config",
+      "sizeBytes": 33598
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.0/settings.map",
+      "role": "map",
+      "sizeBytes": 2622
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.0/web.config",
+      "role": "config",
+      "sizeBytes": 18802
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.5/Browsers/Compat.browser",
+      "role": "browser",
+      "sizeBytes": 1605
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.5/DefaultWsdlHelpGenerator.aspx",
+      "role": "aspx",
+      "sizeBytes": 60575
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.5/machine.config",
+      "role": "config",
+      "sizeBytes": 34056
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.5/settings.map",
+      "role": "map",
+      "sizeBytes": 2622
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/4.5/web.config",
+      "role": "config",
+      "sizeBytes": 18811
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/browscap.ini",
+      "role": "ini",
+      "sizeBytes": 311984
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/config",
+      "role": "config",
+      "sizeBytes": 3815
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/MonoBleedingEdge/etc/mono/mconfig/config.xml",
+      "role": "xml",
+      "sizeBytes": 25817
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/UnityCrashHandler64.exe",
+      "role": "exe",
+      "sizeBytes": 1843120
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/UnityPlayer.dll",
+      "role": "dll",
+      "sizeBytes": 91430824
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/WinPixEventRuntime.dll",
+      "role": "dll",
+      "sizeBytes": 58368
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/D3D12/D3D12Core.dll",
+      "role": "dll",
+      "sizeBytes": 4725304
+    },
+    {
+      "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/D3D12/d3d12SDKLayers.dll",
+      "role": "dll",
+      "sizeBytes": 4930104
+    }
+  ],
+  "packedAssets": [],
+  "buildSteps": [
+    {
+      "name": "Build player",
+      "durationMs": 33219,
+      "depth": 0,
+      "messages": []
+    },
+    {
+      "name": "Call PrepareForBuild callbacks",
+      "durationMs": 8,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Call internal build started callbacks",
+      "durationMs": 0,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Preprocess Player",
+      "durationMs": 1051,
+      "depth": 1,
+      "messages": [
+        {
+          "type": "Log",
+          "content": "1 URP assets included in build\r\n- UniversalRP - Assets/Settings/UniversalRP.asset\r\n\t - Renderer2D - Assets/Settings/Renderer2D.asset - UnityEngine.Rendering.Universal.Renderer2DData\r\n"
+        },
+        {
+          "type": "Log",
+          "content": "[TestRunBuilder] Creating new file 'Assets/Resources/PerformanceTestRunInfo.json' (3477 bytes)"
+        },
+        {
+          "type": "Log",
+          "content": "[TestRunBuilder] Creating new file 'Assets/Resources/PerformanceTestRunSettings.json' (23 bytes)"
+        },
+        {
+          "type": "Warning",
+          "content": "Pipeline: No RuntimePipelineConfig asset found (Project Settings > Pipeline > Runtime). Pipeline will be disabled in Player builds."
+        }
+      ]
+    },
+    {
+      "name": "Save scenes before build",
+      "durationMs": 4,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Prepare For Build",
+      "durationMs": 23,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "ProducePlayerScriptAssemblies",
+      "durationMs": 16087,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Prebuild Cleanup and Recompile",
+      "durationMs": 5968,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Compile scripts",
+      "durationMs": 5840,
+      "depth": 3,
+      "messages": [
+        {
+          "type": "Warning",
+          "content": "Art\\Unity\\CodeZero\\Darkwing\\Core\\ResetResidentTiming.cs(30,26): warning CS0219: The variable 'masterStack' is assigned but its value is never used"
+        },
+        {
+          "type": "Warning",
+          "content": "Art\\Unity\\CodeZero\\Darkwing\\Core\\EnemyBehaviors.cs(1760,21): warning CS1717: Assignment made to same variable; did you mean to assign something else?"
+        },
+        {
+          "type": "Warning",
+          "content": "Art\\Unity\\CodeZero\\Darkwing\\Core\\EnemyBehaviors.cs(1760,38): warning CS1717: Assignment made to same variable; did you mean to assign something else?"
+        },
+        {
+          "type": "Warning",
+          "content": "Art\\Unity\\CodeZero\\Darkwing\\Core\\EnemyBehaviors.cs(1761,21): warning CS1717: Assignment made to same variable; did you mean to assign something else?"
+        },
+        {
+          "type": "Warning",
+          "content": "Art\\Unity\\CodeZero\\Darkwing\\Core\\DarkwingGame.MissionClock.cs(20,22): warning CS0414: The field 'DarkwingGame._clockTail' is assigned but its value is never used"
+        }
+      ]
+    },
+    {
+      "name": "Generate and validate platform script types",
+      "durationMs": 44,
+      "depth": 3,
+      "messages": []
+    },
+    {
+      "name": "Verify Build setup",
+      "durationMs": 3213,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "GetUnityAssemblies",
+      "durationMs": 2851,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "GetPlayerAssemblies",
+      "durationMs": 29,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Check old data build",
+      "durationMs": 310,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Set up scripts only build",
+      "durationMs": 0,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Prepare assets for target platform",
+      "durationMs": 4,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Prepare splash screen",
+      "durationMs": 11,
+      "depth": 1,
+      "messages": [
+        {
+          "type": "Log",
+          "content": "Including Unity Splash Screen logo because 'Show Unity Logo' is enabled."
+        }
+      ]
+    },
+    {
+      "name": "Run script only build",
+      "durationMs": 39,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Build scripts DLLs",
+      "durationMs": 59,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "GetSystemAssemblies",
+      "durationMs": 2,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Postprocess built player",
+      "durationMs": 11922,
+      "depth": 1,
+      "messages": []
+    },
+    {
+      "name": "Setup incremental player build",
+      "durationMs": 179,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Incremental player build",
+      "durationMs": 11673,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Report output files",
+      "durationMs": 53,
+      "depth": 2,
+      "messages": []
+    },
+    {
+      "name": "Call Post-Process callbacks",
+      "durationMs": 226,
+      "depth": 1,
+      "messages": []
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    {
+      "message": "Pipeline: No RuntimePipelineConfig asset found (Project Settings > Pipeline > Runtime). Pipeline will be disabled in Player builds."
+    },
+    {
+      "message": "warning CS0219: The variable 'masterStack' is assigned but its value is never used",
+      "file": "Art\\Unity\\CodeZero\\Darkwing\\Core\\ResetResidentTiming.cs"
+    },
+    {
+      "message": "warning CS1717: Assignment made to same variable; did you mean to assign something else?",
+      "file": "Art\\Unity\\CodeZero\\Darkwing\\Core\\EnemyBehaviors.cs"
+    },
+    {
+      "message": "warning CS1717: Assignment made to same variable; did you mean to assign something else?",
+      "file": "Art\\Unity\\CodeZero\\Darkwing\\Core\\EnemyBehaviors.cs"
+    },
+    {
+      "message": "warning CS1717: Assignment made to same variable; did you mean to assign something else?",
+      "file": "Art\\Unity\\CodeZero\\Darkwing\\Core\\EnemyBehaviors.cs"
+    },
+    {
+      "message": "warning CS0414: The field 'DarkwingGame._clockTail' is assigned but its value is never used",
+      "file": "Art\\Unity\\CodeZero\\Darkwing\\Core\\DarkwingGame.MissionClock.cs"
+    }
+  ]
+}

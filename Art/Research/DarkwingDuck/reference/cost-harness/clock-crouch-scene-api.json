@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "command": "command",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var l=UnityEngine.Object.FindFirstObjectByType<Darkwing.UnityApp.DarkwingLauncher>(); var fs=System.Array.FindAll(l.GetType().GetFields(),f=>f.FieldType==typeof(UnityEngine.TextAsset)); return \"scene=\"+UnityEngine.SceneManagement.SceneManager.GetActiveScene().path+\" dirty=\"+UnityEngine.SceneManagement.SceneManager.GetActiveScene().isDirty+\"\\nsceneGuid=\"+UnityEditor.AssetDatabase.AssetPathToGUID(UnityEngine.SceneManagement.SceneManager.GetActiveScene().path)+\"\\nUseFlow=\"+l.UseFlow+\" WorldId=\"+l.WorldId+\"\\nbuildScenes=\"+string.Join(\";\",System.Array.ConvertAll(UnityEditor.EditorBuildSettings.scenes,s=>s.path+\" enabled=\"+s.enabled+\" guid=\"+s.guid))+\"\\n\"+string.Join(\"\\n\",System.Array.ConvertAll(fs,f=>{var a=(UnityEngine.TextAsset)f.GetValue(l);var p=UnityEditor.AssetDatabase.GetAssetPath(a);return f.Name+\"=\"+p+\" guid=\"+UnityEditor.AssetDatabase.AssetPathToGUID(p);}));"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": "scene=Packages/su.learn.codezero/Scenes/DarkwingMain.unity dirty=False\nsceneGuid=fb2d4d7901ed4af4f833b8f9f03ee7e1\nUseFlow=True WorldId=0\nbuildScenes=Packages/su.learn.codezero/Scenes/DarkwingMain.unity enabled=True guid=fb2d4d7901ed4af4f833b8f9f03ee7e1;Assets/Scenes/SampleScene.unity enabled=False guid=8c9cfa26abfee488c85f1582747f6a02\nChrData=Packages/su.learn.codezero/Darkwing/Data/chr_full.bytes guid=a0d24ad9ac6fc504cb5d5d5ce9dcd509\nLevelSetsData=Packages/su.learn.codezero/Darkwing/Data/levelsets.bytes guid=54198d65a282fca4abd3d65aa524ba44\nScreensData=Packages/su.learn.codezero/Darkwing/Data/screens.bytes guid=b45450aefd3115b4a923a49d10bd59b8\nLevelsData=Packages/su.learn.codezero/Darkwing/Data/levels.bytes guid=0be18398a493b4d408a32602b6a19066\nAnimsData=Packages/su.learn.codezero/Darkwing/Data/anims.bytes guid=0b22b036d7bd2f34c80b391ec06ccfda\nBank0Data=Packages/su.learn.codezero/Darkwing/Data/prg_bank0.bytes guid=ccaaf9b16d926f345a163b9cad94a09d\nBank1Data=Packages/su.learn.codezero/Darkwing/Data/prg_bank1.bytes guid=c89014e354edd4442bd467fa3db455b0\nBank7Data=Packages/su.learn.codezero/Darkwing/Data/world_bank7.bytes guid=544c9c9f21c92704c9e6f77f0846871f\nBank5Data=Packages/su.learn.codezero/Darkwing/Data/prg_bank5.bytes guid=bbe378033145aea479d6f5f778924d82\nBank3Data=Packages/su.learn.codezero/Darkwing/Data/audio_bank3.bytes guid=a70eaf87f4e7f874187d994c77e5744f\nBank6Data=Packages/su.learn.codezero/Darkwing/Data/prg_bank6.bytes guid=61f57bd9af14eb444a9e02d6051ae1d9\nBank2Data=Packages/su.learn.codezero/Darkwing/Data/prg_bank2.bytes guid=a91fe0e23df8c064cb3bc2bf2ba4305e\nBank4Data=Packages/su.learn.codezero/Darkwing/Data/prg_bank4.bytes guid=b5c122c2eb417654c9d1f0001bfd4857\nObjectTypesData=Packages/su.learn.codezero/Darkwing/Data/object_types.bytes guid=7c838b6c6e86b9e49a3064c1344cd950\nMapNametableData=Packages/su.learn.codezero/Darkwing/Data/map_nametable.bytes guid=308fd2761f76e834b9830f3812440664\nMapPaletteData=Packages/su.learn.codezero/Darkwing/Data/map_palette.bytes guid=b9e66c8e14421aa4a9334830e6d1741b"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck"
+    }
+  },
+  "errors": [],
+  "warnings": []
+}
