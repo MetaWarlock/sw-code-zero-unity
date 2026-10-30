@@ -4,7 +4,7 @@ Walks the original fixed bank 7 instructions from CAFC to the RTS that returns t
 reading only the pre-pass original RAM record of the poll and bank-7 ROM bytes, and sums
 NMOS 6502 cycles (page-cross reads, taken/crossing branches). Any access outside RAM
 $0000-$07FF or bank 7 $C000-$FFFF, or an unlisted opcode, stops the poll as UNSUPPORTED:
-the walk is restricted to the reached state-09 code and is not a general emulator.
+the walk is restricted to the reached dispatch slices and is not a general emulator.
 
 The measured original price (CA59 - CA40 - 18, valid when $65 >= 0 and $30 == 0) is read
 only AFTER the walk, for comparison. Nothing here is used by the game runtime.
@@ -13,6 +13,7 @@ usage: state09_source_price.py ROM CITY_PHASES_CSV ORIGINAL_BUFFERS FIRST LAST [
        state09_source_price.py --selftest ROM ORIGINAL_BUFFERS
        state09_source_price.py --dump-cases ROM ORIGINAL_BUFFERS OUT_JSON [CAP] [SEED] [POOL]
        state09_source_price.py --ground00 ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
+       state09_source_price.py --airborne0b ROM CITY_PHASES_CSV ORIGINAL_BUFFERS INPUT_BIN FIRST LAST [--json OUT]
 
 --dump-cases (ZERO-47) writes the fixture the C# controls read: expected prices taken from
 walk() over bank-7, the class/coordinates each executed $EBE8 returned, and the branch labels
@@ -733,7 +734,191 @@ def ground00(rom_path, phases_path, buf_path, input_path, first, last, out):
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------------------
+# ZERO-56 --airborne0b: the reached D626 slice, especially D77C right steering.
+# The CLI adds the current recorded input exactly as --ground00 does. Route rows
+# compare against CA59-CA40-18 only after walk(); synthetic controls never supply
+# an original price and are labelled separately from the measured route.
+# ---------------------------------------------------------------------------
+
+AIRBORNE_POST_FIELDS = (0x50, 0x52, 0x400, 0x4D0, 0x470, 0x4F0, 0x500,
+                        0x510, 0x520, 0x460, 0x550, 0x560, 0xDA)
+AIRBORNE_PATH = (0xD626, 0xD6FB, 0xD756, 0xD76E, 0xD774, 0xD77C, 0xD780,
+                 0xD787, 0xD78B, 0xD795, 0xD79A, 0xD79E, 0xD7B6,
+                 0xF200, 0xF254, 0xF4FD, 0xF51B, 0xF612, 0xF724,
+                 0xED85, 0xED9D, 0xF850, 0xF85C, 0xF866, 0xCE39)
+AIRBORNE_VARIANTS = (
+    ('idle', 0x00, 0x00, {}, 'D79A idle'),
+    ('right', 0x01, 0x00, {}, 'D77C right'),
+    ('left', 0x02, 0x00, {}, 'D795 left'),
+    ('right+left uses right', 0x03, 0x00, {}, 'D77C right'),
+    ('checkpoint veto flags50', 0x01, 0x00, {0x6D: 0x0E, 0x400: 0x50}, 'D77C veto'),
+    ('checkpoint veto flags10', 0x01, 0x00, {0x6D: 0x0E, 0x400: 0x10}, 'D77C veto'),
+    ('flags50 without checkpoint0E', 0x01, 0x00, {0x400: 0x50}, 'D77C right'),
+    ('checkpoint0E without veto flags', 0x01, 0x00, {0x6D: 0x0E}, 'D77C right'),
+)
+
+
+def airborne0b_walk(ram, bank7):
+    events = []
+    cpu = walk(bytes(ram), bank7, events)
+    pcs = [pc for pc, _ in cpu.trace]
+    if 0xD6FB in pcs:
+        branch = 'D6FB land'
+    elif 0xD77C in pcs:
+        branch = 'D77C veto' if 0xF200 not in pcs else 'D77C right'
+    elif 0xD795 in pcs:
+        branch = 'D795 left'
+    else:
+        branch = 'D79A idle'
+    result = {'branch': branch,
+              'path': ['%04X' % pc for pc in pcs if pc in AIRBORNE_PATH],
+              'probes': events}
+    if 0xD76E not in pcs:
+        return cpu, result
+    i = pcs.index(0xD76E)
+    result['pre_d76e'] = sum(c for _, c in cpu.trace[:i])
+    if 0xD79A in pcs:
+        j = pcs.index(0xD79A)
+        result['direction_block'] = sum(c for _, c in cpu.trace[i:j])
+        result['shot_tail'] = sum(c for _, c in cpu.trace[j:])
+        horizontal_pc = 0xF200 if 0xF200 in pcs else (0xF254 if 0xF254 in pcs else None)
+        if horizontal_pc is not None:
+            k = pcs.index(horizontal_pc)
+            end = j - 1 if horizontal_pc == 0xF200 and pcs[j - 1] == 0xD792 else j
+            horizontal_trace = cpu.trace[k:end]
+            result['horizontal'] = sum(c for _, c in horizontal_trace)
+            integrate_range = ((0xF4FD, 0xF51A) if horizontal_pc == 0xF200 else (0xF51B, 0xF538))
+            integrate = sum(c for pc, c in horizontal_trace if integrate_range[0] <= pc <= integrate_range[1])
+            pair = sum(c for pc, c in horizontal_trace
+                       if 0xF612 <= pc <= 0xF647 or 0xF699 <= pc <= 0xF74D)
+            probe = sum(c for pc, c in horizontal_trace
+                        if 0xEB52 <= pc <= 0xEBC8 or 0xEBE8 <= pc <= 0xECA6)
+            result['horizontal_parts'] = {'integrate': integrate, 'pair': pair, 'probe': probe,
+                                          'other': result['horizontal'] - integrate - pair - probe}
+    else:
+        result['direction_block'] = sum(c for _, c in cpu.trace[i:])
+        result['shot_tail'] = 0
+    return cpu, result
+
+
+def airborne0b(rom_path, phases_path, buf_path, input_path, first, last, out):
+    rom = open(rom_path, 'rb').read()
+    if hashlib.sha256(rom).hexdigest() != ROM_SHA:
+        sys.exit('ROM SHA-256 mismatch')
+    bank7 = rom[16 + 16384 * (rom[4] - 1):16 + 16384 * rom[4]]
+    inp = open(input_path, 'rb').read()
+    if first < 2 or last >= len(inp):
+        sys.exit('range needs a previous input byte and a next RAM record')
+    pts = {}
+    with open(phases_path) as f:
+        next(f)
+        for line in f:
+            p, c, pc = line.rstrip().split(',')
+            p = int(p)
+            if first <= p <= last and pc in ('CA40', 'CA59'):
+                pts.setdefault(p, {}).setdefault(pc, int(c))
+    rows, controls = [], []
+    with open(buf_path, 'rb') as buf:
+        def rec(p):
+            buf.seek((p - 1) * RECORD)
+            r = bytearray(buf.read(2048))
+            if len(r) != 2048:
+                sys.exit('missing record for poll %d' % p)
+            return r
+        for p in range(first, last + 1):
+            ram, post = rec(p), rec(p + 1)
+            if ram[0x50] != 0x0B or not ram[0x4D0] & 0x80:
+                continue
+            held = inp[p - 1]
+            pressed = held & ~inp[p - 2] & 0xFF
+            ram[0x16], ram[0x14] = held, pressed
+            row = {'poll': p, 'held': '%02X' % held, 'pressed': '%02X' % pressed,
+                   'input_equal': post[0x16] == held and post[0x14] == pressed,
+                   'checkpoint': '%02X' % ram[0x6D], 'flags': '%02X' % ram[0x400]}
+            try:
+                cpu, info = airborne0b_walk(ram, bank7)
+            except Unsupported as e:
+                row['status'] = 'UNSUPPORTED %s' % e
+                rows.append(row)
+                continue
+            row.update(source=cpu.cyc, **info)
+            row['post_equal'] = all(cpu.ram[k] == post[k] for k in AIRBORNE_POST_FIELDS)
+            row['post_diff'] = {'%04X' % k: ['%02X' % cpu.ram[k], '%02X' % post[k]]
+                                for k in AIRBORNE_POST_FIELDS if cpu.ram[k] != post[k]}
+            if 0xF850 in [pc for pc, _ in cpu.trace]:
+                row['queue'] = {'owner_pre': audio_of(ram),
+                                'enqueued': 0xF85C in [pc for pc, _ in cpu.trace]}
+            m = pts.get(p, {})
+            if not row['input_equal']:
+                row['status'] = 'INPUT_MISMATCH'
+            elif 'CA40' in m and 'CA59' in m and ram[0x65] < 0x80 and ram[0x30] == 0:
+                row['oracle'] = m['CA59'] - m['CA40'] - 18
+                row['status'] = verdict(cpu.cyc, row['oracle'])
+            else:
+                row['status'] = 'NO_ORACLE'
+            rows.append(row)
+            if info['branch'] == 'D6FB land':
+                r = bytearray(ram)
+                set_audio(r, 'busy')
+                try:
+                    vcpu, vinfo = airborne0b_walk(r, bank7)
+                    busy_pcs = [pc for pc, _ in vcpu.trace]
+                    price = vcpu.cyc
+                    ok = price == cpu.cyc - 15 and 0xF85C not in busy_pcs and 0xF866 in busy_pcs
+                except Unsupported as e:
+                    price, ok = str(e), False
+                controls.append({'poll': p, 'kind': 'synthetic', 'variant': 'landing queue busy',
+                                 'source': price, 'delta': price - cpu.cyc if isinstance(price, int) else None,
+                                 'ok': ok})
+                continue
+            if info['branch'] != 'D77C right':
+                continue
+            for name, h, pr, edits, want in AIRBORNE_VARIANTS:
+                r = bytearray(ram)
+                r[0x16], r[0x14] = h, pr
+                for address, value in edits.items():
+                    r[address] = value
+                try:
+                    vcpu, vinfo = airborne0b_walk(r, bank7)
+                    got, price = vinfo['branch'], vcpu.cyc
+                except Unsupported as e:
+                    got, price = 'UNSUPPORTED', str(e)
+                controls.append({'poll': p, 'kind': 'synthetic', 'variant': name,
+                                 'held': '%02X' % h, 'pressed': '%02X' % pr,
+                                 'branch': got, 'want': want, 'source': price,
+                                 'ok': got == want})
+            controls.append({'poll': p, 'kind': 'comparator',
+                             'variant': 'comparator rejects source+1',
+                             'ok': verdict(cpu.cyc, cpu.cyc + 1) == 'MISMATCH'})
+    for r in rows:
+        print(json.dumps(r, sort_keys=True))
+    for c in controls:
+        print('control', json.dumps(c, sort_keys=True))
+    right = [r['poll'] for r in rows if r.get('branch') == 'D77C right']
+    landing = [r['poll'] for r in rows if r.get('branch') == 'D6FB land']
+    route_ok = bool(rows) and all(r['status'] == 'EXACT' and r['input_equal'] and r['post_equal']
+                                  for r in rows)
+    ok = route_ok and bool(right) and all(c['ok'] for c in controls)
+    summary = {'rows': len(rows), 'right_polls': right, 'landing_polls': landing,
+               'right_prices': [r['source'] for r in rows if r['poll'] in right],
+               'controls': len(controls),
+               'controls_failed': sum(not c['ok'] for c in controls),
+               'route_exact': sum(r['status'] == 'EXACT' for r in rows),
+               'verdict': 'PASS' if ok else 'FAIL'}
+    print('summary', json.dumps(summary, sort_keys=True))
+    if out:
+        with open(out, 'x') as f:
+            json.dump({'rows': rows, 'controls': controls, 'summary': summary}, f, indent=1,
+                      sort_keys=True)
+    return 0 if ok else 1
+
+
 def main(argv):
+    if len(argv) >= 8 and argv[1] == '--airborne0b':
+        # --airborne0b ROM PHASES BUFFERS INPUT FIRST LAST [--json OUT]
+        out = argv[argv.index('--json') + 1] if '--json' in argv else None
+        return airborne0b(argv[2], argv[3], argv[4], argv[5], int(argv[6]), int(argv[7]), out)
     if len(argv) >= 8 and argv[1] == '--ground00':
         # --ground00 ROM PHASES BUFFERS INPUT FIRST LAST [--json OUT]
         out = argv[argv.index('--json') + 1] if '--json' in argv else None
