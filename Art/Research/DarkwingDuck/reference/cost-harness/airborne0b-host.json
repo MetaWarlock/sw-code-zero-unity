@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "task": "ZERO-60",
+  "review": "ZERO-67",
+  "sourceHead": "2a0ed2116b1f84adb56efa572f5c87dc2e82b06b",
+  "runtimeSha256": "bc97f9850e100cc4382edc3fdff6388d78aabd45f70f00b3d5dfdaa4a4a74a89",
+  "editor": {
+    "project": "D:/Art/SW Code Zero Unity",
+    "pid": 312656,
+    "port": 7801,
+    "version": "6000.6.5f1",
+    "recompileErrors": 0
+  },
+  "suite": {
+    "fullJsonEqualsBaseline": true,
+    "baseline": "state09-suite.json",
+    "sha256": "020ccbd953a17fbd007efcb7e0d6b48da5e05936311ea675512b8794a1538974",
+    "resultPassed": 18,
+    "strictPassed": 8,
+    "cases": 24,
+    "errors": 0,
+    "verdict": "FAIL"
+  },
+  "contracts": {
+    "verdict": "FAIL",
+    "entry": "PhysCompare.Mission1Contracts",
+    "error": "Exception: G92: only initial floor probes; no hook/side probe (expected 3, observed 6)\n  at PhysCompare.<G92Exit>g__Check|105_0 (System.Boolean ok, System.String name, PhysCompare+<>c__DisplayClass105_0& ) [0x0002a] in D:\\Art\\SW Code Zero Unity\\Art\\AgentScripts\\PhysCompare.cs:2587 \r\n  at PhysCompare.G92Exit () [0x00168] in D:\\Art\\SW Code Zero Unity\\Art\\AgentScripts\\PhysCompare.cs:2605 \r\n  at PhysCompare.Mission1Contracts () [0x00001] in D:\\Art\\SW Code Zero Unity\\Art\\AgentScripts\\PhysCompare.cs:2376 \r\n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\r\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <c5ae8a4eeb824526b5df2932bc2395e0>:0 ",
+    "expectedMapReads": 3,
+    "actualMapReads": 6,
+    "diagnosticChange": "Only the assertion message now prints observed reads; the condition stays map.Reads == 3",
+    "reproduce": "python Art/Tools/DarkwingResearch/run_check.py --entry PhysCompare.Mission1Contracts --out Art/Temp/ZERO-60-acceptance/NEW-contracts"
+  },
+  "interpretation": {
+    "status": "UNRESOLVED",
+    "hypothesis": "Moving the fresh-B guard allows three timing-helper tile reads before the physical support path reads three more. Additional diagnostic reads have not yet been isolated in the contract. This is not a proved gameplay defect or permission to weaken the test."
+  },
+  "acceptance": "OPEN; no current playable delivered and no new human result claimed"
+}

@@ -1,0 +1,89 @@
+{
+  "task": "ZERO-67",
+  "reviews": "ZERO-60 (runtime ffab543, driver repairs a90be41/b0c2dfc/cb323ef, provenance 4a72591)",
+  "date": "2026-10-30",
+  "reviewer": {
+    "name": "Пельмень Claude",
+    "email": "pel.claude@beholder.learn.su",
+    "personUuid": "a48b2e74-4bbb-4bd8-89d9-9a1409fb35bd",
+    "employee": "6ae2c0d10417e481779bc73c",
+    "confirmedBy": "own Claude Beholder MCP get_user_profile + list_employees",
+    "ownUsageApi": {
+      "endpoint": "own Claude OAuth usage API, five_hour window",
+      "before": {"usedPercent": 58, "remainingPercent": 42},
+      "afterMainIteration": {"usedPercent": 68, "remainingPercent": 32}
+    }
+  },
+  "slot": {
+    "worktree": "D:/Art/SW Code Zero Unity Builds/Mission3-Liquidator",
+    "branch": "codex/orchestration-slot-b",
+    "headAtStart": "2a0ed2116b1f84adb56efa572f5c87dc2e82b06b",
+    "localMain": "2a0ed2116b1f84adb56efa572f5c87dc2e82b06b",
+    "mainIsAncestorOfHead": true,
+    "foreignVscodeSettingsJson": {"sha256": "7a30056cab2d696989ae74633ad4e24c0a8be2bd0aa4b1ea1e7121809a759bcf", "preservedByteExact": true, "committed": false}
+  },
+  "scope": "read-only review: the 61-line runtime delta of PlayerCore.ReachedDispatchTiming.cs against baseline 12901dd (= 7ec9f66 blob 7dcff07e...360b9), the airborne0b gate of reached_body_aggregate.cs and the airborne0b mode of ground00_mutation_proof.sh; the next CCEA price, pair guards (ZERO-65) and Unity Editor/Suite are out of scope",
+  "verdict": "scoped PASS; no runtime defect; one catalog defect fixed (stale ground00 boundary 2543 in the canonical commands)",
+  "sourceCorrectness": {
+    "listing": {"path": "Art/Research/DarkwingDuck/disasm/bank7_D626_state11.txt", "sha256": "146fb83bf4e3b2d0704ddafbec84c83350241bc753a96e73b62dce6e148a5037"},
+    "direction": "D778 AND #$01 leaves D77A BEQ untaken for held&3 = 1 and 3, so both are Right; 2 takes D77A to D795/F254 (left body unchanged); 0 takes D774 to D79A",
+    "veto": "D77C LDA $6D(3) CMP #$0E(2) D780 BNE(2 untaken) D782 LDA $0400(4) CMP #$50(2) D787 BEQ(3) RTS(6) = pre_D76E(9) + 29 = +38; flags10: D787 untaken(2) CMP #$10(2) D78B BEQ(3) = +42; both return at D7B6 before D78D/JSR F200 and before D79A reads $14&$40; C# compares the full $0400 byte (PlayerCore.Flags) and $6D (CheckpointId), and the EB52 pre-hook guard (Flags&0x20) cannot hide 50/10",
+    "ordinary": "D76E..D792 without the F200 body = 9 + 3+2 + 2 + 3+2+3 + 2+6+3 = 35; D79A LDA(3) AND(2) D79E BEQ taken(3) RTS(6) = 14; matches source56 pre_D76E+35+F200+14",
+    "freshBGuardMove": "D63E/D640/D642 tests only $14&$08, so the old top-level (pressed&0x48) wrongly refused fresh B there; the only $14&$40 read is D79A. The new D79E refusal sits after the veto return and on the shared tail of idle/left/right. The D6FB landing ends JMP $EDD2 and never reaches D79A, so the landing return before D79E is listing-correct (landing with fresh B is now priced, structurally)",
+    "refuseSolidSide": "optional parameter default false; old callers PlayerCore.Air01Timing.cs:274 and PlayerCore.ReachedDispatchTiming.cs:417 pass no argument and keep the old behaviour; only the airborne caller sets it. The throw happens after TimingRejectedHorizontalPair/ExpandedProbeSet, which only compute (no field writes); readOnly=16/16 in the gate",
+    "eb52Tail": {"listing": "Art/Research/DarkwingDuck/disasm/bank7_EB52.txt", "sha256": "b1ef41b69114f2fa5a1a4ff59630653fbb458b1413867c5b0b4bee2ae2b765d9", "note": "EB9A/EBAA CPX #$01 with X=0 and $10 in 0..4 make every EBAC..EBBA branch untaken, so the constant tail in ExpandedProbeSet is valid for side classes 0..3"}
+  },
+  "rerun": {
+    "dotnet": "10.0.402",
+    "airborne0bGate": {
+      "command": "dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- airborne0b Art/Temp/ZERO-60/inputs/airborne0b_2538_2553_verified.json Art/Temp/ZERO-67/airborne0b_gate.csv 2666",
+      "exit": 0,
+      "csv": {"path": "Art/Temp/ZERO-67/airborne0b_gate.csv", "sha256": "21778747cf69e74dbbc6082164f7bc1c4069ab55b1790d0b73f2d6810d5d41cc", "bytes": 34575, "byteEqualTo": "Art/Temp/ZERO-60/airborne0b_gate3.csv"},
+      "log": {"path": "Art/Temp/ZERO-67/airborne0b_gate.log", "sha256": "b6e37162b6b1302b6335fe31a1e3107d3fd2b7f3116f3ee67398770dd0d73476"},
+      "summary": "routeRight=10/10 routeIdle=5/5 routeLanding=1/1 routePollsPricedByClock=10/10 everyClockPrefixAgainstOriginal=585/585 reproducible=16/16 inputIdentity=16/16 readOnly=16/16 synthetic=80/80 guards=40/40 freshB=40/40 vetoIgnoresFreshB=10/10 rightNeedsNoQueueOwner=10/10 geometry=8/8 landingBusy=1/1 landingNeedsOwner=1/1 landingIgnoresFreshB=1/1; first CAFC refusal 2666 CCEA nonempty air horizontal side",
+      "boundaryArgument": "the canonical command passes 2666 explicitly; -1 is only the unchecked default and is not used by the recorded evidence"
+    },
+    "clockNative": {
+      "command": "dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- clock native 6420 Art/Temp/ZERO-67/clock_native.csv",
+      "exit": 0,
+      "overrides": "prefix=0 audio=0 publication=0",
+      "csv": {"path": "Art/Temp/ZERO-67/clock_native.csv", "sha256": "27965fac6d70bb9ad31a535002c02b6f9e1e51e26708393819f3eef36114e014", "bytes": 439221, "byteEqualTo": "Art/Temp/ZERO-60/clock_probe_after.csv"},
+      "independentRecount": "ad-hoc python over clock_native.csv and reference/cost-harness/data/phases/city_phases.csv: 585/585 prefixNative equal first CABB minus first FECF, 123 of them at polls >= 2543, first refusal at or after 2543 is 2666 (CAFC player), 4521 rows 1900..6420"
+    },
+    "priorGates": {
+      "state09": {"exit": 0, "summary": "priced=37/37 exact=37/37 negativeRefusals=148/148", "csvSha256": "5191305ca133d77c8e104a3c1adc49dcae107d42d0dd5e6f4444a07169f0068c", "byteEqualTo": "Art/Temp/ZERO-60/regress_state09.csv"},
+      "cardrelease": {"command": "cardrelease Art/Temp/ZERO-67/cardrelease_gate.csv 6420 2110 2125", "exit": 0, "csvSha256": "6502266a1b5410e236637ad95800892aa939d2ebe4a21551b79a705127e85e81", "byteEqualTo": "Art/Temp/ZERO-60/regress_cardrelease.csv"},
+      "ground00At2666": {"exit": 0, "summary": "route=5/5 everyClockPrefixAgainstOriginal=585/585 synthetic=55/55 guards=20/20, first refusal 2666", "csvSha256": "92bd699fa91059906c7556e566a6fc7ba591ffabe719fc01a642e5937b30f38f", "byteEqualTo": "Art/Temp/ZERO-60/regress_ground00.csv"},
+      "ground00At2543": {"exit": 1, "meaning": "the old boundary is now a FAIL, so the catalog command with 2543 and the driver default for MODE=ground00 were stale; catalog fixed to 2666, driver untouched (explicit argument documented)"},
+      "notRerun": "state09cases, dispatch column, bufcontrols: source and exporter unchanged since ZERO-60, their evidence hashes stand; no new reason"
+    },
+    "focusedMutant": {
+      "reason": "none of the 15 ZERO-60 mutants restores the old top-level fresh-B refusal, which is the moved guard under review",
+      "label": "mutA_freshBRefusedAtTop",
+      "patch": "replace 'if ((pressed & 0x08) != 0) throw new NotSupportedException(\"D642 fresh up/reach pose\");' with 'if ((pressed & 0x48) != 0) throw new NotSupportedException(\"D63E reach/shot\");' (exactly one occurrence) in PlayerCore.ReachedDispatchTiming.cs",
+      "build": 0,
+      "gateExit": 1,
+      "namedColumns": "freshB=0/40 FAIL, vetoIgnoresFreshB=0/10 FAIL, landingIgnoresFreshB=0/1 FAIL; all route/clock/synthetic/guard columns still PASS, so the failure is the moved guard, not an unrelated refusal or build",
+      "evidence": {"path": "Art/Temp/ZERO-67/mutA_freshBRefusedAtTop.txt", "sha256": "3ed93c5f77934a1113ceaae4d311f57e6f606167d6c168e44d54642913245558"},
+      "restore": "git show HEAD:<runtime> > <runtime>; sha256 bc97f9850e100cc4382edc3fdff6388d78aabd45f70f00b3d5dfdaa4a4a74a89 re-checked, rebuild exit 0, git status -- Art/Unity/CodeZero empty"
+    }
+  },
+  "mutationSeriesReview": {
+    "log": {"path": "Art/Temp/ZERO-60/mutation_proof_airborne0b.log", "sha256": "b12186321470511cc033c21aeb937e02ac205f8a883d76761315bacb631077c4"},
+    "driverSha256": "ab13a6548b7d4433f06fa63993ad3d4e1e00668b66e3a6e44e5a29f84f743594",
+    "finding": "baseline PASS; each of 15 mutants built, exited 1 with 'airborne0b gate FAIL' and printed its required column (run_gate demands both exit code and diagnostic; BUILD FAIL returns 1 and aborts the script under set -e). Columns match the listing: mut1-5 routeRight=0/10, mut6 synthetic=60/80, mut7 70/80, mut8-10 60/80, mut11 freshB=10/40, mut12 geometry=5/8, mut13 guards=30/40, mut14 rightNeedsNoQueueOwner=0/10, mut15 landingNeedsOwner=0/1. The three earlier attempts are named (compile fix, two expectation corrections by measurement). Series not repeated"
+  },
+  "portToPort": {
+    "method": "no re-export (source and exporter unchanged); independent sha256/length of all 8 recorded buffers.bin, byte compare before vs after per route, input sha256 and frame count per session, manifests/diff CSVs and exporter/csproj hashes",
+    "result": "8/8 files match metadata sha256 and length; m1 24261, human 38886, city 29360, m3 73407 records x 4384 = 727366976 bytes per side; before == after byte for byte on all 4 routes; bufdiff CSVs header-only; exporter reached_body_aggregate.cs ba90bbdd...14241 equals HEAD; csproj 84e1c4cd...171b unchanged since 7ec9f66; runtime file at HEAD bc97f985...74a89",
+    "baselineTie": "runtime blob identical at 12901dd and 7ec9f66 (7dcff07e...360b9), Darkwing tree d3027e56... identical at both, only Core delta 7ec9f66..HEAD is this file; before manifests carry revision 7ec9f66; before hashes equal the accepted ground00-price-evidence.json/cardrelease-host.json exports; relocate_before.txt matches its recorded sha256"
+  },
+  "boundsNotAcceptance": [
+    "geometry=8/8 is eight assertions on one rising poll (2543): the bare fixture price, three solid side points, side class 2 priced, side class 4 and ceiling class 2 refused, live LevelTileMap present; the other nine right polls are named geometry-skipped because $D6C9 reads the real LevelTileMap, so side solid/actor refusals are proved on 2543 only",
+    "side point class 2 is only asserted 'priced' (2413 here, below the 2507 route value because EB52 skips the max update for later lower points); that value is consistent with the listing but not compared with a source pass",
+    "vetoIgnoresFreshB covers flags 50 only; flags 10 with fresh B is structural",
+    "veto shapes, right+left and fresh B are source-synthetic or refusals, never observed on the original route; F4FD carry, other WorldId/weapons/landing owners uncovered",
+    "port-to-port only, not original-to-port; no image, PCM, full mission or human acceptance"
+  ],
+  "notRun": ["Unity Editor Suite and Mission1Contracts (parent runs them in the primary Editor)", "full four-input re-export (no defect, source unchanged)", "standalone/playtest"]
+}
