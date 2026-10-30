@@ -56,8 +56,8 @@ public static class ReachedBodyAggregate
         LegacyReferenceDir = Path.GetFullPath(options.GetValueOrDefault("--legacy-reference-dir", Path.Combine(ReferenceDir, "legacy-m1")), ProjectRoot);
         OutputRoot = Path.GetFullPath(options.GetValueOrDefault("--output-root", "Art/Temp/cost-harness"), ProjectRoot);
         if (rest.Count > 0 && mode == "m1") rest.RemoveAt(0);
-        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "cardrelease" or "ground00" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols" or "paletteprofile"))
-            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, cardrelease, ground00, dispatch, buffers, bufdiff, bufcontrols, paletteprofile, m1 (legacy inputs missing)");
+        else if (rest.Count > 0 && mode is not ("city" or "clock" or "census" or "slots" or "audiodiff" or "probe" or "state09" or "state09cases" or "cardrelease" or "ground00" or "airborne0b" or "dispatch" or "buffers" or "bufdiff" or "bufcontrols" or "paletteprofile"))
+            throw new ArgumentException("Modes: city, clock native|oracle, census, slots, audiodiff, probe, state09, state09cases, cardrelease, ground00, airborne0b, dispatch, buffers, bufdiff, bufcontrols, paletteprofile, m1 (legacy inputs missing)");
         return rest.ToArray();
     }
     static byte[] Data(string name) => File.ReadAllBytes("Art/Unity/CodeZero/Darkwing/Data/" + name + ".bytes");
@@ -102,6 +102,7 @@ public static class ReachedBodyAggregate
         if (args.Length > 0 && args[0] == "state09cases") { State09Cases(args); return; }
         if (args.Length > 0 && args[0] == "cardrelease") { CardRelease(args); return; }
         if (args.Length > 0 && args[0] == "ground00") { Ground00(args); return; }
+        if (args.Length > 0 && args[0] == "airborne0b") { Airborne0B(args); return; }
         if (args.Length > 0 && args[0] == "dispatch") { Dispatch(args); return; }
         if (args.Length > 0 && args[0] == "buffers") { Buffers(args); return; }
         if (args.Length > 0 && args[0] == "bufdiff") { BufferDiff(args); return; }
@@ -514,11 +515,14 @@ public static class ReachedBodyAggregate
         public byte Fallback;
         public int Calls, Hits, Fallbacks;
         public long LastFallback;
+        public readonly List<long> Queried = new();     // in query order, so a caller can tell which probe asked what
         static long Key(int x, int y) => ((long)(uint)x << 32) | (uint)y;
+        public static long KeyOf(int x, int y) => Key(x, y);
         public void Add(int x, int y, int cls) => classes[Key(x, y)] = (byte)cls;
         public byte TypeAt(int x, int y)
         {
             Calls++;
+            Queried.Add(Key(x, y));
             if (classes.TryGetValue(Key(x, y), out byte cls)) { Hits++; return cls; }
             Fallbacks++; LastFallback = Key(x, y);
             return Fallback;
@@ -967,6 +971,400 @@ public static class ReachedBodyAggregate
             && ownerAll > 0 && ownerOk == ownerAll && boundary > 0 && boundaryReason != null
             && (wantedBoundary < 0 || boundary == wantedBoundary);
         Console.WriteLine("ground00 gate " + (pass ? "PASS" : "FAIL") + " output=" + output);
+        Environment.ExitCode = pass ? 0 : 1;
+    }
+
+    /// <summary>ZERO-60 focused gate for the reached airborne state $0B: the right steering
+    /// $D77C→$F200 price, the checkpoint-$0E veto that returns through $D7B6 without ever calling
+    /// $F200, and the $D79E fresh-B tail. Claim kinds stay in separate columns and are never merged:
+    /// <c>routeRight</c> compares the price the actual city frame charged with the independent banked
+    /// walker (whose rows already carry the original CA59−CA40−18 oracle); <c>routeIdle</c> and
+    /// <c>routeLanding</c> are the untouched neighbours of the new branch; <c>synthetic</c> covers the
+    /// banked input/RAM shapes the route never carried (idle, left, right+left, both veto flags and
+    /// each veto condition negated); <c>freshB</c>, <c>vetoIgnoresB</c>, <c>guards</c>, <c>geometry</c>
+    /// and <c>rightNeedsNoQueueOwner</c> are structural contracts, not original prices;
+    /// <c>comparator</c> is the banked pass rejecting its own source+1. Expectations come from the
+    /// canonical <c>--airborne0b</c> JSON, never from the port. Perturbations are pre-frame, restored
+    /// and re-read before the frame runs.</summary>
+    static void Airborne0B(string[] args)
+    {
+        string banked = Required(args.Length > 1 ? args[1] : Path.Combine(OutputRoot, "airborne0b_source.json"));
+        string output = Output(args.Length > 2 ? args[2] : Path.Combine(OutputRoot, "airborne0b_gate.csv"));
+        int wantedBoundary = args.Length > 3 ? int.Parse(args[3]) : -1;
+        // The RAM edits the accepted --airborne0b control table applies, mapped onto the native fields
+        // the same conditions read: $6D is CheckpointId, $0400 is Flags. -1 keeps the route value.
+        var variantInput = new Dictionary<string, (byte held, byte pressed, int checkpoint, int flags)> {
+            ["idle"] = (0x00, 0x00, -1, -1),
+            ["right"] = (0x01, 0x00, -1, -1),
+            ["left"] = (0x02, 0x00, -1, -1),
+            ["right+left uses right"] = (0x03, 0x00, -1, -1),
+            ["checkpoint veto flags50"] = (0x01, 0x00, 0x0E, 0x50),
+            ["checkpoint veto flags10"] = (0x01, 0x00, 0x0E, 0x10),
+            ["flags50 without checkpoint0E"] = (0x01, 0x00, -1, 0x50),
+            ["checkpoint0E without veto flags"] = (0x01, 0x00, 0x0E, -1),
+        };
+        var right = new List<(int poll, byte held, byte pressed, int source, int preD76e, int block, long oracle)>();
+        var idle = new List<(int poll, int source, long oracle)>();
+        var land = new List<(int poll, byte held, byte pressed, int source, long oracle)>();
+        var shapes = new List<(int poll, string name, byte held, byte pressed, int checkpoint, int flags, int source, string branch)>();
+        var probesByPoll = new Dictionary<int, (List<(int x, int y, int point)> ceiling, List<(int x, int y, int point)> side)>();
+        var declaredRight = new List<int>();
+        int landingBusy = -1, landingDelta = 0, comparatorControls = 0, comparatorRejects = 0;
+        using (var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(banked)))
+        {
+            foreach (var row in doc.RootElement.GetProperty("rows").EnumerateArray())
+            {
+                int poll = row.GetProperty("poll").GetInt32();
+                string status = row.GetProperty("status").GetString();
+                if (status != "EXACT") throw new Exception("Banked pass poll " + poll + " is " + status
+                    + " against the original oracle, not EXACT");
+                var ceiling = new List<(int x, int y, int point)>();
+                var side = new List<(int x, int y, int point)>();
+                foreach (var probe in row.GetProperty("probes").EnumerateArray())
+                {
+                    var entry = (probe.GetProperty("x").GetInt32(), probe.GetProperty("y").GetInt32(),
+                        probe.GetProperty("point").GetInt32());
+                    if (entry.Item3 <= 2) side.Add(entry); else ceiling.Add(entry);
+                }
+                probesByPoll[poll] = (ceiling, side);
+                var item = (poll, Convert.ToByte(row.GetProperty("held").GetString(), 16),
+                    Convert.ToByte(row.GetProperty("pressed").GetString(), 16),
+                    row.GetProperty("source").GetInt32(), row.GetProperty("oracle").GetInt64());
+                switch (row.GetProperty("branch").GetString())
+                {
+                    case "D77C right":
+                        right.Add((item.poll, item.Item2, item.Item3, item.Item4,
+                            row.GetProperty("pre_d76e").GetInt32(), row.GetProperty("direction_block").GetInt32(), item.Item5));
+                        break;
+                    case "D79A idle": idle.Add((item.poll, item.Item4, item.Item5)); break;
+                    case "D6FB land": land.Add(item); break;
+                    default: throw new Exception("Banked pass row " + poll + " has branch "
+                        + row.GetProperty("branch").GetString() + ", outside the $0B slice");
+                }
+            }
+            foreach (var control in doc.RootElement.GetProperty("controls").EnumerateArray())
+            {
+                string name = control.GetProperty("variant").GetString();
+                if (name.StartsWith("comparator"))
+                { comparatorControls++; if (control.GetProperty("ok").GetBoolean()) comparatorRejects++; continue; }
+                if (!control.GetProperty("ok").GetBoolean())
+                    throw new Exception("Banked pass control " + name + " disagrees with its own listing expectation");
+                if (name == "landing queue busy")
+                {
+                    landingBusy = control.GetProperty("source").GetInt32();
+                    landingDelta = control.GetProperty("delta").GetInt32();
+                    continue;
+                }
+                if (!variantInput.TryGetValue(name, out var vi))
+                    throw new Exception("Input shape " + name + " has no declared native mapping");
+                shapes.Add((control.GetProperty("poll").GetInt32(), name, vi.held, vi.pressed, vi.checkpoint, vi.flags,
+                    control.GetProperty("source").GetInt32(), control.GetProperty("branch").GetString()));
+            }
+            var summary = doc.RootElement.GetProperty("summary");
+            if (summary.GetProperty("verdict").GetString() != "PASS" || summary.GetProperty("controls_failed").GetInt32() != 0)
+                throw new Exception("Banked pass does not report its own PASS: " + summary.GetRawText());
+            declaredRight = summary.GetProperty("right_polls").EnumerateArray().Select(e => e.GetInt32()).ToList();
+        }
+        if (right.Count == 0) throw new Exception("Banked pass carries no D77C right route poll");
+        if (land.Count == 0 || landingBusy < 0) throw new Exception("Banked pass carries no landing row and queue-busy control");
+        if (landingDelta != -15) throw new Exception("Banked landing queue-busy delta is " + landingDelta + ", not -15");
+        if (comparatorControls == 0 || comparatorRejects != comparatorControls)
+            throw new Exception("Banked pass comparator does not reject its own source+1");
+        right.Sort((a, b) => a.poll.CompareTo(b.poll));
+        if (!declaredRight.SequenceEqual(right.Select(r => r.poll)))
+            throw new Exception("Banked pass declares right polls " + string.Join(";", declaredRight)
+                + " but its rows parse to " + string.Join(";", right.Select(r => r.poll)));
+
+        var (game, flow) = NewGame();
+        byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
+        if (input.Length != 29360 || Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(input)).ToLowerInvariant() != "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100")
+            throw new Exception("Unexpected city input");
+        var source = SourcePoints(ReferenceFile("phases/city_phases.csv"));
+        var player = game.Player;
+        var rightByPoll = right.ToDictionary(r => r.poll);
+        var idleByPoll = idle.ToDictionary(r => r.poll);
+        var landByPoll = land.ToDictionary(r => r.poll);
+        var shapesByPoll = shapes.GroupBy(s => s.poll).ToDictionary(g => g.Key, g => g.ToList());
+        var bankedByPoll = right.Select(r => r.poll).Concat(idle.Select(r => r.poll)).Concat(land.Select(r => r.poll))
+            .ToDictionary(poll => poll, poll => idleByPoll.TryGetValue(poll, out var i) ? i.source
+                : landByPoll.TryGetValue(poll, out var l) ? l.source : rightByPoll[poll].source);
+        int lastPoll = Math.Max(right[^1].poll, Math.Max(land.Max(r => r.poll), Math.Max(wantedBoundary, 0)));
+        using var rowsOut = new StreamWriter(output);
+        rowsOut.WriteLine("kind,poll,held,pressed,native,banked,verdict,clockPrefix,originalPrefix,note");
+        void Row(string kind, int poll, string held, string pressed, string native, string bankedValue, string verdict,
+            string clockPrefix, string originalPrefix, string note) =>
+            rowsOut.WriteLine(string.Join(",", kind, poll, held, pressed, native, bankedValue, verdict, clockPrefix, originalPrefix, Safe(note)));
+        int routeOk = 0, routeAll = 0, idleOk = 0, idleAll = 0, landOk = 0, landAll = 0;
+        int reproOk = 0, reproAll = 0, identityOk = 0, identityAll = 0, stableOk = 0, stableAll = 0;
+        int synthOk = 0, synthAll = 0, guardOk = 0, guardAll = 0, freshOk = 0, freshAll = 0;
+        int vetoBIgnoresOk = 0, vetoBIgnoresAll = 0, queueFreeOk = 0, queueFreeAll = 0, geometryOk = 0, geometryAll = 0;
+        int busyOk = 0, busyAll = 0, ownerOk = 0, ownerAll = 0, landBAll = 0, landBOk = 0;
+        int clockOk = 0, clockAll = 0, routePricedOk = 0, routePricedAll = 0;
+        var blocked = new List<string>();
+        const int guardsPerPoll = 4, freshPerPoll = 4;
+        int boundary = -1; string boundaryReason = null;
+        string Snapshot(PlayerCore p) { var s = p.Objects.Slots[0];
+            return $"{p.State:X2};{p.Flags:X2};{p.CheckpointId:X2};{p.X:X4};{p.Y:X4};{p.XFrac:X2};{p.XVelInt:X2};{p.XVelFrac:X2}"
+                + $";{p.YFrac:X2};{p.YVelInt:X2};{p.YVelFrac:X2};{s.Active};{s.AnimNumber:X2};{s.AnimFrame};{s.AnimTimer}"; }
+        void Measure(string kind, int poll, byte held, byte pressed, bool? owner, int expect, string expectRefuse,
+            string name, ref int ok, ref int all, int clockPrefixValue = int.MinValue, int originalPrefixValue = int.MinValue)
+        {
+            bool accepted = player.TryMeasureAirborne0BCycles(held, pressed, owner, out int priced, out string why);
+            all++;
+            string verdict = expectRefuse != null
+                ? (!accepted && why != null && why.StartsWith(expectRefuse) ? "exact" : "MISMATCH")
+                : (accepted ? Verdict(priced, expect) : "MISMATCH");
+            if (verdict == "exact") ok++;
+            Row(kind, poll, held.ToString("X2"), pressed.ToString("X2"), (accepted ? priced : -1).ToString(),
+                expectRefuse != null ? "refuse" : expect.ToString(), verdict,
+                clockPrefixValue == int.MinValue ? "" : clockPrefixValue.ToString(),
+                originalPrefixValue == int.MinValue ? "" : originalPrefixValue.ToString(),
+                name + ": " + (expectRefuse != null ? "must refuse with " + expectRefuse + ", got "
+                    + (accepted ? "a price " + priced : why ?? "null")
+                    : acceptNote(name, accepted, priced, why, expect)));
+        }
+        string acceptNote(string name, bool accepted, int priced, string why, int expect)
+            => accepted ? name + " banked price " + expect + ", native " + priced
+                : name + " refused where the banked pass priced " + expect + ": " + (why ?? "null");
+        for (int poll = 1; poll <= lastPoll; poll++)
+        {
+            bool isRight = rightByPoll.TryGetValue(poll, out var focus);
+            byte heldByte = input[poll - 1];
+            byte pressedByte = (byte)(heldByte & ~(poll == 1 ? 0 : input[poll - 2]));
+            bool isBanked = bankedByPoll.TryGetValue(poll, out int bankedPrice);
+            int preFrame = -1;
+            if (isBanked)
+            {
+                string before = Snapshot(player);
+                bool accepted = player.TryMeasureAirborne0BCycles(heldByte, pressedByte, true, out preFrame, out string preWhy);
+                stableAll++;
+                string after = Snapshot(player);
+                if (after == before) stableOk++;
+                else Row("readOnly", poll, "", "", "", "", "MISMATCH", "", "", "state moved by the measure: " + before + " -> " + after);
+                if (!accepted) Row("route-preframe", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), "-1",
+                    bankedPrice.ToString(), "MISMATCH", "", "", "refused before the frame: " + (preWhy ?? "null"));
+                reproAll++;
+                Row("reproducible", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), preFrame.ToString(),
+                    bankedPrice.ToString(), accepted && Verdict(preFrame, bankedPrice) == "exact" ? "exact" : "MISMATCH",
+                    "", "", "pre-frame price must equal the price the frame itself charges");
+                if (accepted && Verdict(preFrame, bankedPrice) == "exact") reproOk++;
+                if (isRight)
+                {
+                    // $F200 never calls $F850: the ordinary steering must not gain a queue owner.
+                    Measure("rightNeedsNoQueueOwner", poll, heldByte, pressedByte, null, preFrame, null,
+                        "price without an audio owner equals the price with one", ref queueFreeOk, ref queueFreeAll);
+                }
+            }
+            if (isRight)
+            {
+                var batch = shapesByPoll.TryGetValue(poll, out var b) ? b
+                    : new List<(int poll, string name, byte held, byte pressed, int checkpoint, int flags, int source, string branch)>();
+                foreach (var shape in batch)
+                {
+                    byte checkpoint = player.CheckpointId, flags = player.Flags;
+                    if (shape.checkpoint >= 0) player.CheckpointId = (byte)shape.checkpoint;
+                    if (shape.flags >= 0) player.Flags = (byte)shape.flags;
+                    Measure("synthetic", poll, shape.held, shape.pressed, true, shape.source, null,
+                        shape.name + " banked branch " + shape.branch, ref synthOk, ref synthAll);
+                    player.CheckpointId = checkpoint; player.Flags = flags;
+                }
+                // Fresh B belongs to $D79E: every ordinary shape has to be refused by that test, by name,
+                // and the $0E/$50 veto has to price exactly as it does without B because it returns first.
+                var vetoShape = batch.FirstOrDefault(s => s.name == "checkpoint veto flags50");
+                if (vetoShape.name != "checkpoint veto flags50")
+                    throw new Exception("Banked pass carries no checkpoint-veto-flags50 control for poll " + poll);
+                foreach ((string name, byte held, byte pressed, string refuse) in
+                    new (string, byte, byte, string)[] {
+                        ("ordinary right + fresh B", 0x01, 0x40, "D79E airborne shot"),
+                        ("idle + fresh B", 0x00, 0x40, "D79E airborne shot"),
+                        ("left + fresh B", 0x02, 0x40, "D79E airborne shot"),
+                        ("fresh up at $D642", 0x00, 0x08, "D642 fresh up/reach pose") })
+                {
+                    Measure("freshB-refusal", poll, held, pressed, true, -1, refuse, name, ref freshOk, ref freshAll);
+                }
+                {
+                    byte checkpoint = player.CheckpointId, flags = player.Flags;
+                    player.CheckpointId = 0x0E; player.Flags = 0x50;
+                    bool accepted = player.TryMeasureAirborne0BCycles(0x01, 0x40, true, out int priced, out string why);
+                    vetoBIgnoresAll++;
+                    bool agree = accepted && priced == vetoShape.source;
+                    if (agree) vetoBIgnoresOk++;
+                    Row("vetoIgnoresFreshB", poll, "01", "40", (accepted ? priced : -1).ToString(), vetoShape.source.ToString(),
+                        agree ? "exact" : "MISMATCH", "", "",
+                        "$D7B6 returns before $D79A reads $14&$40, so the veto price cannot depend on B: " + (why ?? "priced"));
+                    player.CheckpointId = checkpoint; player.Flags = flags;
+                }
+                void Control(string name, string expectStart, Action perturb)
+                {
+                    var s = player.Objects.Slots[0];
+                    byte st = player.State; bool act = s.Active; byte flags = player.Flags; byte anim = s.AnimNumber;
+                    byte checkpoint = player.CheckpointId;
+                    perturb();
+                    bool ok = player.TryMeasureAirborne0BCycles(heldByte, pressedByte, true, out int priced, out string why);
+                    player.State = st; s.Active = act; player.Flags = flags; s.AnimNumber = anim; player.CheckpointId = checkpoint;
+                    guardAll++;
+                    bool refused = !ok && why != null && why.StartsWith(expectStart);
+                    if (refused) guardOk++;
+                    Row("guard", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), (ok ? priced : -1).ToString(),
+                        "", refused ? "exact" : "MISMATCH", "", "", name + " must refuse with " + expectStart
+                        + ", got " + (ok ? "a price" : why ?? "null"));
+                }
+                Control("state01", "D626 state outside 0B slice", () => player.State = 0x01);
+                Control("inactive", "CAFC inactive player", () => player.Objects.Slots[0].Active = false);
+                Control("hookFlag", "EB52 pre-hook flag", () => player.Flags |= 0x20);
+                Control("pose0D", "D756 reach pose", () => player.Objects.Slots[0].AnimNumber = 0x0D);
+                // The $F200 side probe reaches $F248 only when a probe class is solid. On the rising
+                // polls the whole path stays inside $EB52, so the tile map can be replaced by a fixture
+                // that answers exactly the coordinates the executed ROM probed.
+                if (probesByPoll.TryGetValue(poll, out var probes))
+                {
+                    ITileMap liveMap = player.TileMap;    // the row/world load replaces it, so read it per poll
+                    var wanted = probes.ceiling.Concat(probes.side)
+                        .Select(c => FixtureMap.KeyOf(c.x, c.y)).Distinct().ToHashSet();
+                    var bare = new FixtureMap { Fallback = 0 };
+                    player.TileMap = bare;
+                    bool bareOk = player.TryMeasureAirborne0BCycles(heldByte, pressedByte, true, out int barePrice, out string bareWhy);
+                    player.TileMap = liveMap;
+                    if (!bareOk && bareWhy != null && bareWhy.StartsWith("D6C9"))
+                    {
+                        Row("geometry-skipped", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), "-1", "", "", "", "",
+                            "this poll falls through $D6C9, whose cell test reads the real LevelTileMap, so a fixture map "
+                            + "cannot host the side-probe controls here");
+                    }
+                    else
+                    {
+                        geometryAll++;
+                        bool sameCoords = bareOk && bare.Queried.Distinct().ToHashSet().SetEquals(wanted)
+                            && barePrice == focus.source;
+                        if (sameCoords) geometryOk++;
+                        Row("geometry", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), (bareOk ? barePrice : -1).ToString(),
+                            focus.source.ToString(), sameCoords ? "exact" : "MISMATCH", "", "",
+                        "fixture map (all class 0) must price the route value, asked exactly the " + wanted.Count
+                        + " coordinates the executed $EB52 recorded and nothing else, asked=" + bare.Queried.Distinct().Count()
+                        + (bareOk ? "" : " refused: " + (bareWhy ?? "null")));
+                        (string name, int x, int y, int cls, string refuse)[] cases = {
+                        ("side point 0 solid", probes.side[0].x, probes.side[0].y, 3, "F248 solid side snap"),
+                        ("side point 1 solid", probes.side[1].x, probes.side[1].y, 3, "F248 solid side snap"),
+                        ("side point 2 solid", probes.side[2].x, probes.side[2].y, 3, "F248 solid side snap"),
+                        ("side point 0 class 2", probes.side[0].x, probes.side[0].y, 2, null),
+                        ("side point 0 class 4", probes.side[0].x, probes.side[0].y, 4, "EB52 class outside verified slice"),
+                        ("ceiling point 9 class 2", probes.ceiling[0].x, probes.ceiling[0].y, 2, "EB52 class outside verified slice"),
+                    };
+                        foreach (var c in cases)
+                        {
+                            var fake = new FixtureMap { Fallback = 0 };
+                            fake.Add(c.x, c.y, c.cls);
+                            player.TileMap = fake;
+                            bool priced = player.TryMeasureAirborne0BCycles(heldByte, pressedByte, true, out int cycles, out string why);
+                            player.TileMap = liveMap;
+                            geometryAll++;
+                            bool agree = (c.refuse == null ? priced : !priced && why != null && why.StartsWith(c.refuse))
+                                && ReferenceEquals(player.TileMap, liveMap);
+                            if (agree) geometryOk++;
+                            Row("geometry", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), (priced ? cycles : -1).ToString(),
+                                c.cls.ToString(), agree ? "exact" : "MISMATCH", "", "",
+                                c.name + " must " + (c.refuse == null ? "be priced below the snap bound" : "refuse with " + c.refuse)
+                                + ", got " + (priced ? "a price " + cycles : why ?? "null")
+                                + ", live map restored=" + ReferenceEquals(player.TileMap, liveMap));
+                        }
+                        geometryAll++;
+                        if (liveMap is LevelTileMap) geometryOk++;
+                        Row("geometry", poll, heldByte.ToString("X2"), pressedByte.ToString("X2"), "", "",
+                            liveMap is LevelTileMap ? "exact" : "MISMATCH", "", "",
+                            "the fixture probe may only run while the real LevelTileMap is installed, got "
+                            + (liveMap?.GetType().Name ?? "null"));
+                    }
+                }
+                Row("comparator", poll, "", "", (focus.source + 1).ToString(), focus.source.ToString(),
+                    Verdict(focus.source, focus.source + 1), "", "",
+                    "the banked pass rejects its own source+1; this controls the comparison, not the guard");
+            }
+            if (landByPoll.TryGetValue(poll, out var landing))
+            {
+                Measure("landingBusyQueue", poll, landing.held, landing.pressed, false, landingBusy, null,
+                    "busy $F850 queue costs exactly the banked delta " + landingDelta, ref busyOk, ref busyAll);
+                Measure("landingNeedsOwner", poll, landing.held, landing.pressed, null, -1,
+                    "F850 native audio queue owner unavailable", "missing owner stays a refusal, not a free queue",
+                    ref ownerOk, ref ownerAll);
+                Measure("landingIgnoresFreshB", poll, landing.held, 0x40, true, landing.source, null,
+                    "$D6FB never reads $14&$40, so the landing price is B-independent (structural, not a banked shape)",
+                    ref landBOk, ref landBAll);
+            }
+            game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
+            if (boundary < 0 && poll >= right[0].poll && game.LastClockBodyPrefixCycles < 0
+                && game.LastClockBodyPrefixUnsupported == "CAFC player")
+            { boundary = poll; boundaryReason = player.PlayerDispatchTimingUnsupported; }
+            bool havePoints = source.TryGetValue(poll, out var points) && points.ContainsKey("CABB") && points.ContainsKey("FECF");
+            int originalPrefix = havePoints ? (int)(points["CABB"][0] - points["FECF"][0]) : -1;
+            if (havePoints && game.LastClockBodyPrefixCycles >= 0)
+            { clockAll++; if (Verdict(game.LastClockBodyPrefixCycles, originalPrefix) == "exact") clockOk++; }
+            if (!isBanked) continue;
+            int native = player.LastPlayerDispatchCycles;
+            string verdict = Verdict(native, bankedPrice);
+            bool isIdleNeighbour = idleByPoll.ContainsKey(poll);
+            if (isRight) { routeAll++; if (verdict == "exact") routeOk++; }
+            else if (isIdleNeighbour) { idleAll++; if (verdict == "exact") idleOk++; }
+            else { landAll++; if (verdict == "exact") landOk++; }
+            identityAll++;
+            bool identity = game.HeldP1 == heldByte && game.PressedP1 == pressedByte;
+            if (identity) identityOk++;
+            if (isRight)
+            {
+                if (game.LastClockBodyPrefixCycles >= 0)
+                {
+                    routePricedAll++;
+                    if (Verdict(game.LastClockBodyPrefixCycles, originalPrefix) == "exact") routePricedOk++;
+                }
+                else blocked.Add(poll + " (clock already refused at " + boundary + ")");
+            }
+            Row(isRight ? "routeRight" : isIdleNeighbour ? "routeIdle" : "routeLanding",
+                poll, heldByte.ToString("X2"), game.PressedP1.ToString("X2"), native.ToString(), bankedPrice.ToString(),
+                verdict, game.LastClockBodyPrefixCycles.ToString(), originalPrefix.ToString(),
+                (isRight ? "banked pre-$D76E " + focus.preD76e + " + steering block " + focus.block
+                    + " (F200 included) + tail 14" : "neighbour branch of the new steering")
+                + ", original oracle " + (isRight ? focus.oracle : idleByPoll.TryGetValue(poll, out var iRow) ? iRow.oracle : landByPoll[poll].oracle)
+                + ", pre-frame price " + preFrame
+                + ", inputIdentity=" + identity + " (held=" + game.HeldP1.ToString("X2") + " pressed=" + game.PressedP1.ToString("X2") + ")");
+        }
+        Console.WriteLine("banked pass " + banked + " sha256 " + Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(banked))).ToLowerInvariant()
+            + ", right polls " + string.Join(";", right.Select(r => r.poll)));
+        Console.WriteLine("airborne0b gate: routeRight=" + Report(routeOk, routeAll)
+            + " routeIdle=" + Report(idleOk, idleAll) + " routeLanding=" + Report(landOk, landAll)
+            + " routePollsPricedByClock=" + Report(routePricedOk, routePricedAll)
+            + " everyClockPrefixAgainstOriginal=" + Report(clockOk, clockAll)
+            + " reproducible=" + Report(reproOk, reproAll) + " inputIdentity=" + Report(identityOk, identityAll)
+            + " readOnly=" + Report(stableOk, stableAll) + " synthetic=" + Report(synthOk, synthAll)
+            + " guards=" + Report(guardOk, guardAll) + " freshB=" + Report(freshOk, freshAll)
+            + " vetoIgnoresFreshB=" + Report(vetoBIgnoresOk, vetoBIgnoresAll)
+            + " rightNeedsNoQueueOwner=" + Report(queueFreeOk, queueFreeAll)
+            + " geometry=" + Report(geometryOk, geometryAll)
+            + " landingBusy=" + Report(busyOk, busyAll) + " landingNeedsOwner=" + Report(ownerOk, ownerAll)
+            + " landingIgnoresFreshB=" + Report(landBOk, landBAll));
+        Console.WriteLine("first CAFC refusal at or after poll " + right[0].poll + ": " + boundary + ", reason "
+            + (boundaryReason ?? "none") + "; the banked comparator rejects its own source+1 in "
+            + comparatorRejects + "/" + comparatorControls + " rows (a control of the comparison, not of the guard)");
+        if (blocked.Count > 0) Console.WriteLine("route polls the clock could not price because it had already refused: "
+            + string.Join(";", blocked) + " - the price claim for those polls is the player part against the banked pass only");
+        bool pass = routeAll == right.Count && routeOk == routeAll
+            && idleAll == idle.Count && idleOk == idleAll
+            && landAll == land.Count && landOk == landAll
+            && reproAll == bankedByPoll.Count && reproOk == reproAll
+            && routePricedAll == right.Count && routePricedOk == routePricedAll
+            && clockAll > 0 && clockOk == clockAll
+            && identityAll == bankedByPoll.Count && identityOk == identityAll && stableOk == stableAll
+            && synthAll == shapes.Count && synthOk == synthAll
+            && guardAll == guardsPerPoll * routeAll && guardOk == guardAll
+            && freshAll == freshPerPoll * routeAll && freshOk == freshAll
+            && vetoBIgnoresAll == routeAll && vetoBIgnoresOk == vetoBIgnoresAll
+            && queueFreeAll == right.Count && queueFreeOk == queueFreeAll
+            // At least the rising polls carry the fixture-map geometry controls; the falling path needs
+            // the real LevelTileMap for its $D6C9 cell test, so a fixture cannot host those cases.
+            && geometryAll >= 8 && geometryAll % 8 == 0 && geometryOk == geometryAll
+            && shapes.Any(s => s.branch == "D77C veto")
+            && busyAll == land.Count && busyOk == busyAll && ownerAll == land.Count && ownerOk == ownerAll
+            && landBAll == land.Count && landBOk == landBAll
+            && boundary > 0 && boundaryReason != null && (wantedBoundary < 0 || boundary == wantedBoundary);
+        Console.WriteLine("airborne0b gate " + (pass ? "PASS" : "FAIL") + " output=" + output);
         Environment.ExitCode = pass ? 0 : 1;
     }
 

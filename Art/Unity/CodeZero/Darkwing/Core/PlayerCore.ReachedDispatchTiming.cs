@@ -14,7 +14,8 @@ namespace Darkwing.Core
                 if (State != 0x0B) throw new NotSupportedException("D626 state outside 0B slice");
                 if (Objects == null || !Objects.Slots[0].Active) throw new NotSupportedException("CAFC inactive player");
                 if ((Flags & 0x20) != 0) throw new NotSupportedException("EB52 pre-hook flag");
-                if ((pressed & 0x48) != 0) throw new NotSupportedException("D63E reach/shot");
+                // $D642 tests only $14&$08; a fresh B belongs to $D79E below, so it is not refused here.
+                if ((pressed & 0x08) != 0) throw new NotSupportedException("D642 fresh up/reach pose");
                 if (Objects.Slots[0].AnimNumber == 0x0D) throw new NotSupportedException("D756 reach pose");
                 bool rising = YVelInt >= 0;
                 int fractionY = YFrac - YVelFrac;
@@ -106,23 +107,43 @@ namespace Darkwing.Core
                 int horizontal = 0;
                 if (direction != 0)
                 {
-                    if (direction != 2) throw new NotSupportedException("D77C right steering");
-                    dispatch += 3 + 2 + ScrollBranch(0xD77A, 0xD795, true) + 2 + 6;
-                    int fractionX = XFrac - 0x80;
-                    int lowX = (byte)X - 1 - (fractionX < 0 ? 1 : 0);
-                    int nextX = (ushort)(X - 1 - (fractionX < 0 ? 1 : 0));
-                    int integrateX = 4 + 2 + 4 + 5 + 4 + 4 + 5 + ScrollBranch(0xF52E, 0xF538, lowX >= 0);
-                    if (lowX < 0) integrateX += 4 + 2 + 5;
-                    integrateX += 6;
-                    int horizontalPair = TimingRejectedHorizontalPair(nextX, nextY);
-                    int side = ExpandedProbeSet(nextX, nextY, 2, out int sideClass, out _);
-                    if (sideClass >= 3) throw new NotSupportedException("F2A3 solid side snap");
-                    ExpandedPoint(nextX, nextY, 5, out _, out int extraClass, out _);
-                    if (extraClass >= 3) throw new NotSupportedException("F254 native extra side snap");
-                    horizontal = 3 + 3 + 6 + integrateX + 2 + ScrollBranch(0xF25D, 0xF29A, false) + 6;
-                    horizontal += horizontalPair + ScrollBranch(0xF262, 0xF29A, true) + 6 + side;
-                    horizontal += 3 + 2 + ScrollBranch(0xF2A1, 0xF2A6, true) + 4 + 2 + 5 + 6;
+                    dispatch += 3 + 2;                                   // $D776 STA $52, $D778 AND #$01
+                    if (direction == 2)
+                    {
+                        dispatch += ScrollBranch(0xD77A, 0xD795, true) + 2 + 6;
+                        int fractionX = XFrac - 0x80;
+                        int lowX = (byte)X - 1 - (fractionX < 0 ? 1 : 0);
+                        int nextX = (ushort)(X - 1 - (fractionX < 0 ? 1 : 0));
+                        int integrateX = 4 + 2 + 4 + 5 + 4 + 4 + 5 + ScrollBranch(0xF52E, 0xF538, lowX >= 0);
+                        if (lowX < 0) integrateX += 4 + 2 + 5;
+                        integrateX += 6;
+                        int horizontalPair = TimingRejectedHorizontalPair(nextX, nextY);
+                        int side = ExpandedProbeSet(nextX, nextY, 2, out int sideClass, out _);
+                        if (sideClass >= 3) throw new NotSupportedException("F2A3 solid side snap");
+                        ExpandedPoint(nextX, nextY, 5, out _, out int extraClass, out _);
+                        if (extraClass >= 3) throw new NotSupportedException("F254 native extra side snap");
+                        horizontal = 3 + 3 + 6 + integrateX + 2 + ScrollBranch(0xF25D, 0xF29A, false) + 6;
+                        horizontal += horizontalPair + ScrollBranch(0xF262, 0xF29A, true) + 6 + side;
+                        horizontal += 3 + 2 + ScrollBranch(0xF2A1, 0xF2A6, true) + 4 + 2 + 5 + 6;
+                    }
+                    else
+                    {
+                        // $01 and $03 both leave $D77A BEQ untaken: Right owns the steering either way.
+                        // $D780 reaches the $0400 veto only with checkpoint $0E, and $D7B6 returns from
+                        // it before $D78D, so a veto frame never calls $F200 and never reads $14&$40.
+                        dispatch += 2 + 3 + 2 + ScrollBranch(0xD780, 0xD78D, CheckpointId != 0x0E);
+                        if (CheckpointId == 0x0E)
+                        {
+                            dispatch += 4 + 2 + ScrollBranch(0xD787, 0xD7B6, Flags == 0x50);
+                            if (Flags == 0x50) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }
+                            dispatch += 2 + ScrollBranch(0xD78B, 0xD7B6, Flags == 0x10);
+                            if (Flags == 0x10) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }
+                        }
+                        dispatch += 2 + 6 + 3;                           // $D78D LDA #$00, $D78F JSR $F200, $D792 JMP $D79A
+                        horizontal = ExpandedHorizontalSimple(X, nextY, true, XVelFrac, XVelInt, 0, true);
+                    }
                 }
+                if ((pressed & 0x40) != 0) throw new NotSupportedException("D79E airborne shot");
                 dispatch += 3 + 2 + ScrollBranch(0xD79E, 0xD7B6, true) + 6;
                 cycles = dispatch + vertical + probeCost + pair + horizontal;
                 return true;
@@ -531,7 +552,8 @@ namespace Darkwing.Core
             return cycles + 6 + snap + 6 + 2 + 5 + 2 + 5 + 6 + 2 + 6;
         }
 
-        private int ExpandedHorizontalSimple(int coordinateX, int coordinateY, bool right, byte velocityFraction, byte velocityInteger, int first)
+        private int ExpandedHorizontalSimple(int coordinateX, int coordinateY, bool right, byte velocityFraction,
+            byte velocityInteger, int first, bool refuseSolidSide = false)
         {
             int fraction = right ? XFrac + velocityFraction : XFrac - velocityFraction;
             int lowX = right ? (byte)coordinateX + velocityInteger + (fraction > 255 ? 1 : 0) : (byte)coordinateX - velocityInteger - (fraction < 0 ? 1 : 0);
@@ -542,6 +564,9 @@ namespace Darkwing.Core
             integrate += 6;
             int pair = TimingRejectedHorizontalPair(nextX, coordinateY);
             int probe = ExpandedProbeSet(nextX, coordinateY, first, out int maximum, out _, 3);
+            // $F248/$F2A3 snap on a solid side probe is priced only where that snap was itself verified
+            // ($CC53 walk); a caller that has not verified it refuses instead of estimating.
+            if (refuseSolidSide && maximum >= 3) throw new NotSupportedException(right ? "F248 solid side snap" : "F2A3 solid side snap");
             int cycles = 3 + 3 + 6 + integrate + 2 + ScrollBranch(right ? 0xF209 : 0xF25D, right ? 0xF23F : 0xF29A, false) + 6 + pair;
             cycles += ScrollBranch(right ? 0xF20E : 0xF262, right ? 0xF23F : 0xF29A, true) + 6 + probe;
             cycles += 3 + 2 + ScrollBranch(right ? 0xF246 : 0xF2A1, right ? 0xF24B : 0xF2A6, maximum < 3);
