@@ -1,0 +1,248 @@
+{
+  "task": "ZERO-65",
+  "parent": "ZERO-64; ZERO-12 and goal 12 remain open",
+  "date": "2026-10-30",
+  "executor": {
+    "name": "Китаец Kimi",
+    "email": "kit.kimi@beholder.learn.su",
+    "personUuid": "8b19dab4-3f78-4d4d-9f40-45f55d4a14fb",
+    "identityCheck": "own Beholder MCP get_user_profile + list_employees",
+    "usageLimit": "UNKNOWN: own Kimi CLI exposes no usage API/command; no other harness value substituted"
+  },
+  "slot": {
+    "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "branch": "codex/orchestration-slot-a",
+    "assignedHead": "58353f91d915d2bc0eac06b8271fea03d44b8e11",
+    "assignedMain": "503bff8aa1168e49bfa517730dc752c201efe562",
+    "ancestry": "PASS",
+    "foreignDirtyFile": ".vscode/settings.json",
+    "foreignDirtySha256": "29051ac5829ac16ef275904820030c36f94d552a78378878bac09c6628598dd1",
+    "preservedByExistingStash": "ed037a9b8450e5eb521414d0162a59d616f11e7d",
+    "foreignDirtyIncludedInCommit": false,
+    "runtimeEditorSceneSettingsUserStandBuildChanged": false,
+    "nativeTimingRejectedHorizontalPairChanged": false,
+    "b68PartialsRead": false
+  },
+  "scope": "Corrected independent bank-7 review of direct pair 0/1 and the complete F612 scan 2..15 through actual RTS, plus actual F200/F254 synthetic fixtures in the existing state09_source_price.py entry point. No ROM patch, continuous-route claim, runtime implementation, new CPU or new stand.",
+  "historical": {
+    "commit": "784c8aecc9146e05d3214bdb02ac91b227ebd7d9",
+    "snapshotManifestSha256": "873f756f38d2e0952947e66cf19a9b48aa5c581cf89241da12818fea1f894004",
+    "fixtureSha256": "6550048268bc4d8a5b3398c212405ed5f20665555d6974ce1a94d6c2d0e4cac3",
+    "preserved": true,
+    "retractedInterpretation": "The frontier stop before F647 did not prove that complete F612 could not return carry set; only direct pair-0/1 F644 SEC/F645 RTS was dead.",
+    "producerDefect": "ccea_pair_fragment stopped at frontier F647 instead of continuing through F724/F74E/F7DE to actual RTS."
+  },
+  "tool": {
+    "path": "Art/Tools/DarkwingResearch/cost/state09_source_price.py",
+    "mode": "--ccea-pair",
+    "sha256": "2f7790c34d436e6331bb2bfe83f38f5d2784bcd97eb7f9e060906293badd430a",
+    "missingCapability": "The old producer lacked actual-return evidence and scan 2..15 guard/positive controls. Full F612 now ends at sentinel CA43, while F62D/F647 stops are explicitly frontier checks. Existing Cpu/step is reused; only F5 SBC zp,X is enabled locally for the new mode."
+  },
+  "inputs": {
+    "rom": {
+      "path": "Art/Darkwing Duck (USA).nes",
+      "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00"
+    },
+    "bank7Sha256": "96cc6beafb7bcdf753657887fedf5c1dfbc590588a692100a4fee7da5b73b9f5",
+    "originalBuffers": {
+      "path": "Art/Playthroughs/20261019T212535Z/replay1/buffers.bin",
+      "recordBytes": 4384,
+      "sha256": "7c123d27f8f678e25fa812a8b6dbf599f49b93b2c6dbb467ca848f64a9f1cb70"
+    },
+    "baseRecord": {
+      "poll": 2666,
+      "ramBytes": 2048,
+      "sha256": "f270bad6026b7efcd89242b03883128afa3194c7aa889dac8e6b54395fb00952"
+    },
+    "input": {
+      "path": "Art/Playthroughs/20261019T212535Z/input.bin",
+      "sha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100"
+    },
+    "phases": {
+      "path": "Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv",
+      "sha256": "34ca53697c00a3e018d15c881aa9f76437a1d67a70f8734fe2bd8545ba53dbe6"
+    }
+  },
+  "commands": {
+    "cwd": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "fixture": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea-pair \"Art/Darkwing Duck (USA).nes\" Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.json 2666",
+    "fixtureCompare": "cmp Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.json Art/Tools/DarkwingResearch/cost/fixtures/ccea_actor_pair.json",
+    "route": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Playthroughs/20261019T212535Z/input.bin 1924 6420 --json Art/Temp/ZERO-65/fullreturn/ccea_1924_6420.json",
+    "regression": [
+      "--selftest ROM BUFFERS",
+      "ROM PHASES BUFFERS 1941 1977 --json Art/Temp/ZERO-65/fullreturn/state09_1941_1977.json",
+      "--ground00 ROM PHASES BUFFERS INPUT 1924 6420 --json Art/Temp/ZERO-65/fullreturn/ground00_source.json",
+      "--airborne0b ROM PHASES BUFFERS INPUT 2538 2553 --json Art/Temp/ZERO-65/fullreturn/airborne0b_2538_2553.json",
+      "--dump-cases ROM BUFFERS Art/Temp/ZERO-65/fullreturn/state09_cases.json 32 47 6000"
+    ]
+  },
+  "sourceConclusions": {
+    "carrySetFixturePossible": true,
+    "directPairFinalGuard": "F63C CMP #$18 leaves N=1 for every A=0..23 accepted by F640 BCC, so F642 BMI F646 always rejects; A>=24 rejects at F63E. F644 SEC/F645 RTS is dead only in the direct pair-0/1 success path.",
+    "completeReturn": "F646 CLC/F647 JMP F724 is not a return. Full F612 can scan slots 2..15 and return carry set through F744 JMP F7DE -> F7DE SEC -> F7DF RTS.",
+    "scanGuards": "state!=0B; 04D0/0400/0570 bit7; size class=0570&1F; high dX=0; dX<=FC09[class] (equality accepted); dY<FBE9[class].",
+    "positiveFixture": "state01; slot2 04D2=0402=80,0572=81; player 0400 bit4=1; dX=2,dY=0; other scan slots disabled. Full F612 returns C=1 at F7DF in 290 cycles with push10=10.",
+    "zero64Slot1": "Active slot 1, flags, object and direct dX=2/14 with equal Y pass the earlier tests and reject at F642 BMI.",
+    "f699Direct": "$0400,X bit4 set: absolute 16-bit X distance returned in A; F62D requires A<17.",
+    "f699Camera": "bit4 clear: otherX-$FC-playerX is computed into scratch $00, but F6DA LDA #0 makes the returned A zero; F62D therefore always passes.",
+    "f6df": "Different high Y bytes are reconciled by +/-16; absolute low Y distance is returned and F63C requires A<24.",
+    "rightClamp": "CMP leaves C=0 when $10>4; F21B SBC $10 subtracts 4+1, actual shift 5.",
+    "leftClamp": "F26F CLC precedes ADC; clamped shift is exactly 4.",
+    "edgeFlip": "Right F235 only for newX<edge; left F290 only for newX>edge; equality does not flip.",
+    "researchProducerBugFixed": true,
+    "runtimeChanged": false
+  },
+  "results": {
+    "fixture": {
+      "verdict": "PASS",
+      "controls": 300,
+      "failed": 0,
+      "finalGuardValues": 256,
+      "carrySetCases": 9,
+      "fullCallCarrySetCases": 4,
+      "actualSideCarrySetCases": 2,
+      "directPairF644Cases": 0,
+      "downstreamCases": 10,
+      "canonical": {
+        "path": "Art/Tools/DarkwingResearch/cost/fixtures/ccea_actor_pair.json",
+        "sha256": "0ae03c4f6a53d2f161512c069dea5a83484a9d7f87107c5d5460697b11844dc7"
+      },
+      "reproduction": {
+        "path": "Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.json",
+        "sha256": "0ae03c4f6a53d2f161512c069dea5a83484a9d7f87107c5d5460697b11844dc7",
+        "byteEqualToCanonical": true
+      },
+      "log": {
+        "path": "Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.log",
+        "sha256": "a6a24726d0658d33cc096c83ff9414fe5e7c7b92c48f26a07cd0db57a4aec186"
+      },
+      "sha256Basis": "Windows working-tree bytes (CRLF) written by the tool; git blob is LF-normalized (autocrlf=input).",
+      "cycleBasis": {
+        "rightNoFlipClamp": 1027,
+        "rightNoFlipUnclamped": 1025,
+        "leftNoFlipClamp": 1049,
+        "leftNoFlipUnclampedOrEqual": 1047,
+        "rightFlipClamp": 1069,
+        "leftFlipClamp": 1067
+      }
+    },
+    "route": {
+      "verdict": "PASS",
+      "rows": 1399,
+      "exact": 1399,
+      "nonempty": 67,
+      "controls": 1213,
+      "controlsFailed": 0,
+      "actorPairRows": 0,
+      "edgeFlipRows": 0,
+      "json": {
+        "path": "Art/Temp/ZERO-65/ccea_1924_6420.json",
+        "sha256": "041ac192c2d433cc3a55e82c566a91f423dde2cbf04e008b7e3fe2c41ee1dd54",
+        "byteEqualToZERO64": true
+      },
+      "log": {
+        "path": "Art/Temp/ZERO-65/ccea_1924_6420.log",
+        "sha256": "ef685c63cb3ba52abd75e5002259eb9533d6fcded95a9b769cd9c5a3ffd11a0b",
+        "byteEqualToZERO64": true
+      }
+    },
+    "mutationProof": {
+      "range": [
+        2660,
+        2810
+      ],
+      "allSixExit1": true,
+      "logsSha256": {
+        "tail-no-page-cross": "3a55ce3e240c93a21097fbae45936260a7972e55ddf66b64dd35d457bd956aaa",
+        "update-46": "444542da24ee9a23c546b13bf4a1b3038b9041e0114b1897bd26f438cb3dd5b8",
+        "ed85-43": "f03f16efb6f22a2e60baa074aee5127b9f6d5becaa5439883ff1b90e68b62f74",
+        "ed9d-as-ed85": "3f4886801e765ab7acde0c156b2ba01cf8e735215b0acac9eaf22c4e443ab283",
+        "class7-exit-as-6": "f121633366951f4c5f678708fa117ef614fb4f1739f551ba0de9c793b3caeca0",
+        "equal-class-skips": "8a560ac95fed3527ac4d5d593f27446276a59f17e9f2ff1aaffa8cc2c9b71859"
+      }
+    },
+    "regression": {
+      "selftest": "PASS 7/7",
+      "state09": {
+        "exact": 37,
+        "sha256": "c75410d3179c43b834f68caffa710ff80931608b596a408e4e90ef4ccd0052be",
+        "byteEqualToZERO64": true
+      },
+      "ground00": {
+        "verdict": "PASS",
+        "controls": 60,
+        "sha256": "8021339d5e860f04ec25a4b6e1ec9fc61a27c2d8f668a546e2b700d25334e091",
+        "byteEqualToZERO64": true
+      },
+      "airborne0b": {
+        "exact": 16,
+        "controls": 91,
+        "sha256": "b0a81878968df6ab4e09220b471420e6911deab9923aa7cf4ee1b233d2ba3b6b",
+        "byteEqualToZERO64": true
+      },
+      "dumpCases": {
+        "sha256": "92415328b30271218c73e6d88998e6e958e2c99b57324fce2a9ad20186b2f175",
+        "byteEqualToTrackedFixture": true
+      }
+    }
+  },
+  "checks": {
+    "sourceGuardReview": "PASS",
+    "syntheticFixtureAndNegatives": "PASS; not original-route evidence",
+    "nativeImplementation": "NOT RUN (out of scope)",
+    "editorSuiteStandalonePlaytest": "NOT RUN",
+    "zero12OrGoal12Closed": false
+  },
+  "review": {
+    "task": "ZERO-69",
+    "reviewer": {
+      "name": "Пельмень Claude",
+      "email": "pel.claude@beholder.learn.su",
+      "personUuid": "a48b2e74-4bbb-4bd8-89d9-9a1409fb35bd",
+      "identityCheck": "own Beholder MCP get_user_profile + list_employees",
+      "usageLimit": "own Claude OAuth usage API, five_hour: 24% remaining before review"
+    },
+    "head": "9ad7a90a475835bd0a16e3fe0a90b386f0b7851d",
+    "main": "503bff8",
+    "ancestry": "PASS",
+    "verdict": "PASS (scoped: synthetic bank-7 instruction fixtures; not continuous route, not native actor-contact support)",
+    "romListing": "ROM bytes F642..F649, F724..F783, F7DE..F7DF match disasm/flat_bank7.txt; FC09[0..3]=22,12,18,26, FBE9[0..3]=22,12,18,22; F20B/F25F JSR F612 followed by F20E/F262 BCC.",
+    "fixtureRepro": {
+      "path": "Art/Temp/ZERO-69/ccea_actor_pair_claude.json",
+      "sha256": "0ae03c4f6a53d2f161512c069dea5a83484a9d7f87107c5d5460697b11844dc7",
+      "byteEqualToCanonical": true,
+      "summary": "300/300 PASS, full-call carry 4, actual side carry 2, direct F644 0"
+    },
+    "independentNegatives": {
+      "script": {
+        "path": "Art/Tools/DarkwingResearch/cost/ccea_pair_review.py",
+        "sha256": "61f41ab7e21f069c0e75c7198f7367f9d9a34e320e760791cd3e1e2d49e4088f",
+        "originalPath": "Art/Temp/ZERO-69/scripts/independent_negatives.py",
+        "promotedByteExactBy": "Codex, preserving Claude source after own Claude quota stop"
+      },
+      "json": {
+        "path": "Art/Temp/ZERO-69/independent_negatives.json",
+        "sha256": "edd6d298dd0684a932596f24911fa118cc79f0f9d67652f19372b25893524f52"
+      },
+      "summary": "11/11 PASS: slot15 and slot3 hits (loop continuation), size class 2 dX18/19 dY17/18, class 0 dX22/23, slot1 not scanned, mutant F744->F74C loses carry, mutant F642 BMI->BPL reaches F644 SEC"
+    },
+    "regressionsReused": "Art/Temp/ZERO-65/fullreturn JSON/log and six mutant logs hash-equal to this evidence; not re-run without reason.",
+    "historyPreserved": "784c8ae fixture blob afd53786 == Art/Temp/ZERO-65/ccea_actor_pair_784c8ae.json (287 controls, CRLF sha 65500482...); snapshot 873f756f... recorded in Art/Temp/ZERO-65-preserve/snapshot.log.",
+    "correctionsMade": [
+      "results.fixture still described the retracted 784c8ae fixture (287 controls, carry 0, sha 65500482..., ZERO-65 root repro path); replaced with the corrected 300-control fixture."
+    ],
+    "residualNotes": [
+      "actual F200/F254 cases record stop_pc 'CA43' as a literal and derive carry from F210/F264 entry; completion is still enforced by exact CAFC cycles/slice/post-X, so no verdict change.",
+      "Negative scan cases report only the first rejecting PC (slot 2); slots 3..15 are disabled by the fixture."
+    ],
+    "notClosed": "ZERO-65, ZERO-69 and goal 12 are not closed by the reviewer.",
+    "preservationRepair": {
+      "scriptSha256": "61f41ab7e21f069c0e75c7198f7367f9d9a34e320e760791cd3e1e2d49e4088f",
+      "promotedRunSha256": "edd6d298dd0684a932596f24911fa118cc79f0f9d67652f19372b25893524f52",
+      "result": "11/11 PASS and byte-exact output after promotion",
+      "claudeFinalFiveHourRemainingPercent": 15,
+      "claudeStopped": true,
+      "nativeRuntimeChanged": false
+    }
+  }
+}
