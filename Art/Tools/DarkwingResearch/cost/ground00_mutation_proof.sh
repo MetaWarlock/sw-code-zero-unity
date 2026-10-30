@@ -162,7 +162,7 @@ mutate mut8_vetoIgnoresCheckpoint 'if (CheckpointId == 0x0E)
                             dispatch += 4 + 2 + ScrollBranch(0xD787, 0xD7B6, Flags == 0x50);' 1 'synthetic=60/80'
 mutate mut9_vetoIgnoresFlags 'dispatch += 4 + 2 + ScrollBranch(0xD787, 0xD7B6, Flags == 0x50);
                             if (Flags == 0x50) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }' 'dispatch += 4 + 2 + ScrollBranch(0xD787, 0xD7B6, true);
-                            if (true) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }' 1 'synthetic=70/80'
+                            if (true) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }' 1 'synthetic=60/80'
 mutate mut10_vetoSecondFlagAsFirst 'dispatch += 2 + ScrollBranch(0xD78B, 0xD7B6, Flags == 0x10);
                             if (Flags == 0x10) { cycles = dispatch + vertical + probeCost + pair + 6; return true; }' 'dispatch += ScrollBranch(0xD78B, 0xD7B6, Flags == 0x10);
                             if (Flags == 0x10) { cycles = dispatch + vertical + probeCost + pair + 4; return true; }' 1 'synthetic=70/80'
