@@ -12,8 +12,8 @@
   "slot": {
     "path": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
     "branch": "codex/orchestration-slot-a",
-    "assignedHead": "feaf0b83b8d8e3eb6e528f9b8f20c258e7a9d733",
-    "assignedMain": "feaf0b83b8d8e3eb6e528f9b8f20c258e7a9d733",
+    "assignedHead": "58353f91d915d2bc0eac06b8271fea03d44b8e11",
+    "assignedMain": "503bff8aa1168e49bfa517730dc752c201efe562",
     "ancestry": "PASS",
     "foreignDirtyFile": ".vscode/settings.json",
     "foreignDirtySha256": "29051ac5829ac16ef275904820030c36f94d552a78378878bac09c6628598dd1",
@@ -21,14 +21,22 @@
     "foreignDirtyIncludedInCommit": false,
     "runtimeEditorSceneSettingsUserStandBuildChanged": false,
     "nativeTimingRejectedHorizontalPairChanged": false,
-    "qoder60PartialsRead": false
+    "b68PartialsRead": false
   },
-  "scope": "Independent bank-7 review of F612/F699/F6DF and narrow synthetic source-instruction fixtures in the existing state09_source_price.py entry point. No ROM patch, continuous-route claim, runtime implementation, new CPU or new stand.",
+  "scope": "Corrected independent bank-7 review of direct pair 0/1 and the complete F612 scan 2..15 through actual RTS, plus actual F200/F254 synthetic fixtures in the existing state09_source_price.py entry point. No ROM patch, continuous-route claim, runtime implementation, new CPU or new stand.",
+  "historical": {
+    "commit": "784c8aecc9146e05d3214bdb02ac91b227ebd7d9",
+    "snapshotManifestSha256": "873f756f38d2e0952947e66cf19a9b48aa5c581cf89241da12818fea1f894004",
+    "fixtureSha256": "6550048268bc4d8a5b3398c212405ed5f20665555d6974ce1a94d6c2d0e4cac3",
+    "preserved": true,
+    "retractedInterpretation": "The frontier stop before F647 did not prove that complete F612 could not return carry set; only direct pair-0/1 F644 SEC/F645 RTS was dead.",
+    "producerDefect": "ccea_pair_fragment stopped at frontier F647 instead of continuing through F724/F74E/F7DE to actual RTS."
+  },
   "tool": {
     "path": "Art/Tools/DarkwingResearch/cost/state09_source_price.py",
     "mode": "--ccea-pair",
-    "sha256": "fe093fefcceecd35cecc9fb31226bea76c93e7ec1bead73a65d775649d567112",
-    "missingCapability": "--ccea route rows and geometry/input controls could not explain the carry-clear result or execute F210/F264; direct F612/F63C/F207/F210/F264 fragments were required. Existing Cpu/step is reused; only F5 SBC zp,X is enabled locally for the new mode."
+    "sha256": "2f7790c34d436e6331bb2bfe83f38f5d2784bcd97eb7f9e060906293badd430a",
+    "missingCapability": "The old producer lacked actual-return evidence and scan 2..15 guard/positive controls. Full F612 now ends at sentinel CA43, while F62D/F647 stops are explicitly frontier checks. Existing Cpu/step is reused; only F5 SBC zp,X is enabled locally for the new mode."
   },
   "inputs": {
     "rom": {"path": "Art/Darkwing Duck (USA).nes", "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00"},
@@ -40,20 +48,23 @@
   },
   "commands": {
     "cwd": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
-    "fixture": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea-pair \"Art/Darkwing Duck (USA).nes\" Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Temp/ZERO-65/ccea_actor_pair_repro.json 2666",
-    "fixtureCompare": "cmp Art/Temp/ZERO-65/ccea_actor_pair_repro.json Art/Tools/DarkwingResearch/cost/fixtures/ccea_actor_pair.json",
-    "route": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Playthroughs/20261019T212535Z/input.bin 1924 6420 --json Art/Temp/ZERO-65/ccea_1924_6420.json",
+    "fixture": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea-pair \"Art/Darkwing Duck (USA).nes\" Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.json 2666",
+    "fixtureCompare": "cmp Art/Temp/ZERO-65/fullreturn/ccea_actor_pair_repro.json Art/Tools/DarkwingResearch/cost/fixtures/ccea_actor_pair.json",
+    "route": "python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --ccea \"Art/Darkwing Duck (USA).nes\" Art/Research/DarkwingDuck/reference/cost-harness/data/phases/city_phases.csv Art/Playthroughs/20261019T212535Z/replay1/buffers.bin Art/Playthroughs/20261019T212535Z/input.bin 1924 6420 --json Art/Temp/ZERO-65/fullreturn/ccea_1924_6420.json",
     "regression": [
       "--selftest ROM BUFFERS",
-      "ROM PHASES BUFFERS 1941 1977 --json Art/Temp/ZERO-65/state09_1941_1977.json",
-      "--ground00 ROM PHASES BUFFERS INPUT 1924 6420 --json Art/Temp/ZERO-65/ground00_source.json",
-      "--airborne0b ROM PHASES BUFFERS INPUT 2538 2553 --json Art/Temp/ZERO-65/airborne0b_2538_2553.json",
-      "--dump-cases ROM BUFFERS Art/Temp/ZERO-65/state09_cases.json 32 47 6000"
+      "ROM PHASES BUFFERS 1941 1977 --json Art/Temp/ZERO-65/fullreturn/state09_1941_1977.json",
+      "--ground00 ROM PHASES BUFFERS INPUT 1924 6420 --json Art/Temp/ZERO-65/fullreturn/ground00_source.json",
+      "--airborne0b ROM PHASES BUFFERS INPUT 2538 2553 --json Art/Temp/ZERO-65/fullreturn/airborne0b_2538_2553.json",
+      "--dump-cases ROM BUFFERS Art/Temp/ZERO-65/fullreturn/state09_cases.json 32 47 6000"
     ]
   },
   "sourceConclusions": {
-    "carrySetFixturePossible": false,
-    "finalGuard": "F63C CMP #$18 leaves N=1 for every A=0..23 accepted by F640 BCC, so F642 BMI F646 always rejects; A>=24 rejects at F63E. F644 SEC/F645 RTS is unreachable through F612 on the unmodified ROM.",
+    "carrySetFixturePossible": true,
+    "directPairFinalGuard": "F63C CMP #$18 leaves N=1 for every A=0..23 accepted by F640 BCC, so F642 BMI F646 always rejects; A>=24 rejects at F63E. F644 SEC/F645 RTS is dead only in the direct pair-0/1 success path.",
+    "completeReturn": "F646 CLC/F647 JMP F724 is not a return. Full F612 can scan slots 2..15 and return carry set through F744 JMP F7DE -> F7DE SEC -> F7DF RTS.",
+    "scanGuards": "state!=0B; 04D0/0400/0570 bit7; size class=0570&1F; high dX=0; dX<=FC09[class] (equality accepted); dY<FBE9[class].",
+    "positiveFixture": "state01; slot2 04D2=0402=80,0572=81; player 0400 bit4=1; dX=2,dY=0; other scan slots disabled. Full F612 returns C=1 at F7DF in 290 cycles with push10=10.",
     "zero64Slot1": "Active slot 1, flags, object and direct dX=2/14 with equal Y pass the earlier tests and reject at F642 BMI.",
     "f699Direct": "$0400,X bit4 set: absolute 16-bit X distance returned in A; F62D requires A<17.",
     "f699Camera": "bit4 clear: otherX-$FC-playerX is computed into scratch $00, but F6DA LDA #0 makes the returned A zero; F62D therefore always passes.",
@@ -61,7 +72,8 @@
     "rightClamp": "CMP leaves C=0 when $10>4; F21B SBC $10 subtracts 4+1, actual shift 5.",
     "leftClamp": "F26F CLC precedes ADC; clamped shift is exactly 4.",
     "edgeFlip": "Right F235 only for newX<edge; left F290 only for newX>edge; equality does not flip.",
-    "runtimeBugFound": false
+    "researchProducerBugFixed": true,
+    "runtimeChanged": false
   },
   "results": {
     "fixture": {
