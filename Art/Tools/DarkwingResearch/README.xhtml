@@ -132,8 +132,9 @@ python -I Art/Tools/DarkwingResearch/cost/state09_source_price.py --dump-cases "
 dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- state09cases Art/Tools/DarkwingResearch/cost/fixtures/state09_csharp_cases.json Art/Temp/ZERO-47/state09cases.csv
 dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- state09 Art/Temp/ZERO-47/state09_gate.csv
 dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- cardrelease Art/Temp/ZERO-50/cardrelease_gate.csv 6420 2110 2125
-dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- ground00 Art/Temp/ZERO-54/ground00_source_1924_6420.json Art/Temp/ZERO-54/ground00_gate.csv 2543
-bash Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh Art/Temp/ZERO-54/mutation-proof
+dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- ground00 Art/Temp/ZERO-54/ground00_source_1924_6420.json Art/Temp/ZERO-54/ground00_gate.csv 2666
+bash Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh Art/Temp/ZERO-54/mutation-proof Art/Temp/ZERO-54/ground00_source_1924_6420.json 2666
+# После ZERO-60 первый CAFC-отказ — 2666; прежняя граница 2543 (и умолчание драйвера в режиме ground00) теперь даёт FAIL — ZERO-67.
 dotnet run --project Art/Tools/DarkwingResearch/cost/reached_body_aggregate.csproj -c Release -- airborne0b Art/Temp/ZERO-60/inputs/airborne0b_2538_2553_verified.json Art/Temp/ZERO-60/airborne0b_gate.csv 2666
 bash Art/Tools/DarkwingResearch/cost/ground00_mutation_proof.sh Art/Temp/ZERO-60/mutation-proof Art/Temp/ZERO-60/inputs/airborne0b_2538_2553_verified.json 2666 Art/Temp/ZERO-54/clock_native_after.csv airborne0b
 </code></pre>
