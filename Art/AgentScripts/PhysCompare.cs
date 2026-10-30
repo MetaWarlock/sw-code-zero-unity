@@ -2594,15 +2594,48 @@ public static class PhysCompare
                 Objects = objects, State = 0x0B, AirSubState = 2,
                 X = 0x0100, Y = y, YVelInt = -1, YVelFrac = 0, Flags = 0xD0
             };
+            string PriceState()
+            {
+                var parts = new System.Collections.Generic.List<string>();
+                void Add(string name, object value)
+                {
+                    if (value is System.Array array)
+                    {
+                        var items = new System.Collections.Generic.List<string>();
+                        foreach (object item in array) items.Add(System.Convert.ToString(item, System.Globalization.CultureInfo.InvariantCulture));
+                        value = string.Join(",", items);
+                    }
+                    else if (value != null && !value.GetType().IsValueType && !(value is string))
+                        value = "reference:" + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(value);
+                    parts.Add(name + "=" + System.Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture));
+                }
+                foreach (var field in typeof(Darkwing.Core.PlayerCore).GetFields(
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))
+                    Add("player." + field.Name, field.GetValue(p));
+                for (int slot = 0; slot < objects.Slots.Length; slot++)
+                    foreach (var field in typeof(Darkwing.Core.ObjectSystem.Slot).GetFields(
+                        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic))
+                        Add("slot" + slot + "." + field.Name, field.GetValue(objects.Slots[slot]));
+                return string.Join(";", parts);
+            }
             var support = objects.Slots[scan ? 2 : 1];
             support.Active = true; support.Flags = 0x80; support.Behavior = 1;
             support.AnimNumber = 1; support.BehaviorParam = 0x87;
             support.X = p.X; support.Y = (ushort)(y + 8);
+            string beforePrice = PriceState();
+            bool priced = p.TryMeasureAirborne0BCycles(0x41, 0x40, null, out int price, out string priceWhy);
+            int priceReads = map.Reads;
+            Check(!priced && !string.IsNullOrEmpty(priceWhy), "price guard refuses the synthetic map");
+            Check(priceReads == 0 || priceReads == 3,
+                $"price measurement uses no hook/side probe (expected 0 or 3 floor reads, observed {priceReads}, reason {priceWhy})");
+            Check(PriceState() == beforePrice, "price measurement leaves player and object fields unchanged");
             p.Step(0x41, 0x40);
             Check(p.State == 0, "successful support branch reached");
             Check(p.X == 0x0100 && p.XFrac == 0, "RTS suppresses steering");
             Check(!p.HasPendingFire, "RTS suppresses airborne fire");
-            Check(map.Reads == 3, $"only initial floor probes; no hook/side probe (expected 3, observed {map.Reads})");
+            int physicalReads = map.Reads - 2 * priceReads;
+            Check(physicalReads == 3,
+                $"physical pass only initial floor probes; no hook/side probe (expected 3, observed {physicalReads}; total {map.Reads}, two price passes {2 * priceReads})");
             Check(p.Y == (y == 0x0300 ? 0x02ED : 0x035D), "lift clamp and 240px row borrow");
             Check(p.AirSubState == 2, "$56 preserved");
             // Same geometry without an active support must reach normal airborne control.
