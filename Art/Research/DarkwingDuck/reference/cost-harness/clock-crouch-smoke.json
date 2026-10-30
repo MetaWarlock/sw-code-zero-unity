@@ -1,0 +1,42 @@
+{
+  "scope": "standalone boot/render/clean exit only; no playthrough or ROM comparison",
+  "exe": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck/Art/Build/ClockCrouch/DarkwingDuck.exe",
+  "startedUtc": "2026-10-30T08:21:46.4456793Z",
+  "success": true,
+  "arguments": "-screen-fullscreen 0 -screen-width 768 -screen-height 720 -logFile \"D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck\\Art\\Temp\\ZERO-62\\smoke\\Player.log\"",
+  "pid": 243620,
+  "captureA": {
+    "path": "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck\\Art\\Temp\\ZERO-62\\smoke\\window_a.png",
+    "width": 784,
+    "height": 759,
+    "clientWidth": 768,
+    "clientHeight": 720,
+    "clientLeft": 8,
+    "clientTop": 31,
+    "samples": 34560,
+    "nonBlack": 26923,
+    "colors": 26,
+    "sha256": "DFC97CCA1E2DA0FCB6458E762FC9473B596FEA8FD799CA752D1AAFFF2169CCC3"
+  },
+  "captureB": {
+    "path": "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck\\Art\\Temp\\ZERO-62\\smoke\\window_b.png",
+    "width": 784,
+    "height": 759,
+    "clientWidth": 768,
+    "clientHeight": 720,
+    "clientLeft": 8,
+    "clientTop": 31,
+    "samples": 34560,
+    "nonBlack": 26877,
+    "colors": 37,
+    "sha256": "71816C19CD261F2E49FCE43EF83E0BA488EEF3264079252FEF61C05E16CE6832"
+  },
+  "framesDiffer": true,
+  "playerExitCode": 0,
+  "cleanExit": true,
+  "log": "D:\\Art\\SW Code Zero Unity Builds\\Mission2-Wolfduck\\Art\\Temp\\ZERO-62\\smoke\\Player.log",
+  "exceptions": [],
+  "bloomWarnings": 17,
+  "finishedUtc": "2026-10-30T08:22:38.4885045Z",
+  "exitCode": 0
+}

@@ -1,0 +1,61 @@
+{
+ "schema": "zero61.opencode-provider-retry.v1",
+ "task": "ZERO-61 (parent ZERO-58)",
+ "measured_by": "Пельмень Claude pel.claude@beholder.learn.su (Beholder person a48b2e74-4bbb-4bd8-89d9-9a1409fb35bd)",
+ "measured_at_utc": "2026-10-30T08:08:50Z",
+ "project_revision": "main 90dfaae9c44928f275bd6efa92e8dd4a97b97df7",
+ "sanitization": "No headers, tokens, credentials or OpenCode auth tables were read or recorded; log lines were printed through a redaction filter; HTTP status code is not present in the sources.",
+ "conclusion": "The ACP turn stops inside OpenCode's provider retry wait: provider opencode/big-pickle returned AI_APICallError 'Free usage limit reached'; OpenCode 1.19.4 classifies it as retryable and sleeps for a provider-derived delay without emitting any ACP session/update or session/prompt response. Not MCP, not ACP stopReason, not child-process death, not a continuation hook.",
+ "binary": {
+  "path": "C:/Users/Warlock/AppData/Roaming/npm/node_modules/opencode-ai/bin/opencode.exe",
+  "package": "opencode-ai 1.19.4",
+  "bytes": 211699592,
+  "sha256": "41c848c0986720c02d39b015bd2672e454a221052f6947854bc508d8765d9711",
+  "embedded_source_markers": [
+   {"offset": 131838573, "marker": "retry-after-ms", "meaning": "retry delay od(): retry-after-ms / retry-after header used directly, capped only at 2147483647 ms; without such header exponential 2000*2^(attempt-1)*(1..1.25) ms"},
+   {"offset": 131839186, "marker": "FreeUsageLimitError", "meaning": "classifier sd(): retryable APICallError whose responseBody contains FreeUsageLimitError returns reason free_tier_limit (retry, not halt)"},
+   {"offset": 131840373, "marker": "function id(e)", "meaning": "retry policy: stop when classifier returns nothing or attempt > Zc (Zc=5); otherwise set in-memory session status {type:retry,attempt,message,action,next} and sleep"},
+   {"offset": 131852177, "marker": "type:\"retry\"", "meaning": "SessionProcessor.process wraps provider stream with the retry policy; halt() records error/finish only after retries end"}
+  ],
+  "classifier_gate": "sd() continues only if APICallError.isRetryable, statusCode>=500, or message/responseBody match the built-in retry patterns"
+ },
+ "acp_session_zero58_native": {
+  "acpx_record": "756a1d55-528c-4e24-acfd-68134dbe52a8",
+  "opencode_session": "ses_e743e4145ffe0TjzxyPjHXVtY5",
+  "model": "opencode/big-pickle",
+  "processes": {"foreground_powershell": 420348, "acpx_client": 419436, "queue_owner": 32228, "opencode": 103152},
+  "acpx_journal": "initialize, session/resume (mcpServers []), result, available_commands_update; nothing after 2026-10-30T07:42:01.625Z. acpx buffers outbound frames and flushes only on agent session/update or client operation (acpx 0.21.1 dist/queue-owner-runtime-B0mPqOu4.js 7310-7336), so absence of session/prompt means no agent event or response arrived.",
+  "opencode_log_utc": [
+   ["07:41:53.242", "instance created; MCP children rea-agents and huly-mcp spawned via npx"],
+   ["07:42:04.098", "loop step=0 (prompt received)"],
+   ["07:42:05.899", "stream build agent opencode/big-pickle"],
+   ["07:42:06.686", "ERROR stream error AI_APICallError: Free usage limit reached (build agent)"],
+   ["07:42:11.331", "ERROR AI_RetryError: Failed after 3 attempts (title agent)"],
+   ["07:42:54.336", "last log line (cleanup); no halt/process error record at 08:08:50Z"]
+  ],
+  "opencode_db_state": "assistant message created 07:42:04.101, finish null, error null, tokens 0",
+  "http_status_code": "UNKNOWN (not logged)",
+  "parent_confirmed_local_status": {"type": "retry", "attempt": 1, "next_epoch_ms": 1793407138691, "next_utc": "2026-10-31T00:38:58.691Z", "wait_from_error": "16:56:52"},
+  "parent_resolution": "cancelled by parent; local status then empty; foreground finished"
+ },
+ "first_path_zero58_npx": {
+  "acpx_record_name": "ZERO-58",
+  "opencode_session": "ses_e7622a2feffeD83WxbaIZ3D0qH",
+  "journal_counters": {"session/prompt": 1, "agent_message_chunk": 100006, "agent_thought_chunk": 8594, "tool_call": 17, "tool_call_update": 34, "session/cancel": 1, "turn_result": "completed/end_turn"},
+  "loop_steps": {"count": 349, "first_utc": "2026-10-29T22:52:28.290Z", "last_step_utc": "2026-10-30T01:35:34.713Z"},
+  "provider_errors_utc": [
+   {"error": "2026-10-29T23:29:33.436Z", "next_attempt": "2026-10-30T00:38:58.522Z", "wait": "1:09:25", "outcome": "succeeded, loop resumed at step 159"},
+   {"error": "2026-10-30T01:35:36.297Z", "next_attempt": null, "wait": ">5:34:46 silent until cancel 2026-10-30T07:10:22.276Z", "outcome": "cancelled"}
+  ],
+  "observation": "native-path next_utc is 24h00m00.169s after the first path's successful retry; recorded as a timing fact, not as a proven provider mechanism"
+ },
+ "reproduce": {
+  "probes": "Art/Tools/DarkwingResearch/orchestration/zero61/restored (recovered; see recovered-manifest.json)",
+  "binary_markers": "python -I Art/Tools/DarkwingResearch/orchestration/zero61/restored/z61_bin.py <opencode.exe>",
+  "code_context": "python -I Art/Tools/DarkwingResearch/orchestration/zero61/restored/z61_ctx.py <opencode.exe> 131838573:1200:1800 131840373:0:2600 131852177:1800:900",
+  "log_errors": "python -I Art/Tools/DarkwingResearch/orchestration/zero61/restored/z61_err.py C:/Users/Warlock/.local/share/opencode/log/opencode.log  (reads last 62 lines only; valid while the 07:42 run is the log tail)",
+  "first_path_counters": "python -I .../restored/z61_oldlog.py C:/Users/Warlock/.local/share/opencode/log/opencode.log ; python -I .../restored/z61_old.py <ZERO-58 stream.ndjson>",
+  "session_db": "python -I .../restored/z61_db2.py C:/Users/Warlock/.local/share/opencode/opencode.db  (read-only URI; session id is hard-coded)",
+  "pass_criteria": "binary sha256 equal; markers at listed offsets; provider error lines present for the listed sessions; a different sha256 means re-locating markers, not reusing offsets"
+ }
+}

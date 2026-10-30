@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "date": "2026-10-30",
+  "issue": "ZERO-62",
+  "parentIssue": "ZERO-12",
+  "executor": {
+    "name": "Китаец Kimi",
+    "email": "kit.kimi@beholder.learn.su",
+    "personUuid": "8b19dab4-3f78-4d4d-9f40-45f55d4a14fb",
+    "usageRemaining": "UNKNOWN"
+  },
+  "source": {
+    "baseHead": "90dfaae9c44928f275bd6efa92e8dd4a97b97df7",
+    "acceptedRuntimeCommit": "12901dd",
+    "settingsCommit": "25118118465710a9f2915e33140d395fa81aeed4",
+    "sourceFiles": 242,
+    "sourceAfterEqualsCurrent": true,
+    "changedDuringBuild": [
+      "ProjectSettings/ProjectSettings.asset"
+    ],
+    "inheritedDirtyFile": ".vscode/settings.json",
+    "inheritedDirtySha256": "29051ac5829ac16ef275904820030c36f94d552a78378878bac09c6628598dd1",
+    "inheritedDirtyCommitted": false,
+    "runtimeOrSceneLogicChanged": false
+  },
+  "settings": {
+    "name": "PlayerSettings.preloadedAssets",
+    "asset": "Assets/Settings/InputSystem_Actions.inputactions",
+    "guid": "2bcd2660ca9b64942af0de543d8d7100",
+    "reason": "Input System automatically added its InputActionAsset during the Development player build",
+    "editorApiVerification": "PlayerSettings.SetPreloadedAssets synchronized the live Editor with the serialized build setting; GetPreloadedAssets then returned InputSystem_Actions with the same GUID",
+    "yamlHandEdited": false
+  },
+  "unity": {
+    "version": "6000.6.5f1",
+    "editorPid": 279708,
+    "port": 7800,
+    "project": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+    "readiness": "ready",
+    "autoTick": true,
+    "recompileStatus": "up_to_date",
+    "recompileErrors": 0,
+    "scene": "Packages/su.learn.codezero/Scenes/DarkwingMain.unity",
+    "sceneGuid": "fb2d4d7901ed4af4f833b8f9f03ee7e1",
+    "sceneDirty": false,
+    "useFlow": true,
+    "worldId": 0,
+    "dataReferencesWithGuids": 16,
+    "sceneApiEvidence": "clock-crouch-scene-api.json"
+  },
+  "build": {
+    "development": true,
+    "id": "build_9e53ed926784",
+    "status": "completed",
+    "result": "Succeeded",
+    "errors": 0,
+    "warnings": 6,
+    "platform": "StandaloneWindows64",
+    "exe": "Art/Build/ClockCrouch/DarkwingDuck.exe",
+    "exeBytes": 667136,
+    "exeSha256": "b70442f90f50cd91f7af7bf2272602645fc5d02c4d3156fb221fc27c328d2436",
+    "totalSizeBytes": 188623941,
+    "buildTimeMs": 33230,
+    "binaryFiles": 354,
+    "report": "clock-crouch-build.json",
+    "sourceBefore": "clock-crouch-source-before.json",
+    "sourceAfter": "clock-crouch-source-after.json",
+    "binaryManifest": "clock-crouch-binary-manifest.json",
+    "commands": "clock-crouch-build-commands.json"
+  },
+  "smoke": {
+    "verdict": "PASS",
+    "scope": "standalone boot/render/clean exit only; no playthrough or ROM comparison",
+    "pid": 243620,
+    "windowClient": "768x720",
+    "framesDiffer": true,
+    "captureASha256": "DFC97CCA1E2DA0FCB6458E762FC9473B596FEA8FD799CA752D1AAFFF2169CCC3",
+    "captureBSha256": "71816C19CD261F2E49FCE43EF83E0BA488EEF3264079252FEF61C05E16CE6832",
+    "exceptions": 0,
+    "bloomWarnings": 17,
+    "cleanExit": true,
+    "playerExitCode": 0,
+    "report": "clock-crouch-smoke.json"
+  },
+  "acceptedBaseEvidenceNotRerun": {
+    "portToPortRecords": 165914,
+    "differingBytes": 0,
+    "suiteVerdict": "FAIL",
+    "suiteResultPassed": 18,
+    "suiteStrictPassed": 8,
+    "suiteCases": 24,
+    "suiteErrors": 0,
+    "mission1ContractGroupsPass": 16,
+    "scope": "Existing accepted evidence for the runtime base; this bounded task built and smoked the standalone only"
+  },
+  "preservationSelftest": {
+    "result": "PASS",
+    "positive": 1,
+    "negative": 7
+  },
+  "humanGameplayTransition": "NOT RUN; separate warlock task after parent verification and delivery",
+  "userStandOrShortcutsChanged": false,
+  "fullMissionRomImagePcmAcceptance": "NOT RUN and not claimed"
+}

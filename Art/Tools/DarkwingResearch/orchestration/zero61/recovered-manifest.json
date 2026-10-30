@@ -1,0 +1,128 @@
+{
+ "schema": "zero61.recovered-probes.v1",
+ "transcript": "C:/Users/Warlock/.claude/projects/D--Art-SW-Code-Zero-Unity/9c3d9ec5-14b6-4e57-b89a-bf90c1d74861.jsonl",
+ "transcript_sha256": "5b1f7d67b7c136c39cd585b605f0c21cd6b751138ecc71cc6d81661f4f09c470",
+ "last_tool_use_id": "toolu_01Ya1DfCHhGwm6RpPCUEUnHm",
+ "probes": [
+  {
+   "file": "restored/superseded/z61_err.v1.py",
+   "name": "z61_err.py",
+   "version": 1,
+   "final_on_disk": false,
+   "sha256": "37dfe447a8e22800707c2d83a254b2b5be25e4314fc8f507c2fb3eb5dc8ac3d1",
+   "bytes": 448,
+   "double_backslash_count": 2,
+   "source_tool_use_id": "toolu_01TBscVEBWopLEP2KraRArbw",
+   "source_transcript_line": 223,
+   "source_timestamp": "2026-10-30T08:06:27.793Z",
+   "write_call_is_error": true,
+   "traceback_disk_line_checks": [
+    {
+     "tool_use_id": "toolu_01TBscVEBWopLEP2KraRArbw",
+     "line": 4,
+     "match": false
+    }
+   ]
+  },
+  {
+   "file": "restored/z61_err.py",
+   "name": "z61_err.py",
+   "version": 2,
+   "final_on_disk": true,
+   "sha256": "7b3f5d84ff895537fdaaf60f1c9e8944f438e9950c9a023db23631bcf8e06e29",
+   "bytes": 469,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_01WMfmqK98xqCKYV9rZdzHuE",
+   "source_transcript_line": 227,
+   "source_timestamp": "2026-10-30T08:06:34.020Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  },
+  {
+   "file": "restored/z61_db.py",
+   "name": "z61_db.py",
+   "version": 1,
+   "final_on_disk": true,
+   "sha256": "baece07b8f745ed28fd37509dc0db2edfae321dbb30258c67342543f25d2954a",
+   "bytes": 480,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_01PgU35b7uCbs3qeTVuwR7vL",
+   "source_transcript_line": 240,
+   "source_timestamp": "2026-10-30T08:06:49.233Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  },
+  {
+   "file": "restored/z61_db2.py",
+   "name": "z61_db2.py",
+   "version": 1,
+   "final_on_disk": true,
+   "sha256": "2939b9ea28e46f88922e1efd66457a53c9ab7fc2b9477abccccb6720767bd062",
+   "bytes": 877,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_01LYMhvjTZnJBm95bdQE8oX1",
+   "source_transcript_line": 243,
+   "source_timestamp": "2026-10-30T08:06:54.350Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  },
+  {
+   "file": "restored/z61_bin.py",
+   "name": "z61_bin.py",
+   "version": 1,
+   "final_on_disk": true,
+   "sha256": "9856c2b6245b5b98dbecf7300136dae75cc7f13c4d7784c6463a4cecfc321efa",
+   "bytes": 353,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_01HCy2dNgP7m7CBmrEy4s5Pg",
+   "source_transcript_line": 256,
+   "source_timestamp": "2026-10-30T08:07:07.424Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  },
+  {
+   "file": "restored/z61_ctx.py",
+   "name": "z61_ctx.py",
+   "version": 1,
+   "final_on_disk": true,
+   "sha256": "f25f7501974253cf17823009d33957eb3c60b9186c31179536f29a9f44e835a0",
+   "bytes": 281,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_014FKKAxvucp6PPUk5aut8zQ",
+   "source_transcript_line": 259,
+   "source_timestamp": "2026-10-30T08:07:11.522Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  },
+  {
+   "file": "restored/z61_old.py",
+   "name": "z61_old.py",
+   "version": 1,
+   "final_on_disk": true,
+   "sha256": "1f8a717b81b3c4297da97a8fcf276ebeaa7cb1e6d398788195ca6e1bd4ff6ad0",
+   "bytes": 820,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_01Qe7xCrY9GXLdqYXzXPAk6d",
+   "source_transcript_line": 276,
+   "source_timestamp": "2026-10-30T08:07:48.648Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  },
+  {
+   "file": "restored/z61_oldlog.py",
+   "name": "z61_oldlog.py",
+   "version": 1,
+   "final_on_disk": true,
+   "sha256": "e21723b52e7f1ea3e547a247637d86bd62ebefa5af0a7918477dcfac7ac592ed",
+   "bytes": 966,
+   "double_backslash_count": 0,
+   "source_tool_use_id": "toolu_01T4WfVSSTcakMBb6pUsgrYi",
+   "source_transcript_line": 284,
+   "source_timestamp": "2026-10-30T08:08:00.939Z",
+   "write_call_is_error": false,
+   "traceback_disk_line_checks": []
+  }
+ ],
+ "commands_archive": "zero61-commands.json",
+ "commands_count": 64
+}
