@@ -1,7 +1,10 @@
 """Detector controls: python -m unittest discover -s Art/Tools/DarkwingResearch/stand -p test_health.py"""
 import importlib.util
+from contextlib import redirect_stdout
+import io
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 
 import stand
@@ -50,6 +53,20 @@ class HealthControls(unittest.TestCase):
         first = stand.compare_health(self.raw, edited)["firstDifferencesAfterBothHudsInstalled"]
         self.assertEqual(first["rng"]["poll"], 9)
         self.assertIsNone(first["healthTiles"])
+
+    def test_report_line_endings_and_existing_output(self):
+        temp_root = Path("Art/Temp").resolve()
+        assert temp_root.is_relative_to(Path.cwd().resolve())
+        with tempfile.TemporaryDirectory(dir=temp_root) as directory:
+            root = Path(directory)
+            source, output = root / "buffers.bin", root / "health.json"
+            source.write_bytes(self.raw)
+            args = SimpleNamespace(original=source, port=source, start=8, output=output)
+            with redirect_stdout(io.StringIO()):
+                stand.cmd_health(args)
+            self.assertNotIn(b"\r", output.read_bytes())
+            with self.assertRaises(ValueError):
+                stand.cmd_health(args)
 
     def test_framebuffer_roundtrip_and_truncation(self):
         spec = importlib.util.spec_from_file_location("compare_frames", Path(stand.__file__).parents[1] / "compare_frames.py")

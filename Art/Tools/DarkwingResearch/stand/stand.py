@@ -761,7 +761,7 @@ def cmd_health(args):
                               "sha256": hashlib.sha256(raw[name]).hexdigest()}
                         for name, path in paths.items()}
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(json.dumps({"output": str(out), "frames": report["frames"],
                       "firstDifferences": report["firstDifferencesAfterBothHudsInstalled"],
                       "events": {name: len(rows) for name, rows in report["events"].items()}}, indent=2))

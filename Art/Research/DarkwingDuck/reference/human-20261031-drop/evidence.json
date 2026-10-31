@@ -129,7 +129,7 @@
     "controls": "python -m unittest discover -s Art/Tools/DarkwingResearch/stand -p test_health.py; python -m unittest discover -s Art/Tools/DarkwingResearch -p test_stand.py"
   },
   "backup": {
-    "newEvidenceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261031-ZERO77-drop-health-main",
+    "newEvidenceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261031-ZERO77-drop-health-main-final",
     "originalRecordingAndTestedBuildSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261031-human-missions123-20261031T021326Z",
     "verification": "Final snapshot/verify/audit results recorded in Beholder ZERO-77."
   },
@@ -167,8 +167,8 @@
       "sha256": "a531cd06e54e232e093be9ee63a993e722b8197fc03ef8155cd0f2f7ef2e7cae"
     },
     "health.json": {
-      "bytes": 51866,
-      "sha256": "12bd322c2a124e84c026bafef7637e5bba675b71535418dd0826c9ce410aee7b"
+      "bytes": 49509,
+      "sha256": "f3be204e427dd14285466bb097a63770de16e41989b7debdb979ba5998ed00ab"
     },
     "original/replay1/trace.csv": {
       "bytes": 1005813,
@@ -206,5 +206,6 @@
     "agentSha256": "4143766f2b900e63663ea000655f24fd824f2ce5324c2575025f8bb68030a910",
     "coreSha256": "69425f547e83648b4aa8507908ff473a3d8c4ac666b8e130b2f5e9d99922d29a",
     "start": "power-on, separate --home each run, no load-state; power-on RAM excluded only poll1..7"
-  }
+  },
+  "derivedTextNormalization": "health.json UTF-8/LF for stable Git identity; raw captures and original inputs unchanged"
 }
