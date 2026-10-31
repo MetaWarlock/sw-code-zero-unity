@@ -110,13 +110,23 @@ def snapshot(destination, includes=()):
         raise ValueError("Backup must be a separate NEW directory outside the checkout")
     if destination.exists():
         raise ValueError("Snapshot already exists; never overwrite the previous backup")
+    completed = []
+    if destination.parent.is_dir():
+        for path in destination.parent.iterdir():
+            manifest_path = path / "manifest.json"
+            if path.is_dir() and manifest_path.is_file():
+                data = json.loads(manifest_path.read_text(encoding="utf-8"))
+                if data.get("complete") and "files" in data:
+                    completed.append(path.name)
+    if len(completed) >= 3:
+        raise ValueError("Three full snapshots already exist; verify unique-data coverage and retire a replaceable snapshot before creating another")
     roots = tuple(dict.fromkeys((*ROOTS, *includes)))
     for name in roots:
         if Path(name).is_absolute() or not (ROOT / name).resolve().is_relative_to(ROOT):
             raise ValueError(f"Protected paths must stay within assigned project: {name}")
         if name in includes and not (ROOT / name).exists():
             raise ValueError(f"Explicitly protected input does not exist: {name}")
-    sources = files((*roots, "Art/Temp"))
+    sources = files(roots)
     destination.mkdir(parents=True)
     manifest = {"schema": 1, "complete": False, "createdUtc": datetime.now(timezone.utc).isoformat(),
                 "sourceRoot": str(ROOT), "head": git("rev-parse", "HEAD").decode().strip(),

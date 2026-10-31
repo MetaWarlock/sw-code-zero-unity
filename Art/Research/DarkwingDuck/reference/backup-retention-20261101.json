@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "date": "2026-11-01",
+  "issue": "ZERO-81",
+  "cleanupComplete": false,
+  "backupRoot": "D:\\Art\\SW Code Zero Unity - Git Backups",
+  "keptSnapshots": [
+    {
+      "name": "20261031-ZERO77-drop-health-main-final",
+      "bytes": 2837571193,
+      "files": 4387
+    },
+    {
+      "name": "20261031-ZERO-72-kimi-ntsc-final",
+      "bytes": 8060759277,
+      "files": 3823
+    },
+    {
+      "name": "20261031-ZERO-73-claude-tas-sync",
+      "bytes": 2353160334,
+      "files": 3720
+    }
+  ],
+  "removedDirectories": 86,
+  "plannedRetirementDirectories": 87,
+  "remaining": [
+    {
+      "name": "2026-10-19-37fe6b1e",
+      "bytes": 96362422,
+      "reason": "Read-only Git objects; forced removal denied by automatic review with generic blocked by policy."
+    }
+  ],
+  "uniquePreservedBytes": 417020473,
+  "uniquePreservedFiles": 4581,
+  "catalog": "D:\\Art\\SW Code Zero Unity - Git Backups\\_retention-20261101\\catalog.json",
+  "catalogSha256": "5aa9dd468d655727986f0f5ee5b5cb4b43667a08e1cde2d4b4eaecf5ce68238a",
+  "gitHistory": {
+    "bytes": 98713654,
+    "sha256": "21dd2501f1c3302b5aa998217aa7e06099d04f53d9ce4c2c1e8331b1598c1ffb",
+    "heads": 138
+  },
+  "postCleanupCoverage": {
+    "result": "PASS",
+    "coveredContents": 9690
+  },
+  "recovery": {
+    "result": "PASS",
+    "destination": "Art\\Temp\\ZERO81\\recovered-historical-file.bin",
+    "bytes": 1529,
+    "sha256": "c0215ea4c45c930b02b834e426741f2acd7e057af5517e9a8e82793b598ae1ab",
+    "snapshot": "20261029-ZERO-52-slot-b",
+    "relative": "files/Art/Temp/ZERO-52/mutants/drive.sh",
+    "gitRestoredHeads": 138
+  },
+  "gitRestore": {
+    "result": "PASS",
+    "method": "NEW mirror clone; git fsck --full; exact 138-head set equality"
+  },
+  "diskMeasurement": {
+    "freeBefore": 3658194944,
+    "freeAfter": 222676058112,
+    "observedFreedBytes": 219017863168
+  },
+  "controls": {
+    "retentionTestsPassed": 12,
+    "retentionTestsSkipped": 1,
+    "skipReason": "Windows symlink creation privilege unavailable",
+    "preservationPositive": 1,
+    "preservationNegative": 7,
+    "strictXhtmlDocuments": 40,
+    "strictXhtmlResult": "PASS"
+  },
+  "executorQuota": {
+    "harness": "Codex",
+    "windowDurationMins": 300,
+    "usedPercent": 16,
+    "remainingPercent": 84,
+    "weeklyUsedPercent": 91
+  },
+  "notes": [
+    "No new ZIPs; previous pilot ZIP expanded.",
+    "Full SHA256 readback before retirement; retained/unique contents and Git heads verified afterwards.",
+    "Old bundle containers consolidated by exact advertised object-ID head coverage.",
+    "Working trees and Kimi WIP untouched.",
+    "Remaining 96 MB require manual cleanup; overall task is not complete."
+  ]
+}
