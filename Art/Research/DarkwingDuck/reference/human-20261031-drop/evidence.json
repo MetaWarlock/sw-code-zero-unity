@@ -1,0 +1,210 @@
+{
+  "schema": 1,
+  "task": "ZERO-77",
+  "author": {
+    "email": "sh.codex@beholder.learn.su",
+    "personUuid": "f152c379-1948-4273-ab8c-c9b3171d4959"
+  },
+  "sourceRevision": "3d9e205a9ff9ea3becc1fc7925aa969cfca5f442",
+  "testedRuntimeSourceRevision": "12901ddbfdde74ebcb22929d6c9ddcc69f6468cd",
+  "input": {
+    "session": "20261031T021326Z",
+    "fullBytes": 77688,
+    "fullSha256": "ee97b1e9a30d3746b85d1cb573edb913ec6fe0e81f21e9a4148d82d6c08c73f6",
+    "prefixBytes": 20000,
+    "derivation": "exact input.bin[:20000], power-on, no input offset or RAM seeds"
+  },
+  "boundary": "1-based pre-input poll; RAM2048+NT2048+OAM256+PAL32",
+  "originalRepeat": {
+    "runs": 2,
+    "pollRangeCompared": [
+      8,
+      20000
+    ],
+    "rawBytesPerPoll": 4384,
+    "byteEqual": true,
+    "excludedPowerOn": [
+      1,
+      7
+    ],
+    "differingExcludedPolls": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "thirdIndependentPrefix": {
+      "pollRangeCompared": [
+        8,
+        10000
+      ],
+      "byteEqual": true
+    }
+  },
+  "portToPort": {
+    "sourceRevisions": [
+      "12901dd",
+      "3d9e205"
+    ],
+    "records": 20000,
+    "bytes": 87680000,
+    "byteEqual": true,
+    "sha256": "a531cd06e54e232e093be9ee63a993e722b8197fc03ef8155cd0f2f7ef2e7cae"
+  },
+  "actualPlayerToCore": [
+    {
+      "poll": 600,
+      "rgbPixelsCompared": 61440,
+      "differentPixels": 0
+    },
+    {
+      "poll": 6000,
+      "rgbPixelsCompared": 61440,
+      "differentPixels": 0
+    },
+    {
+      "poll": 12000,
+      "rgbPixelsCompared": 61440,
+      "differentPixels": 0
+    },
+    {
+      "poll": 18000,
+      "rgbPixelsCompared": 61440,
+      "differentPixels": 0
+    }
+  ],
+  "timing": {
+    "rngFirstDifference": 5530,
+    "playerPositionStateFirstDifference": 5531,
+    "firstCommonDamage": 6873,
+    "missingMedkitFirstDifference": 7501,
+    "firstHealthDifference": 7569,
+    "portDeathOriginalAlive": 9993
+  },
+  "deathDropBranch": {
+    "bank": 6,
+    "addresses": [
+      "8741",
+      "875F",
+      "8761",
+      "8763",
+      "8765",
+      "8767",
+      "87A2"
+    ],
+    "preInputPoll": 7500,
+    "enemy": {
+      "slot": 14,
+      "anim": 93,
+      "x": 2358,
+      "y": 456
+    },
+    "original": {
+      "E5": 213,
+      "E6": 36,
+      "carry": 1,
+      "sum8": 250,
+      "threshold": 127,
+      "tableIndex": 26,
+      "itemAnim": 35
+    },
+    "port": {
+      "E5": 122,
+      "E6": 254,
+      "carry": 1,
+      "sum8": 121,
+      "threshold": 127,
+      "itemAnim": null
+    }
+  },
+  "scope": "Confirms this input missing health drop follows earlier shared RNG divergence. No gameplay fix, no all-input root-cause proof, no mission acceptance. First RNG difference PC81DD is consistent with incomplete OAM pass; precise NTSC phase integration is separate. Later damage also differs; absence of one medkit is not claimed to be the sole cause of death.",
+  "tools": {
+    "original": "stand/stand.py replay",
+    "health": "stand/stand.py health",
+    "native": "cost/reached_body_aggregate.csproj buffers",
+    "framebuffer": "compare_frames.py PNG or .indices; --render-indices",
+    "controls": "python -m unittest discover -s Art/Tools/DarkwingResearch/stand -p test_health.py; python -m unittest discover -s Art/Tools/DarkwingResearch -p test_stand.py"
+  },
+  "backup": {
+    "newEvidenceSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261031-ZERO77-drop-health-main",
+    "originalRecordingAndTestedBuildSnapshot": "D:/Art/SW Code Zero Unity - Git Backups/20261031-human-missions123-20261031T021326Z",
+    "verification": "Final snapshot/verify/audit results recorded in Beholder ZERO-77."
+  },
+  "files": {
+    "prefix20000/input.bin": {
+      "bytes": 20000,
+      "sha256": "e4977a5d93fb441326cd12f97fcda4637a411a4e7e80d394da57dc4bd36e7aa4"
+    },
+    "prefix10000/input.bin": {
+      "bytes": 10000,
+      "sha256": "962e9fee940909c2ef0edb1179e37837db901f7e0c61fbf465b3566eb0a0ccea"
+    },
+    "original/replay1/buffers.bin": {
+      "bytes": 87680000,
+      "sha256": "1cf6a443617ea21c185aa0731114878a250cce3ca6f563306471f7d202f95dd3"
+    },
+    "original/replay2/buffers.bin": {
+      "bytes": 87680000,
+      "sha256": "37cc8e3119e60cfbe1609a12b0a48ec00508fe155d1286f213d980fbb350189f"
+    },
+    "visual-original/replay1/buffers.bin": {
+      "bytes": 43840000,
+      "sha256": "8fedac50fb977ebfe965b5c845af9351a81fa5cc1cba3d2d417c8961c66fd7e6"
+    },
+    "current/buffers.bin": {
+      "bytes": 87680000,
+      "sha256": "a531cd06e54e232e093be9ee63a993e722b8197fc03ef8155cd0f2f7ef2e7cae"
+    },
+    "tested-source/buffers.bin": {
+      "bytes": 87680000,
+      "sha256": "a531cd06e54e232e093be9ee63a993e722b8197fc03ef8155cd0f2f7ef2e7cae"
+    },
+    "visual/buffers.bin": {
+      "bytes": 87680000,
+      "sha256": "a531cd06e54e232e093be9ee63a993e722b8197fc03ef8155cd0f2f7ef2e7cae"
+    },
+    "health.json": {
+      "bytes": 51866,
+      "sha256": "12bd322c2a124e84c026bafef7637e5bba675b71535418dd0826c9ce410aee7b"
+    },
+    "original/replay1/trace.csv": {
+      "bytes": 1005813,
+      "sha256": "9f88522bf75fa0b6a049e65d967d2787d804325424e03445c948d67f429d1335"
+    },
+    "original/replay2/trace.csv": {
+      "bytes": 1005817,
+      "sha256": "18821cb8de4a8390366ade732ec410d3f168695937eea702287b344a86ebd99d"
+    },
+    "original/replay1/chr_map.csv": {
+      "bytes": 334738,
+      "sha256": "73ea997196c1a9410cda47f2f231d568ef8c63eeaba107dd3e8079c79071d9aa"
+    },
+    "visual-original/replay1/trace.csv": {
+      "bytes": 484462,
+      "sha256": "6e5ede85efd4ed7ccbb0bda676cafca81bc31c913feb26126e809a02b49d0648"
+    },
+    "original/replay.json": {
+      "bytes": 676,
+      "sha256": "ac002f63a49a0792f534331909bcc2b1dd5fb30ed060978a2549c3317836e2d6"
+    },
+    "visual-original/replay.json": {
+      "bytes": 495,
+      "sha256": "aa564ed00e8d24c8cc1e37ea3aca3f35c16ff5362794810885284d2c17d7292a"
+    },
+    "actual-player-check.json": {
+      "bytes": 412,
+      "sha256": "f8e0eba132a0b323592d50585d77a8aa0ae976d1dc65cbd7ad14e34eb0975717"
+    }
+  },
+  "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "emulator": {
+    "name": "mesen-agent Mesen 2.1.1",
+    "region": "NTSC",
+    "agentSha256": "4143766f2b900e63663ea000655f24fd824f2ce5324c2575025f8bb68030a910",
+    "coreSha256": "69425f547e83648b4aa8507908ff473a3d8c4ac666b8e130b2f5e9d99922d29a",
+    "start": "power-on, separate --home each run, no load-state; power-on RAM excluded only poll1..7"
+  }
+}

@@ -673,6 +673,100 @@ def cmd_states(args):
     if not report["matched"]: raise SystemExit(1)
 
 
+def health_events(raw, start=8):
+    """Read the ROM's HUD heart tiles and item-slot transitions at pre-input polls.
+
+    $05B4/$05B8/$05B6/$05B2 are the four hurt rungs, not a guessed HP address.
+    A disappearance is deliberately not labelled a pickup: expiry/culling also remove items.
+    """
+    if not raw or len(raw) % BUFFER_STRIDE:
+        raise ValueError("Empty or truncated capture")
+    count = len(raw) // BUFFER_STRIDE
+    if not 1 <= start <= count:
+        raise ValueError("Health range outside capture")
+    events, previous, items = [], None, {}
+    for poll in range(start, count + 1):
+        r = memoryview(raw)[(poll - 1) * BUFFER_STRIDE:poll * BUFFER_STRIDE]
+        installed = bytes(r[0x5B0:0x5B2]) == b"\x07\x24"
+        damage = (sum(r[a] == v for a, v in
+                      ((0x5B4, 0x82), (0x5B8, 0x83), (0x5B6, 0x83), (0x5B2, 0x82)))
+                  if installed else None)
+        position = {"x": r[0x4F0] | r[0x500] << 8, "y": r[0x510] | r[0x520] << 8,
+                    "scrollX": r[0xFC] | r[0xFD] << 8, "state": r[0x50],
+                    "invulnerability": r[0x7C], "rng": bytes(r[0xE4:0xE8]).hex()}
+        if damage != previous:
+            events.append({"poll": poll, "event": "health", "damageBefore": previous,
+                           "damageAfter": damage, **position})
+        current = {}
+        for slot in range(2, 16):
+            anim = r[0x420 + slot]
+            if r[0x4D0 + slot] & 0x80 and 0x1C <= anim <= 0x28:
+                current[slot] = {"anim": anim, "behavior": r[0x4E0 + slot],
+                                 "x": r[0x4F0 + slot] | r[0x500 + slot] << 8,
+                                 "y": r[0x510 + slot] | r[0x520 + slot] << 8}
+                if slot not in items or items[slot]["anim"] != anim:
+                    events.append({"poll": poll, "event": "itemAppears", "slot": slot,
+                                   "item": current[slot], "player": position})
+        for slot, item in items.items():
+            if slot not in current or current[slot]["anim"] != item["anim"]:
+                events.append({"poll": poll, "event": "itemDisappears", "slot": slot,
+                               "lastObservedItem": item, "player": position})
+        previous, items = damage, current
+    return events
+
+
+def compare_health(original, port, start=8):
+    if len(original) != len(port):
+        raise ValueError("Different capture lengths")
+    events = {"original": health_events(original, start), "port": health_events(port, start)}
+    fields = {"healthTiles": [0x5B2, 0x5B4, 0x5B6, 0x5B8], "rng": list(range(0xE4, 0xE8)),
+              "playerPositionState": [0x50, 0x4F0, 0x500, 0x510, 0x520], "healthItems": None}
+    first = {name: None for name in fields}
+    for poll in range(start, len(original) // BUFFER_STRIDE + 1):
+        base = (poll - 1) * BUFFER_STRIDE
+        # Compare mission state only after both HUD templates have actually been installed.
+        if any(raw[base + 0x5B0:base + 0x5B2] != b"\x07\x24" for raw in (original, port)):
+            continue
+        for name, addresses in fields.items():
+            if first[name] is not None:
+                continue
+            offsets = addresses
+            if name == "healthItems":
+                offsets = [off for slot in range(2, 16)
+                           if any(raw[base + 0x4D0 + slot] & 0x80 and
+                                  raw[base + 0x420 + slot] in (0x22, 0x23)
+                                  for raw in (original, port))
+                           for off in (0x4D0 + slot, 0x420 + slot, 0x4E0 + slot,
+                                       0x4F0 + slot, 0x500 + slot, 0x510 + slot, 0x520 + slot)]
+            a, b = (bytes(raw[base + off] for off in offsets) for raw in (original, port))
+            if a != b:
+                first[name] = {"poll": poll, "addresses": [f"${off:04X}" for off in offsets],
+                               "original": a.hex(), "port": b.hex()}
+    return {"frames": len(original) // BUFFER_STRIDE, "start": start,
+            "boundary": "1-based pre-input poll; byte 0 drives poll 1; no offset",
+            "scope": "HUD heart tiles, shared RNG, player position/state, item-slot appearance/disappearance. "
+                     "Anim $22 is full repair and $23 one rung; $1E grants a life counter. "
+                     "Disappearance alone does not prove collection. No full-game equivalence claim.",
+            "firstDifferencesAfterBothHudsInstalled": first, "events": events}
+
+
+def cmd_health(args):
+    out = Path(args.output)
+    if out.exists():
+        raise ValueError("Output exists; use a new path")
+    paths = {"original": Path(args.original), "port": Path(args.port)}
+    raw = {name: path.read_bytes() for name, path in paths.items()}
+    report = compare_health(raw["original"], raw["port"], args.start)
+    report["inputs"] = {name: {"path": str(path.resolve()), "bytes": len(raw[name]),
+                              "sha256": hashlib.sha256(raw[name]).hexdigest()}
+                        for name, path in paths.items()}
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"output": str(out), "frames": report["frames"],
+                      "firstDifferences": report["firstDifferencesAfterBothHudsInstalled"],
+                      "events": {name: len(rows) for name, rows in report["events"].items()}}, indent=2))
+
+
 def cmd_scene(args):
     """Check a real scene/Player run against Core at the same pre-input boundary."""
     route=json.loads(Path(args.route).read_text(encoding="utf-8-sig"))
@@ -752,6 +846,12 @@ def main():
     s.add_argument("--end", type=int)
     s.add_argument("--audio", action="store_true", help="also compare persistent audio fields; requires --audio-state port capture and equal lengths")
     s.set_defaults(func=cmd_states)
+    s = sub.add_parser("health", help="diagnose heart tiles, RNG and item events in equal complete captures")
+    s.add_argument("--original", required=True)
+    s.add_argument("--port", required=True)
+    s.add_argument("--output", required=True)
+    s.add_argument("--start", type=int, default=8)
+    s.set_defaults(func=cmd_health)
     s = sub.add_parser("scene", help="verify full scene/standalone replay input and snapshots against Core")
     s.add_argument("--session", required=True)
     s.add_argument("--core", required=True)

@@ -1420,6 +1420,10 @@ public static class ReachedBodyAggregate
     {
         int frames = args.Length > 1 ? int.Parse(args[1]) : throw new ArgumentException("buffers needs <frames> <out.csv>");
         string output = Output(args.Length > 2 ? args[2] : Path.Combine(OutputRoot, "buffers_column.csv"));
+        // Optional sparse framebuffer samples verify an identified Player build against this Core.
+        // These are native 256x240 NES palette indices, captured at the same pre-input boundary.
+        var captures = args.Length > 3 ? args[3].Split(',').Select(int.Parse).ToHashSet() : new HashSet<int>();
+        if (captures.Any(poll => poll < 1 || poll > frames)) throw new ArgumentException("Capture poll outside input");
         var (game, flow) = NewGame();
         byte[] input = File.ReadAllBytes(SessionFile("input.bin"));
         if (input.Length != frames) throw new Exception("Session input is " + input.Length + " bytes, requested " + frames + " frames");
@@ -1434,6 +1438,7 @@ public static class ReachedBodyAggregate
             for (int poll = 1; poll <= frames; poll++)
             {
                 WriteStandRecord(game, flow, ram, file);
+                if (captures.Contains(poll)) File.WriteAllBytes(Path.Combine(directory, "frame_" + poll + ".indices"), game.Framebuffer);
                 game.AdvanceFrame(NesButtons.FromByte(input[poll - 1]));
             }
         }

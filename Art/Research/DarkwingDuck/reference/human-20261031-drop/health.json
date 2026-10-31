@@ -1,0 +1,2357 @@
+{
+  "frames": 20000,
+  "start": 8,
+  "boundary": "1-based pre-input poll; byte 0 drives poll 1; no offset",
+  "scope": "HUD heart tiles, shared RNG, player position/state, item-slot appearance/disappearance. Anim $22 is full repair and $23 one rung; $1E grants a life counter. Disappearance alone does not prove collection. No full-game equivalence claim.",
+  "firstDifferencesAfterBothHudsInstalled": {
+    "healthTiles": {
+      "poll": 7569,
+      "addresses": [
+        "$05B2",
+        "$05B4",
+        "$05B6",
+        "$05B8"
+      ],
+      "original": "80808181",
+      "port": "80828181"
+    },
+    "rng": {
+      "poll": 5530,
+      "addresses": [
+        "$00E4",
+        "$00E5",
+        "$00E6",
+        "$00E7"
+      ],
+      "original": "fdb84333",
+      "port": "7edc2199"
+    },
+    "playerPositionState": {
+      "poll": 5531,
+      "addresses": [
+        "$0050",
+        "$04F0",
+        "$0500",
+        "$0510",
+        "$0520"
+      ],
+      "original": "0b44050e02",
+      "port": "0b46050a02"
+    },
+    "healthItems": {
+      "poll": 7501,
+      "addresses": [
+        "$04DD",
+        "$042D",
+        "$04ED",
+        "$04FD",
+        "$050D",
+        "$051D",
+        "$052D"
+      ],
+      "original": "80230a3609c801",
+      "port": "005e0f3609c801"
+    }
+  },
+  "events": {
+    "original": [
+      {
+        "poll": 1716,
+        "event": "health",
+        "damageBefore": null,
+        "damageAfter": 0,
+        "x": 44,
+        "y": 884,
+        "scrollX": 0,
+        "state": 0,
+        "invulnerability": 0,
+        "rng": "ee459912"
+      },
+      {
+        "poll": 1873,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 40,
+          "behavior": 8,
+          "x": 312,
+          "y": 853
+        },
+        "player": {
+          "x": 193,
+          "y": 884,
+          "scrollX": 57,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "6915c7ec"
+        }
+      },
+      {
+        "poll": 1916,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 258,
+          "y": 884,
+          "scrollX": 122,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "58a4155d"
+        }
+      },
+      {
+        "poll": 1957,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 40,
+          "behavior": 8,
+          "x": 312,
+          "y": 853
+        },
+        "player": {
+          "x": 295,
+          "y": 852,
+          "scrollX": 159,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "1e6a5682"
+        }
+      },
+      {
+        "poll": 2242,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 240,
+          "y": 884,
+          "scrollX": 104,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "a093d2f5"
+        }
+      },
+      {
+        "poll": 2347,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 180,
+          "y": 884
+        },
+        "player": {
+          "x": 120,
+          "y": 884,
+          "scrollX": 0,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "6309b65c"
+        }
+      },
+      {
+        "poll": 2401,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 180,
+          "y": 888
+        },
+        "player": {
+          "x": 159,
+          "y": 884,
+          "scrollX": 23,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "41b93a48"
+        }
+      },
+      {
+        "poll": 2467,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 258,
+          "y": 884,
+          "scrollX": 122,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "dc19a192"
+        }
+      },
+      {
+        "poll": 2982,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 384,
+          "y": 935,
+          "scrollX": 248,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "5072d237"
+        }
+      },
+      {
+        "poll": 2982,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 384,
+          "y": 935,
+          "scrollX": 248,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "5072d237"
+        }
+      },
+      {
+        "poll": 3039,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 376,
+          "y": 924
+        },
+        "player": {
+          "x": 430,
+          "y": 934,
+          "scrollX": 294,
+          "state": 4,
+          "invulnerability": 0,
+          "rng": "061c1028"
+        }
+      },
+      {
+        "poll": 3236,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 482,
+          "y": 884
+        },
+        "player": {
+          "x": 430,
+          "y": 891,
+          "scrollX": 294,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "07a7b8e7"
+        }
+      },
+      {
+        "poll": 3303,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 482,
+          "y": 888
+        },
+        "player": {
+          "x": 462,
+          "y": 884,
+          "scrollX": 326,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "c6f97486"
+        }
+      },
+      {
+        "poll": 3554,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 678,
+          "y": 836
+        },
+        "player": {
+          "x": 633,
+          "y": 836,
+          "scrollX": 497,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "c13ac1cd"
+        }
+      },
+      {
+        "poll": 3617,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 678,
+          "y": 840
+        },
+        "player": {
+          "x": 657,
+          "y": 837,
+          "scrollX": 521,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "d8dd6cd6"
+        }
+      },
+      {
+        "poll": 3727,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 660,
+          "y": 948,
+          "scrollX": 524,
+          "state": 2,
+          "invulnerability": 0,
+          "rng": "1f134c0b"
+        }
+      },
+      {
+        "poll": 3809,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 621,
+          "y": 927,
+          "scrollX": 485,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "469e132f"
+        }
+      },
+      {
+        "poll": 3971,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 37,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 667,
+          "y": 948,
+          "scrollX": 531,
+          "state": 2,
+          "invulnerability": 0,
+          "rng": "ec49dd82"
+        }
+      },
+      {
+        "poll": 4023,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 792,
+          "y": 840
+        },
+        "player": {
+          "x": 673,
+          "y": 948,
+          "scrollX": 537,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "8f4e50cc"
+        }
+      },
+      {
+        "poll": 4066,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 37,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 737,
+          "y": 948,
+          "scrollX": 601,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "ce59c576"
+        }
+      },
+      {
+        "poll": 4368,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 792,
+          "y": 840
+        },
+        "player": {
+          "x": 944,
+          "y": 814,
+          "scrollX": 808,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "75db3086"
+        }
+      },
+      {
+        "poll": 4509,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 30,
+          "behavior": 9,
+          "x": 1232,
+          "y": 840
+        },
+        "player": {
+          "x": 1114,
+          "y": 825,
+          "scrollX": 978,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "eec31e98"
+        }
+      },
+      {
+        "poll": 4594,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 33,
+          "behavior": 11,
+          "x": 1232,
+          "y": 840
+        },
+        "player": {
+          "x": 1229,
+          "y": 823,
+          "scrollX": 1093,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "090d1f05"
+        }
+      },
+      {
+        "poll": 4594,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 30,
+          "behavior": 9,
+          "x": 1232,
+          "y": 840
+        },
+        "player": {
+          "x": 1229,
+          "y": 823,
+          "scrollX": 1093,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "090d1f05"
+        }
+      },
+      {
+        "poll": 4651,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 33,
+          "behavior": 11,
+          "x": 1232,
+          "y": 812
+        },
+        "player": {
+          "x": 1236,
+          "y": 836,
+          "scrollX": 1100,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "d176d439"
+        }
+      },
+      {
+        "poll": 4879,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 1496,
+          "y": 856
+        },
+        "player": {
+          "x": 1377,
+          "y": 948,
+          "scrollX": 1241,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "0f514fed"
+        }
+      },
+      {
+        "poll": 4968,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 1496,
+          "y": 856
+        },
+        "player": {
+          "x": 1483,
+          "y": 870,
+          "scrollX": 1280,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "aabbee99"
+        }
+      },
+      {
+        "poll": 4968,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 1496,
+          "y": 856
+        },
+        "player": {
+          "x": 1483,
+          "y": 870,
+          "scrollX": 1280,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "aabbee99"
+        }
+      },
+      {
+        "poll": 5025,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 1496,
+          "y": 828
+        },
+        "player": {
+          "x": 1477,
+          "y": 812,
+          "scrollX": 1280,
+          "state": 4,
+          "invulnerability": 0,
+          "rng": "a2b9fc8f"
+        }
+      },
+      {
+        "poll": 5312,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 1319,
+          "y": 628
+        },
+        "player": {
+          "x": 1422,
+          "y": 628,
+          "scrollX": 1280,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "4339c6cc"
+        }
+      },
+      {
+        "poll": 5385,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 1319,
+          "y": 632
+        },
+        "player": {
+          "x": 1340,
+          "y": 628,
+          "scrollX": 1280,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "b992e1c4"
+        }
+      },
+      {
+        "poll": 5930,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 1529,
+          "y": 340
+        },
+        "player": {
+          "x": 1474,
+          "y": 340,
+          "scrollX": 1338,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "66c86415"
+        }
+      },
+      {
+        "poll": 5984,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 1529,
+          "y": 344
+        },
+        "player": {
+          "x": 1508,
+          "y": 340,
+          "scrollX": 1372,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "53f750be"
+        }
+      },
+      {
+        "poll": 6873,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 1985,
+        "y": 335,
+        "scrollX": 1849,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "bd562c80"
+      },
+      {
+        "poll": 7044,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 2184,
+          "y": 440
+        },
+        "player": {
+          "x": 2065,
+          "y": 318,
+          "scrollX": 1929,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "4169eb38"
+        }
+      },
+      {
+        "poll": 7253,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 32,
+          "behavior": 11,
+          "x": 2184,
+          "y": 440
+        },
+        "player": {
+          "x": 2168,
+          "y": 436,
+          "scrollX": 2032,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "e65d912a"
+        }
+      },
+      {
+        "poll": 7253,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 2184,
+          "y": 440
+        },
+        "player": {
+          "x": 2168,
+          "y": 436,
+          "scrollX": 2032,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "e65d912a"
+        }
+      },
+      {
+        "poll": 7310,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 32,
+          "behavior": 11,
+          "x": 2184,
+          "y": 412
+        },
+        "player": {
+          "x": 2171,
+          "y": 410,
+          "scrollX": 2035,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "c5ec67bf"
+        }
+      },
+      {
+        "poll": 7501,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 2358,
+          "y": 456
+        },
+        "player": {
+          "x": 2286,
+          "y": 452,
+          "scrollX": 2150,
+          "state": 2,
+          "invulnerability": 0,
+          "rng": "7c6ac4c7"
+        }
+      },
+      {
+        "poll": 7569,
+        "event": "health",
+        "damageBefore": 1,
+        "damageAfter": 0,
+        "x": 2338,
+        "y": 452,
+        "scrollX": 2202,
+        "state": 0,
+        "invulnerability": 0,
+        "rng": "17bd92e9"
+      },
+      {
+        "poll": 7569,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 2358,
+          "y": 456
+        },
+        "player": {
+          "x": 2338,
+          "y": 452,
+          "scrollX": 2202,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "17bd92e9"
+        }
+      },
+      {
+        "poll": 8796,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 39,
+          "behavior": 8,
+          "x": 3128,
+          "y": 565
+        },
+        "player": {
+          "x": 3009,
+          "y": 692,
+          "scrollX": 2873,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "179db289"
+        }
+      },
+      {
+        "poll": 9063,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 3178,
+        "y": 638,
+        "scrollX": 3042,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "099784ab"
+      },
+      {
+        "poll": 10140,
+        "event": "itemAppears",
+        "slot": 12,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 3240,
+          "y": 628
+        },
+        "player": {
+          "x": 3183,
+          "y": 628,
+          "scrollX": 3047,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "39756b6d"
+        }
+      },
+      {
+        "poll": 10202,
+        "event": "health",
+        "damageBefore": 1,
+        "damageAfter": 0,
+        "x": 3219,
+        "y": 624,
+        "scrollX": 3083,
+        "state": 1,
+        "invulnerability": 0,
+        "rng": "a1307212"
+      },
+      {
+        "poll": 10202,
+        "event": "itemDisappears",
+        "slot": 12,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 3240,
+          "y": 632
+        },
+        "player": {
+          "x": 3219,
+          "y": 624,
+          "scrollX": 3083,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "a1307212"
+        }
+      },
+      {
+        "poll": 10350,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 39,
+          "behavior": 8,
+          "x": 3128,
+          "y": 565
+        },
+        "player": {
+          "x": 3145,
+          "y": 564,
+          "scrollX": 3009,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "a2d99c2f"
+        }
+      },
+      {
+        "poll": 11157,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 37,
+          "behavior": 10,
+          "x": 3480,
+          "y": 628
+        },
+        "player": {
+          "x": 3423,
+          "y": 628,
+          "scrollX": 3287,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "b6633d49"
+        }
+      },
+      {
+        "poll": 11218,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 37,
+          "behavior": 10,
+          "x": 3480,
+          "y": 632
+        },
+        "player": {
+          "x": 3460,
+          "y": 628,
+          "scrollX": 3324,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "4030b0d1"
+        }
+      },
+      {
+        "poll": 11405,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 3664,
+          "y": 568
+        },
+        "player": {
+          "x": 3545,
+          "y": 586,
+          "scrollX": 3409,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "435bdd6a"
+        }
+      },
+      {
+        "poll": 11500,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 3728,
+          "y": 616
+        },
+        "player": {
+          "x": 3610,
+          "y": 645,
+          "scrollX": 3474,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "89726084"
+        }
+      },
+      {
+        "poll": 11654,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 32,
+          "behavior": 11,
+          "x": 3728,
+          "y": 616
+        },
+        "player": {
+          "x": 3712,
+          "y": 630,
+          "scrollX": 3576,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "adc69d10"
+        }
+      },
+      {
+        "poll": 11654,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 3728,
+          "y": 616
+        },
+        "player": {
+          "x": 3712,
+          "y": 630,
+          "scrollX": 3576,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "adc69d10"
+        }
+      },
+      {
+        "poll": 11711,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 32,
+          "behavior": 11,
+          "x": 3728,
+          "y": 588
+        },
+        "player": {
+          "x": 3725,
+          "y": 568,
+          "scrollX": 3589,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "add2892c"
+        }
+      },
+      {
+        "poll": 11890,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 3664,
+          "y": 568
+        },
+        "player": {
+          "x": 3816,
+          "y": 692,
+          "scrollX": 3680,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "a1400282"
+        }
+      },
+      {
+        "poll": 11902,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 34,
+          "behavior": 8,
+          "x": 3952,
+          "y": 616
+        },
+        "player": {
+          "x": 3834,
+          "y": 692,
+          "scrollX": 3698,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "8f0a1400"
+        }
+      },
+      {
+        "poll": 12845,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 4016,
+          "y": 661
+        },
+        "player": {
+          "x": 3987,
+          "y": 660,
+          "scrollX": 3840,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "476d8a38"
+        }
+      },
+      {
+        "poll": 12897,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 4016,
+          "y": 664
+        },
+        "player": {
+          "x": 3996,
+          "y": 647,
+          "scrollX": 3840,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "f3ca2db9"
+        }
+      },
+      {
+        "poll": 12987,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 8,
+          "x": 3952,
+          "y": 616
+        },
+        "player": {
+          "x": 4052,
+          "y": 667,
+          "scrollX": 3840,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "71f516fc"
+        }
+      },
+      {
+        "poll": 17864,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 400,
+          "y": 840
+        },
+        "player": {
+          "x": 281,
+          "y": 930,
+          "scrollX": 145,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "25672de3"
+        }
+      },
+      {
+        "poll": 17945,
+        "event": "itemAppears",
+        "slot": 12,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 440,
+          "y": 840
+        },
+        "player": {
+          "x": 321,
+          "y": 854,
+          "scrollX": 185,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "d746e865"
+        }
+      },
+      {
+        "poll": 18168,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 400,
+          "y": 840
+        },
+        "player": {
+          "x": 412,
+          "y": 854,
+          "scrollX": 276,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "71b7543a"
+        }
+      },
+      {
+        "poll": 18168,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 400,
+          "y": 840
+        },
+        "player": {
+          "x": 412,
+          "y": 854,
+          "scrollX": 276,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "71b7543a"
+        }
+      },
+      {
+        "poll": 18206,
+        "event": "itemAppears",
+        "slot": 12,
+        "item": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 440,
+          "y": 840
+        },
+        "player": {
+          "x": 424,
+          "y": 836,
+          "scrollX": 288,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "5678d425"
+        }
+      },
+      {
+        "poll": 18206,
+        "event": "itemDisappears",
+        "slot": 12,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 440,
+          "y": 840
+        },
+        "player": {
+          "x": 424,
+          "y": 836,
+          "scrollX": 288,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "5678d425"
+        }
+      },
+      {
+        "poll": 18225,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 400,
+          "y": 812
+        },
+        "player": {
+          "x": 433,
+          "y": 827,
+          "scrollX": 297,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "7c12eacf"
+        }
+      },
+      {
+        "poll": 18263,
+        "event": "itemDisappears",
+        "slot": 12,
+        "lastObservedItem": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 440,
+          "y": 812
+        },
+        "player": {
+          "x": 490,
+          "y": 851,
+          "scrollX": 354,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "de19a596"
+        }
+      },
+      {
+        "poll": 18338,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 528,
+          "y": 888
+        },
+        "player": {
+          "x": 496,
+          "y": 884,
+          "scrollX": 360,
+          "state": 2,
+          "invulnerability": 0,
+          "rng": "daa9144e"
+        }
+      },
+      {
+        "poll": 18377,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 528,
+          "y": 888
+        },
+        "player": {
+          "x": 507,
+          "y": 884,
+          "scrollX": 371,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "bef58863"
+        }
+      },
+      {
+        "poll": 18465,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 38,
+          "behavior": 8,
+          "x": 696,
+          "y": 810
+        },
+        "player": {
+          "x": 577,
+          "y": 878,
+          "scrollX": 441,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "1f615f9d"
+        }
+      },
+      {
+        "poll": 18853,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 38,
+          "behavior": 8,
+          "x": 696,
+          "y": 810
+        },
+        "player": {
+          "x": 712,
+          "y": 804,
+          "scrollX": 576,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "83cccb52"
+        }
+      },
+      {
+        "poll": 19193,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 787,
+        "y": 876,
+        "scrollX": 651,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "8b9681ac"
+      }
+    ],
+    "port": [
+      {
+        "poll": 1716,
+        "event": "health",
+        "damageBefore": null,
+        "damageAfter": 0,
+        "x": 44,
+        "y": 884,
+        "scrollX": 0,
+        "state": 0,
+        "invulnerability": 0,
+        "rng": "ee459912"
+      },
+      {
+        "poll": 1873,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 40,
+          "behavior": 8,
+          "x": 312,
+          "y": 853
+        },
+        "player": {
+          "x": 193,
+          "y": 884,
+          "scrollX": 57,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "6915c7ec"
+        }
+      },
+      {
+        "poll": 1916,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 258,
+          "y": 884,
+          "scrollX": 122,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "58a4155d"
+        }
+      },
+      {
+        "poll": 1957,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 40,
+          "behavior": 8,
+          "x": 312,
+          "y": 853
+        },
+        "player": {
+          "x": 295,
+          "y": 852,
+          "scrollX": 159,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "1e6a5682"
+        }
+      },
+      {
+        "poll": 2242,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 240,
+          "y": 884,
+          "scrollX": 104,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "a093d2f5"
+        }
+      },
+      {
+        "poll": 2347,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 180,
+          "y": 884
+        },
+        "player": {
+          "x": 120,
+          "y": 884,
+          "scrollX": 0,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "6309b65c"
+        }
+      },
+      {
+        "poll": 2401,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 180,
+          "y": 888
+        },
+        "player": {
+          "x": 159,
+          "y": 884,
+          "scrollX": 23,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "41b93a48"
+        }
+      },
+      {
+        "poll": 2467,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 258,
+          "y": 884,
+          "scrollX": 122,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "dc19a192"
+        }
+      },
+      {
+        "poll": 2982,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 384,
+          "y": 935,
+          "scrollX": 248,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "5072d237"
+        }
+      },
+      {
+        "poll": 2982,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 376,
+          "y": 952
+        },
+        "player": {
+          "x": 384,
+          "y": 935,
+          "scrollX": 248,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "5072d237"
+        }
+      },
+      {
+        "poll": 3039,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 376,
+          "y": 924
+        },
+        "player": {
+          "x": 430,
+          "y": 934,
+          "scrollX": 294,
+          "state": 4,
+          "invulnerability": 0,
+          "rng": "061c1028"
+        }
+      },
+      {
+        "poll": 3236,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 482,
+          "y": 884
+        },
+        "player": {
+          "x": 430,
+          "y": 891,
+          "scrollX": 294,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "07a7b8e7"
+        }
+      },
+      {
+        "poll": 3303,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 482,
+          "y": 888
+        },
+        "player": {
+          "x": 462,
+          "y": 884,
+          "scrollX": 326,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "c6f97486"
+        }
+      },
+      {
+        "poll": 3554,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 678,
+          "y": 836
+        },
+        "player": {
+          "x": 633,
+          "y": 836,
+          "scrollX": 497,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "c13ac1cd"
+        }
+      },
+      {
+        "poll": 3617,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 678,
+          "y": 840
+        },
+        "player": {
+          "x": 657,
+          "y": 837,
+          "scrollX": 521,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "d8dd6cd6"
+        }
+      },
+      {
+        "poll": 3727,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 660,
+          "y": 948,
+          "scrollX": 524,
+          "state": 2,
+          "invulnerability": 0,
+          "rng": "1f134c0b"
+        }
+      },
+      {
+        "poll": 3809,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 621,
+          "y": 927,
+          "scrollX": 485,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "469e132f"
+        }
+      },
+      {
+        "poll": 3971,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 37,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 667,
+          "y": 948,
+          "scrollX": 531,
+          "state": 2,
+          "invulnerability": 0,
+          "rng": "ec49dd82"
+        }
+      },
+      {
+        "poll": 4023,
+        "event": "itemAppears",
+        "slot": 13,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 792,
+          "y": 840
+        },
+        "player": {
+          "x": 673,
+          "y": 948,
+          "scrollX": 537,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "8f4e50cc"
+        }
+      },
+      {
+        "poll": 4066,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 37,
+          "behavior": 10,
+          "x": 758,
+          "y": 952
+        },
+        "player": {
+          "x": 737,
+          "y": 948,
+          "scrollX": 601,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "ce59c576"
+        }
+      },
+      {
+        "poll": 4368,
+        "event": "itemDisappears",
+        "slot": 13,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 792,
+          "y": 840
+        },
+        "player": {
+          "x": 944,
+          "y": 814,
+          "scrollX": 808,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "75db3086"
+        }
+      },
+      {
+        "poll": 4509,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 30,
+          "behavior": 9,
+          "x": 1232,
+          "y": 840
+        },
+        "player": {
+          "x": 1114,
+          "y": 825,
+          "scrollX": 978,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "eec31e98"
+        }
+      },
+      {
+        "poll": 4594,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 33,
+          "behavior": 11,
+          "x": 1232,
+          "y": 840
+        },
+        "player": {
+          "x": 1229,
+          "y": 823,
+          "scrollX": 1093,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "090d1f05"
+        }
+      },
+      {
+        "poll": 4594,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 30,
+          "behavior": 9,
+          "x": 1232,
+          "y": 840
+        },
+        "player": {
+          "x": 1229,
+          "y": 823,
+          "scrollX": 1093,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "090d1f05"
+        }
+      },
+      {
+        "poll": 4651,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 33,
+          "behavior": 11,
+          "x": 1232,
+          "y": 812
+        },
+        "player": {
+          "x": 1236,
+          "y": 836,
+          "scrollX": 1100,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "d176d439"
+        }
+      },
+      {
+        "poll": 4879,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 1496,
+          "y": 856
+        },
+        "player": {
+          "x": 1377,
+          "y": 948,
+          "scrollX": 1241,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "0f514fed"
+        }
+      },
+      {
+        "poll": 4968,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 1496,
+          "y": 856
+        },
+        "player": {
+          "x": 1483,
+          "y": 870,
+          "scrollX": 1280,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "aabbee99"
+        }
+      },
+      {
+        "poll": 4968,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 28,
+          "behavior": 9,
+          "x": 1496,
+          "y": 856
+        },
+        "player": {
+          "x": 1483,
+          "y": 870,
+          "scrollX": 1280,
+          "state": 11,
+          "invulnerability": 0,
+          "rng": "aabbee99"
+        }
+      },
+      {
+        "poll": 5025,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 31,
+          "behavior": 11,
+          "x": 1496,
+          "y": 828
+        },
+        "player": {
+          "x": 1477,
+          "y": 812,
+          "scrollX": 1280,
+          "state": 4,
+          "invulnerability": 0,
+          "rng": "a2b9fc8f"
+        }
+      },
+      {
+        "poll": 5312,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 1319,
+          "y": 628
+        },
+        "player": {
+          "x": 1422,
+          "y": 628,
+          "scrollX": 1280,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "4339c6cc"
+        }
+      },
+      {
+        "poll": 5385,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 34,
+          "behavior": 10,
+          "x": 1319,
+          "y": 632
+        },
+        "player": {
+          "x": 1340,
+          "y": 628,
+          "scrollX": 1280,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "b992e1c4"
+        }
+      },
+      {
+        "poll": 5930,
+        "event": "itemAppears",
+        "slot": 14,
+        "item": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 1529,
+          "y": 340
+        },
+        "player": {
+          "x": 1474,
+          "y": 340,
+          "scrollX": 1338,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "1f83fcbb"
+        }
+      },
+      {
+        "poll": 5984,
+        "event": "itemDisappears",
+        "slot": 14,
+        "lastObservedItem": {
+          "anim": 35,
+          "behavior": 10,
+          "x": 1529,
+          "y": 344
+        },
+        "player": {
+          "x": 1508,
+          "y": 340,
+          "scrollX": 1372,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "94351d77"
+        }
+      },
+      {
+        "poll": 6873,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 1985,
+        "y": 335,
+        "scrollX": 1849,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "fe0ff3ec"
+      },
+      {
+        "poll": 7044,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 2184,
+          "y": 440
+        },
+        "player": {
+          "x": 2065,
+          "y": 318,
+          "scrollX": 1929,
+          "state": 16,
+          "invulnerability": 0,
+          "rng": "073b3543"
+        }
+      },
+      {
+        "poll": 7253,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 32,
+          "behavior": 11,
+          "x": 2184,
+          "y": 440
+        },
+        "player": {
+          "x": 2168,
+          "y": 436,
+          "scrollX": 2032,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "fbaa5d09"
+        }
+      },
+      {
+        "poll": 7253,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 29,
+          "behavior": 9,
+          "x": 2184,
+          "y": 440
+        },
+        "player": {
+          "x": 2168,
+          "y": 436,
+          "scrollX": 2032,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "fbaa5d09"
+        }
+      },
+      {
+        "poll": 7310,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 32,
+          "behavior": 11,
+          "x": 2184,
+          "y": 412
+        },
+        "player": {
+          "x": 2171,
+          "y": 410,
+          "scrollX": 2035,
+          "state": 1,
+          "invulnerability": 0,
+          "rng": "7957a50a"
+        }
+      },
+      {
+        "poll": 8796,
+        "event": "itemAppears",
+        "slot": 15,
+        "item": {
+          "anim": 39,
+          "behavior": 8,
+          "x": 3128,
+          "y": 565
+        },
+        "player": {
+          "x": 3009,
+          "y": 692,
+          "scrollX": 2873,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "f36c8a53"
+        }
+      },
+      {
+        "poll": 8966,
+        "event": "health",
+        "damageBefore": 1,
+        "damageAfter": 2,
+        "x": 3175,
+        "y": 621,
+        "scrollX": 3039,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "aae3b671"
+      },
+      {
+        "poll": 9870,
+        "event": "health",
+        "damageBefore": 2,
+        "damageAfter": 3,
+        "x": 3183,
+        "y": 622,
+        "scrollX": 3047,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "1ce2db1e"
+      },
+      {
+        "poll": 9993,
+        "event": "health",
+        "damageBefore": 3,
+        "damageAfter": 4,
+        "x": 3175,
+        "y": 622,
+        "scrollX": 3039,
+        "state": 7,
+        "invulnerability": 0,
+        "rng": "41931036"
+      },
+      {
+        "poll": 10134,
+        "event": "itemDisappears",
+        "slot": 15,
+        "lastObservedItem": {
+          "anim": 39,
+          "behavior": 8,
+          "x": 3128,
+          "y": 565
+        },
+        "player": {
+          "x": 2096,
+          "y": 262,
+          "scrollX": 2048,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "d90ab8ad"
+        }
+      },
+      {
+        "poll": 10145,
+        "event": "health",
+        "damageBefore": 4,
+        "damageAfter": 0,
+        "x": 2096,
+        "y": 262,
+        "scrollX": 2048,
+        "state": 18,
+        "invulnerability": 0,
+        "rng": "d90ab8ad"
+      },
+      {
+        "poll": 10546,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 2257,
+        "y": 340,
+        "scrollX": 2121,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "7648a435"
+      },
+      {
+        "poll": 11357,
+        "event": "health",
+        "damageBefore": 1,
+        "damageAfter": 2,
+        "x": 2370,
+        "y": 340,
+        "scrollX": 2234,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "21410381"
+      },
+      {
+        "poll": 11487,
+        "event": "health",
+        "damageBefore": 2,
+        "damageAfter": 0,
+        "x": 2096,
+        "y": 262,
+        "scrollX": 2048,
+        "state": 18,
+        "invulnerability": 0,
+        "rng": "4bcb5cca"
+      },
+      {
+        "poll": 11685,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 2180,
+        "y": 340,
+        "scrollX": 2048,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "2f075957"
+      },
+      {
+        "poll": 12004,
+        "event": "health",
+        "damageBefore": 1,
+        "damageAfter": 2,
+        "x": 2369,
+        "y": 340,
+        "scrollX": 2233,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "219ddee5"
+      },
+      {
+        "poll": 12064,
+        "event": "health",
+        "damageBefore": 2,
+        "damageAfter": 3,
+        "x": 2362,
+        "y": 340,
+        "scrollX": 2226,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "960d213b"
+      },
+      {
+        "poll": 12634,
+        "event": "health",
+        "damageBefore": 3,
+        "damageAfter": 0,
+        "x": 2096,
+        "y": 262,
+        "scrollX": 2048,
+        "state": 18,
+        "invulnerability": 0,
+        "rng": "a035751f"
+      },
+      {
+        "poll": 12854,
+        "event": "health",
+        "damageBefore": 0,
+        "damageAfter": 1,
+        "x": 2096,
+        "y": 329,
+        "scrollX": 2048,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "f6ab4610"
+      },
+      {
+        "poll": 13234,
+        "event": "health",
+        "damageBefore": 1,
+        "damageAfter": 2,
+        "x": 2372,
+        "y": 340,
+        "scrollX": 2236,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "a8471799"
+      },
+      {
+        "poll": 13410,
+        "event": "health",
+        "damageBefore": 2,
+        "damageAfter": 3,
+        "x": 2302,
+        "y": 340,
+        "scrollX": 2166,
+        "state": 6,
+        "invulnerability": 59,
+        "rng": "266e22fe"
+      },
+      {
+        "poll": 15163,
+        "event": "health",
+        "damageBefore": 3,
+        "damageAfter": 4,
+        "x": 2289,
+        "y": 329,
+        "scrollX": 2153,
+        "state": 7,
+        "invulnerability": 0,
+        "rng": "ccf36a8c"
+      },
+      {
+        "poll": 15643,
+        "event": "health",
+        "damageBefore": 4,
+        "damageAfter": 0,
+        "x": 44,
+        "y": 884,
+        "scrollX": 0,
+        "state": 0,
+        "invulnerability": 0,
+        "rng": "a9e4b77e"
+      },
+      {
+        "poll": 16897,
+        "event": "itemAppears",
+        "slot": 3,
+        "item": {
+          "anim": 40,
+          "behavior": 0,
+          "x": 2156,
+          "y": 320
+        },
+        "player": {
+          "x": 117,
+          "y": 884,
+          "scrollX": 0,
+          "state": 0,
+          "invulnerability": 0,
+          "rng": "d4a90052"
+        }
+      }
+    ]
+  },
+  "inputs": {
+    "original": {
+      "path": "D:\\Art\\SW Code Zero Unity Builds\\Drop-Investigation\\Art\\Research\\DarkwingDuck\\reference\\human-20261031-drop\\original\\replay1\\buffers.bin",
+      "bytes": 87680000,
+      "sha256": "1cf6a443617ea21c185aa0731114878a250cce3ca6f563306471f7d202f95dd3"
+    },
+    "port": {
+      "path": "D:\\Art\\SW Code Zero Unity Builds\\Drop-Investigation\\Art\\Research\\DarkwingDuck\\reference\\human-20261031-drop\\current\\buffers.bin",
+      "bytes": 87680000,
+      "sha256": "a531cd06e54e232e093be9ee63a993e722b8197fc03ef8155cd0f2f7ef2e7cae"
+    }
+  }
+}

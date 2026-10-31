@@ -74,6 +74,28 @@ def read_png_rgb(path: Path):
     return w, h, bytes(out)
 
 
+def read_frame_rgb(path: Path):
+    """Accept the sparse native framebuffer samples emitted by cost/... buffers as well as PNG."""
+    if path.suffix != ".indices":
+        return read_png_rgb(path)
+    raw = path.read_bytes()
+    if len(raw) != 256 * 240 or any(x >= 64 for x in raw):
+        raise ValueError("Expected 256x240 NES palette indices in range 0..63")
+    return 256, 240, b"".join(MESEN_2C02[x].to_bytes(3, "big") for x in raw)
+
+
+def write_frame_png(source: Path, output: Path):
+    """Render a native index sample with the Player's palette, without an emulator dependency."""
+    if output.exists():
+        raise ValueError("Output exists; use a new path")
+    w, h, rgb = read_frame_rgb(source)
+    def chunk(kind, data):
+        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
+    scanlines = b"".join(b"\0" + rgb[y * w * 3:(y + 1) * w * 3] for y in range(h))
+    output.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)) +
+                       chunk(b"IDAT", zlib.compress(scanlines)) + chunk(b"IEND", b""))
+
+
 def to_index_map(w, h, rgb):
     """Map each pixel RGB to NES index via palette (exact match required)."""
     lut = {}
@@ -161,7 +183,14 @@ def main():
     ap.add_argument("unity", type=Path, nargs="?")
     ap.add_argument("--max-report", type=int, default=20)
     ap.add_argument("--route", type=Path, nargs=3, metavar=("ORIGINAL", "EDITOR_JSON", "PLAYER_JSON"))
+    ap.add_argument("--render-indices", type=Path, help="Render a 256x240 native .indices capture")
+    ap.add_argument("--output", type=Path, help="New PNG path for --render-indices")
     args = ap.parse_args()
+    if args.render_indices:
+        if not args.output:
+            ap.error("--render-indices requires --output")
+        write_frame_png(args.render_indices, args.output)
+        return 0
     if args.route:
         import json
         result = compare_route(*args.route)
@@ -169,8 +198,8 @@ def main():
         return 0 if result["pixelEquivalence"] else 1
     if not args.golden or not args.unity:
         ap.error("Provide two PNGs or --route ORIGINAL EDITOR_JSON PLAYER_JSON")
-    w1, h1, rgb1 = read_png_rgb(args.golden)
-    w2, h2, rgb2 = read_png_rgb(args.unity)
+    w1, h1, rgb1 = read_frame_rgb(args.golden)
+    w2, h2, rgb2 = read_frame_rgb(args.unity)
     if (w1, h1) != (w2, h2):
         print(json_result(False, f"size mismatch {w1}x{h1} vs {w2}x{h2}"))
         return 1

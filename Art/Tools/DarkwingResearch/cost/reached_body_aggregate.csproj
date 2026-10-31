@@ -8,12 +8,13 @@
     <AssemblyName>reached_body_aggregate</AssemblyName>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>CostHarness</RootNamespace>
+    <CoreSourceRoot Condition="'$(CoreSourceRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\Unity\CodeZero\Darkwing\Core</CoreSourceRoot>
     <NoWarn>CS0169;CS0649;CS8632</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="reached_body_aggregate.cs" />
-    <Compile Include="..\..\..\Unity\CodeZero\Darkwing\Core\**\*.cs" />
+    <Compile Include="$(CoreSourceRoot)\**\*.cs" />
     <Compile Include="..\..\..\Unity\CodeZero\Darkwing\Audio\**\*.cs" />
   </ItemGroup>
 
