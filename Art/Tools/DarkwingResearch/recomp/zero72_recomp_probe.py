@@ -11,6 +11,10 @@ ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ProjectSettings
 ROM_SHA256 = "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00"
 INPUT_SHA256 = "137190299728c9ea6285ebf057fa25b1efaf916b9aeb2ad6d21fa46efb7f6275"
 EXPECTED_POLLS = 38886
+ROUTE_INPUTS = {
+    INPUT_SHA256: EXPECTED_POLLS,
+    "ee97b1e9a30d3746b85d1cb573edb913ec6fe0e81f21e9a4148d82d6c08c73f6": 77688,
+}
 OLD_ROOT = "local root = 'D:/Art/SW Code Zero Unity/'"
 
 
@@ -150,7 +154,7 @@ def encode_input(track: bytes) -> str:
 def convert_input(source: Path, output: Path) -> None:
     track = source.read_bytes()
     digest = hashlib.sha256(track).hexdigest()
-    if len(track) != EXPECTED_POLLS or digest != INPUT_SHA256:
+    if digest not in ROUTE_INPUTS or len(track) != ROUTE_INPUTS[digest]:
         raise RuntimeError(f"Unexpected input identity: {len(track)} bytes, SHA256 {digest}")
     if output.exists():
         raise RuntimeError(f"Refuse to overwrite {output}")
