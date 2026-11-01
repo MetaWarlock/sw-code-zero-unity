@@ -204,6 +204,14 @@ def route_summary(data: bytes, frames: int) -> dict:
             "final": dict(zip(("world", "completed", "mask", "playerState"), previous))}
 
 
+def route_records(data: bytes, stride: int, frames: int) -> dict:
+    """Classify an explicitly requested prefix of complete C or stand records."""
+    if stride < 2048 or frames <= 0 or len(data) % stride or len(data) < frames * stride:
+        raise ValueError("Incomplete or invalid RAM records")
+    ram = b"".join(data[i * stride:i * stride + 2048] for i in range(frames))
+    return route_summary(ram, frames)
+
+
 def busy_lags(data: bytes, stride: int, frames: int) -> dict:
     """Mission polls whose RAM record keeps RNG $E4-$E7 from the previous record.
 
@@ -457,7 +465,17 @@ def selftest() -> None:
             raise AssertionError("incomplete lag records accepted")
     cmp_result = lag_compare({"busy": [2, 5, 9]}, {"busy": [2, 6]}, 1, 8)
     assert cmp_result["missed"] == [5] and cmp_result["extra"] == [6]
-    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 5, "lagControls": 7}))
+    padded = b"".join(data[i * 2048:(i + 1) * 2048] + bytes([255]) * 2336 for i in range(6))
+    assert route_records(padded, 4384, 6) == summary
+    assert route_records(padded, 4384, 3)["final"]["completed"] == 0
+    for bad, stride, frames in ((padded[:-1], 4384, 6), (padded, 4384, 7), (padded, 4384, 0)):
+        try:
+            route_records(bad, stride, frames)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid summary records accepted")
+    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 5, "lagControls": 7, "summaryControls": 5}))
 
 
 def main() -> None:
@@ -492,8 +510,18 @@ def main() -> None:
     lags.add_argument("--reference", type=Path)
     lags.add_argument("--reference-stride", type=int, choices=(2048, 4384))
     lags.add_argument("--range", type=int, nargs=2, metavar=("FIRST", "LAST"))
+    summary = sub.add_parser("summary", help="Classify an existing C or port capture without running a game")
+    summary.add_argument("records", type=Path)
+    summary.add_argument("--stride", type=int, choices=(2048, 4384), required=True)
+    summary.add_argument("--frames", type=int, required=True, help="explicit complete-record prefix length")
     sub.add_parser("selftest")
     args = parser.parse_args()
+    if args.command == "summary":
+        raw = args.records.read_bytes()
+        result = route_records(raw, args.stride, args.frames)
+        print(json.dumps({"records": str(args.records), "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(),
+                          "stride": args.stride, "framesUsed": args.frames, "route": result}))
+        return
     if args.command == "lags":
         found = busy_lags(args.records.read_bytes()[:args.frames * args.stride], args.stride, args.frames)
         if args.reference is not None:
