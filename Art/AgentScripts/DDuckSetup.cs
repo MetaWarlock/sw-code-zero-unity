@@ -25,7 +25,7 @@ public static class DDuckSetup
     static readonly Dictionary<int,string> Names = new Dictionary<int,string>
     {
         {1,"Idle"},{3,"Walk"},{4,"CapeDeflect"},{5,"Fire"},{6,"Crouch"},{7,"CrouchFire"},
-        {8,"Stunned"},{9,"Hurt"},{0x0B,"AirStun"},{0x0C,"AirHurt"},{0x0D,"ReachJump"},
+        {8,"Stunned"},{9,"Hurt"},{0x0B,"HookHang"},{0x0C,"HookFire"},{0x0D,"ReachJump"},
         {0x0E,"AirFireRising"},{0x0F,"AirFireFalling"},{0x11,"Jump"},{0x12,"ForcedHop"},
         {0x1C,"Shock"},{0x1D,"Slime"},{0x2B,"MissionIntro"},{0x2C,"CheckpointSpawn"},{0x2D,"CarriedExit"},
         {0x13,"GasProjectile"},{0x14,"GasBurst"},{0x18,"GasCloud"}
@@ -90,7 +90,7 @@ public static class DDuckSetup
         collider.sharedMaterial=material;
         var joint=actor.AddComponent<FixedJoint2D>();
         joint.autoConfigureConnectedAnchor=false;
-        joint.anchor=new Vector2(0,.875f);
+        joint.anchor=DDuckController.HookGripOffset;
         joint.enabled=false;
         var visual=Visual(actor,actorController,SpriteFor(clips[1]));
         var input=actor.AddComponent<PlayerInput>();
@@ -136,6 +136,35 @@ public static class DDuckSetup
         AssetDatabase.SaveAssets();
         Selection.activeGameObject=instance;
         return $"PASS: {manifest.animations.Length} source strips, {clips.Count+2} clips, actor/projectile prefabs, input asset; scene={scene.path}";
+    }
+
+    public static string UpdateHookAnimation()
+    {
+        if(EditorApplication.isPlaying)throw new InvalidOperationException("Stop Play mode before authoring.");
+        foreach(var pair in new[]{new{oldName="0B_AirStun",newName="0B_HookHang"},new{oldName="0C_AirHurt",newName="0C_HookFire"}})
+        {
+            string oldPath=Root+"/Animations/"+pair.oldName+".anim";
+            string newPath=Root+"/Animations/"+pair.newName+".anim";
+            if(AssetDatabase.LoadAssetAtPath<AnimationClip>(oldPath))
+            {
+                if(AssetDatabase.LoadAssetAtPath<AnimationClip>(newPath))throw new Exception("Both old and new clips exist; refusing to overwrite: "+newPath);
+                string error=AssetDatabase.RenameAsset(oldPath,pair.newName);
+                if(!string.IsNullOrEmpty(error))throw new Exception(error);
+            }
+            if(!AssetDatabase.LoadAssetAtPath<AnimationClip>(newPath))throw new Exception("Hook clip missing: "+newPath);
+        }
+        var controller=AssetDatabase.LoadAssetAtPath<AnimatorController>(Root+"/Animations/DDuck.controller");
+        foreach(var child in controller.layers[0].stateMachine.states)
+        {
+            if(child.state.name=="AirStun")child.state.name="HookHang";
+            if(child.state.name=="AirHurt")child.state.name="HookFire";
+        }
+        EditorUtility.SetDirty(controller);
+        var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(Root+"/Prefabs/DDuck.prefab");
+        prefab.GetComponent<FixedJoint2D>().anchor=DDuckController.HookGripOffset;
+        PrefabUtility.SavePrefabAsset(prefab);
+        AssetDatabase.SaveAssets();
+        return "PASS: original A0B hang / A0C hang fire; original clip GUIDs and Animator state references preserved";
     }
 
     static Sprite[] Slice(Animation animation,int cell)
@@ -268,6 +297,18 @@ public static class DDuckSetup
             body.position=peg.Anchor-new Vector2(0,1.15f);body.linearVelocity=new Vector2(0,-.1f);
             await wait(200);
             check(actor.Hanging&&actor.GetComponent<FixedJoint2D>().enabled,"automatic hook catch uses joint",actor.Hanging);
+            var actorAnimator=actor.GetComponentInChildren<Animator>();
+            var actorSprite=actor.GetComponentInChildren<SpriteRenderer>();
+            check(actor.AnimationId==0x0B&&actorAnimator.GetCurrentAnimatorStateInfo(0).IsName("HookHang")&&actorSprite.sprite.name=="A0B_000",
+                "hook displays original raised-hand sprite",new{actor.AnimationId,state="HookHang",sprite=actorSprite.sprite.name});
+            check(Vector2.Distance(body.position+DDuckController.HookGripOffset,peg.Anchor)<.06f,"hook grip aligns with glove",Vector2.Distance(body.position+DDuckController.HookGripOffset,peg.Anchor));
+            keys(new[]{Key.X});await wait(80);
+            check(actor.Hanging&&actor.AnimationId==0x0C&&actorAnimator.GetCurrentAnimatorStateInfo(0).IsName("HookFire")&&actorSprite.sprite.name.StartsWith("A0C_"),
+                "hook fire retains raised hand",new{actor.AnimationId,sprite=actorSprite.sprite.name});
+            keys(Array.Empty<Key>());await wait(250);
+            check(actor.Hanging&&actor.AnimationId==0x0B&&actorSprite.sprite.name=="A0B_000","hook returns to hang after firing",actorSprite.sprite.name);
+            ScreenCapture.CaptureScreenshot("Art/Temp/zero87/hook-fixed.png");
+            await wait(100);
             keys(new[]{Key.Space});await wait(80);
             check(!actor.Hanging&&body.linearVelocityY>0,"jump releases hook",body.linearVelocityY);
             keys(Array.Empty<Key>());actor.Respawn();await wait(600);

@@ -3,28 +3,31 @@
   "task": "ZERO-87",
   "humanTest": "ZERO-89",
   "independentReview": "ZERO-90",
-  "date": "2026-11-01",
+  "date": "2026-11-02",
   "branch": "codex/dduck-native",
   "base": "5555b63",
-  "wip": "0d471e1 + final harness corrections",
+  "wip": "c592481 + hook animation correction",
   "unity": "6000.6.5f1",
   "pipeline": "0.9.1-exp.1",
   "inputSystem": "1.20.1",
   "scene": "Assets/Art/Scenes/Test Scene.unity",
   "scope": "Native Physics2D character sandbox. Twenty actor animations and normal gas gun. Does not certify original-game equivalence; special weapons, scripted original hook rides, missions and audio are outside scope.",
   "sourceSha256": {
-    "Art/AgentScripts/DDuckSetup.cs": "cb58f6683d8f864ed127d546517cb58ab807dd8c46f16c92e8ad116b78861549",
+    "Art/AgentScripts/DDuckSetup.cs": "51d4d8a1bdae4946d52829fc9740d4cb269181c2ddef048848924292323bcfbf",
     "Art/Docs/GameDesignDocument/export_sprites.py": "10b494d8a7266e272a86d469d2b09b0cc1ee6eb64eec290c9b03a883e7868de1",
     "Art/Tools/DarkwingResearch/test_sprite_export.py": "20b216c02d8111ec1a52e31ebdbcef1ff0a3a9b3741f78535fddf2bd3f819106",
-    "Assets/Art/Characters/DDuck/Scripts/DDuckController.cs": "013408599dda729b1e250b0df4e488aaa625501d03468ee1c503e93627aa3f24",
+    "Assets/Art/Characters/DDuck/Scripts/DDuckController.cs": "7f3eb37d953d9b144e6046205f5523431fe9b84e9659c3bd7071cb556021c0ca",
     "Assets/Art/Characters/DDuck/Scripts/DDuckProjectile.cs": "e2f0de94cbc04a805a582e453b62f91df7a37f40cc5aa6c6507f49a15f3ba90e",
     "Assets/Art/Characters/DDuck/Scripts/DDuckHook.cs": "1c21e24ed81c6d7768c4b99255c8b938fc45b85dbe4095c9d59a7ac791be4cc8",
     "Assets/Art/Characters/DDuck/Scripts/DDuckHazard.cs": "3eb45a414d679a08aef3ade320d02d2dd3b3120dbe6589949625682a072ece67",
     "Assets/Art/Characters/DDuck/Scripts/DDuckTarget.cs": "82a7ffdddcaa56a67dee4f34183e4aa3d079da54313c9477073f7ba31caa5004",
     "Assets/Art/Characters/DDuck/Input/DDuck.inputactions": "2cde23cedd63fa0ce6e961b73b2b90c22bc6dfc67d0b51e64ac01ec9fc9d3616",
-    "Assets/Art/Characters/DDuck/Prefabs/DDuck.prefab": "e289384c465839d334d977ced9a826b77d19e4d644e1dfbfa330dbc4be688543",
+    "Assets/Art/Characters/DDuck/Prefabs/DDuck.prefab": "138fd556fd69450bbf7996d3b4c9336c1d1c91c04bf2d918bd570159d473e547",
     "Assets/Art/Characters/DDuck/Prefabs/DDuck Gas Projectile.prefab": "b15cc9d534670afcb2aaaa960f4872bd94e08b68053fa58b564efff8300e8c5f",
-    "Assets/Art/Scenes/Test Scene.unity": "c625207014570514124c35c7f24cbbaef87266183a736c2ca769252f975ae1ca"
+    "Assets/Art/Scenes/Test Scene.unity": "c625207014570514124c35c7f24cbbaef87266183a736c2ca769252f975ae1ca",
+    "Assets/Art/Characters/DDuck/Animations/DDuck.controller": "008b8519d3ac63e0c43851474ec3bd6dba781e291d18b8ac27e412217ef7ae5d",
+    "Assets/Art/Characters/DDuck/Animations/0B_HookHang.anim": "bf6747ae4132f8ded3716b9498d54050bfa65d3565f14d508af68581ccc33b46",
+    "Assets/Art/Characters/DDuck/Animations/0C_HookFire.anim": "ceb0fd04a09dd4009e62fe15105665643cf8db70e9182ee681061e2b9d3595d4"
   },
   "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
   "chrSha256": "f43188cbf020dad94aecf4796d4b07582a7446a8a9e9bede387d00be43d11aca",
@@ -53,8 +56,8 @@
         "name": "player loop advances",
         "pass": true,
         "detail": {
-          "first": 23812,
-          "last": 24006
+          "first": 1150,
+          "last": 1336
         }
       },
       {
@@ -104,7 +107,7 @@
         "name": "full jump and landing",
         "pass": true,
         "detail": {
-          "height": 2.81343675,
+          "height": 2.806347,
           "Grounded": true
         }
       },
@@ -112,7 +115,7 @@
         "name": "release cuts jump",
         "pass": true,
         "detail": {
-          "fullHeight": 2.81343675,
+          "fullHeight": 2.806347,
           "shortHeight": 1.19595659
         }
       },
@@ -120,6 +123,33 @@
         "name": "automatic hook catch uses joint",
         "pass": true,
         "detail": true
+      },
+      {
+        "name": "hook displays original raised-hand sprite",
+        "pass": true,
+        "detail": {
+          "AnimationId": 11,
+          "state": "HookHang",
+          "sprite": "A0B_000"
+        }
+      },
+      {
+        "name": "hook grip aligns with glove",
+        "pass": true,
+        "detail": 0.0
+      },
+      {
+        "name": "hook fire retains raised hand",
+        "pass": true,
+        "detail": {
+          "AnimationId": 12,
+          "sprite": "A0C_000"
+        }
+      },
+      {
+        "name": "hook returns to hang after firing",
+        "pass": true,
+        "detail": "A0B_000"
       },
       {
         "name": "jump releases hook",
@@ -182,13 +212,24 @@
         "detail": 4
       }
     ],
-    "frameCount": 26938
+    "frameCount": 3767
   },
   "compileErrors": 0,
   "runtimeExceptions": 0,
   "human": "AWAITING HUMAN in ZERO-89",
   "limits": {
-    "CodexRemaining300min": 59,
+    "CodexRemaining300min": 87,
     "Claude": "UNKNOWN"
+  },
+  "hookFix": {
+    "previousCheckpoint": "c592481: 20 mechanical checks PASS; user hook-image FAIL",
+    "cause": "Hanging selected cape A04 and airborne shot A0E",
+    "corrected": "A0B HookHang / A0C HookFire; grip y=17/16 units from artwork",
+    "source": "PlayerCore.cs AirD7C0 ($D7C0/$D7D1), HurtAirState ($D1F4/$D1FA), original static A0B/A0C RGBA",
+    "report": "Art/Research/DarkwingDuck/reference/dduck-hook-user-report.png",
+    "reportSha256": "64ffda557ab220386fee26225abdd0438e45b5004116eb7582ea6ee328ecb239",
+    "preview": "Art/Research/DarkwingDuck/reference/dduck-hook-fixed.png",
+    "previewSha256": "edecc1fcb1eaaf04ba9dc47d3d9ffd742b7d3baaffcf8a0c264aa2eb311babc2",
+    "visualReview": "Agent inspected corrected runtime capture; human recheck pending in ZERO-89"
   }
 }

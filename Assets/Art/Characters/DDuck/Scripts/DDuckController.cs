@@ -18,6 +18,8 @@ namespace CodeZero.DDuck
         public const float Gravity = .25f * ReferenceHz * ReferenceHz / PixelsPerUnit;
         public const float FallSpeed = 8f * ReferenceHz / PixelsPerUnit;
         public const float JumpCutSpeed = -(1f - 171f / 256f) * ReferenceHz / PixelsPerUnit;
+        // A0B/A0C glove at strip y=7, relative to the shared (24,24) sprite origin.
+        public static readonly Vector2 HookGripOffset = new Vector2(0, 17f / PixelsPerUnit);
 
         [SerializeField] Animator animator;
         [SerializeField] SpriteRenderer spriteRenderer;
@@ -134,7 +136,7 @@ namespace CodeZero.DDuck
                 else
                 {
                     if (fireQueued) Fire();
-                    SetPose(shotRemaining > 0 ? 0x0E : 4);
+                    SetPose(shotRemaining > 0 ? 0x0C : 0x0B);
                     ConsumeButtons();
                     return;
                 }
@@ -213,17 +215,17 @@ namespace CodeZero.DDuck
         public bool TryGrabHook(DDuckHook candidate)
         {
             if (defeated || celebrating || Hanging || Grounded || hookCooldown > 0 || hurtRemaining > 0) return false;
-            Vector2 hand = body.position + new Vector2(0, .875f);
+            Vector2 hand = body.position + HookGripOffset;
             if (Vector2.Distance(hand, candidate.Anchor) > .5f) return false;
             hook = candidate;
-            body.position = candidate.Anchor - new Vector2(0, .875f);
+            body.position = candidate.Anchor - HookGripOffset;
             body.linearVelocity = Vector2.zero;
             hookJoint.autoConfigureConnectedAnchor = false;
-            hookJoint.anchor = new Vector2(0, .875f);
+            hookJoint.anchor = HookGripOffset;
             hookJoint.connectedAnchor = candidate.Anchor;
             hookJoint.enabled = true;
             SetCrouched(false);
-            SetPose(4);
+            SetPose(0x0B);
             return true;
         }
 

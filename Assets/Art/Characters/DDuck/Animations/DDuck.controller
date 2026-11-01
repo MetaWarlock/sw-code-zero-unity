@@ -836,7 +836,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: AirHurt
+  m_Name: HookFire
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -1154,7 +1154,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: AirStun
+  m_Name: HookHang
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
