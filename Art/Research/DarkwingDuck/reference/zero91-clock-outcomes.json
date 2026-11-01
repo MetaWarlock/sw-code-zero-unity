@@ -1,0 +1,221 @@
+{
+  "schema": 1,
+  "issue": "ZERO-91",
+  "date": "2026-11-02",
+  "executor": {
+    "email": "sh.codex@beholder.learn.su",
+    "personUuid": "f152c379-1948-4273-ab8c-c9b3171d4959"
+  },
+  "baseMain": "c06f15a7972b46f5f805072c4c5542c1b2ba2e2e",
+  "branch": "codex/zero91-clock-outcomes",
+  "scope": "native mission clock outcome rules; timing prices, RNG/drop algorithms and input unchanged",
+  "sourceSha256": {
+    "Art/Unity/CodeZero/Darkwing/Core/MissionClock.cs": "1fda1a984362410b43b08dc20836a3241a2240a3162541d20f5ba4662510ec93",
+    "Art/Unity/CodeZero/Darkwing/Core/DarkwingGame.MissionClock.cs": "7fedecb41e0217822059f6a16caab2d5c85d8e7d0103094bc09bb1462c9ac21a",
+    "Art/AgentScripts/StandRoute.cs": "1de39e2b75ac9aa634e60c55f31bc3f8fc76ea068bb1f7d9941e6073c3d67121",
+    "Art/AgentScripts/SchedulerExecutionVerify.cs": "077b80815c5cff9466262073d49cdd5922a5bf14bd9804408067833b45d21fd5",
+    "Art/Tools/DarkwingResearch/stand/stand.py": "001da00be52e7994226bfd7f1fea36ef7209b56a4f2f3de51c36996a77a84e6f"
+  },
+  "input": {
+    "path": "Art/Playthroughs/20261031T021326Z/input.bin",
+    "bytes": 77688,
+    "sha256": "ee97b1e9a30d3746b85d1cb573edb913ec6fe0e81f21e9a4148d82d6c08c73f6"
+  },
+  "contracts": {
+    "missionClock": 21,
+    "schedulerExecution": 248,
+    "mutants": [
+      {
+        "change": "disable outcome != current guard",
+        "expectedFailure": "Busy/Committed split must refuse",
+        "detected": true
+      },
+      {
+        "change": "add _interruptedTailCycles to commit",
+        "expectedFailure": "commit excludes interrupted-instruction offset",
+        "detected": true
+      }
+    ],
+    "restoredSource": "PASS"
+  },
+  "first20k": {
+    "rngFirstDifference": 17434,
+    "busyCompare": {
+      "range": [
+        8,
+        15967
+      ],
+      "referenceBusy": 3,
+      "portBusy": 3,
+      "missed": [],
+      "extra": []
+    },
+    "route": {
+      "frames": 20000,
+      "worldTransitions": [
+        {
+          "poll": 1,
+          "world": 0,
+          "completed": 0,
+          "mask": 0
+        },
+        {
+          "poll": 264,
+          "world": 7,
+          "completed": 0,
+          "mask": 0
+        },
+        {
+          "poll": 689,
+          "world": 9,
+          "completed": 0,
+          "mask": 0
+        },
+        {
+          "poll": 1033,
+          "world": 0,
+          "completed": 0,
+          "mask": 0
+        },
+        {
+          "poll": 16025,
+          "world": 8,
+          "completed": 0,
+          "mask": 0
+        },
+        {
+          "poll": 16070,
+          "world": 0,
+          "completed": 0,
+          "mask": 0
+        },
+        {
+          "poll": 16875,
+          "world": 1,
+          "completed": 1,
+          "mask": 1
+        }
+      ],
+      "progression": [
+        {
+          "poll": 16786,
+          "world": 0,
+          "completed": 1,
+          "mask": 0
+        },
+        {
+          "poll": 16787,
+          "world": 0,
+          "completed": 1,
+          "mask": 1
+        }
+      ],
+      "stageClearCandidates": [
+        {
+          "poll": 16024,
+          "world": 0
+        }
+      ],
+      "deathReloads": [
+        {
+          "deathPoll": 19373,
+          "world": 1,
+          "reloadPoll": null
+        },
+        {
+          "deathPoll": 19570,
+          "world": 1,
+          "reloadPoll": null
+        },
+        {
+          "deathPoll": 19644,
+          "world": 1,
+          "reloadPoll": null
+        },
+        {
+          "deathPoll": 19718,
+          "world": 1,
+          "reloadPoll": null
+        },
+        {
+          "deathPoll": 19792,
+          "world": 1,
+          "reloadPoll": null
+        },
+        {
+          "deathPoll": 19866,
+          "world": 1,
+          "reloadPoll": 19869
+        }
+      ],
+      "worldsMarkedComplete": [
+        0
+      ],
+      "final": {
+        "world": 1,
+        "completed": 1,
+        "mask": 1,
+        "playerState": 9
+      }
+    },
+    "medkit7501": {
+      "Mesen": {
+        "0x4dd": 128,
+        "0x42d": 35,
+        "0x4ed": 10
+      },
+      "port": {
+        "0x4dd": 128,
+        "0x42d": 35,
+        "0x4ed": 10
+      }
+    }
+  },
+  "healthFirstDifferences": {
+    "healthTiles": {
+      "poll": 19253,
+      "addresses": [
+        "$05B2",
+        "$05B4",
+        "$05B6",
+        "$05B8"
+      ],
+      "original": "80828181",
+      "port": "80828183"
+    },
+    "rng": {
+      "poll": 17434,
+      "addresses": [
+        "$00E4",
+        "$00E5",
+        "$00E6",
+        "$00E7"
+      ],
+      "original": "c81989ba",
+      "port": "90331375"
+    },
+    "playerPositionState": {
+      "poll": 17397,
+      "addresses": [
+        "$0050",
+        "$04F0",
+        "$0500",
+        "$0510",
+        "$0520"
+      ],
+      "original": "092c000603",
+      "port": "092c000703"
+    },
+    "healthItems": null
+  },
+  "commands": {
+    "contracts": "python Art/Tools/DarkwingResearch/run_check.py --file Art/AgentScripts/SchedulerExecutionVerify.cs --entry SchedulerExecutionVerify.MissionClockOutcomes --out NEW_OUTPUT",
+    "replay20k": "python Art/Tools/DarkwingResearch/stand/stand.py unity Art/Playthroughs/20261031T021326Z --output NEW_OUTPUT --frames 20000 --full-every 1000 --png 7501,7569,16024,16875,19999 --probe-first 5500 --probe-last 5560 --timeout 1500",
+    "full": "python Art/Tools/DarkwingResearch/stand/stand.py unity Art/Playthroughs/20261031T021326Z --output NEW_OUTPUT --frames 77688 --full-every 4000 --timeout 1500"
+  },
+  "full77688": "RUNNING",
+  "regressions": "PENDING",
+  "interactivePlayer": "NOT RUN",
+  "missionAcceptance": "OPEN",
+  "historicMappingCorrection": "Before ZERO-91 StandRoute did not map $9A; historical busy=0 was not evidence of no busy frames. Independent RNG hold checks confirm no holds at 5530/5533/5536. New $9A mapping is ordinary Active/Busy MissionTail only."
+}
