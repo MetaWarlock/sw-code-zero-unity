@@ -1,0 +1,194 @@
+{
+  "schema": 1,
+  "task": "ZERO-87",
+  "humanTest": "ZERO-89",
+  "independentReview": "ZERO-90",
+  "date": "2026-11-01",
+  "branch": "codex/dduck-native",
+  "base": "5555b63",
+  "wip": "0d471e1 + final harness corrections",
+  "unity": "6000.6.5f1",
+  "pipeline": "0.9.1-exp.1",
+  "inputSystem": "1.20.1",
+  "scene": "Assets/Art/Scenes/Test Scene.unity",
+  "scope": "Native Physics2D character sandbox. Twenty actor animations and normal gas gun. Does not certify original-game equivalence; special weapons, scripted original hook rides, missions and audio are outside scope.",
+  "sourceSha256": {
+    "Art/AgentScripts/DDuckSetup.cs": "cb58f6683d8f864ed127d546517cb58ab807dd8c46f16c92e8ad116b78861549",
+    "Art/Docs/GameDesignDocument/export_sprites.py": "10b494d8a7266e272a86d469d2b09b0cc1ee6eb64eec290c9b03a883e7868de1",
+    "Art/Tools/DarkwingResearch/test_sprite_export.py": "20b216c02d8111ec1a52e31ebdbcef1ff0a3a9b3741f78535fddf2bd3f819106",
+    "Assets/Art/Characters/DDuck/Scripts/DDuckController.cs": "013408599dda729b1e250b0df4e488aaa625501d03468ee1c503e93627aa3f24",
+    "Assets/Art/Characters/DDuck/Scripts/DDuckProjectile.cs": "e2f0de94cbc04a805a582e453b62f91df7a37f40cc5aa6c6507f49a15f3ba90e",
+    "Assets/Art/Characters/DDuck/Scripts/DDuckHook.cs": "1c21e24ed81c6d7768c4b99255c8b938fc45b85dbe4095c9d59a7ac791be4cc8",
+    "Assets/Art/Characters/DDuck/Scripts/DDuckHazard.cs": "3eb45a414d679a08aef3ade320d02d2dd3b3120dbe6589949625682a072ece67",
+    "Assets/Art/Characters/DDuck/Scripts/DDuckTarget.cs": "82a7ffdddcaa56a67dee4f34183e4aa3d079da54313c9477073f7ba31caa5004",
+    "Assets/Art/Characters/DDuck/Input/DDuck.inputactions": "2cde23cedd63fa0ce6e961b73b2b90c22bc6dfc67d0b51e64ac01ec9fc9d3616",
+    "Assets/Art/Characters/DDuck/Prefabs/DDuck.prefab": "e289384c465839d334d977ced9a826b77d19e4d644e1dfbfa330dbc4be688543",
+    "Assets/Art/Characters/DDuck/Prefabs/DDuck Gas Projectile.prefab": "b15cc9d534670afcb2aaaa960f4872bd94e08b68053fa58b564efff8300e8c5f",
+    "Assets/Art/Scenes/Test Scene.unity": "c625207014570514124c35c7f24cbbaef87266183a736c2ca769252f975ae1ca"
+  },
+  "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+  "chrSha256": "f43188cbf020dad94aecf4796d4b07582a7446a8a9e9bede387d00be43d11aca",
+  "verifiedInputBackup": "D:/Art/SW Code Zero Unity - Git Backups/20261031-ZERO77-drop-health-main-final",
+  "initialScene": "Art/Research/DarkwingDuck/reference/dduck-scene-before.unity",
+  "staticSprites": {
+    "negativeControls": "5 tests PASS (valid, missing, extra, pixel, context)",
+    "legacyDefault": "19 strips / 98 frames PASS",
+    "frames": 112,
+    "clips": 25,
+    "strips": 23,
+    "result": "PASS"
+  },
+  "runtime": {
+    "status": "PASS",
+    "checks": [
+      {
+        "name": "synthetic devices enabled",
+        "pass": true,
+        "detail": {
+          "keyboard": true,
+          "gamepad": true
+        }
+      },
+      {
+        "name": "player loop advances",
+        "pass": true,
+        "detail": {
+          "first": 23812,
+          "last": 24006
+        }
+      },
+      {
+        "name": "lands on original floor",
+        "pass": true,
+        "detail": {
+          "position": "(-3.00, -1.08)",
+          "AnimationId": 1
+        }
+      },
+      {
+        "name": "keyboard right movement",
+        "pass": true,
+        "detail": {
+          "start": -3.0,
+          "end": -1.76250052,
+          "speed": 5.625,
+          "AnimationId": 3,
+          "keyDown": true,
+          "action": "(1.00, 0.00)"
+        }
+      },
+      {
+        "name": "keyboard left and flip",
+        "pass": true,
+        "detail": -5.625
+      },
+      {
+        "name": "crouch collider and pose",
+        "pass": true,
+        "detail": "(1.38, 1.00)"
+      },
+      {
+        "name": "crouch fire",
+        "pass": true,
+        "detail": {
+          "ActiveShots": 1,
+          "AnimationId": 7
+        }
+      },
+      {
+        "name": "cape deflect",
+        "pass": true,
+        "detail": 4
+      },
+      {
+        "name": "full jump and landing",
+        "pass": true,
+        "detail": {
+          "height": 2.81343675,
+          "Grounded": true
+        }
+      },
+      {
+        "name": "release cuts jump",
+        "pass": true,
+        "detail": {
+          "fullHeight": 2.81343675,
+          "shortHeight": 1.19595659
+        }
+      },
+      {
+        "name": "automatic hook catch uses joint",
+        "pass": true,
+        "detail": true
+      },
+      {
+        "name": "jump releases hook",
+        "pass": true,
+        "detail": 13.8544922
+      },
+      {
+        "name": "target fixture avoids hazard",
+        "pass": true,
+        "detail": 4
+      },
+      {
+        "name": "gas projectile hits target",
+        "pass": true,
+        "detail": {
+          "before": 0,
+          "after": 1,
+          "Health": 4,
+          "ActiveShots": 0,
+          "FacingRight": true
+        }
+      },
+      {
+        "name": "shock and damage immunity",
+        "pass": true,
+        "detail": {
+          "hp": 3,
+          "AnimationId": 28
+        }
+      },
+      {
+        "name": "slime artwork context",
+        "pass": true,
+        "detail": {
+          "Health": 2,
+          "AnimationId": 29
+        }
+      },
+      {
+        "name": "gamepad stick movement",
+        "pass": true,
+        "detail": {
+          "start": -3.0,
+          "end": -1.98750043
+        }
+      },
+      {
+        "name": "gamepad jump",
+        "pass": true,
+        "detail": 12.7294922
+      },
+      {
+        "name": "defeat",
+        "pass": true,
+        "detail": 0
+      },
+      {
+        "name": "automatic respawn",
+        "pass": true,
+        "detail": 4
+      }
+    ],
+    "frameCount": 26938
+  },
+  "compileErrors": 0,
+  "runtimeExceptions": 0,
+  "human": "AWAITING HUMAN in ZERO-89",
+  "limits": {
+    "CodexRemaining300min": 59,
+    "Claude": "UNKNOWN"
+  }
+}

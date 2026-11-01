@@ -213,24 +213,28 @@ public static class DDuckSetup
         var originalScheme=input.currentControlScheme;
         var oldBackground=InputSystem.settings.backgroundBehavior;
         var oldEditorInput=InputSystem.settings.editorInputBehaviorInPlayMode;
+        // Devices created while an unfocused player is running can be disabled immediately.
+        // Configure focus policy before AddDevice, and explicitly enable synthetic devices.
+        InputSystem.settings.backgroundBehavior=InputSettings.BackgroundBehavior.IgnoreFocus;
+        InputSystem.settings.editorInputBehaviorInPlayMode=InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
         var keyboard=InputSystem.AddDevice<Keyboard>("DDuckSmokeKeyboard");
         var gamepad=InputSystem.AddDevice<Gamepad>("DDuckSmokeGamepad");
+        InputSystem.EnableDevice(keyboard);InputSystem.EnableDevice(gamepad);
         var checks=new List<object>();
         Action<bool,string,object> check=(ok,name,detail)=>
         {
             checks.Add(new {name,pass=ok,detail});
             if(!ok)throw new Exception(name+": "+JsonConvert.SerializeObject(detail));
         };
-        // Match Pipeline's runtime simulate_key: process injected events in the game buffer,
-        // rather than leaving them for an Editor update which may consume them first.
-        Action<Key[]> keys=pressed=>{InputSystem.QueueStateEvent(keyboard,new KeyboardState(pressed));InputSystem.Update();};
+        // Let the normal player update consume edges once; an extra manual update can
+        // clear WasPressedThisFrame before the actor's Update observes it.
+        Action<Key[]> keys=pressed=>InputSystem.QueueStateEvent(keyboard,new KeyboardState(pressed));
         Func<int,Task> wait=milliseconds=>Task.Delay(milliseconds);
         var body=actor.Body;
         try
         {
-            InputSystem.settings.backgroundBehavior=InputSettings.BackgroundBehavior.IgnoreFocus;
-            InputSystem.settings.editorInputBehaviorInPlayMode=InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
             input.SwitchCurrentControlScheme("Keyboard",keyboard);
+            check(keyboard.enabled&&gamepad.enabled,"synthetic devices enabled",new{keyboard=keyboard.enabled,gamepad=gamepad.enabled});
             keys(Array.Empty<Key>());
             actor.Respawn();
             int frame=Time.frameCount;
@@ -269,11 +273,13 @@ public static class DDuckSetup
             keys(Array.Empty<Key>());actor.Respawn();await wait(600);
             foreach(var p in UnityEngine.Object.FindObjectsByType<DDuckProjectile>())UnityEngine.Object.Destroy(p.gameObject);
             await wait(50);
-            body.position=new Vector2(2.05f,body.position.y);
+            // Stay left of the shock pad's contact range while firing at the target.
+            body.position=new Vector2(-.9f,body.position.y);
             keys(new[]{Key.RightArrow});await wait(30);keys(Array.Empty<Key>());await wait(30);
             var target=UnityEngine.Object.FindAnyObjectByType<DDuckTarget>();int hits=target.Hits;
-            keys(new[]{Key.X});await wait(280);keys(Array.Empty<Key>());
-            check(target.Hits>hits,"gas projectile hits target",new{before=hits,after=target.Hits});
+            check(actor.Health==4,"target fixture avoids hazard",actor.Health);
+            keys(new[]{Key.X});await wait(450);keys(Array.Empty<Key>());
+            check(target.Hits>hits,"gas projectile hits target",new{before=hits,after=target.Hits,actor.Health,actor.ActiveShots,actor.FacingRight});
             body.position=new Vector2(-4.3f,body.position.y);await wait(80);
             actor.ReceiveHit(body.position+Vector2.right,0x1C);
             int hp=actor.Health;actor.ReceiveHit(body.position+Vector2.right);
@@ -294,7 +300,6 @@ public static class DDuckSetup
             var result=new{status="PASS",checks,frameCount=Time.frameCount};
             var json=JsonConvert.SerializeObject(result,Formatting.Indented);
             File.WriteAllText("Art/Temp/zero87/playmode.json",json);
-            Debug.Log("DDuck Physics2D smoke PASS: "+checks.Count+" checks");
             return json;
         }
         catch(Exception ex)
