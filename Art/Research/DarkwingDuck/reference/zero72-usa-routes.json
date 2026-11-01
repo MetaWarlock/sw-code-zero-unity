@@ -1,0 +1,283 @@
+{
+  "schema": 1,
+  "task": "ZERO-72",
+  "author": {
+    "name": "Kimi,Китаец",
+    "email": "kit.kimi@beholder.learn.su",
+    "personUuid": "8b19dab4-3f78-4d4d-9f40-45f55d4a14fb"
+  },
+  "branch": "codex/zero72-kimi-usa-route",
+  "baseMain": "d5c05cb",
+  "researchCommit": "2ec211f",
+  "usageLimits300Min": "UNKNOWN: no get_usage_limits API exposed to this Kimi session",
+  "source": {
+    "project": "fabiotc/darkwing-duck-recomp",
+    "commit": "8a601a68810d78d28eff12b86b095b65afb5c902",
+    "zip": "Art/Temp/ZERO-72/recomp-8a601a6.zip",
+    "zipSha256": "0c5685c35d4ada66b87130227fb6003409786091565a1b5ec4994ab365808a25"
+  },
+  "rom": {
+    "path": "Art/Darkwing Duck (USA).nes",
+    "bytes": 262160,
+    "sha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+    "prgCrc32": "950AA028"
+  },
+  "binary": {
+    "path": "Art/Temp/ZERO-72/darkwing-duck.exe",
+    "bytes": 3993600,
+    "sha256": "2669e6885267b7de96bede8a455e5cd690a7ca3aa7c587bd7961e59a46c819dd"
+  },
+  "commonExecution": {
+    "start": "power-on",
+    "executionMode": "recompiled with interpreter fallback",
+    "region": "ntsc",
+    "removeSlowdown": 0,
+    "overclockPausedCycles": 0,
+    "noFlicker": 0,
+    "frameInterpolation": 0,
+    "enabledCheats": 0,
+    "inputOffset": 0,
+    "savestate": false,
+    "seedOrRamPatches": false,
+    "exit": "normal frame-limit exit"
+  },
+  "runs": [
+    {
+      "name": "original",
+      "verdict": "PASS (requested recorded route and progression only)",
+      "input": {
+        "path": "Art/Playthroughs/20261022T164819Z/input.bin",
+        "polls": 38886,
+        "sha256": "137190299728c9ea6285ebf057fa25b1efaf916b9aeb2ad6d21fa46efb7f6275",
+        "convertedPath": "Art/Temp/ZERO-72/input-recomp.txt",
+        "convertedSha256": "ab814e4c15b8a65cdcbc5c2d94c675c0cf400148605552e21e9bc675a58df677",
+        "converterByteExact": true
+      },
+      "command": "Art/Temp/ZERO-72/darkwing-duck.exe --headless --frames 38886 --region ntsc --no-overclock --input Art/Temp/ZERO-72/input-recomp.txt --ram-log Art/Temp/ZERO-72-route/original/ram.bin --screenshot Art/Temp/ZERO-72-route/original/final.bmp \"Art/Darkwing Duck (USA).nes\"",
+      "execution": {
+        "frames": 38886,
+        "ramRecords": 38886,
+        "recompiledEntries": 1746126,
+        "fallbackBlocks": 368054,
+        "fallbackInstructions": 987733
+      },
+      "progression": {
+        "stageClearState11": [
+          {
+            "poll": 27693,
+            "world": 0,
+            "boss": "Quackerjack"
+          }
+        ],
+        "completedCountTransitions": [
+          {
+            "poll": 28455,
+            "from": 0,
+            "to": 1
+          }
+        ],
+        "completedMaskTransitions": [
+          {
+            "poll": 28456,
+            "from": 0,
+            "to": 1
+          }
+        ],
+        "missionTransitions": [
+          {
+            "poll": 29015,
+            "fromWorld": 0,
+            "toWorld": 1
+          }
+        ],
+        "deathReloads": [
+          {
+            "deathState07Poll": 11636,
+            "reloadState09Poll": 11665,
+            "world": 0
+          },
+          {
+            "deathState07Poll": 14082,
+            "reloadState09Poll": 14111,
+            "world": 0
+          }
+        ],
+        "outcome": "Mission 1 completed after two death/reloads; mission 2 entered and still active at input end. Independent reference also enters world 1 at poll 29015 with count=1 mask=1."
+      },
+      "finalState": {
+        "world": 1,
+        "completedCount": 1,
+        "completedMask": 1,
+        "playerState": 0,
+        "mission2Completed": false
+      },
+      "outputs": {
+        "ram.bin": {
+          "bytes": 79638528,
+          "sha256": "cd02342e1f368da6078e470b77d83725accb820f5c9564691ed990a3256080b3"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "a62ad84cf51211fd99fc7141c82564b261f144d1c46c632709904823c108a9a5"
+        },
+        "stderr.txt": {
+          "bytes": 304,
+          "sha256": "eec8e26bd4f918af39396b3fc38dd356413b8acd2837f2c75f5b605446b9b2d5"
+        }
+      }
+    },
+    {
+      "name": "new-human",
+      "verdict": "PASS (requested recorded route and progression only)",
+      "input": {
+        "path": "Art/Playthroughs/20261031T021326Z/input.bin",
+        "polls": 77688,
+        "sha256": "ee97b1e9a30d3746b85d1cb573edb913ec6fe0e81f21e9a4148d82d6c08c73f6",
+        "convertedPath": "Art/Temp/ZERO-72-route/new-human/input-recomp.txt",
+        "convertedSha256": "cc14013f2616ba041254f42969b62f58f3a00fd905aad4ac6bb467aca2e45c47",
+        "convertedRows": 77688
+      },
+      "conversionCommand": "python -I Art/Tools/DarkwingResearch/recomp/zero72_recomp_probe.py input Art/Playthroughs/20261031T021326Z/input.bin Art/Temp/ZERO-72-route/new-human/input-recomp.txt",
+      "command": "Art/Temp/ZERO-72/darkwing-duck.exe --headless --frames 77688 --region ntsc --no-overclock --input Art/Temp/ZERO-72-route/new-human/input-recomp.txt --ram-log Art/Temp/ZERO-72-route/new-human/ram.bin --screenshot Art/Temp/ZERO-72-route/new-human/final.bmp \"Art/Darkwing Duck (USA).nes\"",
+      "execution": {
+        "frames": 77688,
+        "ramRecords": 77688,
+        "recompiledEntries": 9448441,
+        "fallbackBlocks": 6310040,
+        "fallbackInstructions": 28273191
+      },
+      "progression": {
+        "stageClearState11": [
+          {
+            "poll": 16024,
+            "world": 0,
+            "boss": "Quackerjack"
+          },
+          {
+            "poll": 40565,
+            "world": 1,
+            "boss": "Wolfduck"
+          },
+          {
+            "poll": 73062,
+            "world": 2,
+            "boss": "Liquidator"
+          }
+        ],
+        "completedCountTransitions": [
+          {
+            "poll": 16786,
+            "from": 0,
+            "to": 1
+          },
+          {
+            "poll": 41327,
+            "from": 1,
+            "to": 2
+          },
+          {
+            "poll": 73824,
+            "from": 2,
+            "to": 3
+          }
+        ],
+        "completedMaskTransitions": [
+          {
+            "poll": 16787,
+            "from": 0,
+            "to": 1
+          },
+          {
+            "poll": 41328,
+            "from": 1,
+            "to": 3
+          },
+          {
+            "poll": 73825,
+            "from": 3,
+            "to": 7
+          }
+        ],
+        "missionTransitions": [
+          {
+            "poll": 16875,
+            "fromWorld": 0,
+            "toWorld": 1
+          },
+          {
+            "poll": 41492,
+            "fromWorld": 1,
+            "toWorld": 2
+          },
+          {
+            "poll": 74402,
+            "fromWorld": 2,
+            "toWorld": 3
+          }
+        ],
+        "deathReloads": [
+          {
+            "deathState07Poll": 77478,
+            "reloadState09Poll": 77507,
+            "world": 3
+          }
+        ],
+        "outcome": "Missions 1, 2 and 3 completed with no death/reload in those missions. Mission 4 entered; one death/reload observed there; mission 4 still active at input end."
+      },
+      "finalState": {
+        "world": 3,
+        "completedCount": 3,
+        "completedMask": 7,
+        "playerState": 9,
+        "mission4Completed": false
+      },
+      "outputs": {
+        "ram.bin": {
+          "bytes": 159105024,
+          "sha256": "6983dbb75cda7239f4d57aac54d4c281b45c35bf81816698e3ebbd7dcf702ebb"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "510d4fbefbad9661085e3b1e59f152f8f4eaabe5a9088088be2bed6dc08e87a9"
+        },
+        "stderr.txt": {
+          "bytes": 307,
+          "sha256": "21792bb55b65b235cdd14ac2a050ef5fb8250c2a0be315f72cba1e9cfee31ab0"
+        }
+      }
+    }
+  ],
+  "visualEvidence": "One final 256x240 BMP per actual C run, visually inspected. Intermediate C-frame producer was not available in the prepared binary and no route was rerun for images.",
+  "notRun": [
+    "full original-to-C RAM or frame equality",
+    "PCM/audio equality",
+    "remaining missions and whole-game ending",
+    "Unity native C# implementation or Unity acceptance"
+  ],
+  "applicability": "The C build really executes boot, gameplay, deaths, all three tested boss clears, score/map progression and next-mission selection. Its bank-aware generated control flow and stack-faithful JSR/RTS dispatch are usable as an executable reference when translating the corresponding mission-flow/boss routines into editable native C#. The ROM executor/fallback interpreter itself is not a Unity port.",
+  "hostReview": {
+    "outputHashes": "PASS",
+    "ramRecordCounts": [
+      38886,
+      77688
+    ],
+    "finalCompletedCounts": [
+      1,
+      3
+    ],
+    "finalMasks": [
+      1,
+      7
+    ],
+    "finalWorlds": [
+      1,
+      3
+    ],
+    "newHumanFinalBmp": "visually inspected by Codex",
+    "strictXhtml": "PASS 40 documents after restoring orchestrator-lost main section",
+    "rawEvidenceBackup": "D:\\Art\\SW Code Zero Unity - Git Backups\\_maintenance\\ZERO72-usa-routes-8c94b57",
+    "backupManifestSha256": "4e29059118fb93b2a231df4d4cf1bd9a3c7caac8266cf11b3da2c908714cf3cf",
+    "originalResultSha256": "895ca76dd21f90ead77da82b020d2647f41ab4636dccc26d1f40ee966d65db89",
+    "scope": "external USA C recorded routes, not Unity or full original-to-C equivalence"
+  }
+}
