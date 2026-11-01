@@ -6,7 +6,7 @@
   "date": "2026-11-02",
   "branch": "codex/dduck-native",
   "base": "5555b63",
-  "wip": "c592481 + hook animation correction",
+  "wip": "Native DDuck implementation 0d471e1/c592481 and hook fix 7d8fddc; accepted by user 2026-11-02",
   "unity": "6000.6.5f1",
   "pipeline": "0.9.1-exp.1",
   "inputSystem": "1.20.1",
@@ -216,7 +216,7 @@
   },
   "compileErrors": 0,
   "runtimeExceptions": 0,
-  "human": "AWAITING HUMAN in ZERO-89",
+  "human": "User accepted 2026-11-02 in chat: «Супер, закоммить всё что мы делали». General approval, no separate per-action measurements; ZERO-89.",
   "limits": {
     "CodexRemaining300min": 87,
     "Claude": "UNKNOWN"
@@ -230,6 +230,6 @@
     "reportSha256": "64ffda557ab220386fee26225abdd0438e45b5004116eb7582ea6ee328ecb239",
     "preview": "Art/Research/DarkwingDuck/reference/dduck-hook-fixed.png",
     "previewSha256": "edecc1fcb1eaaf04ba9dc47d3d9ffd742b7d3baaffcf8a0c264aa2eb311babc2",
-    "visualReview": "Agent inspected corrected runtime capture; human recheck pending in ZERO-89"
+    "visualReview": "Agent inspected corrected runtime capture; user accepted correction 2026-11-02."
   }
 }
