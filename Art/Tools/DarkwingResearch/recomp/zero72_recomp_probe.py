@@ -204,6 +204,31 @@ def route_summary(data: bytes, frames: int) -> dict:
             "final": dict(zip(("world", "completed", "mask", "playerState"), previous))}
 
 
+def busy_lags(data: bytes, stride: int, frames: int) -> dict:
+    """Mission polls whose RAM record keeps RNG $E4-$E7 from the previous record.
+
+    Records are pre-input RAM at offset 0 of each stride (2048 C ram-log, 4384 stand buffers).
+    busy: $9A=1, the NMI found the pass Running (lag frame); hold: $9A=0, the pass ran without
+    the RNG step (doors, transitions). States $00/$09 (loader/reload) are skipped."""
+    if stride < 2048 or frames <= 0 or len(data) != frames * stride:
+        raise ValueError("Incomplete/extra RAM records")
+    busy, hold = [], []
+    for i in range(1, frames):
+        b, p = i * stride, (i - 1) * stride
+        if data[b + 0x31] >= 7 or data[b + 0x50] in (0, 9) or data[b + 0xE4:b + 0xE8] != data[p + 0xE4:p + 0xE8]:
+            continue
+        (busy if data[b + 0x9A] == 1 else hold).append(i + 1)
+    return {"frames": frames, "busy": busy, "hold": hold}
+
+
+def lag_compare(reference: dict, port: dict, first: int, last: int) -> dict:
+    def window(polls: list[int]) -> set[int]:
+        return {p for p in polls if first <= p <= last}
+    ref, act = window(reference["busy"]), window(port["busy"])
+    return {"range": [first, last], "referenceBusy": len(ref), "portBusy": len(act),
+            "missed": sorted(ref - act), "extra": sorted(act - ref)}
+
+
 def run_route(source: Path, output: Path, binary: Path) -> None:
     source, output, binary = source.resolve(), output.resolve(), binary.resolve()
     if not output.is_relative_to(ROOT / "Art/Temp") or output.exists():
@@ -415,7 +440,24 @@ def selftest() -> None:
             pass
         else:
             raise AssertionError("incomplete/extra route accepted")
-    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 5}))
+    for stride in (2048, 4384):
+        lag = bytearray(6 * stride)
+        for i, (rng, busy, state) in enumerate(((1, 0, 1), (1, 1, 1), (2, 0, 1), (2, 0, 1), (2, 1, 9), (3, 0, 1))):
+            lag[i * stride + 0xE4], lag[i * stride + 0x9A], lag[i * stride + 0x50] = rng, busy, state
+        found = busy_lags(bytes(lag), stride, 6)
+        assert found["busy"] == [2] and found["hold"] == [4], "busy/hold or loader-state skip mismatch"
+        moved = bytearray(lag)
+        moved[1 * stride + 0xE7] = 9
+        assert busy_lags(bytes(moved), stride, 6)["busy"] == [], "an RNG step in any byte is not a lag"
+        try:
+            busy_lags(bytes(lag[:-1]), stride, 6)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("incomplete lag records accepted")
+    cmp_result = lag_compare({"busy": [2, 5, 9]}, {"busy": [2, 6]}, 1, 8)
+    assert cmp_result["missed"] == [5] and cmp_result["extra"] == [6]
+    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 5, "lagControls": 7}))
 
 
 def main() -> None:
@@ -443,8 +485,25 @@ def main() -> None:
     cmp_parser.add_argument("--recompiled", type=Path, required=True)
     cmp_parser.add_argument("--interpreter", type=Path, required=True)
     cmp_parser.add_argument("--out", type=Path, required=True)
+    lags = sub.add_parser("lags", help="Busy-NMI lag polls of a RAM log; optional reference comparison")
+    lags.add_argument("records", type=Path)
+    lags.add_argument("--stride", type=int, choices=(2048, 4384), required=True)
+    lags.add_argument("--frames", type=int, required=True)
+    lags.add_argument("--reference", type=Path)
+    lags.add_argument("--reference-stride", type=int, choices=(2048, 4384))
+    lags.add_argument("--range", type=int, nargs=2, metavar=("FIRST", "LAST"))
     sub.add_parser("selftest")
     args = parser.parse_args()
+    if args.command == "lags":
+        found = busy_lags(args.records.read_bytes()[:args.frames * args.stride], args.stride, args.frames)
+        if args.reference is not None:
+            if args.reference_stride is None or args.range is None:
+                raise SystemExit("--reference needs --reference-stride and --range")
+            ref_data = args.reference.read_bytes()[:args.frames * args.reference_stride]
+            reference = busy_lags(ref_data, args.reference_stride, args.frames)
+            found = {"port": found, "reference": reference, "compare": lag_compare(reference, found, *args.range)}
+        print(json.dumps(found))
+        return
     rom = ROOT / "Art/Darkwing Duck (USA).nes"
     if hashlib.sha256(rom.read_bytes()).hexdigest() != ROM_SHA256:
         raise RuntimeError("Unexpected USA ROM identity")
