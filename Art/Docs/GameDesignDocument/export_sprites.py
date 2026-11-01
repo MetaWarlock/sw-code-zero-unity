@@ -71,6 +71,13 @@ ANIMATIONS_TO_EXPORT = [
     (0x2D, "anim_2d_level_clear_walk.png", "Mission Clear (Завершение миссии)"),
 ]
 
+PROJECTILE_ANIMATIONS = [
+    (0x13, "anim_13_gas_projectile.png", "Normal gas projectile"),
+    (0x14, "anim_14_gas_burst.png", "Gas burst"),
+    (0x18, "anim_18_gas_cloud.png", "Traveling gas cloud"),
+]
+CHECKPOINT_ANIMATION = (0x2C, "anim_2c_checkpoint_spawn.png", "Checkpoint materialization (Появление на контрольной точке)")
+
 
 def load_resources():
     rom = (ROOT_DIR / "Darkwing Duck (USA).nes").read_bytes()
@@ -252,17 +259,31 @@ def export_animation_strips(tiles_data, banks):
 
 
 def main():
+    global OUTPUT_DIR, ANIMATIONS_TO_EXPORT
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check-native", type=Path, help="Verify existing PNGs against PlayerAnimationContextContract RGBA outputs")
+    parser.add_argument("--output", type=Path, help="Export into a separate consumer asset folder")
+    parser.add_argument("--with-projectiles", action="store_true", help="Include the normal gas gun's projectile, cloud and burst")
+    parser.add_argument("--with-checkpoint", action="store_true", help="Include checkpoint materialization in addition to the original documentation export")
+    parser.add_argument("--verify", action="store_true", help="Compare existing strips to freshly decoded static ROM artwork without writing files")
     args = parser.parse_args()
+    if args.output:
+        OUTPUT_DIR = args.output.resolve()
+    if args.with_projectiles:
+        ANIMATIONS_TO_EXPORT = ANIMATIONS_TO_EXPORT + PROJECTILE_ANIMATIONS
+    if args.with_checkpoint:
+        ANIMATIONS_TO_EXPORT = ANIMATIONS_TO_EXPORT + [CHECKPOINT_ANIMATION]
     if args.check_native:
         verify_native_exports(args.check_native)
         return
     print("Loading ROM extracted data...")
     tiles_data, banks = load_resources()
+    if args.verify:
+        verify_existing_strips(tiles_data, banks)
+        return
     print("Exporting player sprites and animation strips...")
     export_animation_strips(tiles_data, banks)
-    print("Finished! All files written to Art/Docs/GameDesignDocument/sprites/")
+    print(f"Finished! All files written to {OUTPUT_DIR}")
 
 
 def compare_rgba(actual, expected):
@@ -271,6 +292,34 @@ def compare_rgba(actual, expected):
     if actual != expected:
         first = next(i for i, (a, b) in enumerate(zip(actual, expected)) if a != b)
         raise ValueError(f"RGBA byte mismatch at {first}: {actual[first]} != {expected[first]}")
+
+
+def verify_existing_strips(tiles_data, banks):
+    required = {filename for _, filename, _ in ANIMATIONS_TO_EXPORT}
+    if {p.name for p in OUTPUT_DIR.glob("anim_*.png")} != required:
+        raise ValueError("Missing or extra sprite strips")
+    manifest = json.loads((OUTPUT_DIR / "manifest.json").read_text(encoding="utf-8"))
+    if manifest["romSha256"] != EXPECTED_SHA256 or manifest["cellSize"] != CELL_SIZE or manifest["origin"] != [ORIGIN_X, ORIGIN_Y]:
+        raise ValueError("Sprite manifest identity or geometry mismatch")
+    expected_entries = []
+    total_frames = 0
+    for anim_id, filename, _ in ANIMATIONS_TO_EXPORT:
+        context, frames, palettes = animation_context(anim_id, banks)
+        context["file"] = filename
+        expected_entries.append(context)
+        expected = Image.new("RGBA", (len(frames) * CELL_SIZE, CELL_SIZE), (0, 0, 0, 0))
+        for i in range(len(frames)):
+            frame = render_single_frame(i, frames, tiles_data, context["chrBank4KiB"], palettes)
+            expected.paste(frame, (i * CELL_SIZE, 0))
+        with Image.open(OUTPUT_DIR / filename) as actual:
+            if actual.size != expected.size:
+                raise ValueError(f"Sprite dimensions mismatch: {filename}")
+            compare_rgba(actual.convert("RGBA").tobytes(), expected.tobytes())
+        total_frames += len(frames)
+    # Compare by animation ID: opting into extras does not make CLI flag order significant.
+    if sorted(manifest["animations"], key=lambda entry: entry["id"]) != sorted(expected_entries, key=lambda entry: entry["id"]):
+        raise ValueError("Sprite manifest table context mismatch")
+    print(f"PASS {len(required)} strips / {total_frames} frames: exact static ROM RGBA; no runtime equivalence claim")
 
 
 def verify_native_exports(native_dir):

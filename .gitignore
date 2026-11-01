@@ -24,6 +24,8 @@ __pycache__/
 
 # Local source ROM and reproducible raw ROM dumps (see Docs/DarkwingPort/GIT_CONTENTS_RU.md).
 *.nes
+# Reproducible proprietary sprite pixels; import metadata and authored Unity assets stay versioned.
+/Assets/Art/Characters/DDuck/Sprites/*.png
 /Art/Research/DarkwingDuck/extracted/raw/
 
 # Mesen working directories; keep explicit captures, goldens and verification reports.
