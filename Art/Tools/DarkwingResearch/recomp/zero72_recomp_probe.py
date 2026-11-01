@@ -5,7 +5,10 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import time
 
 ROOT = next(p for p in Path(__file__).resolve().parents if (p / "ProjectSettings").is_dir())
 ROM_SHA256 = "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00"
@@ -14,7 +17,14 @@ EXPECTED_POLLS = 38886
 ROUTE_INPUTS = {
     INPUT_SHA256: EXPECTED_POLLS,
     "ee97b1e9a30d3746b85d1cb573edb913ec6fe0e81f21e9a4148d82d6c08c73f6": 77688,
+    "50718e87aebd5798f72720e1f84dbe2531a79e8b459cf4a7fbcb43598fe1eb70": 24261,
+    "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100": 29360,
+    "fe01e37d28252b79ee80098c70c2f9a29a03f35a765558f5e0afc7d4f34b20e4": 73407,
+    "ad2f4a1bc5e94718490e3b1acce69b478e7231b7fee7632164d6e1c7605b6fff": 12517,
+    "d624d9e06cfbd740a8d703cbc3f35c0c542a609935ec177a95f749e5e0bb7283": 32283,
+    "f4c6593d11b5c21de5b651b3719acfa6c6435cb97374a901998471cb65bf9f79": 38650,
 }
+ROUTE_BINARY_SHA256 = "2669e6885267b7de96bede8a455e5cd690a7ca3aa7c587bd7961e59a46c819dd"
 OLD_ROOT = "local root = 'D:/Art/SW Code Zero Unity/'"
 
 
@@ -159,7 +169,88 @@ def convert_input(source: Path, output: Path) -> None:
     if output.exists():
         raise RuntimeError(f"Refuse to overwrite {output}")
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(encode_input(track), encoding="ascii")
+    output.write_text(encode_input(track), encoding="ascii", newline="\n")
+
+
+def route_summary(data: bytes, frames: int) -> dict:
+    """Post-frame RAM progression only; does not claim original-to-C equivalence."""
+    if frames <= 0 or len(data) != frames * 2048:
+        raise ValueError("Incomplete/extra RAM records")
+    world_events, clears, progress, deaths = [], [], [], []
+    previous = (None, 0, 0, None)
+    pending = None
+    union = 0
+    for i in range(frames):
+        b = i * 2048
+        world, count, mask, player = (data[b + n] for n in (0x31, 0x38, 0x69, 0x50))
+        poll = i + 1
+        if world != previous[0]:
+            world_events.append({"poll": poll, "world": world, "completed": count, "mask": mask})
+        if (count, mask) != previous[1:3]:
+            progress.append({"poll": poll, "world": world, "completed": count, "mask": mask})
+        union |= mask & 0x7F
+        if world < 7 and player == 0x11 and (world, player) != (previous[0], previous[3]):
+            clears.append({"poll": poll, "world": world})
+        if world < 7 and player == 7 and (world, player) != (previous[0], previous[3]):
+            pending = {"deathPoll": poll, "world": world, "reloadPoll": None}
+            deaths.append(pending)
+        elif pending and player == 9 and world == pending["world"]:
+            pending["reloadPoll"] = poll
+            pending = None
+        previous = world, count, mask, player
+    return {"frames": frames, "worldTransitions": world_events, "progression": progress,
+            "stageClearCandidates": clears, "deathReloads": deaths,
+            "worldsMarkedComplete": [w for w in range(7) if union & (1 << w)],
+            "final": dict(zip(("world", "completed", "mask", "playerState"), previous))}
+
+
+def run_route(source: Path, output: Path, binary: Path) -> None:
+    source, output, binary = source.resolve(), output.resolve(), binary.resolve()
+    if not output.is_relative_to(ROOT / "Art/Temp") or output.exists():
+        raise ValueError("Route output must be a NEW folder in assigned Art/Temp")
+    if digest(binary) != ROUTE_BINARY_SHA256:
+        raise ValueError("Unexpected prepared USA binary")
+    track = source.read_bytes()
+    sha = hashlib.sha256(track).hexdigest()
+    if ROUTE_INPUTS.get(sha) != len(track):
+        raise ValueError("Unknown input identity")
+    output.mkdir(parents=True)
+    converted = output / "input-recomp.txt"
+    convert_input(source, converted)
+    command = [str(binary), "--headless", "--frames", str(len(track)), "--region", "ntsc",
+               "--no-overclock", "--input", str(converted), "--ram-log", str(output / "ram.bin"),
+               "--screenshot", str(output / "final.bmp"), str(ROOT / "Art/Darkwing Duck (USA).nes")]
+    env = dict(os.environ)
+    env.pop("DWD_NMI_LOG", None)  # route test does not collect instruction/timing probes
+    started = time.monotonic()
+    with (output / "stdout.txt").open("wb") as stdout, (output / "stderr.txt").open("wb") as stderr:
+        result = subprocess.run(command, cwd=ROOT, env=env, stdout=stdout, stderr=stderr)
+    log = (output / "stderr.txt").read_text(encoding="utf-8")
+    mode_ok = all(word in log for word in ("execution_mode=recompiled", "region=ntsc",
+                  "remove_slowdown=0", "enabled_cheats=0", "overclock_paused_cycles=0"))
+    report = {"schema": 1, "scope": "external USA C route, not Unity/full equivalence",
+              "sourceRevision": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT).decode().strip(),
+              "toolSha256": digest(Path(__file__)),
+              "binarySha256": digest(binary), "romSha256": ROM_SHA256,
+              "input": {"path": str(source.relative_to(ROOT)), "frames": len(track), "sha256": sha},
+              "command": command, "elapsedSeconds": round(time.monotonic() - started, 3),
+              "exitCode": result.returncode, "modeVerified": mode_ok, "stderr": log, "outputs": {}}
+    for name in ("input-recomp.txt", "ram.bin", "final.bmp", "stdout.txt", "stderr.txt"):
+        p = output / name
+        if p.exists():
+            report["outputs"][name] = {"bytes": p.stat().st_size, "sha256": digest(p)}
+    try:
+        report["route"] = route_summary((output / "ram.bin").read_bytes(), len(track))
+        report["execution"] = "PASS" if result.returncode == 0 and mode_ok and (output / "final.bmp").exists() else "FAIL"
+    except (OSError, ValueError) as error:
+        report.update(execution="FAIL", error=str(error))
+    (output / "result.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+                                       encoding="utf-8", newline="\n")
+    print(json.dumps({"execution": report["execution"], "session": source.parent.name,
+                      "elapsedSeconds": report["elapsedSeconds"], "route": report.get("route"),
+                      "report": str(output / "result.json")}, ensure_ascii=False))
+    if report["execution"] != "PASS":
+        raise SystemExit(1)
 
 
 def make_lua(output: Path, oam_output: str, first: int, last: int) -> None:
@@ -304,7 +395,22 @@ def selftest() -> None:
     track = bytes(range(256)) * 2
     rows = encode_input(track).splitlines()
     assert len(rows) == 512 and rows[0] == "1 -" and rows[-1].startswith("512 ")
-    print(json.dumps({"result": "PASS", "controls": 258}))
+    data = bytearray(6 * 2048)
+    for i, (world, count, mask, player) in enumerate(((0, 0, 0, 7), (0, 0, 0, 9),
+             (0, 0, 0, 0x11), (8, 1, 0, 0), (8, 1, 1, 0), (1, 1, 1, 0))):
+        for address, value in zip((0x31, 0x38, 0x69, 0x50), (world, count, mask, player)):
+            data[i * 2048 + address] = value
+    summary = route_summary(data, 6)
+    assert summary["worldsMarkedComplete"] == [0] and summary["final"]["world"] == 1
+    assert summary["deathReloads"] == [{"deathPoll": 1, "world": 0, "reloadPoll": 2}]
+    for malformed in (data[:-1], data + bytes(2048)):
+        try:
+            route_summary(malformed, 6)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("incomplete/extra route accepted")
+    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 4}))
 
 
 def main() -> None:
@@ -315,6 +421,10 @@ def main() -> None:
     conv = sub.add_parser("input")
     conv.add_argument("source", type=Path)
     conv.add_argument("output", type=Path)
+    route = sub.add_parser("route", help="One complete recorded route on the prepared USA C binary")
+    route.add_argument("source", type=Path)
+    route.add_argument("output", type=Path)
+    route.add_argument("--binary", type=Path, default=ROOT / "Art/Temp/ZERO-72/darkwing-duck.exe")
     lua = sub.add_parser("lua")
     lua.add_argument("output", type=Path)
     lua.add_argument("--oam-output", required=True)
@@ -337,6 +447,8 @@ def main() -> None:
         prepare(args.source)
     elif args.command == "input":
         convert_input(args.source, args.output)
+    elif args.command == "route":
+        run_route(args.source, args.output, args.binary)
     elif args.command == "lua":
         make_lua(args.output, args.oam_output, args.first, args.last)
     elif args.command == "compare":
