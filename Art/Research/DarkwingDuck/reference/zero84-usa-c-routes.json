@@ -1,0 +1,1191 @@
+{
+  "schema": 1,
+  "task": "ZERO-84",
+  "executor": "Codex/sh.codex@beholder.learn.su",
+  "scope": "external USA C recordings; not Unity or full original-to-C equivalence",
+  "runtimeBinarySha256": "2669e6885267b7de96bede8a455e5cd690a7ca3aa7c587bd7961e59a46c819dd",
+  "externalSourceCommit": "8a601a68810d78d28eff12b86b095b65afb5c902",
+  "analyzerProjectCommit": "5a623d9",
+  "analyzerSha256": "c5f7845fc844e73fd9cd758aa6327daddb61522a896eb56b25e4a8bd6bbee74a",
+  "runs": [
+    {
+      "session": "20261019T050329Z",
+      "label": "Первый уровень — 19 октября",
+      "verdict": "PASS_COMPLETION_ONLY",
+      "input": {
+        "path": "Art\\Playthroughs\\20261019T050329Z\\input.bin",
+        "frames": 24261,
+        "sha256": "50718e87aebd5798f72720e1f84dbe2531a79e8b459cf4a7fbcb43598fe1eb70"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 22.266,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "24261",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T050329Z\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T050329Z\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T050329Z\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "857483d9a275a44b472b02570490140928ebb7d63f4701b2f146c96a6fb3e227",
+      "route": {
+        "frames": 24261,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1023,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1194,
+            "world": 1,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1217,
+            "world": 2,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1246,
+            "world": 1,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1266,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 22493,
+            "world": 8,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 22538,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 23433,
+            "world": 1,
+            "completed": 1,
+            "mask": 1
+          },
+          {
+            "poll": 23466,
+            "world": 2,
+            "completed": 1,
+            "mask": 1
+          },
+          {
+            "poll": 23631,
+            "world": 1,
+            "completed": 1,
+            "mask": 1
+          },
+          {
+            "poll": 23653,
+            "world": 0,
+            "completed": 1,
+            "mask": 1
+          }
+        ],
+        "progression": [
+          {
+            "poll": 23254,
+            "world": 0,
+            "completed": 1,
+            "mask": 0
+          },
+          {
+            "poll": 23255,
+            "world": 0,
+            "completed": 1,
+            "mask": 1
+          }
+        ],
+        "stageClearCandidates": [
+          {
+            "poll": 22492,
+            "world": 0
+          }
+        ],
+        "deathReloads": [],
+        "worldsMarkedComplete": [
+          0
+        ],
+        "final": {
+          "world": 0,
+          "completed": 1,
+          "mask": 1,
+          "playerState": 0
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 185516,
+          "sha256": "c32ec11ad1f4490e111b72812a9b2b91fd20ba851db3b3c07c0ac76596ae55c6"
+        },
+        "ram.bin": {
+          "bytes": 49686528,
+          "sha256": "52ba16e5ccf1fce8dfd2bd663d0225535bd7cc9f90afbbbc337de03586d07951"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "66efd4d1d54d335bbab3a754b283fffb0626807975dad9f6ba1069678f0fefb1"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 355,
+          "sha256": "53301d9af7c38d262c8abbf9f0d535f69e70e98ac71d2552740bc6e1ca92fff1"
+        }
+      },
+      "finalBmpInspected": true
+    },
+    {
+      "session": "20261022T164819Z",
+      "label": "Первый уровень — 22 октября (повтор)",
+      "verdict": "PASS_COMPLETION_ONLY",
+      "input": {
+        "path": "Art\\Playthroughs\\20261022T164819Z\\input.bin",
+        "frames": 38886,
+        "sha256": "137190299728c9ea6285ebf057fa25b1efaf916b9aeb2ad6d21fa46efb7f6275"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 34.297,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "38886",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261022T164819Z\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261022T164819Z\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261022T164819Z\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "06e41491c2ef985414955727fd270cf42932ca0dd5a11e984178a92f6844aafa",
+      "route": {
+        "frames": 38886,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1010,
+            "world": 14,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1203,
+            "world": 12,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1438,
+            "world": 10,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 3136,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 27694,
+            "world": 8,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 27739,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 29015,
+            "world": 1,
+            "completed": 1,
+            "mask": 1
+          }
+        ],
+        "progression": [
+          {
+            "poll": 28455,
+            "world": 0,
+            "completed": 1,
+            "mask": 0
+          },
+          {
+            "poll": 28456,
+            "world": 0,
+            "completed": 1,
+            "mask": 1
+          }
+        ],
+        "stageClearCandidates": [
+          {
+            "poll": 27693,
+            "world": 0
+          }
+        ],
+        "deathReloads": [
+          {
+            "deathPoll": 11636,
+            "world": 0,
+            "reloadPoll": 11665
+          },
+          {
+            "deathPoll": 14082,
+            "world": 0,
+            "reloadPoll": 14111
+          },
+          {
+            "deathPoll": 38445,
+            "world": 1,
+            "reloadPoll": null
+          }
+        ],
+        "worldsMarkedComplete": [
+          0
+        ],
+        "final": {
+          "world": 1,
+          "completed": 1,
+          "mask": 1,
+          "playerState": 0
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 304747,
+          "sha256": "9028504b93487fe1234254fb4683cffcb338335514bf63942b88efadfe2e3d0f"
+        },
+        "ram.bin": {
+          "bytes": 79638528,
+          "sha256": "cd02342e1f368da6078e470b77d83725accb820f5c9564691ed990a3256080b3"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "a62ad84cf51211fd99fc7141c82564b261f144d1c46c632709904823c108a9a5"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 355,
+          "sha256": "c307cd0b0d5f9735d6a30df86373de35aa7a3a93e01a30f0cb9ab41a4e4b38b4"
+        }
+      },
+      "finalBmpInspected": true
+    },
+    {
+      "session": "20261019T212535Z",
+      "label": "Второй уровень — отдельная запись",
+      "verdict": "FAIL_LEVEL_NOT_COMPLETED",
+      "input": {
+        "path": "Art\\Playthroughs\\20261019T212535Z\\input.bin",
+        "frames": 29360,
+        "sha256": "510925941e2397b6d86aae459cbd4dde291a6574963a01b104f5f7d3b88a9100"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 26.891,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "29360",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T212535Z\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T212535Z\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T212535Z\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "08b1acb170bbfac08df4c68bf8bfae62722d2495c1d1f7665d25bf6a755470d1",
+      "route": {
+        "frames": 29360,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1031,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1116,
+            "world": 1,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 25909,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 25947,
+            "world": 1,
+            "completed": 0,
+            "mask": 0
+          }
+        ],
+        "progression": [],
+        "stageClearCandidates": [],
+        "deathReloads": [
+          {
+            "deathPoll": 10135,
+            "world": 1,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 21533,
+            "world": 1,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 22484,
+            "world": 1,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 23103,
+            "world": 1,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 24462,
+            "world": 1,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 25547,
+            "world": 1,
+            "reloadPoll": 26678
+          }
+        ],
+        "worldsMarkedComplete": [],
+        "final": {
+          "world": 1,
+          "completed": 0,
+          "mask": 0,
+          "playerState": 0
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 227117,
+          "sha256": "c88adc6bc496ab54c70a87b4e9b3b41c631c434976b23d490f55d298099109fe"
+        },
+        "ram.bin": {
+          "bytes": 60129280,
+          "sha256": "671ddf2eee6f61ce79af7a45cba380442db66334d2d9032be6493bf9050c0c02"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "737f37b787176a7c217a2f3626be29856d45740bbf2cc3ea835e8fd507d63d06"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 358,
+          "sha256": "05d33a8d68e7ffdfd539c2dafc3aa96d55e78de6171773ebbbc02e383fa7519f"
+        }
+      },
+      "finalBmpInspected": true
+    },
+    {
+      "session": "20261024T183247Z",
+      "label": "Третий уровень — отдельная запись",
+      "verdict": "PASS_COMPLETION_ONLY",
+      "input": {
+        "path": "Art\\Playthroughs\\20261024T183247Z\\input.bin",
+        "frames": 73407,
+        "sha256": "fe01e37d28252b79ee80098c70c2f9a29a03f35a765558f5e0afc7d4f34b20e4"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 61.485,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "73407",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261024T183247Z\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261024T183247Z\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261024T183247Z\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "9af7c57658feecc603948f7e70066372a52d8ae075686c8edf00a503739af4be",
+      "route": {
+        "frames": 73407,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1474,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1581,
+            "world": 1,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1608,
+            "world": 2,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 71993,
+            "world": 8,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 72038,
+            "world": 2,
+            "completed": 0,
+            "mask": 0
+          }
+        ],
+        "progression": [
+          {
+            "poll": 72754,
+            "world": 2,
+            "completed": 1,
+            "mask": 0
+          },
+          {
+            "poll": 72755,
+            "world": 2,
+            "completed": 1,
+            "mask": 4
+          }
+        ],
+        "stageClearCandidates": [
+          {
+            "poll": 71992,
+            "world": 2
+          }
+        ],
+        "deathReloads": [
+          {
+            "deathPoll": 9559,
+            "world": 2,
+            "reloadPoll": 9588
+          },
+          {
+            "deathPoll": 14759,
+            "world": 2,
+            "reloadPoll": 14941
+          },
+          {
+            "deathPoll": 20184,
+            "world": 2,
+            "reloadPoll": 20355
+          },
+          {
+            "deathPoll": 25769,
+            "world": 2,
+            "reloadPoll": 25940
+          },
+          {
+            "deathPoll": 35103,
+            "world": 2,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 36929,
+            "world": 2,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 37862,
+            "world": 2,
+            "reloadPoll": 38500
+          },
+          {
+            "deathPoll": 50040,
+            "world": 2,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 51348,
+            "world": 2,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 54913,
+            "world": 2,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 58672,
+            "world": 2,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 62944,
+            "world": 2,
+            "reloadPoll": null
+          }
+        ],
+        "worldsMarkedComplete": [
+          2
+        ],
+        "final": {
+          "world": 2,
+          "completed": 1,
+          "mask": 4,
+          "playerState": 0
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 581880,
+          "sha256": "8b206704e195cf96e6482339ef05ee39d5795e45b9ecc8911437058cc3916416"
+        },
+        "ram.bin": {
+          "bytes": 150337536,
+          "sha256": "50b8601321d626da875557d343da372433f3554341d4afd638a0793c4deb4af6"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "60530d832cb167ee4dc4b570c4a8f34bb54030b93101597a1f3d676a90b2160b"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 357,
+          "sha256": "ef4f1eff5b379b2aa51847e91f339adfcdeba8a04864e28d8ad64536eed0cef8"
+        }
+      },
+      "finalBmpInspected": true
+    },
+    {
+      "session": "TAS-4739M",
+      "label": "Полный TAS",
+      "verdict": "PARTIAL_5_OF_7_NO_ENDING",
+      "input": {
+        "path": "Art\\Playthroughs\\TAS-4739M\\input.bin",
+        "frames": 38650,
+        "sha256": "f4c6593d11b5c21de5b651b3719acfa6c6435cb97374a901998471cb65bf9f79"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 29.609,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "38650",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\TAS-4739M\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\TAS-4739M\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\TAS-4739M\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "babaafaa9ebde6f5cd8308b47876fcc410636c5a7e5359c26563f95c52ef27bf",
+      "route": {
+        "frames": 38650,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 820,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 857,
+            "world": 2,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 5396,
+            "world": 8,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 5441,
+            "world": 2,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 6194,
+            "world": 0,
+            "completed": 1,
+            "mask": 4
+          },
+          {
+            "poll": 10795,
+            "world": 8,
+            "completed": 1,
+            "mask": 4
+          },
+          {
+            "poll": 10840,
+            "world": 0,
+            "completed": 1,
+            "mask": 4
+          },
+          {
+            "poll": 11594,
+            "world": 1,
+            "completed": 2,
+            "mask": 5
+          },
+          {
+            "poll": 16313,
+            "world": 8,
+            "completed": 2,
+            "mask": 5
+          },
+          {
+            "poll": 16358,
+            "world": 1,
+            "completed": 2,
+            "mask": 5
+          },
+          {
+            "poll": 17112,
+            "world": 4,
+            "completed": 3,
+            "mask": 7
+          },
+          {
+            "poll": 21749,
+            "world": 8,
+            "completed": 3,
+            "mask": 7
+          },
+          {
+            "poll": 21794,
+            "world": 4,
+            "completed": 3,
+            "mask": 7
+          },
+          {
+            "poll": 22548,
+            "world": 5,
+            "completed": 4,
+            "mask": 23
+          },
+          {
+            "poll": 27293,
+            "world": 8,
+            "completed": 4,
+            "mask": 23
+          },
+          {
+            "poll": 27338,
+            "world": 5,
+            "completed": 4,
+            "mask": 23
+          },
+          {
+            "poll": 28091,
+            "world": 3,
+            "completed": 5,
+            "mask": 55
+          }
+        ],
+        "progression": [
+          {
+            "poll": 6157,
+            "world": 2,
+            "completed": 1,
+            "mask": 0
+          },
+          {
+            "poll": 6158,
+            "world": 2,
+            "completed": 1,
+            "mask": 4
+          },
+          {
+            "poll": 11556,
+            "world": 0,
+            "completed": 2,
+            "mask": 4
+          },
+          {
+            "poll": 11557,
+            "world": 0,
+            "completed": 2,
+            "mask": 5
+          },
+          {
+            "poll": 17074,
+            "world": 1,
+            "completed": 3,
+            "mask": 5
+          },
+          {
+            "poll": 17075,
+            "world": 1,
+            "completed": 3,
+            "mask": 7
+          },
+          {
+            "poll": 22510,
+            "world": 4,
+            "completed": 4,
+            "mask": 7
+          },
+          {
+            "poll": 22511,
+            "world": 4,
+            "completed": 4,
+            "mask": 23
+          },
+          {
+            "poll": 28054,
+            "world": 5,
+            "completed": 5,
+            "mask": 23
+          },
+          {
+            "poll": 28055,
+            "world": 5,
+            "completed": 5,
+            "mask": 55
+          }
+        ],
+        "stageClearCandidates": [
+          {
+            "poll": 5395,
+            "world": 2
+          },
+          {
+            "poll": 10794,
+            "world": 0
+          },
+          {
+            "poll": 16312,
+            "world": 1
+          },
+          {
+            "poll": 21748,
+            "world": 4
+          },
+          {
+            "poll": 27292,
+            "world": 5
+          }
+        ],
+        "deathReloads": [
+          {
+            "deathPoll": 31496,
+            "world": 3,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 32040,
+            "world": 3,
+            "reloadPoll": null
+          },
+          {
+            "deathPoll": 32668,
+            "world": 3,
+            "reloadPoll": null
+          }
+        ],
+        "worldsMarkedComplete": [
+          0,
+          1,
+          2,
+          4,
+          5
+        ],
+        "final": {
+          "world": 3,
+          "completed": 5,
+          "mask": 55,
+          "playerState": 6
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 307018,
+          "sha256": "2b28dc6b3ec6b91aeef521d73f4b2f1b8d5106caca2c5ac49695ff354a31515c"
+        },
+        "ram.bin": {
+          "bytes": 79155200,
+          "sha256": "40974bf5597ff9876920a0fa72d3450a88f68b90c30e6dce7d4a38db7290a1c0"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "704b272d523f834ced0c003f04224cca5aa03df54a1a1e3363e20ac403059c89"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 357,
+          "sha256": "3c1c6103247073202ffa81b9cc42b1c1aa8b8c8d0414d8e1b11c2288eaed9a37"
+        }
+      },
+      "finalBmpInspected": true
+    },
+    {
+      "session": "20261019T045958Z",
+      "label": "Ранняя запись — без входа в миссию",
+      "verdict": "NO_GAMEPLAY_REACHED",
+      "input": {
+        "path": "Art\\Playthroughs\\20261019T045958Z\\input.bin",
+        "frames": 12517,
+        "sha256": "ad2f4a1bc5e94718490e3b1acce69b478e7231b7fee7632164d6e1c7605b6fff"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 11.781,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "12517",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T045958Z\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T045958Z\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261019T045958Z\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "fee41d04f900da45dd193222ea1f51b80a6d749718cc1628adf2111eee1247c8",
+      "route": {
+        "frames": 12517,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          }
+        ],
+        "progression": [],
+        "stageClearCandidates": [],
+        "deathReloads": [],
+        "worldsMarkedComplete": [],
+        "final": {
+          "world": 9,
+          "completed": 0,
+          "mask": 0,
+          "playerState": 0
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 89043,
+          "sha256": "b1d3405add30a1249dfcfa6105faf495e303f35e892fded54b78bd2e72926b2c"
+        },
+        "ram.bin": {
+          "bytes": 25634816,
+          "sha256": "99fb99034ecb6364bed3b1f640de79acd85b2024657448a8f580d2f199f7baa9"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "24856a09b5d5a4ba3f2663c085057933b46630f14b997dcbe60fa94e34d92c20"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 348,
+          "sha256": "a5b3bb2dc6a63b4faf3eaf755b764e11073f92351ba58643c8d5479c2733d354"
+        }
+      },
+      "finalBmpInspected": true
+    },
+    {
+      "session": "20261024T150154Z",
+      "label": "Неразмеченная запись — 24 октября",
+      "verdict": "UNLABELLED_NO_COMPLETION",
+      "input": {
+        "path": "Art\\Playthroughs\\20261024T150154Z\\input.bin",
+        "frames": 32283,
+        "sha256": "d624d9e06cfbd740a8d703cbc3f35c0c542a609935ec177a95f749e5e0bb7283"
+      },
+      "execution": "PASS",
+      "elapsedSeconds": 28.609,
+      "command": [
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-72\\darkwing-duck.exe",
+        "--headless",
+        "--frames",
+        "32283",
+        "--region",
+        "ntsc",
+        "--no-overclock",
+        "--input",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261024T150154Z\\input-recomp.txt",
+        "--ram-log",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261024T150154Z\\ram.bin",
+        "--screenshot",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Temp\\ZERO-84\\20261024T150154Z\\final.bmp",
+        "D:\\Art\\SW Code Zero Unity Builds\\USA-C-Recomp-Kimi\\Art\\Darkwing Duck (USA).nes"
+      ],
+      "producerProjectCommit": "3939e69ff6e50e538049e0b8bdb7d5b2a90468e0",
+      "producerToolSha256": "1ff9527bcfabf015405af7d7338ef16dd374fe23e6f7e55b135e046fd5d5b320",
+      "sourceReportSha256": "ea7177197f4d493d192c0ce79ead936e7a60ab5493b27ed84ec42f2f0e1360e7",
+      "route": {
+        "frames": 32283,
+        "worldTransitions": [
+          {
+            "poll": 1,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 264,
+            "world": 7,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 689,
+            "world": 9,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1010,
+            "world": 14,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1203,
+            "world": 12,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 1438,
+            "world": 10,
+            "completed": 0,
+            "mask": 0
+          },
+          {
+            "poll": 3426,
+            "world": 0,
+            "completed": 0,
+            "mask": 0
+          }
+        ],
+        "progression": [],
+        "stageClearCandidates": [],
+        "deathReloads": [],
+        "worldsMarkedComplete": [],
+        "final": {
+          "world": 0,
+          "completed": 0,
+          "mask": 0,
+          "playerState": 0
+        }
+      },
+      "outputs": {
+        "input-recomp.txt": {
+          "bytes": 248142,
+          "sha256": "cc9aec3b172c7b0d945aeb1f5a65f14c1c7bd75b3fbcaf0c15aeb5cbac146a25"
+        },
+        "ram.bin": {
+          "bytes": 66115584,
+          "sha256": "41f85b14d0062babcefcca3136021ccf093290c802dda86d0b33de200a8bf507"
+        },
+        "final.bmp": {
+          "bytes": 184374,
+          "sha256": "43c658c5a71a7a40e7655b8e60fb5ed8b6a78e5c5de42ef630728dacb0974ce5"
+        },
+        "stdout.txt": {
+          "bytes": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "stderr.txt": {
+          "bytes": 355,
+          "sha256": "dee1196afba6172a96910a5ee8bf80a7a69654847e0a6f4ef3989c1af197e69f"
+        }
+      },
+      "finalBmpInspected": true
+    }
+  ],
+  "rawBackup": "D:\\Art\\SW Code Zero Unity - Git Backups\\_maintenance\\ZERO84-usa-c-route-batch",
+  "limits": [
+    "one final BMP per recording; no intermediate video capture",
+    "game outcome judged by completion mask/count and observed final BMP",
+    "no first-PC/NMI/RNG/timing failure investigation",
+    "unlabelled 20261024T150154 original target mission unknown",
+    "state07 entries are state observations; not independently visualized death count"
+  ],
+  "repeat38886RamExactKimi": true,
+  "backupManifestSha256": "9ae92f8e686bcf66a297d3ecec7d1a7d314324ffadf9bcc39c11e11cd098909d"
+}
