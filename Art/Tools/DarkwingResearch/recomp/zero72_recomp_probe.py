@@ -191,7 +191,7 @@ def route_summary(data: bytes, frames: int) -> dict:
         union |= mask & 0x7F
         if world < 7 and player == 0x11 and (world, player) != (previous[0], previous[3]):
             clears.append({"poll": poll, "world": world})
-        if world < 7 and player == 7 and (world, player) != (previous[0], previous[3]):
+        if world < 7 and player == 7 and previous[3] != 7:
             pending = {"deathPoll": poll, "world": world, "reloadPoll": None}
             deaths.append(pending)
         elif pending and player == 9 and world == pending["world"]:
@@ -403,6 +403,11 @@ def selftest() -> None:
     summary = route_summary(data, 6)
     assert summary["worldsMarkedComplete"] == [0] and summary["final"]["world"] == 1
     assert summary["deathReloads"] == [{"deathPoll": 1, "world": 0, "reloadPoll": 2}]
+    changing_world = bytearray(3 * 2048)
+    for i, world in enumerate((1, 0, 1)):
+        changing_world[i * 2048 + 0x31] = world
+        changing_world[i * 2048 + 0x50] = 7
+    assert len(route_summary(changing_world, 3)["deathReloads"]) == 1, "map cursor movement is not a new state-07 entry"
     for malformed in (data[:-1], data + bytes(2048)):
         try:
             route_summary(malformed, 6)
@@ -410,7 +415,7 @@ def selftest() -> None:
             pass
         else:
             raise AssertionError("incomplete/extra route accepted")
-    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 4}))
+    print(json.dumps({"result": "PASS", "converterControls": 258, "routeControls": 5}))
 
 
 def main() -> None:
