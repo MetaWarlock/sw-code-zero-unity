@@ -13,12 +13,13 @@ namespace Darkwing.Core
     /// the scan's $90 rescan and the OAM DMA parity merge candidates, so the set collapses without a
     /// seed. A pass whose next NMI arrives before its $FF17 store is Running: the NMI publishes
     /// nothing ($9A=1), the same pass resumes after RTI and no new body or input poll happens.
-    /// Whenever two candidates disagree on that outcome or on the interrupted instruction, or a price
+    /// Whenever two candidates disagree on the observable outcome, or a price
     /// is unknown, the clock stops visibly instead of choosing one; the caller keeps its untimed path.
     /// </summary>
     public sealed class MissionClock
     {
         public enum Phase { Off, Waiting, Nmi, Body, Running, Unsupported }
+        public enum TailResult { None, Committed, Busy, Unbusy, Split }
 
         /// <summary>FF19..FE91 instruction starts before the first $FE92 scan.</summary>
         private static readonly int[] StartupStarts = { 0, 2, 4, 6, 10, 13, 15 };
@@ -43,6 +44,9 @@ namespace Darkwing.Core
         public int Anchors { get; private set; }
         public int TimedPasses { get; private set; }
         public int RunningPasses { get; private set; }
+        public int Refusals { get; private set; }
+        public int OutcomeSplits { get; private set; }
+        public TailResult LastOutcome { get; private set; }
         public long Poll { get; private set; }
         public long MinDeadline { get; private set; }
         public long MaxDeadline { get; private set; }
@@ -69,6 +73,7 @@ namespace Darkwing.Core
 
         private bool Refuse(string reason)
         {
+            Refusals++;
             Unsupported = reason;
             UnsupportedPoll = Poll;
             Stage = Phase.Unsupported;
@@ -82,6 +87,7 @@ namespace Darkwing.Core
         public bool BeginNmi(long poll, long threshold, int publicationEven, int publicationOdd)
         {
             Poll = poll;
+            LastOutcome = TailResult.None;
             if (Stage == Phase.Unsupported) return false;
             if (Stage != Phase.Off && Stage != Phase.Waiting) throw new InvalidOperationException("Mission clock NMI out of order: " + Stage);
             if (publicationEven < 0 || publicationOdd < 0) return Refuse("NMI publication price unsupported");
@@ -145,20 +151,40 @@ namespace Darkwing.Core
             return true;
         }
 
-        /// <summary>The engine/RNG/yield tail ran to the earliest deadline. If it committed there,
-        /// every later deadline commits as well. Otherwise all candidates must share that deadline:
-        /// a later one could have reached a different instruction or the store itself.</summary>
-        public bool CompleteTail(bool committed, long cycles)
+        /// <summary>Inspect every distinct candidate deadline in increasing order. A blocked NMI
+        /// neither publishes the OAM walk nor starts a new body. Candidates may therefore interrupt
+        /// different instructions while all remaining Busy; their individual starts still determine
+        /// the eventual commit. A split outcome or the Busy=0/yield window remains unsupported.</summary>
+        public bool CompleteTail(MissionPassContinuation tail)
         {
+            if (tail == null) throw new ArgumentNullException(nameof(tail));
             if (Stage == Phase.Unsupported) return false;
             if (Stage != Phase.Body) throw new InvalidOperationException("No mission tail");
-            if (committed)
+            var deadlines = new SortedSet<long>();
+            foreach (long start in _tailStarts) deadlines.Add(_threshold - start);
+            TailResult outcome = TailResult.None;
+            foreach (long deadline in deadlines)
             {
-                Commit(_tailStarts, cycles);
-                return true;
+                if (deadline < 0) return Refuse("NMI service exceeds next frame");
+                tail.AdvanceTo((int)Math.Min(deadline, int.MaxValue));
+                TailResult current = !tail.Active ? TailResult.Committed : tail.Busy ? TailResult.Busy : TailResult.Unbusy;
+                if (current == TailResult.Unbusy)
+                {
+                    LastOutcome = current;
+                    return Refuse("NMI in the unbusy yield window");
+                }
+                if (outcome == TailResult.None) outcome = current;
+                else if (outcome != current)
+                {
+                    LastOutcome = TailResult.Split;
+                    OutcomeSplits++;
+                    return Refuse("Candidates disagree on the tail outcome");
+                }
             }
-            if (MinDeadline != MaxDeadline) return Refuse("Candidates disagree on the interrupted engine instruction");
-            _interruptedTailCycles = cycles;
+            LastOutcome = outcome;
+            if (outcome == TailResult.Committed) { Commit(_tailStarts, tail.Cycles); return true; }
+            if (outcome != TailResult.Busy) return Refuse("No mission tail candidates");
+            _interruptedTailCycles = tail.Cycles;
             Stage = Phase.Running;
             RunningPasses++;
             return true;
@@ -174,14 +200,17 @@ namespace Darkwing.Core
             if (Stage != Phase.Running) throw new InvalidOperationException("No Running mission pass");
             if (audioCycles < 0) return Refuse("NMI audio price unsupported");
             long service = EntryCycles + BlockedPublicationCycles + timerCycles + BankGateCycles + audioCycles;
+            long maxDeadline = long.MinValue;
             for (int index = 0; index < _tailStarts.Count; index++)
             {
                 _tailStarts[index] += service;
                 deadline = Math.Min(deadline, nextThreshold - _tailStarts[index]);
+                maxDeadline = Math.Max(maxDeadline, nextThreshold - _tailStarts[index]);
             }
             _threshold = nextThreshold;
             Stage = Phase.Body;
-            MinDeadline = MaxDeadline = deadline;
+            MinDeadline = deadline;
+            MaxDeadline = maxDeadline;
             return true;
         }
 

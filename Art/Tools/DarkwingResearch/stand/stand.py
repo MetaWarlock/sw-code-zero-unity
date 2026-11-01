@@ -399,7 +399,7 @@ def cmd_replay(args):
         raise SystemExit("Replays diverged in the original - the stand is not deterministic")
 
 
-def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio_state=False, timeout: int = 0) -> dict:
+def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio_state=False, timeout: int = 0, probe_first=0, probe_last=0) -> dict:
     """Feed the recorded track to the port: same bytes, same frame numbers, cold boot at frame 1."""
     track = track_bytes(session)
     out = Path(output).resolve() if output else session / "unity"
@@ -408,12 +408,18 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio
             "captureAtStart": True,
             "output": out.as_posix(),
             "audioState": audio_state,
+            "busyFlagScope": "ordinary MissionTail Active/Busy; not loader/resident or post-boss delays",
             "note": "Pad track from " + str(session) + "; " + CONVENTION}
     (out / "spec.json").write_text(json.dumps(spec), encoding="utf-8")
     (ROOT / "Art/Temp").mkdir(parents=True, exist_ok=True)
-    (ROOT / "Art/Temp/stand_spec.json").write_text(json.dumps({
+    config = {
         "spec": str(out / "spec.json"), "session": str(session), "fullEvery": full_every,
-        "shots": list(shots), "audioState": audio_state}), encoding="utf-8")
+        "shots": list(shots), "audioState": audio_state}
+    if probe_first or probe_last:
+        if not 1 <= probe_first <= probe_last <= spec["frames"]:
+            raise ValueError("probe range must lie within the requested input prefix")
+        config.update(probeOutput=str(out / "probe.csv"), probeFirst=probe_first, probeLast=probe_last)
+    (ROOT / "Art/Temp/stand_spec.json").write_text(json.dumps(config), encoding="utf-8")
     unity = shutil.which("unity") or str(Path.home() / "AppData/Local/Unity/bin/unity.exe")
     budget = timeout or 270
     timeout_ms = (budget - 30) * 1000 if budget > 30 else budget * 1000
@@ -437,7 +443,7 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio
 
 def cmd_unity(args):
     shots = [int(s) for s in (args.png.split(",") if args.png else [])]
-    print(json.dumps(run_port(Path(args.session).resolve(), shots, args.full_every, args.output, args.frames, args.audio_state, getattr(args, "timeout", 0)), indent=2))
+    print(json.dumps(run_port(Path(args.session).resolve(), shots, args.full_every, args.output, args.frames, args.audio_state, getattr(args, "timeout", 0), args.probe_first, args.probe_last), indent=2))
 
 
 SHARED = ("x", "y", "state", "ctrl", "mask", "pal_sum")
@@ -887,6 +893,8 @@ def main():
     u.add_argument("--png", help="comma list of frames to dump as PNG in the port")
     u.add_argument("--full-every", type=int, default=60)
     u.add_argument("--audio-state", action="store_true", help="diagnostic export of persistent audio ZP and $0700-$077F; no RAM seed")
+    u.add_argument("--probe-first", type=int, default=0, help="first poll of optional timing/outcome CSV")
+    u.add_argument("--probe-last", type=int, default=0, help="last poll of optional timing/outcome CSV")
     u.add_argument("--timeout", type=int, default=0, help="wall-clock cap for unity execution in seconds")
     u.set_defaults(func=cmd_unity)
     d = sub.add_parser("diff")

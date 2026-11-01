@@ -30,8 +30,9 @@ namespace Darkwing.Core
         {
             _clockNmi = false;
             _clockTail = false;
-            if (Clock.Stage == MissionClock.Phase.Unsupported) return;
             if (!ClockEligible) { Clock.Drop(); return; }
+            // Keep the refusal visible, but let the next eligible pass admit the full idle set.
+            Clock.ClearRefusal();
             if (!TryMeasureNativeNmiPublication(0, 0, 0, 0, out int even, out _)) even = -1;
             if (!TryMeasureNativeNmiPublication(1, 0, 0, 0, out int odd, out _)) odd = -1;
             if (DiagnosticPublication != null)
@@ -108,14 +109,12 @@ namespace Darkwing.Core
                 MissionTail.Finish();
                 return false;
             }
-            MissionTail.AdvanceTo((int)Math.Min(deadline, int.MaxValue));
-            bool committed = !MissionTail.Active;
-            if (!Clock.CompleteTail(committed, MissionTail.Cycles))
+            if (!Clock.CompleteTail(MissionTail))
             {
                 MissionTail.Finish();
                 return false;
             }
-            return !committed;
+            return Clock.Stage == MissionClock.Phase.Running;
         }
 
         /// <summary>The NMI found the pass Running: $C006 sees $9A=1 and takes $C0A1 (no OAM DMA,
@@ -130,9 +129,7 @@ namespace Darkwing.Core
             if (Clock.ContinueNmi(PhysicalFrames.PreviousOrdinal, NmiTiming.ProcessTimerCycles(RunningSlot0, TimerOne),
                 audio, PhysicalFrames.NmiThreshold, out long deadline))
             {
-                MissionTail.AdvanceTo((int)Math.Min(deadline, int.MaxValue));
-                bool committed = !MissionTail.Active;
-                if (!Clock.CompleteTail(committed, MissionTail.Cycles)) MissionTail.Finish();
+                if (!Clock.CompleteTail(MissionTail)) MissionTail.Finish();
             }
             else MissionTail.Finish();
             if (MissionTail.Active && Clock.Stage != MissionClock.Phase.Running) MissionTail.Finish();
