@@ -1,0 +1,113 @@
+{
+  "task": "ZERO-95",
+  "reviewer": "Kimi (Китаец, kit.kimi@beholder.learn.su, 8b19dab4-3f78-4d4d-9f40-45f55d4a14fb)",
+  "branch": "codex/kimi-mission2-nmi-review",
+  "reviewedRevision": "7c846f6c462754b712ff302ae07138f2537fa723",
+  "preparationCommitExcludedFromRuntimeDiff": "113832a",
+  "verdict": "PARTLY CONFIRMED",
+  "input": {
+    "romSha256": "1271dce8678ffc261e2c05cc785ae53e29ac1f9ecf6265a4265bed825abb0a00",
+    "path": "Art/Playthroughs/20261031T021326Z/input.bin",
+    "polls": 77688,
+    "sha256": "ee97b1e9a30d3746b85d1cb573edb913ec6fe0e81f21e9a4148d82d6c08c73f6",
+    "referenceRamSha256": "6983dbb75cda7239f4d57aac54d4c281b45c35bf81816698e3ebbd7dcf702ebb",
+    "referenceProbeSha256": "d66679a5ace33607f9f95c231fc40f9168f5dfb8c373d466505cea272e02963a",
+    "coreSha256": "a6fc217d2b30db9b0ba1679a752c4a4468bd40a92037be547d56d0b0564078e8",
+    "region": "ntsc",
+    "overclock": false
+  },
+  "confirmed": {
+    "busyComparison": "canonical lags, range 35650..35680: referenceBusy=[35666], portBusy=[], extra=[]",
+    "frameMapping": "C record 35666 holds E4-E7 and has 9A=1; port advances E4-E7 at 35666 to the values C has at 35667",
+    "cNmiCycles": {
+      "nmiAccept": 1062125096,
+      "c000": 1062125103,
+      "bank3TickEntry": 1062127087,
+      "c114": 1062134908,
+      "bank6Entry": 1062138465,
+      "cabb": 1062145372,
+      "nextNmiAcceptPc": "CABE",
+      "nextNmiAccept": 1062154871,
+      "nextC114": 1062158285,
+      "nextCad8": 1062158299,
+      "c000ToC114": 9805,
+      "c114ToCabb": 10464,
+      "cabbToNextNmiAccept": 9499,
+      "resumeC114ToCad8": 14,
+      "fullTailDerived": 9513
+    },
+    "currentPort": {
+      "clockOutcome": "Committed",
+      "minDeadline": 13604,
+      "maxDeadline": 13690,
+      "tailCycles": 9658,
+      "nmiAudio": 4274,
+      "bank6": 5275,
+      "bank1": 424,
+      "deadlineDeltaVsC": 4105,
+      "minimumSlack": 3946,
+      "bodyPrefixDerived": 10320,
+      "bodyPlusTail": 19978,
+      "cBodyPlusFullTail": 19977,
+      "netBodyTailDifference": 1
+    },
+    "audioControl": {
+      "queuedTask": "11",
+      "nativeOnCStateFullService": 8454,
+      "nativeOnCStateTask": 564,
+      "nativeOnCStateTick": 7767,
+      "nativeActualRouteService": 4274,
+      "fullServiceDifference": 4180,
+      "tickReturnExact": "5/5",
+      "audioStateExactAfterDrain": "5/5",
+      "fullTaskBoundary": "UNKNOWN without C0DC/C0F6",
+      "actualRouteAudioFieldsDifferentFromCBeforeNmi35665": 127
+    }
+  },
+  "bodyPrefixDerivation": {
+    "formula": "6+inputHook+18+missionHead+6+playerDispatch+12+scroll+6+spawn+11+zone+palette+6+bank6+2+6+55+bank1+environmentTail",
+    "values": "6+525+18+31+6+1671+12+166+6+469+11+481+19+6+5275+2+6+55+424+1131 = 10320",
+    "environmentTail": "15 initial/page-cross + 14 cell tests + 74 bank/JSR + 1028 clear-shadow = 1131; world1 grid=DFD4, cellIndex=48 crosses page"
+  },
+  "whyOnlyPartlyConfirmed": [
+    "The missed Busy poll, all three headline C spans, the current 13604/9658 Committed row and the 4105-cycle deadline difference are reproduced independently.",
+    "Body and tail compensate each other: native 10320+9658 versus C 10464+9513, net +1. The deficit belongs to the NMI side, predominantly the SFX-11 audio path, not to another bank-6 price table.",
+    "The production route's audio state already differs from C before this NMI. Native-on-C-state timing is exact for tick/return and final audio state, but 8454 on the C fixture cannot be substituted for the route's actual 4274 as a production price.",
+    "The current C log has no C0DC/C0F6/task-entry boundaries. Therefore the independent full C audio-service split and the small publication/acceptance residual are not proven. No direct causal proof that one price edit will defeat Wolfduck is claimed."
+  ],
+  "nextLimitedStep": {
+    "action": "Extend the existing C NMI probe with C0A1/C0DC/C0F6/8003 boundaries and rerun the same unchanged input only through 35666; then inspect the SFX-11/audio-state owner rather than adding bank-6 prices or a poll-keyed delay.",
+    "predictedEffect": "Close the full 8454 service derivation and the remaining publication/acceptance residual; a subsequent source-faithful timing correction must hold RNG at poll 35666 and make port 35667 match C 35667 without changing RAM through 35665.",
+    "boundary": "This is one diagnostic measurement, not permission to inject 8454 into production or to claim mission-2 completion. No new broad price-table campaign."
+  },
+  "currentRun": {
+    "command": "python Art/Tools/DarkwingResearch/stand/stand.py unity Art/Playthroughs/20261031T021326Z --frames 35666 --audio-state --probe-first 35660 --probe-last 35666 --output Art/Temp/NMI-Review/core-current --timeout 270",
+    "cliResult": "TIMEOUT after 270 s; outputs were not accepted on exit status",
+    "outputCompleteness": "35666 records, trace finalGameFrame=35666; every non-audio byte equals the deterministic final-full prefix; audio fields are compared separately",
+    "buffers": {
+      "bytes": 156359744,
+      "sha256": "8e36f00cf51f28741be709feb65f95928cc1b44de34e27b3d8dbc5142b4a6bb7"
+    },
+    "probe": {
+      "bytes": 1616,
+      "sha256": "703cc19ec5d025cdc6049ab9930e6db30ac7d96711f8561ffb213593c53a5a5e"
+    }
+  },
+  "audioEvidence": {
+    "command": "python Art/Tools/DarkwingResearch/run_check.py --file Art/AgentScripts/NmiAudioVerify.cs --entry NmiAudioVerify.RouteCases --args [assigned root,c-ram.bin,probe35k.csv,35663,35667,Art/Temp/NMI-Review/audio-evidence-v2] --out Art/Temp/NMI-Review/audio-run-v2",
+    "result": "PASS tick/return exact=5/5 state=5/5 unsupported=0; full queued-task boundary UNKNOWN",
+    "csvSha256": "887d750ac20b9ffa09509509d2028e6ab21ef713988f6baed14605b573e28a70",
+    "detailsSha256": "b2b49119d3e5408aff1eddbfe22f576dd137d4a9c97d5bda96ecb4cb1d0e538c"
+  },
+  "limitations": [
+    "Beyond poll 20000 this recording has C-oracle evidence, not a fresh Mesen comparison. ZERO-72 measured a six-cycle C acceptance error at another NMI; it cannot explain a 4105-cycle budget difference.",
+    "No production fix, full-level run, golden/input/RAM mutation or mission-3 work was performed. ZERO-92 and the shared goal remain open.",
+    "The historical probe-35666 was Unsupported with deadline 16229. The current canonical run was required to reproduce 13604/Committed; the old CSV alone does not prove Claude's row."
+  ],
+  "preservation": {
+    "path": "D:\\Art\\SW Code Zero Unity - Git Backups\\_maintenance\\ZERO95-nmi-review-e578e6e",
+    "manifest": "manifest.json",
+    "verifiedFiles": 11,
+    "scope": "Exact raw C trace/RAM, current diagnostic capture, audio CSV and incremental source history; not a full snapshot"
+  }
+}
