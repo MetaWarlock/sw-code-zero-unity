@@ -422,10 +422,9 @@ def run_port(session: Path, shots, full_every: int, output=None, frames=0, audio
     (ROOT / "Art/Temp/stand_spec.json").write_text(json.dumps(config), encoding="utf-8")
     unity = shutil.which("unity") or str(Path.home() / "AppData/Local/Unity/bin/unity.exe")
     budget = timeout or 270
-    timeout_ms = (budget - 30) * 1000 if budget > 30 else budget * 1000
-    cmd = [unity, "command", "run_script", "--file", "Art/AgentScripts/StandRoute.cs",
+    cmd = [unity, "command", "script", "run", "--file", "Art/AgentScripts/StandRoute.cs",
            "--entry", "StandRoute.Run", "--project-path", str(ROOT), "--caller", "plugin",
-           "--skill", "unity-cli", "--timeout", str(budget), "--timeout_ms", str(timeout_ms), "--format", "json"]
+           "--skill", "unity-cli", "--timeout", str(budget), "--format", "json"]
     run = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=budget + 30)
     (out / "run_script.json").write_text(run.stdout, encoding="utf-8")
     (out / "run_script_err.txt").write_text(run.stderr, encoding="utf-8")

@@ -44,9 +44,9 @@ def main():
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
     cmd = [shutil.which("unity") or str(Path.home()/"AppData/Local/Unity/bin/unity.exe"),
-           "command", "run_script", "--file", a.file, "--entry", a.entry,
+           "command", "script", "run", "--file", a.file, "--entry", a.entry,
            "--project-path", str(ROOT), "--caller", "plugin", "--skill", "unity-cli",
-           "--timeout", "270", "--timeout_ms", "240000", "--format", "json"]
+           "--timeout", "270", "--format", "json"]
     if a.args is not None:
         cmd += ["--args", a.args]
     record = {"command": cmd, "scope": "execution only", "startedUtcEpoch": time.time()}

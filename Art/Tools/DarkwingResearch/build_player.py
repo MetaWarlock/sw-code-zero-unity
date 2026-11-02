@@ -96,9 +96,9 @@ cli=str(Path.home()/'AppData/Local/Unity/bin/unity.exe')
 base=[cli,'command']; flags=['--project-path',str(root),'--caller','plugin','--skill','unity-cli','--format','json']
 commands=[]
 def call(name,*args):
- cmd=base+[name,*args]+flags;commands.append(cmd)
+ cmd=base+[*name.split(),*args]+flags;commands.append(cmd)
  p=subprocess.run(cmd,cwd=root,capture_output=True,timeout=90)
- (ev/f'{name}_{len(commands):03d}.json').write_bytes(p.stdout)
+ (ev/f"{name.replace(' ','_')}_{len(commands):03d}.json").write_bytes(p.stdout)
  (ev/'commands.json').write_text(json.dumps(commands,ensure_ascii=False,indent=2),encoding='utf-8')
  r=json.loads(p.stdout.decode('utf-8-sig'))
  if p.returncode or not r.get('success'): raise RuntimeError(r)
@@ -110,12 +110,12 @@ def hashes():
  return {str(p.relative_to(root)).replace('\\','/'):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}
 source={'head':subprocess.check_output(['git','rev-parse','HEAD'],cwd=root,text=True).strip(),'workingTree':subprocess.check_output(['git','status','--porcelain=v1'],cwd=root,text=True),'sourceHashes':hashes(),'romSha256':hashlib.sha256((root/'Art/Darkwing Duck (USA).nes').read_bytes()).hexdigest()}
 (ev/'source_before.json').write_text(json.dumps(source,ensure_ascii=False,indent=2),encoding='utf-8')
-r=call('build','--target','StandaloneWindows64','--outputPath',str(exe),'--scenes',json.dumps(['Packages/su.learn.codezero/Scenes/DarkwingMain.unity']),'--confirm','true',*(['--options','["Development"]'] if a.development else []))
+r=call('build run','--target','StandaloneWindows64','--outputPath',str(exe),'--scenes',json.dumps(['Packages/su.learn.codezero/Scenes/DarkwingMain.unity']),'--confirm','true',*(['--options','["Development"]'] if a.development else []))
 print(json.dumps(r),flush=True)
 end=time.time()+600
 while time.time()<end:
  time.sleep(5)
- r=call('build_status')
+ r=call('build status')
  if r.get('status') in ('completed','failed'):
   (ev/'build_final.json').write_text(json.dumps(r,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps({k:r.get(k) for k in ['status','buildId','result','totalSizeBytes','buildTimeMs','totalWarnings','totalErrors']}),flush=True);break
 else: raise RuntimeError('Build polling deadline')
