@@ -1,0 +1,258 @@
+{
+  "task": "ZERO-96",
+  "date": "2026-11-02",
+  "previousVersion": "6.5.0",
+  "version": "6.8.0",
+  "runtime": {
+    "nodeVersion": "24.22.1",
+    "command": "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+    "publicEntry": "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+    "systemNode": "24.15.0 unchanged"
+  },
+  "profiles": [
+    {
+      "client": "antigravity",
+      "config_path": "C:\\Users\\Warlock\\.gemini\\config\\mcp_config.json",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    },
+    {
+      "client": "claude_code",
+      "config_path": "C:\\Users\\Warlock\\.claude.json",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    },
+    {
+      "client": "codex",
+      "config_path": "C:\\Users\\Warlock\\.codex\\config.toml",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    },
+    {
+      "client": "kimi",
+      "config_path": "C:\\Users\\Warlock\\.kimi-code\\mcp.json",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    },
+    {
+      "client": "opencode",
+      "config_path": "C:\\Users\\Warlock\\.config\\opencode\\opencode.jsonc",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    },
+    {
+      "client": "qoder",
+      "config_path": "C:\\Users\\Warlock\\.qoder\\settings.json",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    },
+    {
+      "client": "zcode",
+      "config_path": "C:\\Users\\Warlock\\.zcode\\cli\\config.json",
+      "command": [
+        "C:\\Users\\Warlock\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\node\\bin\\node.exe",
+        "C:\\Users\\Warlock\\AppData\\Roaming\\npm\\node_modules\\rea-agents\\scripts\\rea.mjs",
+        "mcp"
+      ],
+      "state": "aligned"
+    }
+  ],
+  "otherSettingsPreserved": [
+    "kimi",
+    "opencode",
+    "qoder",
+    "claude",
+    "antigravity",
+    "zcode",
+    "codex"
+  ],
+  "skill": {
+    "installed_version": "49",
+    "installed_tool_count": 229,
+    "state": "aligned",
+    "remediation": null
+  },
+  "mcp": {
+    "healthy": true,
+    "server": {
+      "name": "rea",
+      "version": "6.8.0",
+      "protocol_version": "2025-11-25"
+    },
+    "inventory": {
+      "tools": {
+        "expected": 229,
+        "observed": 229,
+        "missing": [],
+        "unexpected": [],
+        "duplicates": []
+      },
+      "prompts": {
+        "expected": 6,
+        "observed": 6,
+        "missing": [],
+        "unexpected": [],
+        "duplicates": []
+      }
+    },
+    "requestFlow": {
+      "tool": "binary_session",
+      "ok": true
+    },
+    "checks": [
+      {
+        "name": "initialize",
+        "ok": true,
+        "detail": "rea@6.8.0; protocol=2025-11-25"
+      },
+      {
+        "name": "inventory:tools",
+        "ok": true,
+        "detail": "expected=229 observed=229 missing=none unexpected=none duplicates=none"
+      },
+      {
+        "name": "inventory:prompts",
+        "ok": true,
+        "detail": "expected=6 observed=6 missing=none unexpected=none duplicates=none"
+      },
+      {
+        "name": "server-identity",
+        "ok": true,
+        "detail": "package=6.8.0; catalog=fe938a7c6eba3763b22ae2022de76dc4a7812d35d86f1d4efd36b9962b04da0b"
+      },
+      {
+        "name": "request-flow",
+        "ok": true,
+        "detail": "binary_session target-free request"
+      }
+    ]
+  },
+  "projectOverrides": [
+    {
+      "worktree": "D:/Art/SW Code Zero Unity",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "ad8692179671e8ced021945aa1a581c954681eb7",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Drop-Investigation",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "621723f44f871cf8aabf714dfdf65dd0184729e2",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Main-Integration",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": null,
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/MegaMan-mm5sound-Qoder",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "9266d641d4e9d52acca36359cb7f4f5d8bc02125",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Mission2-Wolfduck",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "a7801cf27d0ac14480e5854a8df1fe0e9f94968c",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Mission3-Liquidator",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "825783df9a2d170933ea453c52a6e8069e12304d",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Unity-C-Plan-Claude",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "e5ab695475c9fbd0850ef36360e3d1f96e7969d5",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Unity-C-Reference-Qoder",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "caf57850fc7c4875628087f0160f5669221aa0f8",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Unity-Mission2-Claude",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "9a818401a9df313da8fbfa6cff9cbeac74f203cc",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Unity-MissionClock-Fix",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "96c23c40cea2da4f112325fa5d4b17fa6d236fa5",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/Unity-NMI-Review-Kimi",
+      "path": ".kimi-code/mcp.json",
+      "before": "3B2107418947F5A4ACBA090E58875EF139361D144FF85499F6CB2B3514E4AA84",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "8f024050fcb37ac70be83e5788727e3ae1186ad7",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    },
+    {
+      "worktree": "D:/Art/SW Code Zero Unity Builds/USA-C-Recomp-Kimi",
+      "path": ".kimi-code/mcp.json",
+      "before": "6A3A30DACE1445F59E784A4C95A5E9E279A814D67082DAF799950B698D4FDB08",
+      "after": "E5B29621496D551A5B93B06367D793E13EC5C2C2FB4F4ACD8579390BDCBA2872",
+      "commit": "ffaa6b971ff04b0816b082046677aa35ce6b8c63",
+      "scope": "inherit global REA6.8 and other native MCP servers"
+    }
+  ],
+  "existingProcesses": "Restart or reconnect already-open clients to load the new MCP server and tool catalog",
+  "backups": {
+    "manualProfiles": "D:\\Art\\SW Code Zero Unity - Git Backups\\_maintenance\\ZERO96-REA-6.8.0-profile-settings",
+    "supportedClients": "Native REA setup verified .rea.backup/.recovery paths, see setup plans"
+  },
+  "scope": "REA package, existing registrations, matching skills and legacy project overrides; game code and analysis engines unchanged"
+}
